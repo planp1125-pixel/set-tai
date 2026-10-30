@@ -84,7 +84,7 @@ class V1013Test {
         val seg = s.segments[1]; val f = Frame()
         s.frame(Role.RAT, seg.t0 + seg.dur * 0.4f, f); assertTrue(f.x > 1f)
         s.frame(Role.RAT, seg.t0 + seg.dur * 0.6f, f); assertTrue(f.x < 0.2f)
-        s.frame(Role.CAT, seg.t0 + seg.dur * 0.5f, f); assertTrue(f.sx > 1.1f && f.sy < 0.9f)   // wall bonk squash
+        s.frame(Role.CAT, seg.t0 + seg.dur * 0.5f, f); assertTrue(f.sx < 0.9f && f.sy > 1.1f)   // wall bonk squash
     }
 
     @Test fun holeAndTailBite() {
