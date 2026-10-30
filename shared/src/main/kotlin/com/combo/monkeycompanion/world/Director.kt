@@ -72,18 +72,21 @@ class Director(private val cooldownMs: Long = 3 * 60_000L) {
         quietHours: Boolean = false,
         forceKind: Kind? = null,
         rnd: Random = Random,
+        /** v10.12: the real on-screen crew (lead first). Buddies come ONLY from here. */
+        active: List<String>? = null,
     ): BanterScene? {
         if (canPlay(now, mode, keyboard, inCall, fullscreen, dnd, quietHours, ignoreCooldown = forceKind != null) != null) return null
-        val active = Population.activeIds(leadId, mode, state)
-        val buddyId = active.drop(1).firstOrNull() ?: allExcept(leadId).first()
-        val kind = forceKind ?: if (CatMouseBehaviors.isCatMousePair(leadId, buddyId)) Kind.CAT_MOUSE_CHASE else chooseKind(state, minuteOfDay, rnd)
+        val crew = active ?: Population.activeIds(leadId, mode, state)
+        val buddyId = crew.drop(1).firstOrNull { it != leadId } ?: return null
+        val kind0 = forceKind ?: if (CatMouseBehaviors.isCatMousePair(leadId, buddyId)) Kind.CAT_MOUSE_CHASE else chooseKind(state, minuteOfDay, rnd)
+        // Cat-and-mouse needs BOTH Billa and Chittu on screen.
+        val kind = if (kind0 == Kind.CAT_MOUSE_CHASE && !CatMouseBehaviors.isCatMousePair(leadId, buddyId)) Kind.PLACE_GOSSIP else kind0
         val scene = buildScene(kind, leadId, buddyId, state)
         lastPlayedAt = now
         lastKind = kind
         return scene
     }
 
-    private fun allExcept(id: String) = Population.allIds.filter { it != id }
 
     private fun chooseKind(state: WorldState, minuteOfDay: Int, rnd: Random): Kind {
         val candidates = ArrayList<Kind>()
@@ -103,14 +106,14 @@ class Director(private val cooldownMs: Long = 3 * 60_000L) {
         val place = state.currentPlace.worldName
         return when (kind) {
             Kind.NOTIF_SCOLD -> BanterScene(
-                kind, leadId, if (leadId == "armour") "monkey" else "armour",
-                leadLine = if (leadId == "armour") "Settai! Did you just bite the corner off that visitor card?!" else "Ooh, a crunchy visitor card at the gate! *munch* 📬😋",
-                buddyLine = if (leadId == "armour") "It smelled like mango, Anna! Just one tiny nibble 🙈🍌" else "Spit that out, Settai! That's incoming mail, not a snack! ⚙️😤",
+                kind, leadId, buddyId,
+                leadLine = if (leadId == "armour") "${Population.displayName(buddyId)}! Did you just bite the corner off that visitor card?!" else "Ooh, a crunchy visitor card at the gate! *munch* 📬😋",
+                buddyLine = if (leadId == "armour") "It smelled like mango, ${Population.displayName(leadId)}! Just one tiny nibble 🙈🍌" else "Spit that out, ${Population.displayName(leadId)}! That's incoming mail, not a snack! ⚙️😤",
                 leadState = MonkeyState.GIGGLE, buddyState = MonkeyState.ANGRY
             )
             Kind.GUARD_TOP_EDGE -> BanterScene(
-                kind, leadId, if (leadId == "superboy") "monkey" else "superboy",
-                leadLine = if (leadId == "superboy") "I've got the top-edge watchtower today. Clear view of the whole screen 🦸" else "Hey Superboy, it's MY turn to hang from the top edge!",
+                kind, leadId, buddyId,
+                leadLine = if (leadId == "superboy") "I've got the top-edge watchtower today. Clear view of the whole screen 🦸" else "Hey ${Population.displayName(buddyId)}, it's MY turn to hang from the top edge!",
                 buddyLine = if (leadId == "superboy") "Fine! I'll guard the bottom edge… where the snacks fall 🍌😏" else "You don't guard it, you just drop on people's thumbs! I've got the sky 🦸",
                 leadState = MonkeyState.WAVE, buddyState = MonkeyState.PLAYFUL
             )
@@ -121,7 +124,7 @@ class Director(private val cooldownMs: Long = 3 * 60_000L) {
                 leadState = MonkeyState.HAPPY_PAT, buddyState = MonkeyState.HAPPY_PAT
             )
             Kind.LOW_BATTERY_HUDDLE -> BanterScene(
-                kind, leadId, if (leadId == "armour") "monkey" else "armour",
+                kind, leadId, buddyId,
                 leadLine = "Brr… only ${state.batteryPct}% energy left in the tank. Huddle close to save warmth 🪫🥺",
                 buddyLine = "Dimming non-essential servos. Hang in there — feeding time soon 🛡️🔋",
                 leadState = MonkeyState.SIT, buddyState = MonkeyState.SIT
@@ -133,13 +136,13 @@ class Director(private val cooldownMs: Long = 3 * 60_000L) {
                 leadState = MonkeyState.DANCE, buddyState = MonkeyState.HAPPY_PAT
             )
             Kind.HEAT_FANNING -> BanterScene(
-                kind, leadId, if (leadId == "armour") "monkey" else "armour",
+                kind, leadId, buddyId,
                 leadLine = "Whew, ${state.tempC.toInt()}°C under the glass! Fan me, machan 🥵🌿",
                 buddyLine = "Opening cooling baffles… stand next to my vents! ❄️⚙️",
                 leadState = MonkeyState.SIT, buddyState = MonkeyState.WAVE
             )
             Kind.VISITOR_FLOOD -> BanterScene(
-                kind, leadId, if (leadId == "superboy") "armour" else "superboy",
+                kind, leadId, buddyId,
                 leadLine = "Whoa — ${state.visitorsWaiting.coerceAtLeast(4)} visitors knocking at the gate at once! 📬🔔",
                 buddyLine = "Shields up and single file at the gate! We've got this 🦸🛡️",
                 leadState = MonkeyState.STARTLED, buddyState = MonkeyState.WAVE

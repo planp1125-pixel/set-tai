@@ -30,6 +30,11 @@ class AppSettings(ctx: Context) {
      * Defaults to FALSE (and brainType = NONE). Until the user explicitly enables "Give Brain",
      * no AI model is ever used anywhere in the app.
      */
+    /** v10.12: funny Tom-and-Jerry style skits between Duo/Trio friends (no AI used). */
+    var skitsEnabled: Boolean
+        get() = p.getBoolean("skits_enabled", true)
+        set(v) { p.edit().putBoolean("skits_enabled", v).apply() }
+
     var aiBrainEnabled: Boolean
         get() = p.getBoolean("ai_brain_enabled", p.getString("brain", "NONE") != "NONE")
         set(v) {

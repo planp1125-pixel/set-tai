@@ -86,23 +86,59 @@ object MindHub {
         flush()
     }
 
+    /** v10.12 free crew picker: the user's exact choice of lead + partners. null partner = auto-fill that slot. */
+    fun setCrew(ctx: Context, leadId: String, mode: Population.Mode, partner1Id: String?, partner2Id: String?) {
+        init(ctx)
+        CharacterRegistry.select(leadId)
+        runCatching { ChatHub.settings.characterId = leadId; ChatHub.settings.applyCharacter() }
+        neighbourMode = mode.id
+        customPartner1Id = partner1Id?.takeIf { it.isNotBlank() && it != leadId }
+        customPartner2Id = partner2Id?.takeIf { it.isNotBlank() && it != leadId && it != customPartner1Id }
+        flush()
+    }
+
+    /** Lead first, then the user's picked partners (never overridden), then auto-filled slots. */
     fun activeCreatures(): List<String> {
         val lead = runCatching { CharacterRegistry.current.id }.getOrDefault("monkey")
         val mode = Population.Mode.of(neighbourMode)
-        if (mode == Population.Mode.SOLO) return listOf(lead)
-        val base = Population.activeIds(lead, mode, world.state).toMutableList()
-        val p1 = customPartner1Id?.takeIf { it.isNotBlank() && it != lead }
-        val p2 = customPartner2Id?.takeIf { it.isNotBlank() && it != lead && it != p1 }
-        if (p1 != null && !((lead == "billa" && base.getOrNull(1) == "chittu") || (lead == "chittu" && base.getOrNull(1) == "billa")) || (p1 != null && mode == Population.Mode.DUO)) {
-            if (p1 != null && base.size >= 2) base[1] = p1
+        return com.combo.monkeycompanion.world.CrewRules.resolve(lead, mode, customPartner1Id, customPartner2Id, world.state)
+    }
+
+    // ---- v10.12 skit engine (own seeded RNG: the frame-loop / mind RNG order is untouched) ----
+    val skits = com.combo.monkeycompanion.engine.skit.SkitConductor(System.nanoTime())
+    @Volatile var skitRun: com.combo.monkeycompanion.engine.skit.SkitRun? = null
+    private var lastSkitAt = 0L
+    private var nextSkitGapMs = 3 * 60_000L
+
+    /** Start a skit now (menu / app button) or periodically. Returns a reason when it can't. */
+    fun trySkit(force: Boolean, forceId: String? = null): String? {
+        val st = runCatching { ChatHub.settings }.getOrNull()
+        if (st != null && !st.skitsEnabled && !force) return "skits are off"
+        if (skitRun != null) return "a skit is already playing"
+        val crew = activeCreatures()
+        if (crew.size < 2) return "pick Duo or Trio first"
+        val now = System.currentTimeMillis()
+        if (!force) {
+            val m = mind() ?: return "not ready"
+            val sc = sceneFor(m.scene.pkg, m.scene)
+            director.canPlay(now, Population.Mode.of(neighbourMode), sc.keyboard, sc.call, sc.fullscreen, sc.dnd, sc.quietHours, ignoreCooldown = true)?.let { return it }
+            if (now - lastSkitAt < nextSkitGapMs) return "resting"
         }
-        if (mode == Population.Mode.TRIO && p2 != null && base.size >= 3) {
-            base[2] = p2
-        }
-        return base.distinct().let { list ->
-            if (list.size >= mode.maxCreatures) list.take(mode.maxCreatures)
-            else (list + Population.allIds.filter { it !in list }).take(mode.maxCreatures)
-        }
+        val run = skits.start(crew, forceId) ?: return "no skit fits this crew"
+        skitRun = run; lastSkitAt = now
+        nextSkitGapMs = (2 * 60_000L + skits.rnd.nextLong(2 * 60_000L))
+        val msg = "Skit: ${run.skit.title} (" + run.cast.joinToString(" + ") { Population.displayName(it) } + ")"
+        synchronized(recent) { recent.addFirst(msg); while (recent.size > 8) recent.removeLast() }
+        app?.let { runCatching { ActionLog.add(it, msg, "funny skit between friends") } }
+        return null
+    }
+
+    /** Called every frame by the lead window. Sends due cues to each actor's window. */
+    fun stepSkit(dt: Float, abort: Boolean) {
+        val r = skitRun ?: return
+        if (abort) { skitRun = null; return }
+        for (c in r.step(dt)) com.combo.monkeycompanion.engine.skit.SkitBus.post(c)
+        if (r.done) skitRun = null
     }
 
     /** Ask the Director for a 2-turn neighbour banter scene (obeys ProactiveGate respect rules). */
@@ -114,7 +150,8 @@ object MindHub {
             leadId = m.characterId, mode = mode, state = world.state,
             minuteOfDay = sc.minute, now = System.currentTimeMillis(),
             keyboard = sc.keyboard, inCall = sc.call, fullscreen = sc.fullscreen,
-            dnd = sc.dnd, quietHours = sc.quietHours, forceKind = forceKind, rnd = rnd
+            dnd = sc.dnd, quietHours = sc.quietHours, forceKind = forceKind, rnd = rnd,
+            active = activeCreatures()
         ) ?: return null
         val ok = runCatching { banterActor?.invoke(scene) == true }.getOrDefault(false)
         if (ok) {
@@ -240,6 +277,7 @@ object MindHub {
         val d = timed { m.heartbeat(now, min, rnd) }
         deliver(m, d, scene = false)
         if (d.act == Act.IGNORE && rnd.nextFloat() < 0.28f) tryBanter()
+        if (skitRun == null && skits.rnd.nextFloat() < 0.4f) trySkit(force = false)
         maybeSave()
         return m.heartbeatMs()
     }

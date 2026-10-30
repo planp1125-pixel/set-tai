@@ -39,7 +39,7 @@ class CapabilitiesActivity : Activity() {
     private fun build(): View {
         val s = ChatHub.settings
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(28)) }
-        col.addView(text("What can Settai do?", 26f, true))
+        col.addView(text("What can Set-Tai do?", 26f, true))
         col.addView(text("Every brain (online, on-device or none) can use these. Anything that changes or opens something asks Yes/No in Settai's bubble first. Just ask in your own words — e.g. “volume 40”, “brightness up”, “silent mode”, “wake me at 6”, “next song”, “turn on wifi”.", 13f, color = soft))
 
         val perms = Perm.entries.filter { it != Perm.NONE }

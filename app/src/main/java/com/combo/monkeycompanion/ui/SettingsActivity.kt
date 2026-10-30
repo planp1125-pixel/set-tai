@@ -128,7 +128,7 @@ class SettingsActivity : Activity() {
 
     private fun build(): View {
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(28)) }
-        col.addView(text("Settai's brain & settings", 26f, true).apply { gravity = Gravity.CENTER_HORIZONTAL })
+        col.addView(text("Set-Tai brain & settings", 26f, true).apply { gravity = Gravity.CENTER_HORIZONTAL })
         col.addView(text("Choose how Settai thinks. On-device is private and free; online is smarter and needs an API key.", 14f, color = soft))
 
         // Brain type

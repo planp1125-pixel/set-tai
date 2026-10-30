@@ -242,6 +242,7 @@ class MonkeyView(
             cmd == "campfire" -> startCampfire(manual = true)
             cmd == "notif_card" -> openNotifSummaryCard(useDemoIfEmpty = false)
             cmd == "notif_card_demo" -> openNotifSummaryCard(useDemoIfEmpty = true)
+            cmd == "skit" -> startSkitNow()
             cmd == "cat_mouse" -> {
                 com.combo.monkeycompanion.mind.MindHub.tryBanter(com.combo.monkeycompanion.world.Director.Kind.CAT_MOUSE_CHASE)?.let {
                     startNeighbourBanter(it)
@@ -1195,6 +1196,7 @@ class MonkeyView(
                 "screen" -> ChatHub.quick(Q.SCREEN)
                 "powers" -> showRing(RingKind.POWERS, 0)
                 "funny" -> doSomethingFunny()
+                "skit" -> startSkitNow()
                 "games" -> stage.showGames()
                 "smash" -> com.combo.monkeycompanion.smash.SmashActivity.launch(context)
                 "clip" -> makeClip("")
@@ -1703,8 +1705,44 @@ class MonkeyView(
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         goLive()
+        if (host != null && !wp) {
+            skitActorId = forcedCharacterId ?: character.id
+            skitActorId?.let { id -> com.combo.monkeycompanion.engine.skit.SkitBus.register(id) { c -> if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) playSkitCue(c) else ui.post { playSkitCue(c) } } }
+        }
     }
-    override fun onDetachedFromWindow() { goDead(); super.onDetachedFromWindow() }
+    override fun onDetachedFromWindow() {
+        skitActorId?.let { com.combo.monkeycompanion.engine.skit.SkitBus.unregister(it) }; skitActorId = null
+        goDead(); super.onDetachedFromWindow()
+    }
+
+    // ---- v10.12 skits: this window acts out cues addressed to its character ----
+    private var skitActorId: String? = null
+    private var skitProp: String? = null
+    private var skitPropUntil = 0f
+    private val skitPropPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+
+    private fun playSkitCue(c: com.combo.monkeycompanion.engine.skit.SkitCue) {
+        if (dragging || falling || powerOn || hiddenTab || controller.isAsleep) return
+        controller.play(c.state, c.durSec)
+        val name = com.combo.monkeycompanion.world.Population.displayName(c.actorId)
+        say(if (forcedCharacterId != null) "$name: ${c.line}" else c.line, (c.durSec * 1000).toLong().coerceAtLeast(1400L))
+        skitProp = c.prop; skitPropUntil = t + c.durSec
+        if (!running && live && !paused) start()
+        invalidate()
+    }
+
+    fun startSkitNow() {
+        val why = com.combo.monkeycompanion.mind.MindHub.trySkit(force = true)
+        if (why != null) say("No skit right now: $why 🎬", 3200L)
+    }
+
+    private fun drawSkitProp(canvas: Canvas) {
+        val pr = skitProp ?: return
+        if (t > skitPropUntil || hiddenTab) { skitProp = null; return }
+        skitPropPaint.textSize = boxW * 0.22f
+        val bob = sin(t * 6f) * boxW * 0.02f
+        canvas.drawText(pr, ox + boxW * 0.82f, oy + boxH * 0.62f + bob, skitPropPaint)
+    }
 
     /** Start listening and animating (called on attach, or by the wallpaper engine). */
     fun goLive() {
@@ -2240,6 +2278,7 @@ class MonkeyView(
         stepTrunkSpray(dt)
         stepHeartAndCoPresence(dt)
         stepNeighbours(dt)
+        if (host != null && !wp && forcedCharacterId == null) com.combo.monkeycompanion.mind.MindHub.stepSkit(dt, abort = dragging)
         if (v5On) {
             stage.step(dt)
             stage.setVisible(!paused && !hiddenTab && live)
@@ -4434,6 +4473,7 @@ class MonkeyView(
         if (v5On && stage.active) { canvas.save(); canvas.translate(-winX.toFloat(), -winY.toFloat()); stage.draw(canvas, front = false); canvas.restore() }
         drawLandingBack(canvas)
         drawNeighbours(canvas)
+        drawSkitProp(canvas)
         if (ln && isBehindWidget) {
             drawWidgetGripPaws(canvas)
         } else {

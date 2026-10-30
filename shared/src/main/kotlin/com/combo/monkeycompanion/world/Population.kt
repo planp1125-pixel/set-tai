@@ -31,7 +31,7 @@ object Population {
         }
     }
 
-    val allIds = listOf("monkey", "armour", "superboy", "mask", "billa", "chittu")
+    val allIds = listOf("monkey", "armour", "superboy", "mask", "billa", "chittu", "gajju", "rocketgirl")
 
     fun displayName(id: String): String = when (id) {
         "superboy" -> "Superboy"
@@ -50,9 +50,9 @@ object Population {
      * chosen according to current [WorldState] needs (Anna for battery/heat/engine room, Superboy for floods/watchtower,
      * Mask Man for mirror studio/cinema/evening, Settai for food bazaar/mischief).
      */
-    fun activeIds(leadId: String, mode: Mode, state: WorldState): List<String> {
+    fun activeIds(leadId: String, mode: Mode, state: WorldState, pool: List<String> = allIds): List<String> {
         if (mode == Mode.SOLO) return listOf(leadId)
-        val candidates = allIds.filter { it != leadId }
+        val candidates = pool.distinct().filter { it != leadId }
         val scored = candidates.map { id ->
             var s = 0f
             if ((leadId == "billa" && id == "chittu") || (leadId == "chittu" && id == "billa")) s += 10.0f

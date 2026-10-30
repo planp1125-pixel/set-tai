@@ -35,6 +35,7 @@ object LongPressMenu {
         THINK("think", "🧠", "Thinking?", false, "What's Settai thinking right now?"),
         FOCUS("focus", "📚", "Focus", false, "25-min study / focus desk buddy"),
         BREATHE("breathe", "🫧", "Breathe", false, "60-second calm breathing buddy"),
+        SKIT("skit", "🎬", "Skit", false, "Start a funny skit between your Duo/Trio friends"),
         COMFORT("comfort", "🫂", "Comfort", false, "Warm screen hug, cheer sign or filter coffee");
 
         companion object { fun of(id: String) = entries.firstOrNull { it.id == id } }

@@ -17,12 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 75
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Decode signing keystore
         env:
           KS_B64: ${{ secrets.SETTAI_KEYSTORE_BASE64 }}
@@ -57,7 +57,7 @@ jobs:
           cp "$(find app/build/outputs/bundle/playRelease -name '*.aab' | head -1)" out/set-tai-play-release.aab
           ls -l out
           for f in out/*; do echo "== $f"; keytool -printcert -jarfile "$f" | grep -E 'Owner|SHA256' || true; done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: set-tai-android
           path: |
@@ -68,15 +68,15 @@ jobs:
   desktop-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Build .deb and .tar.gz
         run: JDK="$JAVA_HOME" OUT="$PWD/dist" bash desktop/packaging/build-deb.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: settai-linux
           path: |
@@ -89,7 +89,7 @@ jobs:
   desktop-windows:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install mingw, NSIS, Pillow
         run: |
           sudo apt-get update -qq
@@ -107,10 +107,10 @@ jobs:
           echo "JDK=$(ls -d $RUNNER_TEMP/jdk/lin/*)" >> "$GITHUB_ENV"
           echo "WINJDK=$(ls -d $RUNNER_TEMP/jdk/win/*)" >> "$GITHUB_ENV"
           echo "JAVA_HOME=$(ls -d $RUNNER_TEMP/jdk/lin/*)" >> "$GITHUB_ENV"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Build Windows installer + portable zip
         run: OUT="$PWD/dist" bash desktop/packaging/build-windows.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: settai-windows
           path: |
@@ -123,10 +123,10 @@ jobs:
     needs: [android, desktop-linux, desktop-windows]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: artifacts/**/*
           generate_release_notes: true

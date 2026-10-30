@@ -252,7 +252,7 @@ class MainActivity : Activity() {
         }
         val titleCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         titleCol.addView(TextView(this).apply {
-            text = "Settai v9.5"
+            text = "Set-Tai v10.12"
             textSize = 20f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
         })
         topActiveBadge = TextView(this).apply {
@@ -369,7 +369,7 @@ class MainActivity : Activity() {
         })
         col.addView(studioCard)
 
-        // 1B. Highlighted "🧠 Give Brain to Settai" Opt-In Card on Home Tab!
+        // 1B. Highlighted "🧠 Give Brain to Set-Tai" Opt-In Card on Home Tab!
         val giveBrainHomeCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(12), dp(16), dp(14))
@@ -381,7 +381,7 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
         giveBrainHomeCard.addView(TextView(this).apply {
-            text = "🧠 Give Brain to Settai (AI Model Opt-In)"
+            text = "🧠 Give Brain to Set-Tai (AI Model Opt-In)"
             textSize = 17.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(Color.rgb(0xFF, 0xD5, 0x4F))
         })
         homeBrainStatusTv = TextView(this).apply {
@@ -462,7 +462,7 @@ class MainActivity : Activity() {
 
         // 3. Quick Summon & Notification Summary Card Controls
         runningText = status()
-        startBtn = button("🐒  Start Settai on Screen", primary = true) { startMonkey() }
+        startBtn = button("🐒  Start Set-Tai on Screen", primary = true) { startMonkey() }
         stopBtn = button("Stop Overlay") {
             MonkeyOverlayService.stop(this)
             stopBtn.postDelayed({ refresh() }, 300)
@@ -710,25 +710,57 @@ class MainActivity : Activity() {
             nRow.addView(b, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { leftMargin = dp(3); rightMargin = dp(3) })
         }
         duoCard.addView(nRow)
+        // v10.12 free crew picker: choose ANY character for every slot (never auto-overridden).
         duoCard.addView(TextView(this).apply {
-            text = "1-Tap Duo & Trio Screen Combos (spawns immediately on screen!):"
+            text = "👥 Build your crew — tap a slot to pick anyone (Gajju, Rocket Girl and your own companions too):"
             textSize = 12.2f; setTextColor(soft); setPadding(0, dp(8), 0, dp(2))
         })
-        duoCard.addView(button("🐱🐭  Cat & Mouse Duo (Billa + Chittu · 4-Edge Zero-G Chase)", primary = true) {
-            com.combo.monkeycompanion.mind.MindHub.setDuoCombo(this@MainActivity, "billa", "chittu")
-            MonkeyOverlayService.syncCrew(this@MainActivity)
-            refresh(); refreshMindCard()
-            if (MonkeyOverlayService.running) v5("cat_mouse")
-        }, btnLp())
-        duoCard.addView(button("🦸🛡️  Heroes Duo (Superboy + Armour Anna)") {
-            com.combo.monkeycompanion.mind.MindHub.setDuoCombo(this@MainActivity, "superboy", "armour")
-            MonkeyOverlayService.syncCrew(this@MainActivity)
-            refresh(); refreshMindCard()
-        }, btnLp())
-        duoCard.addView(button("🐒🐱🐭  Settai + Cat + Mouse Trio (3 on Screen!)") {
-            com.combo.monkeycompanion.mind.MindHub.setTrioCombo(this@MainActivity, "billa", "chittu", "monkey")
-            MonkeyOverlayService.syncCrew(this@MainActivity)
-            refresh(); refreshMindCard()
+        val MH = com.combo.monkeycompanion.mind.MindHub
+        val P = com.combo.monkeycompanion.world.Population
+        val slotBtns = ArrayList<Button>()
+        fun nameOf(id: String?) = if (id.isNullOrBlank()) "🎲 Auto" else P.displayName(id)
+        fun refreshSlots() {
+            val mode = P.Mode.of(MH.neighbourMode)
+            slotBtns.getOrNull(0)?.text = "⭐ Lead: ${CharacterRegistry.current.name}"
+            slotBtns.getOrNull(1)?.apply { text = "Partner 1: ${nameOf(MH.customPartner1Id)}"; isEnabled = mode != P.Mode.SOLO }
+            slotBtns.getOrNull(2)?.apply { text = "Partner 2: ${nameOf(MH.customPartner2Id)}"; isEnabled = mode == P.Mode.TRIO }
+        }
+        fun pickSlot(slot: Int) {
+            val chars = CharacterRegistry.allWithCustom
+            val labels = (if (slot == 0) emptyList() else listOf("🎲 Auto (let them choose)")) + chars.map { it.name }
+            android.app.AlertDialog.Builder(this).setTitle(if (slot == 0) "Pick the lead" else "Pick partner $slot")
+                .setItems(labels.toTypedArray()) { _, which ->
+                    val pick = if (slot == 0) chars[which].id else if (which == 0) null else chars[which - 1].id
+                    var lead = CharacterRegistry.current.id
+                    var p1 = MH.customPartner1Id
+                    var p2 = MH.customPartner2Id
+                    when (slot) {
+                        0 -> { if (pick == p1) p1 = lead else if (pick == p2) p2 = lead; lead = pick!! }
+                        1 -> { if (pick != null && pick == p2) p2 = p1; p1 = pick }
+                        else -> { if (pick != null && pick == p1) p1 = p2; p2 = pick }
+                    }
+                    var mode = P.Mode.of(MH.neighbourMode)
+                    if (slot >= 1 && pick != null && mode.maxCreatures <= slot) mode = if (slot == 1) P.Mode.DUO else P.Mode.TRIO
+                    MH.setCrew(this, lead, mode, p1, p2)
+                    MonkeyOverlayService.syncCrew(this)
+                    refresh(); refreshMindCard(); refreshSlots()
+                    Toast.makeText(this, "On screen: " + MH.activeCreatures().joinToString(" + ") { P.displayName(it) }, Toast.LENGTH_SHORT).show()
+                }.show()
+        }
+        for (slot in 0..2) {
+            val b = button("") { pickSlot(slot) }
+            slotBtns += b
+            duoCard.addView(b, btnLp())
+        }
+        refreshSlots()
+        duoCard.addView(android.widget.CheckBox(this).apply {
+            text = "🎬 Funny skits between friends (chase, pranks, snack heists)"
+            isChecked = ChatHub.settings.skitsEnabled
+            setOnCheckedChangeListener { _, on -> ChatHub.settings.skitsEnabled = on }
+        })
+        duoCard.addView(button("🎬  Start a skit now", primary = true) {
+            if (MonkeyOverlayService.running) v5("skit")
+            else Toast.makeText(this, "Start the companion on screen first", Toast.LENGTH_SHORT).show()
         }, btnLp())
         col.addView(duoCard)
         return col
@@ -762,8 +794,6 @@ class MainActivity : Activity() {
                 cell.setOnClickListener {
                     ChatHub.settings.characterId = c.id
                     ChatHub.settings.applyCharacter()
-                    if (c.id == "billa") com.combo.monkeycompanion.mind.MindHub.customPartner1Id = "chittu"
-                    else if (c.id == "chittu") com.combo.monkeycompanion.mind.MindHub.customPartner1Id = "billa"
                     MonkeyOverlayService.syncCrew(this@MainActivity)
                     refresh()
                     refreshMindCard()
@@ -845,7 +875,7 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
         giveBrainSettingsCard.addView(TextView(this).apply {
-            text = "🧠 Give Brain to Settai (Highlighted AI Control)"
+            text = "🧠 Give Brain to Set-Tai (Highlighted AI Control)"
             textSize = 18f; setTypeface(typeface, Typeface.BOLD); setTextColor(Color.rgb(0xFF, 0xD5, 0x4F))
         })
         settingsBrainStatusTv = TextView(this).apply {
@@ -874,7 +904,7 @@ class MainActivity : Activity() {
             l.addView(button("⚙️  Brain, Voice & Character Settings") {
                 startActivity(Intent(this, SettingsActivity::class.java))
             }, btnLp())
-            l.addView(button("🛠️  Settai's Skills & Phone Powers") {
+            l.addView(button("🛠️  Set-Tai Skills & Phone Powers") {
                 startActivity(Intent(this, SkillsActivity::class.java))
             }, btnLp())
         })
@@ -890,7 +920,7 @@ class MainActivity : Activity() {
         notifAccessBtn = button("Grant Notification Access (for What You Missed Card)") {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }
-        batteryBtn = button("Keep Settai awake (no battery limits)") { askBatteryExemption() }
+        batteryBtn = button("Keep Set-Tai awake (no battery limits)") { askBatteryExemption() }
 
         col.addView(section("1. Overlay Permission", overlayStatus, overlayBtn))
         col.addView(section("2. Notification Summary Access", notifAccessStatus, notifAccessBtn))
