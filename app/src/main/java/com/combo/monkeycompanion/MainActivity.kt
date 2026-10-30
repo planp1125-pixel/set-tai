@@ -720,10 +720,10 @@ class MainActivity : Activity() {
         val slotBtns = ArrayList<Button>()
         fun nameOf(id: String?) = if (id.isNullOrBlank()) "🎲 Auto" else P.displayName(id)
         fun refreshSlots() {
-            val mode = P.Mode.of(MH.neighbourMode)
+            val mode = com.combo.monkeycompanion.world.Population.Mode.of(MH.neighbourMode)
             slotBtns.getOrNull(0)?.text = "⭐ Lead: ${CharacterRegistry.current.name}"
-            slotBtns.getOrNull(1)?.apply { text = "Partner 1: ${nameOf(MH.customPartner1Id)}"; isEnabled = mode != P.Mode.SOLO }
-            slotBtns.getOrNull(2)?.apply { text = "Partner 2: ${nameOf(MH.customPartner2Id)}"; isEnabled = mode == P.Mode.TRIO }
+            slotBtns.getOrNull(1)?.apply { text = "Partner 1: ${nameOf(MH.customPartner1Id)}"; isEnabled = mode != com.combo.monkeycompanion.world.Population.Mode.SOLO }
+            slotBtns.getOrNull(2)?.apply { text = "Partner 2: ${nameOf(MH.customPartner2Id)}"; isEnabled = mode == com.combo.monkeycompanion.world.Population.Mode.TRIO }
         }
         fun pickSlot(slot: Int) {
             val chars = CharacterRegistry.allWithCustom
@@ -739,8 +739,8 @@ class MainActivity : Activity() {
                         1 -> { if (pick != null && pick == p2) p2 = p1; p1 = pick }
                         else -> { if (pick != null && pick == p1) p1 = p2; p2 = pick }
                     }
-                    var mode = P.Mode.of(MH.neighbourMode)
-                    if (slot >= 1 && pick != null && mode.maxCreatures <= slot) mode = if (slot == 1) P.Mode.DUO else P.Mode.TRIO
+                    var mode = com.combo.monkeycompanion.world.Population.Mode.of(MH.neighbourMode)
+                    if (slot >= 1 && pick != null && mode.maxCreatures <= slot) mode = if (slot == 1) com.combo.monkeycompanion.world.Population.Mode.DUO else com.combo.monkeycompanion.world.Population.Mode.TRIO
                     MH.setCrew(this, lead, mode, p1, p2)
                     MonkeyOverlayService.syncCrew(this)
                     refresh(); refreshMindCard(); refreshSlots()
