@@ -477,6 +477,7 @@ class MainActivity : Activity() {
             val l = it as LinearLayout
             l.addView(stopBtn, btnLp())
             l.addView(button("📬  What You Missed (Notification Summary Card)") { v5("notif_card_demo") }, btnLp())
+            l.addView(button("🎓  Show me tricks") { v5("onboard") }, btnLp())
             l.addView(button("💬  Chat with Set-Tai") {
                 startActivity(Intent(this@MainActivity, ChatActivity::class.java))
             }, btnLp())

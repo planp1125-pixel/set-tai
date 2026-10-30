@@ -245,6 +245,7 @@ class MonkeyView(
             cmd == "notif_card" -> openNotifSummaryCard(useDemoIfEmpty = false)
             cmd == "notif_card_demo" -> openNotifSummaryCard(useDemoIfEmpty = true)
             cmd == "skit" -> startSkitNow()
+            cmd == "onboard" -> startOnboarding(force = true)
             cmd == "cat_mouse" -> {
                 com.combo.monkeycompanion.mind.MindHub.tryBanter(com.combo.monkeycompanion.world.Director.Kind.CAT_MOUSE_CHASE)?.let {
                     startNeighbourBanter(it)
@@ -1109,6 +1110,7 @@ class MonkeyView(
 
     /** Long-press: the main ring pops up (haptic tick); Settai gestures at it. Stays ~8 s or until a tap. */
     private fun openMenu() {
+        if (onbGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.HOLD)) { ui.postDelayed({ openMenu() }, 1600L); return }
         if (pendingShown || thinkingBubble || typing) return
         if (listenTap) cancelListen(null)
         pages.clear(); beats.clear(); aiReply = null
@@ -1159,7 +1161,8 @@ class MonkeyView(
             RingKind.MORE -> LongPressMenu.page(menuLayout().more, page)
             RingKind.POWERS -> LongPressMenu.page(LongPressMenu.powerRing(character.powers).map { LongPressMenu.pin(it) }, page, random = true)
         }
-        val entries = ids.map { ringEntry(it) }
+        val used = prefs.getStringSet("usedItems", emptySet()) ?: emptySet()
+        val entries = ids.map { id -> ringEntry(id).let { e -> if (LongPressMenu.groupedEntry(id) != null && com.combo.monkeycompanion.brain.Onboarding.isNew(id, used)) Triple(e.first, com.combo.monkeycompanion.brain.Onboarding.label(e.second, true), e.third) else e } }
         val firstOpen = kind == RingKind.MAIN && !prefs.getBoolean("menuHint44", false)
         val title = when {
             firstOpen -> "Tap a group · tap outside to close"
@@ -1182,6 +1185,8 @@ class MonkeyView(
 
     private fun onMenuItem(id: String) {
         ui.removeCallbacks(ringTick)
+        if (id == "onb_skip") { endOnboarding(); return }
+        run { val u = prefs.getStringSet("usedItems", emptySet()) ?: emptySet(); if (id !in u) prefs.edit().putStringSet("usedItems", u + id).apply() }
         val Q = com.combo.monkeycompanion.agent.QuickChip
         when {
             id == "g_powers" -> showRing(RingKind.POWERS, 0)
@@ -1869,8 +1874,67 @@ class MonkeyView(
             for ((i, line) in due.withIndex()) ui.postDelayed({
                 say(line, 6000L); if (!running && live && !paused) start()
             }, i * 6500L)
+            maybeDailyTip()
             ui.postDelayed(this, 30_000L)
         }
+    }
+
+    // ---- v10.13 first-time demo + 7 daily tips ----
+    private var onb: com.combo.monkeycompanion.brain.Onboarding.Run? = null
+    val debugOnboardingStep get() = onb?.index ?: -1
+    private val onbSkip get() = com.combo.monkeycompanion.agent.QuickChip("menu", "Skip ✕", "onb_skip")
+    private val onbTick = object : Runnable {
+        override fun run() {
+            val r = onb ?: return
+            r.step(1f)
+            if (r.done) { endOnboarding(); return }
+            ui.postDelayed(this, 1000L)
+        }
+    }
+
+    fun startOnboarding(force: Boolean) {
+        if (host == null || wp || forcedCharacterId != null) return
+        if (!force && prefs.getBoolean("onbDone", false)) return
+        prefs.edit().putBoolean("onbDone", true).apply()   // runs once, even if skipped or interrupted
+        if (prefs.getLong("installDay", -1L) < 0) prefs.edit().putLong("installDay", java.time.LocalDate.now().toEpochDay()).apply()
+        onb = com.combo.monkeycompanion.brain.Onboarding.Run()
+        showOnbStep()
+        ui.removeCallbacks(onbTick); ui.postDelayed(onbTick, 1000L)
+    }
+
+    private fun showOnbStep() {
+        val st = onb?.current ?: return
+        showBubble(st.line, 30f, reply = false, chips = listOf(onbSkip))
+        if (!running && live && !paused) start()
+    }
+
+    /** true = the gesture was part of the demo (it advanced). */
+    private fun onbGesture(g: com.combo.monkeycompanion.brain.Onboarding.Gesture): Boolean {
+        val r = onb ?: return false
+        val praise = r.onGesture(g) ?: return false
+        if (r.done) { onb = null; ui.removeCallbacks(onbTick); ui.postDelayed({ say("$praise\nYou're ready! Have fun 🙌", 3500L) }, 350L) }
+        else ui.postDelayed({ say(praise, 1500L); ui.postDelayed({ showOnbStep() }, 1600L) }, 350L)
+        return g == com.combo.monkeycompanion.brain.Onboarding.Gesture.HOLD && r.done
+    }
+
+    private fun endOnboarding() {
+        if (onb == null) return
+        onb = null; ui.removeCallbacks(onbTick)
+        say("Okay! Hold me any time to see everything 😉", 2500L)
+    }
+
+    private fun maybeDailyTip() {
+        if (host == null || wp || forcedCharacterId != null || onb != null) return
+        val inst = prefs.getLong("installDay", -1L).takeIf { it >= 0 } ?: return
+        val today = java.time.LocalDate.now().toEpochDay()
+        val sit = runCatching { com.combo.monkeycompanion.agent.Proactive.situation() }.getOrNull()
+        val st = ChatHub.settings
+        val t = java.time.LocalTime.now(); val mod = t.hour * 60 + t.minute
+        val quiet = runCatching { com.combo.monkeycompanion.agent.QuietHours.inside(mod, st.quietStart, st.quietEnd) }.getOrDefault(false)
+        val blocked = quiet || sit?.typing == true || sit?.fullscreen == true || sit?.inCall == true || hiddenTab || bubbleOn || mod < 9 * 60
+        val tip = com.combo.monkeycompanion.brain.Onboarding.tipFor(today - inst, prefs.getLong("lastTipDay", -1L) - inst, blocked) ?: return
+        prefs.edit().putLong("lastTipDay", today).apply()
+        say("💡 $tip", 6000L)
     }
 
     private fun onToolItem(t: com.combo.monkeycompanion.brain.CareTools.Tool) {
@@ -2004,6 +2068,7 @@ class MonkeyView(
             com.combo.monkeycompanion.mind.MindHub.onAppChanged = { pkg -> ui.post { onForegroundApp(pkg) } }
             com.combo.monkeycompanion.mind.MindHub.showActor = { ui.post { startChaseShow() } }
             ui.removeCallbacks(toolTick); ui.postDelayed(toolTick, 20_000L)
+            if (!prefs.getBoolean("onbDone", false) && android.os.Build.FINGERPRINT != "robolectric") ui.postDelayed({ startOnboarding(force = false) }, 3500L)
             com.combo.monkeycompanion.mind.MindHub.onMorningTrace = { tr ->
                 ui.postDelayed({ if (!paused && !hiddenTab && !dragging) say("🌙 ${tr.line}", 5000L) }, 3600L)
             }
@@ -5957,6 +6022,7 @@ class MonkeyView(
     }
 
     private fun handleTap(e: MotionEvent) {
+        onbGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.TAP)
         if (com.combo.monkeycompanion.agent.ScreenAgent.driving) { ChatHub.stopDriving(); return }   // v4: tap = take the wheel back
         if (v5On && stage.onTap()) return   // v5 games: staring contest "I blinked", banana game taps
         val now = SystemClock.uptimeMillis()
@@ -6016,6 +6082,7 @@ class MonkeyView(
 
     /** Double-tap: a random one of this character's powers (never the same twice in a row), no cooldown. */
     private fun doubleTapPower() {
+        onbGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.DOUBLE_TAP)
         // v10.13: double-tap Billa = the Tom-and-Jerry chase show with Chittu (spawned for the show if needed).
         if ((character.id == "billa" || character.id == "chittu") && host != null && !wp) { startChaseShow(); return }
         val pw = powerShortcut.pick(character.powers, character.signaturePower, signatureSeen()) ?: return

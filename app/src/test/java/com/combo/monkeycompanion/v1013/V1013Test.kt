@@ -103,3 +103,39 @@ class V1013Test {
         assertEquals(a.signature, b.signature)
     }
 }
+
+class V1013OnboardingTest {
+    private val O = com.combo.monkeycompanion.brain.Onboarding
+    @Test fun demoGoesTapDoubleHoldAndCanSkip() {
+        val r = O.Run()
+        assertEquals(null, r.onGesture(O.Gesture.HOLD))          // wrong gesture: ignored
+        assertNotNull(r.onGesture(O.Gesture.TAP))
+        assertNotNull(r.onGesture(O.Gesture.DOUBLE_TAP))
+        assertFalse(r.done)
+        assertNotNull(r.onGesture(O.Gesture.HOLD))
+        assertTrue(r.done)
+        val s = O.Run(); s.skip(); assertTrue(s.done)
+        val t = O.Run(); repeat(31) { t.step(1f) }; assertTrue("about 30 s max", t.done)
+    }
+    @Test fun sevenDailyTipsOncePerDayRespectingBlocks() {
+        assertEquals(7, O.tips.size)
+        assertNotNull(O.tipFor(0, -1, false))
+        assertEquals(null, O.tipFor(0, 0, false))     // already today
+        assertEquals(null, O.tipFor(3, 2, true))      // quiet / typing / fullscreen
+        assertEquals(null, O.tipFor(7, 6, false))     // after a week
+        assertTrue(O.tips.any { "bite" in it })
+    }
+    @Test fun newDotsUntilUsed() {
+        assertTrue(O.isNew("eater", emptySet())); assertFalse(O.isNew("eater", setOf("eater")))
+        assertFalse(O.isNew("quit", emptySet()))
+        assertEquals("Games •", O.label("Games", true))
+    }
+}
+
+class V1013ComboAndBatteryNoteTest {
+    @Test fun billaAndChittuAreOneComboInTheCrew() {
+        val st = com.combo.monkeycompanion.world.WorldState()
+        val crew = com.combo.monkeycompanion.world.CrewRules.resolve("billa", com.combo.monkeycompanion.world.Population.Mode.DUO, "chittu", null, st)
+        assertEquals(listOf("billa", "chittu"), crew)
+    }
+}
