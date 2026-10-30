@@ -6,6 +6,9 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+env:
+  TZ: Asia/Kolkata   # tests were authored/verified in IST (time-of-day behaviours)
+
 permissions:
   contents: write
 
