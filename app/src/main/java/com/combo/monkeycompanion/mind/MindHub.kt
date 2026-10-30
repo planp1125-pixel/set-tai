@@ -115,8 +115,11 @@ object MindHub {
         val st = runCatching { ChatHub.settings }.getOrNull()
         if (st != null && !st.skitsEnabled && !force) return "skits are off"
         if (skitRun != null) return "a skit is already playing"
-        val crew = activeCreatures()
-        if (crew.size < 2) return "pick Duo or Trio first"
+        val all = activeCreatures()
+        if (all.size < 2) return "pick Duo or Trio first"
+        // Only characters whose window is really on screen can act.
+        val crew = all.filter { com.combo.monkeycompanion.engine.skit.SkitBus.has(it) }
+        if (crew.size < 2) return "your friends aren't on screen yet"
         val now = System.currentTimeMillis()
         if (!force) {
             val m = mind() ?: return "not ready"
