@@ -36,6 +36,10 @@ class AppSettings(ctx: Context) {
         set(v) { p.edit().putBoolean("skits_enabled", v).apply() }
 
     /** v10.13: peek in with a pose when a camera app opens. */
+    /** v10.13: the faint chat button opens 💬 typing (false) or 🎤 speaking (true). */
+    var fabSpeak: Boolean
+        get() = p.getBoolean("fabSpeak", false)
+        set(v) { p.edit().putBoolean("fabSpeak", v).apply() }
     var photobomb: Boolean
         get() = p.getBoolean("photobomb", true)
         set(v) { p.edit().putBoolean("photobomb", v).apply() }

@@ -497,11 +497,16 @@ class SettingsActivity : Activity() {
             setTextColor(brown); isChecked = s.chatButton
             setOnCheckedChangeListener { _, c -> s.chatButton = c }
         }
+        val fabMode = CheckBox(this).apply {
+            text = "Chat button opens 🎤 Speak (mic) instead of 💬 Chat (type). The button icon changes to match; one tap starts it."
+            setTextColor(brown); isChecked = s.fabSpeak
+            setOnCheckedChangeListener { _, c -> s.fabSpeak = c }
+        }
         val energy = text("Measuring…", 12f, color = soft).also { energyText = it }
         return card(
             "Rest & battery",
             text("Auto-rest: if you don't play with Settai for a while, it hides behind the nearest edge (just a tab). Tap the tab to call it back, double-tap to chat. It also pops out for low battery, overheating and timers.", 12f, color = soft),
-            restSp, unlock, saver, gags, smooth, living, sfx, dtPower, chatBtn,
+            restSp, unlock, saver, gags, smooth, living, sfx, dtPower, chatBtn, fabMode,
             text("Energy", 13f, bold = true), energy,
             text("Changes apply within a minute.", 12f, color = soft),
         )

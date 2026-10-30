@@ -6220,10 +6220,8 @@ class MonkeyView(
         btnPaint.style = Paint.Style.STROKE; btnPaint.strokeWidth = 1.6f * d; btnPaint.color = Color.WHITE; btnPaint.alpha = a
         canvas.drawCircle(lx, ly, r, btnPaint)
         btnText.alpha = a; btnText.textSize = 14 * d * (1f - 0.18f * chatFab.press)
-        // v10.13: tap = type a chat 💬; keep holding ~half a second = speak 🎤 (the icon switches)
+        // v10.13: one-tap shortcut for the mode chosen in Settings: 💬 type or 🎤 speak
         val speak = fabSpeakMode()
-        if (speak && !fabSpeakBuzzed) { fabSpeakBuzzed = true; performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) }
-        if (fabPressing && !speak) postInvalidateDelayed(60L)
         canvas.drawText(if (speak) "\uD83C\uDFA4" else "\uD83D\uDCAC", lx, ly - (btnText.descent() + btnText.ascent()) / 2, btnText)
         btnText.alpha = 255; btnText.textSize = 17 * d; btnPaint.alpha = 255
     }
@@ -6237,7 +6235,7 @@ class MonkeyView(
     val debugChatFabAlpha get() = chatFab.alpha
     private var fabDownAt = 0L
     private var fabSpeakBuzzed = false
-    private fun fabSpeakMode() = fabPressing && SystemClock.uptimeMillis() - fabDownAt >= 450L
+    private fun fabSpeakMode() = ChatHub.settings.fabSpeak
     private fun speakChatFab() {
         chatFab.pressed()
         if (com.combo.monkeycompanion.agent.Voice.enabled(context)) startListen(hold = false)
