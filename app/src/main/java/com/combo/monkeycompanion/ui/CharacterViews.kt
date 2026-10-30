@@ -106,8 +106,8 @@ class CharacterPreviewView(ctx: Context, who: Character, private val demo: Boole
 
 /** Settings > Wardrobe: toggle each accessory of a character, pick styles, live preview. */
 class WardrobeActivity : Activity() {
-    private val brown = Color.rgb(0x5A, 0x36, 0x18)
-    private val soft = Color.rgb(0x8A, 0x6A, 0x4A)
+    private val brown = Color.rgb(0x1E, 0x22, 0x40)
+    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -123,7 +123,7 @@ class WardrobeActivity : Activity() {
         val preview = CharacterPreviewView(this, who, demo = true).apply {
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, dp(260))
             onMove = { m -> caption.post { caption.text = "Now: $m" } }
-            background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.rgb(0xFF, 0xF4, 0xE2)) }
+            background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.rgb(0xF3, 0xF4, 0xFA)) }
         }
         col.addView(preview); col.addView(caption)
         col.addView(TextView(this).apply {

@@ -140,8 +140,10 @@ class MonkeyView(
 ) : View(context), Speech, Choreographer.FrameCallback, ChatHub.Listener {
 
     private val d = resources.displayMetrics.density
-    val boxW = (96 * d).toInt()
-    val boxH = (118 * d).toInt()
+    /** v10.13: the window grows for Large / XL characters so nothing is clipped (1.0 when every size is Normal). */
+    private val sizeBox = if (host == null) 1f else runCatching { CompanionSize.max(context) }.getOrDefault(1f)
+    val boxW = (96 * d * sizeBox).toInt()
+    val boxH = (118 * d * sizeBox).toInt()
     private val rigScale = 0.66f * d
     private val groundPad = 7 * d
     private val overlap = 22 * d
@@ -1095,7 +1097,8 @@ class MonkeyView(
 
     // ---------------- v4.4 long-press menu: main ring, More, Powers (see brain/LongPressMenu) ----------------
 
-    private enum class RingKind { MAIN, MORE, POWERS }
+    private enum class RingKind { MAIN, MORE, POWERS, GROUP }
+    private var ringGroup = ""
     private var ringKind = RingKind.MAIN
     private var ringPage = 0
     private val ringTick = object : Runnable {
@@ -1129,6 +1132,7 @@ class MonkeyView(
             val pw = Superpowers.byId(pid)
             return Triple(LongPressMenu.powerIcon(pid), LongPressMenu.powerLabel(LongPressMenu.shortName(pid, pw?.title ?: pid), cool), cooling)
         }
+        LongPressMenu.groupedEntry(id)?.let { (ic, lb) -> return Triple(ic, lb, false) }
         return when (id) {
             LongPressMenu.MORE -> Triple("⋯", "More", false)
             LongPressMenu.BACK -> Triple("↩️", "Back", false)
@@ -1150,14 +1154,16 @@ class MonkeyView(
     private fun showRing(kind: RingKind, page: Int, refresh: Boolean = false) {
         ringKind = kind; ringPage = page
         val ids = when (kind) {
-            RingKind.MAIN -> menuLayout().main
+            RingKind.MAIN -> LongPressMenu.groupedMain()
+            RingKind.GROUP -> listOf(LongPressMenu.BACK) + LongPressMenu.groupItems(ringGroup)
             RingKind.MORE -> LongPressMenu.page(menuLayout().more, page)
             RingKind.POWERS -> LongPressMenu.page(LongPressMenu.powerRing(character.powers).map { LongPressMenu.pin(it) }, page, random = true)
         }
         val entries = ids.map { ringEntry(it) }
         val firstOpen = kind == RingKind.MAIN && !prefs.getBoolean("menuHint44", false)
         val title = when {
-            firstOpen -> "Tap one · tap outside to close · edit in Settings"
+            firstOpen -> "Tap a group · tap outside to close"
+            kind == RingKind.GROUP -> LongPressMenu.GROUPS.firstOrNull { it.id == ringGroup }?.let { "${it.icon} ${it.label}" } ?: ""
             kind == RingKind.POWERS -> "${character.name}'s powers" + if (LongPressMenu.pageCount(LongPressMenu.powerRing(character.powers)) > 1) " (${page + 1}/${LongPressMenu.pageCount(LongPressMenu.powerRing(character.powers))})" else ""
             kind == RingKind.MORE -> "More"
             else -> "🧠 What's ${character.name} thinking?"
@@ -1178,6 +1184,10 @@ class MonkeyView(
         ui.removeCallbacks(ringTick)
         val Q = com.combo.monkeycompanion.agent.QuickChip
         when {
+            id == "g_powers" -> showRing(RingKind.POWERS, 0)
+            LongPressMenu.isGroup(id) -> { ringGroup = id; showRing(RingKind.GROUP, 0) }
+            com.combo.monkeycompanion.brain.CareTools.Tool.of(id) != null -> onToolItem(com.combo.monkeycompanion.brain.CareTools.Tool.of(id)!!)
+            id.startsWith("tool_custom:") -> setCustomReminder(id.substringAfter(':').toIntOrNull() ?: 30)
             id == LongPressMenu.MORE -> showRing(RingKind.MORE, 0)
             id == LongPressMenu.BACK -> showRing(RingKind.MAIN, 0)
             id == LongPressMenu.NEXT -> showRing(ringKind, LongPressMenu.nextPage(
@@ -1197,6 +1207,14 @@ class MonkeyView(
                 "powers" -> showRing(RingKind.POWERS, 0)
                 "funny" -> doSomethingFunny()
                 "skit" -> startSkitNow()
+                "show" -> startChaseShow()
+                "banana_game" -> stage.startGame(com.combo.monkeycompanion.v5.Games.Game.BANANA)
+                "eater" -> startScreenEater()
+                "selfie" -> startPhotobomb(manual = true)
+                "selfie_snap" -> snapSelfie()
+                "comfort_hug" -> com.combo.monkeycompanion.mind.MindHub.triggerComfort(forceKind = com.combo.monkeycompanion.heart.ComfortKind.GLASS_KNOCK_HUG)
+                "comfort_sign" -> com.combo.monkeycompanion.mind.MindHub.triggerComfort(forceKind = com.combo.monkeycompanion.heart.ComfortKind.SIGN_CARD)
+                "comfort_coffee" -> com.combo.monkeycompanion.mind.MindHub.triggerComfort(forceKind = com.combo.monkeycompanion.heart.ComfortKind.OFFER_COFFEE)
                 "games" -> stage.showGames()
                 "smash" -> com.combo.monkeycompanion.smash.SmashActivity.launch(context)
                 "clip" -> makeClip("")
@@ -1707,11 +1725,12 @@ class MonkeyView(
         goLive()
         if (host != null && !wp) {
             skitActorId = forcedCharacterId ?: character.id
+            skitActorId?.let { id -> ChaseShowHub.wakers[id] = { ui.post { if (!running && live && !paused) start() } } }
             skitActorId?.let { id -> com.combo.monkeycompanion.engine.skit.SkitBus.register(id) { c -> if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) playSkitCue(c) else ui.post { playSkitCue(c) } } }
         }
     }
     override fun onDetachedFromWindow() {
-        skitActorId?.let { com.combo.monkeycompanion.engine.skit.SkitBus.unregister(it) }; skitActorId = null
+        skitActorId?.let { com.combo.monkeycompanion.engine.skit.SkitBus.unregister(it); ChaseShowHub.wakers.remove(it) }; skitActorId = null
         goDead(); super.onDetachedFromWindow()
     }
 
@@ -1729,6 +1748,205 @@ class MonkeyView(
         skitProp = c.prop; skitPropUntil = t + c.durSec
         if (!running && live && !paused) start()
         invalidate()
+    }
+
+    // ---- v10.13 Billa vs Chittu chase show: this window really moves across the screen ----
+    private val showFrame = com.combo.monkeycompanion.engine.show.Frame()
+    private var showOn = false
+    private var showRef: com.combo.monkeycompanion.engine.show.ChaseShow? = null
+    private var showLineIdx = 0
+    private var showLastState: MonkeyState? = null
+    private var showT = 0f
+    private val showFxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+    private val showDustPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    val debugShowOn get() = showOn
+    val debugShowX get() = mx
+
+    private fun showRole(): com.combo.monkeycompanion.engine.show.Role? = when (character.id) {
+        "billa" -> com.combo.monkeycompanion.engine.show.Role.CAT
+        "chittu" -> com.combo.monkeycompanion.engine.show.Role.RAT
+        else -> null
+    }
+
+    fun startChaseShow() {
+        if (ChaseShowHub.show != null) return
+        com.combo.monkeycompanion.mind.MindHub.skitRun = null
+        ChaseShowHub.start(context, com.combo.monkeycompanion.mind.MindHub.activeCreatures())
+        if (!running && live && !paused) start()
+    }
+
+    /** true = the show drives this window this frame (physics skipped). */
+    private fun stepChaseShow(): Boolean {
+        val sh = ChaseShowHub.show
+        val role = showRole()
+        if (sh == null || role == null || hiddenTab || wp) { if (showOn) endShowLocal(); return false }
+        if (dragging) { ChaseShowHub.finish(context); endShowLocal(); return false }
+        if (showRef !== sh) { showRef = sh; showLineIdx = 0; showLastState = null }
+        val t = ChaseShowHub.t()
+        showT = t
+        if (sh.done(t)) { ChaseShowHub.finish(context); endShowLocal(); return false }
+        showOn = true
+        sh.frame(role, t, showFrame)
+        val sw = sw(); val shH = (host?.screenHeight() ?: height).toFloat()
+        mx = showFrame.x * (sw - boxW)
+        my = ground() - showFrame.lift * shH
+        vy = 0f
+        if (showFrame.state != showLastState) { showLastState = showFrame.state; controller.play(showFrame.state, 4f) }
+        while (showLineIdx < sh.lines.size && sh.lines[showLineIdx].at <= t) {
+            val l = sh.lines[showLineIdx++]
+            if (l.role == role) say(l.text, (l.dur * 1000).toLong().coerceAtLeast(1000L))
+        }
+        updateGeometry()
+        return true
+    }
+
+    private fun endShowLocal() {
+        showOn = false; showRef = null; showLastState = null
+        if (host != null) { climber.deactivate(); surf = screenSurf(SK.FLOOR); mx = mx.coerceIn(0f, max(0f, sw() - boxW)); my = ground(); falling = false; controller.play(MonkeyState.IDLE, 0.6f); updateGeometry() }
+    }
+
+    private fun drawShowFx(canvas: Canvas) {
+        val sh = showRef ?: return
+        val role = showRole() ?: return
+        val t = showT
+        val cx = ox + boxW / 2f; val feet = oy + boxH - groundPad; val head = oy + boxH * 0.18f
+        for (f in sh.fx) {
+            if (f.role != role || t < f.at || t > f.at + f.dur) continue
+            val k = ((t - f.at) / f.dur).coerceIn(0f, 1f)
+            val fx = if (f.x.isNaN()) cx else f.x * (sw() - boxW) + boxW / 2f - winX
+            when (f.kind) {
+                com.combo.monkeycompanion.engine.show.FxKind.DUST -> {
+                    showDustPaint.color = Color.argb((170 * (1f - k)).toInt(), 200, 180, 150)
+                    for (i in 0..4) { val a = i * 1.3f; canvas.drawCircle(fx + kotlin.math.cos(a) * boxW * (0.12f + 0.25f * k), feet - boxW * 0.05f * (1 + i % 2) * (1 + k), boxW * (0.05f + 0.06f * k), showDustPaint) }
+                }
+                com.combo.monkeycompanion.engine.show.FxKind.BANG -> {
+                    val s = 1f + 0.4f * kotlin.math.sin(k * 3.14f)
+                    showFxPaint.textSize = boxW * 0.2f * s; showFxPaint.color = Color.rgb(230, 40, 30); showFxPaint.isFakeBoldText = true
+                    canvas.drawText(f.text, cx + boxW * 0.28f, head - boxW * 0.05f * k, showFxPaint)
+                }
+                com.combo.monkeycompanion.engine.show.FxKind.STARS -> {
+                    showFxPaint.textSize = boxW * 0.12f; showFxPaint.color = Color.BLACK
+                    for (i in 0..2) { val a = t * 6f + i * 2.09f; canvas.drawText(if (i == 1) "🐦" else "⭐", cx + kotlin.math.cos(a) * boxW * 0.25f, head + kotlin.math.sin(a) * boxW * 0.07f, showFxPaint) }
+                }
+                com.combo.monkeycompanion.engine.show.FxKind.HOLE -> {
+                    showDustPaint.color = Color.argb(235, 25, 18, 12)
+                    canvas.drawOval(fx - boxW * 0.28f, feet - boxW * 0.07f, fx + boxW * 0.28f, feet + boxW * 0.05f, showDustPaint)
+                }
+                com.combo.monkeycompanion.engine.show.FxKind.PROP -> {
+                    showFxPaint.textSize = boxW * 0.2f; showFxPaint.color = Color.BLACK
+                    val px = if (f.x.isNaN()) cx + boxW * 0.3f * showFrame.facing else fx
+                    canvas.drawText(f.text, px, if (f.x.isNaN()) oy + boxH * 0.6f else feet, showFxPaint)
+                }
+                com.combo.monkeycompanion.engine.show.FxKind.HEARTS -> {
+                    showFxPaint.textSize = boxW * 0.13f; showFxPaint.color = Color.RED
+                    for (i in 0..2) canvas.drawText("❤️", cx + (i - 1) * boxW * 0.2f, head - boxW * 0.25f * k - i * 6f, showFxPaint)
+                }
+                com.combo.monkeycompanion.engine.show.FxKind.STEAM -> {
+                    showDustPaint.color = Color.argb((180 * (1f - k)).toInt(), 240, 240, 240)
+                    for (i in 0..2) canvas.drawCircle(cx + (i - 1) * boxW * 0.12f, head - boxW * 0.3f * k - i * 4f, boxW * 0.05f * (1 + k), showDustPaint)
+                }
+            }
+        }
+    }
+
+    // ---- v10.13 ⏰ Tools (water, tablet, eye break, neck, custom reminder) ----
+    private val toolTick = object : Runnable {
+        override fun run() {
+            if (!live) return
+            val due = runCatching { com.combo.monkeycompanion.agent.ToolStore.collectDue(context) }.getOrDefault(emptyList())
+            for ((i, line) in due.withIndex()) ui.postDelayed({
+                say(line, 6000L); if (!running && live && !paused) start()
+            }, i * 6500L)
+            ui.postDelayed(this, 30_000L)
+        }
+    }
+
+    private fun onToolItem(t: com.combo.monkeycompanion.brain.CareTools.Tool) {
+        val T = com.combo.monkeycompanion.brain.CareTools
+        val S = com.combo.monkeycompanion.agent.ToolStore
+        if (t == T.Tool.CUSTOM) {
+            val st = S.get(context, t)
+            showBubble("📝 Remind you" + (if (st.text.isNotBlank()) " “${st.text}”" else "") + " in…", 9f, reply = false,
+                chips = listOf(15, 30, 60).map { com.combo.monkeycompanion.agent.QuickChip("menu", if (it < 60) "$it min" else "1 h", "tool_custom:$it") } + com.combo.monkeycompanion.agent.QuickChip.LATER)
+            return
+        }
+        val now = System.currentTimeMillis()
+        val st = T.toggle(t, S.get(context, t), !S.get(context, t).on, now)
+        S.put(context, t, st)
+        say(if (st.on) "${t.icon} ${t.label} reminder ON · ${T.describe(t, st)}" else "${t.icon} ${t.label} reminder OFF", 3500L)
+    }
+
+    private fun setCustomReminder(mins: Int) {
+        val T = com.combo.monkeycompanion.brain.CareTools
+        val S = com.combo.monkeycompanion.agent.ToolStore
+        val st = T.toggle(T.Tool.CUSTOM, S.get(context, T.Tool.CUSTOM).copy(value = mins), true, System.currentTimeMillis())
+        S.put(context, T.Tool.CUSTOM, st)
+        say("⏰ Okay! I'll remind you in ${if (mins < 60) "$mins min" else "${mins / 60} h"} 👍", 3500L)
+    }
+
+    // ---- v10.13 🎮 Screen Eater: bites a cartoon hole in the screen; tap the hole to fix it ----
+    private var biteView: BiteHoleView? = null
+    val debugBiteCount get() = biteView?.biteCount ?: 0
+
+    fun startScreenEater() {
+        val h = host ?: return
+        if (wp) return
+        val wm = context.getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager ?: return
+        removeBiteHole()
+        val size = (boxW * 1.3f).toInt().coerceAtLeast((120 * d).toInt())
+        val left = mx + boxW / 2f < sw() / 2f
+        val x = (if (left) mx + boxW * 0.75f else mx - size + boxW * 0.25f).toInt().coerceIn(0, max(0, h.screenWidth() - size))
+        val y = (my + boxH * 0.1f - size * 0.3f).toInt().coerceIn(0, max(0, h.screenHeight() - size))
+        val v = BiteHoleView(context, System.nanoTime()) { removeBiteHole(); say("Sari sari, screen fixed! 😇🔧", 2500L) }
+        val lp = android.view.WindowManager.LayoutParams(size, size, x, y,
+            if (android.os.Build.VERSION.SDK_INT >= 26) android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else @Suppress("DEPRECATION") android.view.WindowManager.LayoutParams.TYPE_PHONE,
+            android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            android.graphics.PixelFormat.TRANSLUCENT).apply { gravity = android.view.Gravity.TOP or android.view.Gravity.START; title = "SettaiBite" }
+        if (runCatching { wm.addView(v, lp) }.isFailure) { say("Can't bite the screen right now 😅", 2500L); return }
+        biteView = v
+        controller.play(MonkeyState.GAG, 2.4f)
+        say("Nom nom nom! Screen romba crunchy 😋", 2600L)
+        for (i in 0..2) ui.postDelayed({ biteView?.addBite(); performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY) }, 300L + i * 550L)
+        ui.postDelayed({ if (biteView != null) say("Tap the hole to fix it 🙈", 2500L) }, 2400L)
+    }
+
+    private fun removeBiteHole() {
+        val v = biteView ?: return
+        biteView = null
+        runCatching { (context.getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager).removeView(v) }
+    }
+
+    // ---- v10.13 🤳 Selfie Photobomb: peeks in when a camera app opens ----
+    private var lastBombAt = 0L
+    private fun isCameraPkg(pkg: String) = pkg.contains("camera", true) || pkg.contains(".cam", true) || pkg == "com.motorola.camera3" || pkg.contains("snapcam", true)
+
+    private fun onForegroundApp(pkg: String) {
+        if (!isCameraPkg(pkg) || !ChatHub.settings.photobomb) return
+        val now = System.currentTimeMillis()
+        if (now - lastBombAt < 5 * 60_000L) return
+        startPhotobomb(manual = false)
+    }
+
+    fun startPhotobomb(manual: Boolean) {
+        if (host == null || wp || dragging || powerOn) return
+        lastBombAt = System.currentTimeMillis()
+        val left = mx + boxW / 2f < sw() / 2f
+        mx = if (left) -boxW * 0.18f else sw() - boxW * 0.82f
+        updateGeometry()
+        controller.play(MonkeyState.PEEK, 1.4f)
+        ui.postDelayed({
+            controller.play(listOf(MonkeyState.WAVE, MonkeyState.DANCE, MonkeyState.PLAYFUL).random(kotlin.random.Random(System.nanoTime())), 4f)
+            showBubble(if (manual) "🤳 Photobomb pose! Snap the screen with me?" else "🤳 Camera-ah? Naanum photo-la varen! 😎", 9f, reply = false,
+                chips = listOf(com.combo.monkeycompanion.agent.QuickChip("menu", "📸 Snap with me", "selfie_snap"), com.combo.monkeycompanion.agent.QuickChip.LATER))
+        }, 1400L)
+        if (!running && live && !paused) start()
+    }
+
+    private fun snapSelfie() {
+        bubbleOn = false; updateGeometry(); invalidate()
+        controller.play(MonkeyState.HAPPY_PAT, 3f)
+        runCatching { context.startActivity(Intent(context, com.combo.monkeycompanion.ui.SelfieShotActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            .onFailure { say("Screen capture isn't available here 😅", 2500L) }
     }
 
     fun startSkitNow() {
@@ -1771,6 +1989,8 @@ class MonkeyView(
             com.combo.monkeycompanion.mind.MindHub.init(context)
             com.combo.monkeycompanion.mind.MindHub.actor = { d -> executeMind(d) }
             com.combo.monkeycompanion.mind.MindHub.banterActor = { b -> startNeighbourBanter(b) }
+            com.combo.monkeycompanion.mind.MindHub.onAppChanged = { pkg -> ui.post { onForegroundApp(pkg) } }
+            ui.removeCallbacks(toolTick); ui.postDelayed(toolTick, 20_000L)
             com.combo.monkeycompanion.mind.MindHub.onMorningTrace = { tr ->
                 ui.postDelayed({ if (!paused && !hiddenTab && !dragging) say("🌙 ${tr.line}", 5000L) }, 3600L)
             }
@@ -1963,6 +2183,8 @@ class MonkeyView(
             ui.removeCallbacks(mindBeatRunnable)
             com.combo.monkeycompanion.mind.MindHub.actor = null
             com.combo.monkeycompanion.mind.MindHub.banterActor = null
+            com.combo.monkeycompanion.mind.MindHub.onAppChanged = null
+            ui.removeCallbacks(toolTick); removeBiteHole()
             com.combo.monkeycompanion.mind.MindHub.onMorningTrace = null
             com.combo.monkeycompanion.mind.MindHub.onComfortRequested = null
             com.combo.monkeycompanion.mind.MindHub.onCheckInDue = null
@@ -2220,6 +2442,7 @@ class MonkeyView(
         stepRandomPower(dt)
         if (restNap && !controller.isAsleep && controller.state != MonkeyState.FALLING && controller.state != MonkeyState.LANDING && afterLand == null) restNap = false
         facingAnim += (controller.facing - facingAnim) * min(1f, dt * 12f)
+        if (showOn) facingAnim += (showFrame.facing - facingAnim) * min(1f, dt * 18f)
 
         val ws = com.combo.monkeycompanion.mind.MindHub.world.state
         controller.worldSpeed = ws.speedMultiplier
@@ -2361,6 +2584,7 @@ class MonkeyView(
         if (edgeCrashCooldown > 0f) edgeCrashCooldown = (edgeCrashCooldown - dt).coerceAtLeast(0f)
         if (mcOn && !dragging) stepMaskClimb(dt)
         if (host == null) return
+        if (stepChaseShow()) return
         syncImeDodge()
         if (rocketFlyOn) { if (dragging) { rocketFlyOn = false; rocketFly.cancel(); arcRot = 0f } else { stepRocketFly(dt); return } }
         if (isEdgeCrashLanding) {
@@ -2446,9 +2670,18 @@ class MonkeyView(
     /** Pose the front rig in the box (standing, entrance rising out of an edge). */
     private fun effectiveRigScale(): Float {
         val ch = character
+        val m = sizeCache(ch.id)
         return if (ch is com.combo.monkeycompanion.character.CustomCharacter) {
-            rigScale * 0.95f * ch.spec.companionScale.coerceIn(0.85f, 1.45f)
-        } else rigScale * profile.drawScale
+            rigScale * 0.95f * 1.25f * m
+        } else rigScale * profile.drawScale * m
+    }
+
+    private var sizeId = ""; private var sizeVal = 1f; private var sizeReadAt = 0L
+    /** Per-character size, re-read at most once a second (no prefs read per frame). */
+    private fun sizeCache(id: String): Float {
+        val now = SystemClock.uptimeMillis()
+        if (id != sizeId || now - sizeReadAt > 1000L) { sizeId = id; sizeReadAt = now; sizeVal = runCatching { CompanionSize.get(context, id) }.getOrDefault(1f).let { if (host != null) it.coerceAtMost(sizeBox.coerceAtLeast(1f)) else it } }
+        return sizeVal
     }
 
     private fun layoutRig() {
@@ -2935,7 +3168,7 @@ class MonkeyView(
             }
             if (showBubble) {
                 bubbleLeft = (ox + boxW / 2f - bubble.width / 2f).coerceIn(0f, max(0f, width - bubble.width))
-                bubbleTop = max(0f, oy + overlap - bubble.trailSpace - bubble.height)
+                bubbleTop = max(0f, oy + bubbleOverlap() - bubble.trailSpace - bubble.height)
             }
             return
         }
@@ -2978,7 +3211,7 @@ class MonkeyView(
             if (bubbleOn) {
                 val bw = bubble.width
                 bubbleLeft = (ox + boxW / 2f - bw / 2f).coerceIn(0f, max(0f, winW - bw))
-                bubbleTop = max(0f, oy + overlap - bubble.trailSpace - bubble.height)
+                bubbleTop = max(0f, oy + bubbleOverlap() - bubble.trailSpace - bubble.height)
             }
             host.placeWindow(winX, winY, winW, winH)
             return
@@ -2993,7 +3226,7 @@ class MonkeyView(
             if (bubbleOn) {
                 val bw = bubble.width
                 bubbleLeft = (ox + boxW / 2f - bw / 2f).coerceIn(0f, max(0f, winW - bw))
-                bubbleTop = max(0f, oy + overlap - bubble.trailSpace - bubble.height)
+                bubbleTop = max(0f, oy + bubbleOverlap() - bubble.trailSpace - bubble.height)
             }
             host.placeWindow(winX, winY, winW, winH)
             return
@@ -3034,7 +3267,7 @@ class MonkeyView(
             val bw = bubble.width
             winW = max(boxW.toFloat(), bw).toInt()
             winX = (mx + boxW / 2f - winW / 2f).toInt().coerceIn(0, max(0, sw - winW))
-            val above = bubble.height + bubble.trailSpace - overlap
+            val above = bubble.height + bubble.trailSpace - bubbleOverlap()
             val minTop = if (wp) topY() else 0f
             if (boxY - above >= minTop) {
                 winH = (boxH + above).toInt()
@@ -4476,6 +4709,13 @@ class MonkeyView(
         drawSkitProp(canvas)
         if (ln && isBehindWidget) {
             drawWidgetGripPaws(canvas)
+        } else if (showOn) {
+            if (showFrame.visible) {
+                val px = ox + boxW / 2f; val py = oy + boxH - groundPad
+                canvas.save(); canvas.rotate(showFrame.rot, px, py - boxH * 0.3f); canvas.scale(showFrame.sx, showFrame.sy, px, py)
+                drawMonkey(canvas); canvas.restore()
+            }
+            drawShowFx(canvas)
         } else {
             drawMonkey(canvas)
         }
@@ -4501,7 +4741,7 @@ class MonkeyView(
             val pop = 1f + c3 * (k - 1f).pow(3) + c1 * (k - 1f).pow(2)
             var alpha = if (bubbleAge > bubbleLife) 1f - (bubbleAge - bubbleLife) / FADE else min(1f, k * 3f)
             if (bubbleDragX != 0f) alpha *= (1f - abs(bubbleDragX) / (bubble.width * 1.2f)).coerceIn(0.15f, 1f)
-            bubble.draw(canvas, bubbleLeft + bubbleDragX, bubbleTop, head[0], head[1] - 2 * d, max(0.01f, pop), alpha)
+            bubble.draw(canvas, bubbleLeft + bubbleDragX, bubbleTop, head[0], head[1] - 2 * d, max(0.01f, pop), alpha * (if (typing || arcOn) 1f else 0.9f))
         }
     }
 
@@ -5433,7 +5673,7 @@ class MonkeyView(
             when (e.actionMasked) {
                 MotionEvent.ACTION_UP -> {
                     fabPressing = false; chatFab.hold(false)
-                    if (hypot(e.x - fabLX, e.y - fabLY) <= chatFabR + 18 * d) tapChatFab()
+                    if (hypot(e.x - fabLX, e.y - fabLY) <= chatFabR + 18 * d) { if (fabSpeakMode()) speakChatFab() else tapChatFab() }
                 }
                 MotionEvent.ACTION_CANCEL -> { fabPressing = false; chatFab.hold(false) }
             }
@@ -5514,7 +5754,7 @@ class MonkeyView(
                 }
                 if (chatFabHit(e.x, e.y)) {
                     // v10.10: pressed state on touch-down (opaque + darker); the chat opens on release
-                    tracking = false; chatBtnUntil = 0f; fabPressing = true
+                    tracking = false; chatBtnUntil = 0f; fabPressing = true; fabDownAt = SystemClock.uptimeMillis(); fabSpeakBuzzed = false
                     chatFab.hold(true)
                     performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                     if (!running && live && !paused) start()
@@ -5759,6 +5999,8 @@ class MonkeyView(
 
     /** Double-tap: a random one of this character's powers (never the same twice in a row), no cooldown. */
     private fun doubleTapPower() {
+        // v10.13: double-tap Billa = the Tom-and-Jerry chase show with Chittu (spawned for the show if needed).
+        if (character.id == "billa" && host != null && !wp) { startChaseShow(); return }
         val pw = powerShortcut.pick(character.powers, character.signaturePower, signatureSeen()) ?: return
         markSignatureSeen()
         debugLastShortcut = pw
@@ -5815,6 +6057,18 @@ class MonkeyView(
     private val fabArea = FloatArray(4)
 
     /** v10.11: the character's head box in this view, through the same transform drawMonkey draws with. */
+    private val bubFace = RectF()
+    /**
+     * v10.13: how far the bubble may dip into the top of the box: never past the top of the face/head
+     * (the same head box the 💬 button keeps clear of), so a speech bubble never covers the face.
+     */
+    private fun bubbleOverlap(): Float {
+        if (host == null) return overlap
+        val top = runCatching { faceRectView(bubFace); bubFace.top - oy }.getOrDefault(overlap)
+        if (top.isNaN() || bubFace.isEmpty) return overlap
+        return (top - 3f * d).coerceIn(0f, overlap)
+    }
+
     private fun faceRectView(out: RectF) {
         renderer.faceRect(rig, out)
         fabM.reset(); fabM.postTranslate(sinkX, heavyShake)
@@ -5882,7 +6136,11 @@ class MonkeyView(
         btnPaint.style = Paint.Style.STROKE; btnPaint.strokeWidth = 1.6f * d; btnPaint.color = Color.WHITE; btnPaint.alpha = a
         canvas.drawCircle(lx, ly, r, btnPaint)
         btnText.alpha = a; btnText.textSize = 14 * d * (1f - 0.18f * chatFab.press)
-        canvas.drawText("\uD83D\uDCAC", lx, ly - (btnText.descent() + btnText.ascent()) / 2, btnText)
+        // v10.13: tap = type a chat 💬; keep holding ~half a second = speak 🎤 (the icon switches)
+        val speak = fabSpeakMode()
+        if (speak && !fabSpeakBuzzed) { fabSpeakBuzzed = true; performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) }
+        if (fabPressing && !speak) postInvalidateDelayed(60L)
+        canvas.drawText(if (speak) "\uD83C\uDFA4" else "\uD83D\uDCAC", lx, ly - (btnText.descent() + btnText.ascent()) / 2, btnText)
         btnText.alpha = 255; btnText.textSize = 17 * d; btnPaint.alpha = 255
     }
 
@@ -5893,6 +6151,14 @@ class MonkeyView(
     /** Tests: the chat button is held down right now (pressed look). */
     val debugChatFabPressed get() = fabPressing
     val debugChatFabAlpha get() = chatFab.alpha
+    private var fabDownAt = 0L
+    private var fabSpeakBuzzed = false
+    private fun fabSpeakMode() = fabPressing && SystemClock.uptimeMillis() - fabDownAt >= 450L
+    private fun speakChatFab() {
+        chatFab.pressed()
+        if (com.combo.monkeycompanion.agent.Voice.enabled(context)) startListen(hold = false)
+        else say("Switch on the Voice power (Settings › Phone powers) and I'll listen 🎤 · tap 💬 to type", 4000L)
+    }
     private fun tapChatFab() {
         chatFab.pressed()
         onDoubleTapChat()

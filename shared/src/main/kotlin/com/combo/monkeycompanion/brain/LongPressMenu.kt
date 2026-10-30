@@ -153,4 +153,34 @@ object LongPressMenu {
 
     /** The powers ring for a character: every power it has, in its own order (ids), deduplicated. */
     fun powerRing(own: List<Superpower>): List<String> = own.map { it.id }.distinct()
+
+    // ---- v10.13 grouped popup: exactly these top-level groups ----
+    data class Group(val id: String, val icon: String, val label: String)
+    val GROUPS = listOf(
+        Group("g_powers", "⚡", "Powers"), Group("g_games", "🎮", "Games"), Group("g_show", "🎬", "Show"),
+        Group("g_modes", "😊", "Modes"), Group("g_tools", "⏰", "Tools"), Group("g_access", "🔌", "Access"),
+    )
+    /** The top-level popup: 6 groups + Hide + Quit. No chat / settings clutter. */
+    fun groupedMain(): List<String> = GROUPS.map { it.id } + listOf("hide", "quit")
+    fun isGroup(id: String) = id.startsWith("g_")
+    fun groupItems(id: String): List<String> = when (id) {
+        "g_games" -> listOf("smash", "banana_game", "eater")
+        "g_show" -> listOf("show", "clip", "selfie")
+        "g_modes" -> listOf("sleep", "focus", "breathe", "comfort_hug", "comfort_sign", "comfort_coffee")
+        "g_tools" -> CareTools.Tool.entries.map { it.id }
+        "g_access" -> listOf("chat", "talk", "screen", "missed")
+        else -> emptyList()
+    }
+    private val SUB = mapOf(
+        "smash" to ("💥" to "Smash"), "banana_game" to ("🍌" to "Bananas"), "eater" to ("😋" to "Eat screen"),
+        "show" to ("🐱🐭" to "Start show"), "clip" to ("🎥" to "Record"), "selfie" to ("🤳" to "Photobomb"),
+        "sleep" to ("😴" to "Sleep"), "focus" to ("📚" to "Study"), "breathe" to ("🫧" to "Breathe"),
+        "comfort_hug" to ("🫂" to "Hug"), "comfort_sign" to ("📣" to "Cheer"), "comfort_coffee" to ("☕" to "Coffee"),
+        "chat" to ("💬" to "Chat"), "talk" to ("🎤" to "Mic"), "screen" to ("👀" to "Screen"), "missed" to ("🔔" to "Notifications"),
+        "hide" to ("🙈" to "Hide"),
+    )
+    /** Icon + label for a group or grouped item (null = not part of the grouped popup). */
+    fun groupedEntry(id: String): Pair<String, String>? =
+        GROUPS.firstOrNull { it.id == id }?.let { it.icon to it.label }
+            ?: SUB[id] ?: CareTools.Tool.of(id)?.let { it.icon to it.label }
 }

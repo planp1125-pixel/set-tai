@@ -34,10 +34,10 @@ import com.combo.monkeycompanion.powers.Capabilities
  */
 class SkillsActivity : Activity() {
     private val d by lazy { resources.displayMetrics.density }
-    private val cream = Color.rgb(0xFF, 0xF4, 0xE2)
-    private val brown = Color.rgb(0x5A, 0x36, 0x18)
-    private val soft = Color.rgb(0x8A, 0x6A, 0x4A)
-    private val accent = Color.rgb(0xE8, 0x8A, 0x2E)
+    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
+    private val brown = Color.rgb(0x1E, 0x22, 0x40)
+    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
+    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
     private lateinit var a11yStatus: TextView
 
     private fun dp(v: Int) = (v * d).toInt()
@@ -84,7 +84,7 @@ class SkillsActivity : Activity() {
         background = GradientDrawable().apply {
             cornerRadius = dp(24).toFloat()
             setColor(if (primary) accent else Color.WHITE)
-            setStroke(dp(2), if (primary) accent else Color.rgb(0xE6, 0xC9, 0xA3))
+            setStroke(dp(2), if (primary) accent else Color.rgb(0xDD, 0xE0, 0xF0))
         }
         setPadding(dp(14), dp(10), dp(14), dp(10))
         layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) }
@@ -190,7 +190,13 @@ class SkillsActivity : Activity() {
             },
             button("⚑  Reported replies…") {
                 startActivity(Intent(this, ReportsActivity::class.java))
-            },
+            }
+        ))
+
+        // v10.13: advanced logs live under "More"
+        col.addView(card(
+            "⋯ More (advanced)",
+            text("Behind-the-scenes logs for the curious.", 12.5f, color = soft),
             button("📋  Recent actions & mind log…") {
                 AlertDialog.Builder(this).setTitle("Recent actions & mind decisions")
                     .setMessage(ActionLog.format(this).ifBlank { "Nothing yet." })

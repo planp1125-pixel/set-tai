@@ -101,7 +101,9 @@ object MindHub {
     fun activeCreatures(): List<String> {
         val lead = runCatching { CharacterRegistry.current.id }.getOrDefault("monkey")
         val mode = Population.Mode.of(neighbourMode)
-        return com.combo.monkeycompanion.world.CrewRules.resolve(lead, mode, customPartner1Id, customPartner2Id, world.state)
+        val crew = com.combo.monkeycompanion.world.CrewRules.resolve(lead, mode, customPartner1Id, customPartner2Id, world.state)
+        val g = com.combo.monkeycompanion.overlay.ChaseShowHub.guests
+        return if (g.isEmpty()) crew else (crew + g).distinct()
     }
 
     // ---- v10.12 skit engine (own seeded RNG: the frame-loop / mind RNG order is untouched) ----
@@ -115,6 +117,7 @@ object MindHub {
         val st = runCatching { ChatHub.settings }.getOrNull()
         if (st != null && !st.skitsEnabled && !force) return "skits are off"
         if (skitRun != null) return "a skit is already playing"
+        if (com.combo.monkeycompanion.overlay.ChaseShowHub.show != null) return "a chase show is on"
         val all = activeCreatures()
         if (all.size < 2) return "pick Duo or Trio first"
         // Only characters whose window is really on screen can act.
@@ -251,7 +254,11 @@ object MindHub {
     }
 
     /** App in front changed (already debounced by Proactive). */
+    /** v10.13: the overlay hears every foreground-app change (Selfie Photobomb looks for camera apps). */
+    @Volatile var onAppChanged: ((String) -> Unit)? = null
+
     fun perceive(pkg: String) {
+        runCatching { onAppChanged?.invoke(pkg) }
         val m = mind() ?: return
         val now = System.currentTimeMillis()
         val sc = sceneFor(pkg, null)

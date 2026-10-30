@@ -96,11 +96,11 @@ class MainActivity : Activity() {
     private var homePreview: MonkeyView? = null
     var activeTab: Tab = Tab.HOME; private set
 
-    private val cream = Color.rgb(0xFF, 0xF4, 0xE2)
-    private val brown = Color.rgb(0x5A, 0x36, 0x18)
-    private val soft = Color.rgb(0x8A, 0x63, 0x3E)
-    private val accent = Color.rgb(0xE8, 0x8A, 0x2E)
-    private val purple = Color.rgb(0x6A, 0x1B, 0x9A)
+    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
+    private val brown = Color.rgb(0x1E, 0x22, 0x40)
+    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
+    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
+    private val purple = Color.rgb(0x09, 0x84, 0xE3)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -173,17 +173,17 @@ class MainActivity : Activity() {
             btn.background = GradientDrawable().apply {
                 cornerRadius = dp(18).toFloat()
                 setColor(if (sel) accent else Color.WHITE)
-                setStroke(dp(1), if (sel) accent else Color.rgb(0xE6, 0xC9, 0xA3))
+                setStroke(dp(1), if (sel) accent else Color.rgb(0xDD, 0xE0, 0xF0))
             }
         }
-        val curScale = CustomCompanionStore.activeSpec(this).companionScale
+        val curScale = com.combo.monkeycompanion.overlay.CompanionSize.get(this, CharacterRegistry.current.id)
         for ((sz, btn) in sizeButtons) {
             val sel = kotlin.math.abs(curScale - sz) < 0.08f
             btn.setTextColor(if (sel) Color.WHITE else brown)
             btn.background = GradientDrawable().apply {
                 cornerRadius = dp(16).toFloat()
                 setColor(if (sel) purple else Color.WHITE)
-                setStroke(dp(1), if (sel) purple else Color.rgb(0xE6, 0xC9, 0xA3))
+                setStroke(dp(1), if (sel) purple else Color.rgb(0xDD, 0xE0, 0xF0))
             }
         }
         val curChar = CharacterRegistry.current
@@ -252,7 +252,7 @@ class MainActivity : Activity() {
         }
         val titleCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         titleCol.addView(TextView(this).apply {
-            text = "Set-Tai v10.12"
+            text = "Set-Tai v10.13"
             textSize = 20f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
         })
         topActiveBadge = TextView(this).apply {
@@ -263,7 +263,7 @@ class MainActivity : Activity() {
         topBar.addView(titleCol, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
 
         topToggleBtn = Button(this).apply {
-            text = "▶ Summon"
+            text = "▶ Start Set-Tai"
             isAllCaps = false; textSize = 13.5f; setTextColor(Color.WHITE)
             background = GradientDrawable().apply { cornerRadius = dp(20).toFloat(); setColor(accent) }
             setPadding(dp(14), dp(8), dp(14), dp(8))
@@ -308,7 +308,7 @@ class MainActivity : Activity() {
             setPadding(dp(8), dp(6), dp(8), dp(8))
             background = GradientDrawable().apply {
                 setColor(Color.WHITE)
-                setStroke(dp(1), Color.rgb(0xE6, 0xC9, 0xA3))
+                setStroke(dp(1), Color.rgb(0xDD, 0xE0, 0xF0))
             }
         }
         for (tab in Tab.entries) {
@@ -405,7 +405,7 @@ class MainActivity : Activity() {
         val previewCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(10), dp(12), dp(12))
-            background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(Color.rgb(0xFF, 0xE7, 0xC4)) }
+            background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(Color.rgb(0xEA, 0xE8, 0xFF)) }
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
         val preview = MonkeyView(this, null) { startActivity(Intent(this, ChatActivity::class.java)) }.also { homePreview = it }
@@ -424,9 +424,14 @@ class MainActivity : Activity() {
                 text = lbl; isAllCaps = false; textSize = 12f
                 setPadding(dp(8), dp(4), dp(8), dp(4))
                 setOnClickListener {
-                    val cur = CustomCompanionStore.activeSpec(this@MainActivity)
-                    CustomCompanionStore.save(this@MainActivity, cur.copy(companionScale = sz))
-                    refreshMindCard()
+                    // v10.13: size works for EVERY character (built-ins too); the overlay restarts with a bigger window
+                    com.combo.monkeycompanion.overlay.CompanionSize.set(this@MainActivity, CharacterRegistry.current.id, sz)
+                    refreshMindCard(); homePreview?.invalidate()
+                    if (MonkeyOverlayService.running) {
+                        MonkeyOverlayService.stop(this@MainActivity)
+                        it.postDelayed({ MonkeyOverlayService.start(this@MainActivity) }, 600)
+                    }
+                    Toast.makeText(this@MainActivity, "${CharacterRegistry.current.name}: $lbl", Toast.LENGTH_SHORT).show()
                 }
             }
             sizeButtons += sz to b
@@ -460,133 +465,83 @@ class MainActivity : Activity() {
         previewCard.addView(homeCrewRow)
         col.addView(previewCard)
 
-        // 3. Quick Summon & Notification Summary Card Controls
+        // 3. Start Set-Tai & Notification Summary Card Controls
         runningText = status()
         startBtn = button("🐒  Start Set-Tai on Screen", primary = true) { startMonkey() }
         stopBtn = button("Stop Overlay") {
             MonkeyOverlayService.stop(this)
             stopBtn.postDelayed({ refresh() }, 300)
         }
-        col.addView(section("🚀 Quick Screen Controls", runningText, startBtn).also {
+        col.addView(section("🚀 Start Set-Tai", runningText, startBtn).also {
             val l = it as LinearLayout
             l.addView(stopBtn, btnLp())
             l.addView(button("📬  What You Missed (Notification Summary Card)") { v5("notif_card_demo") }, btnLp())
-            l.addView(button("💬  Chat with ${CharacterRegistry.current.name}") {
+            l.addView(button("💬  Chat with Set-Tai") {
                 startActivity(Intent(this@MainActivity, ChatActivity::class.java))
             }, btnLp())
         })
 
         // 4. Purposeful Daily Life Utilities Suite (6 Real-World Assistant Tools!)
         DailyUtilityEngine.init(this)
+        // v10.13 ⏰ Tools: one switch + one setting per tool (OTP catcher / delivery test pill hidden; code kept)
+        utilityStatusTv = TextView(this)
         val utilCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(14), dp(16), dp(16))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(20).toFloat()
-                setColor(Color.WHITE)
-                setStroke(dp(2), Color.rgb(0x2E, 0x7D, 0x32))
-            }
+            setPadding(dp(16), dp(14), dp(16), dp(12))
+            background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(Color.WHITE); setStroke(dp(1), Color.rgb(0xE3, 0xE6, 0xF3)) }
+            elevation = dp(2).toFloat()
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
         utilCard.addView(TextView(this).apply {
-            text = "🎯 Purposeful Daily Life Utilities (6 Smart Tools)"
-            textSize = 17.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(Color.rgb(0x1B, 0x5E, 0x20))
+            text = "⏰ Tools"; textSize = 17f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
         })
-        utilityStatusTv = TextView(this).apply {
-            text = buildUtilitySummaryText()
-            textSize = 12.5f; setTextColor(brown); setPadding(0, dp(4), 0, dp(8))
-        }
-        utilCard.addView(utilityStatusTv)
-
-        // Tool 1: 1-Tap OTP & Live Delivery / Cab / Train Catcher
-        val uRow1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        uRow1.addView(button("🔐 Test OTP Catcher", primary = true) {
-            DailyUtilityEngine.triggerDemoOtp(this@MainActivity, "482910", "HDFC Bank")
-            v5("demo_otp")
-            homePreview?.invalidate()
-            refresh()
-            Toast.makeText(this@MainActivity, "🔐 Caught OTP 482910! Tap the green pill on Settai (or Copy below)!", Toast.LENGTH_SHORT).show()
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
-        uRow1.addView(button("🛵 Test Delivery Pill") {
-            DailyUtilityEngine.triggerDemoDelivery(this@MainActivity, "🛵 Swiggy: Order arriving in 4 mins")
-            v5("demo_delivery")
-            homePreview?.invalidate()
-            refresh()
-            Toast.makeText(this@MainActivity, "🛵 Live Delivery Pill pinned above Settai!", Toast.LENGTH_SHORT).show()
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        utilCard.addView(uRow1)
-
-        // Tool 2 & 5: 20-Min Focus / Kids' Study Timer & 20-20-20 Eye/Neck Care Guard
-        val uRow2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(8), 0, 0) }
-        uRow2.addView(button("🍅 20m Study / Focus Timer") {
-            DailyUtilityEngine.startFocusTimer(this@MainActivity, 20)
-            v5("focus_20")
-            homePreview?.invalidate()
-            refresh()
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
-        uRow2.addView(button("🧘 20s Eye & Neck Break") {
-            DailyUtilityEngine.triggerEyeBreakNow(20f)
-            v5("eye_break")
-            homePreview?.invalidate()
-            refresh()
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        utilCard.addView(uRow2)
-
-        // Tool 3: Sticky Chest Reminder & Medicine / Water Presets
         utilCard.addView(TextView(this).apply {
-            text = "📌 Sticky Chest Reminder (stays pinned on Settai until you tap ✓ Done):"
-            textSize = 12.2f; setTypeface(typeface, Typeface.BOLD); setTextColor(soft)
-            setPadding(0, dp(10), 0, dp(4))
+            text = "Set-Tai reminds you on screen. Also in the long-press popup › ⏰ Tools."; textSize = 12.5f; setTextColor(soft); setPadding(0, dp(2), 0, dp(6))
         })
-        val remRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val remInput = EditText(this).apply {
-            hint = "e.g. 💊 Take tablet at 9 PM, 🥛 Buy milk"
-            setText(DailyUtilityEngine.stickyReminderText)
-            textSize = 13.5f; setTextColor(brown); setSingleLine(true)
-        }
-        remRow.addView(remInput, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
-        remRow.addView(button("📌 Pin", primary = true) {
-            val txt = remInput.text?.toString()?.trim().orEmpty().ifBlank { "💊 Take tablet at 9 PM" }
-            DailyUtilityEngine.setStickyReminder(this@MainActivity, txt)
-            remInput.setText(txt)
-            homePreview?.invalidate()
-            refresh()
-            Toast.makeText(this@MainActivity, "📌 Pinned reminder '$txt' on Settai!", Toast.LENGTH_SHORT).show()
-        }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
-        utilCard.addView(remRow)
-
-        val presetRemRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(6), 0, 0) }
-        for ((lbl, txt) in listOf("💊 Tablet" to "💊 Take tablet 9PM", "💧 Water" to "💧 Drink 1 glass water", "🥛 Milk" to "🥛 Buy milk & curd", "✓ Clear" to "")) {
-            presetRemRow.addView(Button(this).apply {
-                text = lbl; isAllCaps = false; textSize = 11.5f; setTextColor(brown)
-                background = GradientDrawable().apply { cornerRadius = dp(14).toFloat(); setColor(Color.rgb(0xFF, 0xF8, 0xEB)); setStroke(dp(1), Color.rgb(0xE6, 0xC9, 0xA3)) }
-                setOnClickListener {
-                    if (txt.isEmpty()) DailyUtilityEngine.clearStickyReminder(this@MainActivity)
-                    else DailyUtilityEngine.setStickyReminder(this@MainActivity, txt)
-                    remInput.setText(txt)
-                    homePreview?.invalidate()
-                    refresh()
-                }
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(4) })
-        }
-        utilCard.addView(presetRemRow)
-
-        // Tool 4: Pocket Clipboard Backpack (5 Slots)
-        val uRow4 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(8), 0, 0) }
-        uRow4.addView(button("🎒 Open Clipboard Backpack (5 Slots)", primary = true) {
-            showClipboardBackpackDialog()
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.3f).apply { rightMargin = dp(6) })
-        uRow4.addView(button("📋 Pin Clipboard") {
-            val pinned = DailyUtilityEngine.pinCurrentSystemClipboard(this@MainActivity)
-            if (pinned != null) {
-                Toast.makeText(this@MainActivity, "🎒 Pinned to Backpack: ${pinned.take(36)}", Toast.LENGTH_SHORT).show()
-            } else {
-                showClipboardBackpackDialog()
+        val CT = com.combo.monkeycompanion.brain.CareTools
+        val TS = com.combo.monkeycompanion.agent.ToolStore
+        for (tool in CT.Tool.entries) {
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(4), 0, dp(4)) }
+            val sw = android.widget.Switch(this).apply {
+                text = "${tool.icon}  ${tool.label}"; textSize = 15f; setTextColor(brown)
+                isChecked = TS.get(this@MainActivity, tool).on
             }
-            refresh()
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 0.9f))
-        utilCard.addView(uRow4)
-
+            val set = Button(this).apply {
+                isAllCaps = false; textSize = 12.5f; setTextColor(accent)
+                background = GradientDrawable().apply { cornerRadius = dp(14).toFloat(); setColor(Color.rgb(0xEF, 0xED, 0xFF)) }
+                setPadding(dp(10), dp(2), dp(10), dp(2))
+            }
+            fun refreshSet() { set.text = CT.describe(tool, TS.get(this@MainActivity, tool)) + " ›" }
+            refreshSet()
+            sw.setOnCheckedChangeListener { _, on ->
+                TS.put(this@MainActivity, tool, CT.toggle(tool, TS.get(this@MainActivity, tool), on, System.currentTimeMillis()))
+            }
+            set.setOnClickListener {
+                val st = TS.get(this@MainActivity, tool)
+                when (tool.kind) {
+                    CT.Kind.INTERVAL -> {
+                        val opts = listOf(30, 60, 90, 120)
+                        android.app.AlertDialog.Builder(this@MainActivity).setTitle("${tool.icon} ${tool.label}: how often?")
+                            .setItems(opts.map { if (it % 60 == 0) "Every ${it / 60} h" else "Every $it min" }.toTypedArray()) { _, w ->
+                                TS.put(this@MainActivity, tool, st.copy(value = opts[w], lastFiredMs = System.currentTimeMillis())); refreshSet()
+                            }.show()
+                    }
+                    CT.Kind.DAILY -> android.app.TimePickerDialog(this@MainActivity, { _, h, m -> TS.put(this@MainActivity, tool, st.copy(value = h * 60 + m)); refreshSet() }, st.value / 60, st.value % 60, false).show()
+                    CT.Kind.ONCE -> {
+                        val et = EditText(this@MainActivity).apply { hint = "Reminder text"; setText(st.text) }
+                        val opts = listOf(15, 30, 60, 120)
+                        android.app.AlertDialog.Builder(this@MainActivity).setTitle("📝 Custom reminder").setView(et)
+                            .setItems(opts.map { if (it < 60) "In $it min" else "In ${it / 60} h" }.toTypedArray()) { _, w ->
+                                val ns = CT.toggle(tool, st.copy(value = opts[w], text = et.text.toString().trim()), true, System.currentTimeMillis())
+                                TS.put(this@MainActivity, tool, ns); sw.isChecked = true; refreshSet()
+                            }.show()
+                    }
+                }
+            }
+            row.addView(sw, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            row.addView(set, LinearLayout.LayoutParams(WRAP_CONTENT, dp(36)))
+            utilCard.addView(row)
+        }
         col.addView(utilCard)
         return col
     }
@@ -947,9 +902,9 @@ class MainActivity : Activity() {
         textSize = 15f
         setTextColor(if (primary) Color.WHITE else brown)
         background = GradientDrawable().apply {
-            cornerRadius = dp(24).toFloat()
-            setColor(if (primary) accent else Color.WHITE)
-            setStroke(dp(2), if (primary) accent else Color.rgb(0xE6, 0xC9, 0xA3))
+            cornerRadius = dp(16).toFloat()
+            if (primary) { colors = intArrayOf(accent, Color.rgb(0x8E, 0x7C, 0xFF)); orientation = GradientDrawable.Orientation.LEFT_RIGHT } else setColor(Color.WHITE)
+            setStroke(dp(1), if (primary) accent else Color.rgb(0xDD, 0xE0, 0xF0))
         }
         setPadding(dp(14), dp(10), dp(14), dp(10))
         setOnClickListener { onClick() }
@@ -958,7 +913,8 @@ class MainActivity : Activity() {
     private fun section(title: String, status: TextView, btn: Button): View = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(16), dp(12), dp(16), dp(14))
-        background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.WHITE) }
+        background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(Color.WHITE); setStroke(dp(1), Color.rgb(0xE3, 0xE6, 0xF3)) }
+        elevation = dp(2).toFloat()
         addView(TextView(context).apply {
             text = title; textSize = 16f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
         })
@@ -1092,7 +1048,7 @@ class MainActivity : Activity() {
             else -> "Ready to summon ${cur.name} onto your screen."
         }
         if (::topToggleBtn.isInitialized) {
-            topToggleBtn.text = if (running) "⏹ Stop Overlay" else "▶ Summon"
+            topToggleBtn.text = if (running) "⏹ Stop Overlay" else "▶ Start Set-Tai"
             topToggleBtn.background = GradientDrawable().apply {
                 cornerRadius = dp(20).toFloat()
                 setColor(if (running) Color.rgb(0xC6, 0x28, 0x28) else accent)

@@ -35,6 +35,11 @@ class AppSettings(ctx: Context) {
         get() = p.getBoolean("skits_enabled", true)
         set(v) { p.edit().putBoolean("skits_enabled", v).apply() }
 
+    /** v10.13: peek in with a pose when a camera app opens. */
+    var photobomb: Boolean
+        get() = p.getBoolean("photobomb", true)
+        set(v) { p.edit().putBoolean("photobomb", v).apply() }
+
     var aiBrainEnabled: Boolean
         get() = p.getBoolean("ai_brain_enabled", p.getString("brain", "NONE") != "NONE")
         set(v) {

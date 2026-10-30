@@ -31,9 +31,9 @@ import com.combo.monkeycompanion.speech.CloudBubble
  * A live preview of the ring sits on top.
  */
 class MenuSettingsActivity : Activity() {
-    private val brown = Color.rgb(0x5A, 0x36, 0x18)
-    private val soft = Color.rgb(0x8A, 0x6A, 0x4A)
-    private val accent = Color.rgb(0xE8, 0x8A, 0x2E)
+    private val brown = Color.rgb(0x1E, 0x22, 0x40)
+    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
+    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
     private lateinit var s: AppSettings
@@ -142,7 +142,7 @@ class MenuSettingsActivity : Activity() {
     }
 
     private fun build(): View {
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(14), dp(16), dp(28)); setBackgroundColor(Color.rgb(0xFF, 0xF4, 0xE2)) }
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(14), dp(16), dp(28)); setBackgroundColor(Color.rgb(0xF3, 0xF4, 0xFA)) }
         col.addView(TextView(this).apply { text = "Long-press menu"; textSize = 24f; setTextColor(brown); setTypeface(typeface, Typeface.BOLD) })
         col.addView(TextView(this).apply {
             text = "Long-press ${who.name} to open it. Switch items on or off and drag ≡ to reorder. The first ${LongPressMenu.MAX_MAIN} make the ring; the rest go into “… More”. Power pins are for ${who.name} only."
@@ -160,11 +160,11 @@ class MenuSettingsActivity : Activity() {
         col.addView(list)
         col.addView(Button(this).apply {
             text = "Reset to defaults"; isAllCaps = false; setTextColor(brown); minimumHeight = dp(48)
-            background = GradientDrawable().apply { cornerRadius = dp(24).toFloat(); setColor(Color.WHITE); setStroke(dp(2), Color.rgb(0xE6, 0xC9, 0xA3)) }
+            background = GradientDrawable().apply { cornerRadius = dp(24).toFloat(); setColor(Color.WHITE); setStroke(dp(2), Color.rgb(0xDD, 0xE0, 0xF0)) }
             setOnClickListener { s.resetMenu(); load(); list.removeAllViews(); for (id in visible()) list.addView(row(id)); refreshPreview() }
         })
         refreshPreview()
-        return ScrollView(this).apply { addView(col); isFillViewport = true; setBackgroundColor(Color.rgb(0xFF, 0xF4, 0xE2)) }
+        return ScrollView(this).apply { addView(col); isFillViewport = true; setBackgroundColor(Color.rgb(0xF3, 0xF4, 0xFA)) }
     }
 
     /** The ring as Settai shows it (same drawing code), above a small character silhouette. */

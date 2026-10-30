@@ -77,7 +77,7 @@
         <activity
             android:name=".ui.ChatActivity"
             android:exported="false"
-            android:label="Chat with Settai"
+            android:label="Chat with Set-Tai"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
@@ -172,6 +172,7 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
 
+        <activity android:name=".ui.SelfieShotActivity" android:exported="false" android:excludeFromRecents="true" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <activity android:name=".ui.MemoryActivity" android:exported="false" android:label="Settai's memory" />
         <activity android:name=".ui.ReportsActivity" android:exported="false" android:label="Reported replies" />
         <activity android:name=".ui.WardrobeActivity" android:exported="false" android:label="Wardrobe" />

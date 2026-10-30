@@ -45,11 +45,11 @@ class MoodBarsView(context: Context) : View(context) {
         set(v) { field = v; invalidate() }
 
     private val labelP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0x5A, 0x36, 0x18); textSize = 12f * d
+        color = Color.rgb(0x1E, 0x22, 0x40); textSize = 12f * d
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
     private val valP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0x8A, 0x6A, 0x4A); textSize = 11.5f * d; textAlign = Paint.Align.RIGHT
+        color = Color.rgb(0x64, 0x6A, 0x8C); textSize = 11.5f * d; textAlign = Paint.Align.RIGHT
         typeface = Typeface.create("sans-serif", Typeface.NORMAL)
     }
     private val trackP = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0xF3, 0xE5, 0xD0) }
@@ -102,10 +102,10 @@ class MoodBarsView(context: Context) : View(context) {
  */
 class DiaryActivity : Activity() {
     private val d by lazy { resources.displayMetrics.density }
-    private val cream = Color.rgb(0xFF, 0xF4, 0xE2)
-    private val brown = Color.rgb(0x5A, 0x36, 0x18)
-    private val soft = Color.rgb(0x8A, 0x6A, 0x4A)
-    private val accent = Color.rgb(0xE8, 0x8A, 0x2E)
+    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
+    private val brown = Color.rgb(0x1E, 0x22, 0x40)
+    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
+    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
     private lateinit var who: Character
 
     private fun dp(v: Int) = (v * d).toInt()
@@ -150,7 +150,7 @@ class DiaryActivity : Activity() {
                 background = GradientDrawable().apply {
                     cornerRadius = dp(20).toFloat()
                     setColor(if (sel) accent else Color.WHITE)
-                    setStroke(dp(1), if (sel) accent else Color.rgb(0xE6, 0xC9, 0xA3))
+                    setStroke(dp(1), if (sel) accent else Color.rgb(0xDD, 0xE0, 0xF0))
                 }
                 setPadding(dp(12), dp(6), dp(12), dp(6))
                 setOnClickListener { who = c; rebuild() }

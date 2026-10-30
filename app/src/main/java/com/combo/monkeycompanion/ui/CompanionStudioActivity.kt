@@ -536,11 +536,11 @@ class StudioLiveStageView(context: Context, var character: CustomCharacter) : Vi
 
 class CompanionStudioActivity : Activity() {
     private val d by lazy { resources.displayMetrics.density }
-    private val cream = Color.rgb(0xFF, 0xF4, 0xE2)
-    private val brown = Color.rgb(0x5A, 0x36, 0x18)
-    private val soft = Color.rgb(0x8A, 0x6A, 0x4A)
-    private val accent = Color.rgb(0xE8, 0x8A, 0x2E)
-    private val purple = Color.rgb(0x6A, 0x1B, 0x9A)
+    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
+    private val brown = Color.rgb(0x1E, 0x22, 0x40)
+    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
+    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
+    private val purple = Color.rgb(0x09, 0x84, 0xE3)
     private val uiHandler = Handler(Looper.getMainLooper())
 
     private lateinit var draft: CustomCompanionSpec
@@ -782,7 +782,7 @@ class CompanionStudioActivity : Activity() {
                 btn.background = GradientDrawable().apply {
                     cornerRadius = dp(16).toFloat()
                     setColor(if (sel) accent else Color.rgb(0xFF, 0xF9, 0xEE))
-                    setStroke(dp(1), if (sel) accent else Color.rgb(0xE6, 0xC9, 0xA3))
+                    setStroke(dp(1), if (sel) accent else Color.rgb(0xDD, 0xE0, 0xF0))
                 }
             }
         }
@@ -1577,7 +1577,7 @@ class CompanionStudioActivity : Activity() {
         background = GradientDrawable().apply {
             cornerRadius = dp(18).toFloat()
             setColor(if (selected) accent else Color.rgb(0xFF, 0xF9, 0xEE))
-            setStroke(dp(1), if (selected) accent else Color.rgb(0xE6, 0xC9, 0xA3))
+            setStroke(dp(1), if (selected) accent else Color.rgb(0xDD, 0xE0, 0xF0))
         }
         setPadding(dp(8), dp(6), dp(8), dp(6))
         setOnClickListener { onClick() }

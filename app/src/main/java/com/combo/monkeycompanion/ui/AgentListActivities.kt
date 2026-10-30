@@ -30,12 +30,12 @@ import java.util.Date
 abstract class SimpleListActivity : Activity() {
     protected val d by lazy { resources.displayMetrics.density }
     protected fun dp(v: Int) = (v * d).toInt()
-    protected val brown = Color.rgb(0x5A, 0x36, 0x18)
-    protected val soft = Color.rgb(0x8A, 0x63, 0x3E)
+    protected val brown = Color.rgb(0x1E, 0x22, 0x40)
+    protected val soft = Color.rgb(0x64, 0x6A, 0x8C)
 
     override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); ChatHub.init(this) }
     override fun onResume() { super.onResume(); refresh() }
-    protected fun refresh() { setContentView(ScrollView(this).apply { setBackgroundColor(Color.rgb(0xFF, 0xF4, 0xE2)); addView(build()) }) }
+    protected fun refresh() { setContentView(ScrollView(this).apply { setBackgroundColor(Color.rgb(0xF3, 0xF4, 0xFA)); addView(build()) }) }
     protected abstract fun build(): View
 
     protected fun text(t: String, size: Float = 14f, bold: Boolean = false, color: Int = brown) = TextView(this).apply {
@@ -124,7 +124,7 @@ object AgentScreens {
 object AgentScreensMore {
     fun extras(a: Activity, g: CapGroup, col: LinearLayout) {
         val s = ChatHub.settings
-        val brown = Color.rgb(0x5A, 0x36, 0x18); val soft = Color.rgb(0x8A, 0x63, 0x3E)
+        val brown = Color.rgb(0x1E, 0x22, 0x40); val soft = Color.rgb(0x64, 0x6A, 0x8C)
         fun note(t: String) = TextView(a).apply { text = t; textSize = 12f; setTextColor(soft) }
         when (g) {
             CapGroup.VOICE -> {

@@ -46,10 +46,10 @@ class SettingsActivity : Activity() {
     private val s get() = ChatHub.settings
     private val d by lazy { resources.displayMetrics.density }
     private fun dp(v: Int) = (v * d).toInt()
-    private val brown = Color.rgb(0x5A, 0x36, 0x18)
-    private val soft = Color.rgb(0x8A, 0x63, 0x3E)
-    private val accent = Color.rgb(0xE8, 0x8A, 0x2E)
-    private val cream = Color.rgb(0xFF, 0xF4, 0xE2)
+    private val brown = Color.rgb(0x1E, 0x22, 0x40)
+    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
+    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
+    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
     private val ui = Handler(Looper.getMainLooper())
 
     private lateinit var onlineCard: View
@@ -91,7 +91,7 @@ class SettingsActivity : Activity() {
         setTextColor(if (primary) Color.WHITE else brown)
         background = GradientDrawable().apply {
             cornerRadius = dp(24).toFloat(); setColor(if (primary) accent else Color.WHITE)
-            setStroke(dp(2), if (primary) accent else Color.rgb(0xE6, 0xC9, 0xA3))
+            setStroke(dp(2), if (primary) accent else Color.rgb(0xDD, 0xE0, 0xF0))
         }
         setOnClickListener { click() }
         layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) }
@@ -102,7 +102,7 @@ class SettingsActivity : Activity() {
         inputType = if (secret) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         else InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
         setPadding(dp(12), dp(10), dp(12), dp(10))
-        background = GradientDrawable().apply { setColor(Color.rgb(0xFF, 0xFB, 0xF5)); cornerRadius = dp(12).toFloat(); setStroke(dp(1), Color.rgb(0xE6, 0xC9, 0xA3)) }
+        background = GradientDrawable().apply { setColor(Color.rgb(0xFF, 0xFB, 0xF5)); cornerRadius = dp(12).toFloat(); setStroke(dp(1), Color.rgb(0xDD, 0xE0, 0xF0)) }
         layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) }
     }
 
@@ -759,10 +759,10 @@ object GiveBrainDialog {
         val s = ChatHub.settings
         val d = act.resources.displayMetrics.density
         fun dp(v: Int) = (v * d).toInt()
-        val brown = Color.rgb(0x5A, 0x36, 0x18)
-        val soft = Color.rgb(0x8A, 0x63, 0x3E)
-        val accent = Color.rgb(0xE8, 0x8A, 0x2E)
-        val purple = Color.rgb(0x6A, 0x1B, 0x9A)
+        val brown = Color.rgb(0x1E, 0x22, 0x40)
+        val soft = Color.rgb(0x64, 0x6A, 0x8C)
+        val accent = Color.rgb(0x6C, 0x5C, 0xE7)
+        val purple = Color.rgb(0x09, 0x84, 0xE3)
 
         val root = LinearLayout(act).apply {
             orientation = LinearLayout.VERTICAL

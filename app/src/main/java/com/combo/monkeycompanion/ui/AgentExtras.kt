@@ -16,8 +16,8 @@ import com.combo.monkeycompanion.powers.CapGroup
 /** Per-group settings shown under each v4 agent power card. */
 @SuppressLint("SetTextI18n", "UseSwitchCompatOrMaterialCode")
 object AgentExtras {
-    private val brown = Color.rgb(0x5A, 0x36, 0x18)
-    private val soft = Color.rgb(0x8A, 0x63, 0x3E)
+    private val brown = Color.rgb(0x1E, 0x22, 0x40)
+    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
 
     fun extras(a: Activity, g: CapGroup): View? {
         val s = ChatHub.settings
