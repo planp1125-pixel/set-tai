@@ -500,7 +500,7 @@ class MainActivity : Activity() {
         })
         val CT = com.combo.monkeycompanion.brain.CareTools
         val TS = com.combo.monkeycompanion.agent.ToolStore
-        for (tool in CT.Tool.entries) {
+        for (tool in com.combo.monkeycompanion.brain.CareTools.Tool.entries) {
             val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(4), 0, dp(4)) }
             val sw = android.widget.Switch(this).apply {
                 text = "${tool.icon}  ${tool.label}"; textSize = 15f; setTextColor(brown)
@@ -519,15 +519,15 @@ class MainActivity : Activity() {
             set.setOnClickListener {
                 val st = TS.get(this@MainActivity, tool)
                 when (tool.kind) {
-                    CT.Kind.INTERVAL -> {
+                    com.combo.monkeycompanion.brain.CareTools.Kind.INTERVAL -> {
                         val opts = listOf(30, 60, 90, 120)
                         android.app.AlertDialog.Builder(this@MainActivity).setTitle("${tool.icon} ${tool.label}: how often?")
                             .setItems(opts.map { if (it % 60 == 0) "Every ${it / 60} h" else "Every $it min" }.toTypedArray()) { _, w ->
                                 TS.put(this@MainActivity, tool, st.copy(value = opts[w], lastFiredMs = System.currentTimeMillis())); refreshSet()
                             }.show()
                     }
-                    CT.Kind.DAILY -> android.app.TimePickerDialog(this@MainActivity, { _, h, m -> TS.put(this@MainActivity, tool, st.copy(value = h * 60 + m)); refreshSet() }, st.value / 60, st.value % 60, false).show()
-                    CT.Kind.ONCE -> {
+                    com.combo.monkeycompanion.brain.CareTools.Kind.DAILY -> android.app.TimePickerDialog(this@MainActivity, { _, h, m -> TS.put(this@MainActivity, tool, st.copy(value = h * 60 + m)); refreshSet() }, st.value / 60, st.value % 60, false).show()
+                    com.combo.monkeycompanion.brain.CareTools.Kind.ONCE -> {
                         val et = EditText(this@MainActivity).apply { hint = "Reminder text"; setText(st.text) }
                         val opts = listOf(15, 30, 60, 120)
                         android.app.AlertDialog.Builder(this@MainActivity).setTitle("📝 Custom reminder").setView(et)

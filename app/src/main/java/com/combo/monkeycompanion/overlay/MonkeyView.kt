@@ -1864,7 +1864,7 @@ class MonkeyView(
     private fun onToolItem(t: com.combo.monkeycompanion.brain.CareTools.Tool) {
         val T = com.combo.monkeycompanion.brain.CareTools
         val S = com.combo.monkeycompanion.agent.ToolStore
-        if (t == T.Tool.CUSTOM) {
+        if (t == com.combo.monkeycompanion.brain.CareTools.Tool.CUSTOM) {
             val st = S.get(context, t)
             showBubble("📝 Remind you" + (if (st.text.isNotBlank()) " “${st.text}”" else "") + " in…", 9f, reply = false,
                 chips = listOf(15, 30, 60).map { com.combo.monkeycompanion.agent.QuickChip("menu", if (it < 60) "$it min" else "1 h", "tool_custom:$it") } + com.combo.monkeycompanion.agent.QuickChip.LATER)
@@ -1879,8 +1879,8 @@ class MonkeyView(
     private fun setCustomReminder(mins: Int) {
         val T = com.combo.monkeycompanion.brain.CareTools
         val S = com.combo.monkeycompanion.agent.ToolStore
-        val st = T.toggle(T.Tool.CUSTOM, S.get(context, T.Tool.CUSTOM).copy(value = mins), true, System.currentTimeMillis())
-        S.put(context, T.Tool.CUSTOM, st)
+        val st = T.toggle(com.combo.monkeycompanion.brain.CareTools.Tool.CUSTOM, S.get(context, com.combo.monkeycompanion.brain.CareTools.Tool.CUSTOM).copy(value = mins), true, System.currentTimeMillis())
+        S.put(context, com.combo.monkeycompanion.brain.CareTools.Tool.CUSTOM, st)
         say("⏰ Okay! I'll remind you in ${if (mins < 60) "$mins min" else "${mins / 60} h"} 👍", 3500L)
     }
 
