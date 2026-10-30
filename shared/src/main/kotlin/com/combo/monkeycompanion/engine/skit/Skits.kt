@@ -144,7 +144,7 @@ class SkitConductor(seed: Long = 1012L) {
         val ok = eligible(crew)
         if (ok.isEmpty()) return null
         val pool = forceId?.let { f -> ok.filter { it.id == f } }?.ifEmpty { null }
-            ?: ok.filter { it.id !in recent }.ifEmpty { ok }
+            ?: run { val block = recent.toList().takeLast(minOf(4, ok.size - 1)); ok.filter { it.id !in block }.ifEmpty { ok } }
         // Specific (named-cast) skits beat the generic one.
         val w = pool.map { s -> s.weight * (if (s.cast.any { it.ids.isNotEmpty() }) 2f else 1f) }
         var r = rnd.nextFloat() * w.sum()
