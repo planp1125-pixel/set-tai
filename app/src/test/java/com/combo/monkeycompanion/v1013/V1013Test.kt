@@ -107,15 +107,15 @@ class V1013Test {
 class V1013OnboardingTest {
     private val O = com.combo.monkeycompanion.brain.Onboarding
     @Test fun demoGoesTapDoubleHoldAndCanSkip() {
-        val r = O.Run()
-        assertEquals(null, r.onGesture(O.Gesture.HOLD))          // wrong gesture: ignored
-        assertNotNull(r.onGesture(O.Gesture.TAP))
-        assertNotNull(r.onGesture(O.Gesture.DOUBLE_TAP))
+        val r = com.combo.monkeycompanion.brain.Onboarding.Run()
+        assertEquals(null, r.onGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.HOLD))          // wrong gesture: ignored
+        assertNotNull(r.onGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.TAP))
+        assertNotNull(r.onGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.DOUBLE_TAP))
         assertFalse(r.done)
-        assertNotNull(r.onGesture(O.Gesture.HOLD))
+        assertNotNull(r.onGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.HOLD))
         assertTrue(r.done)
-        val s = O.Run(); s.skip(); assertTrue(s.done)
-        val t = O.Run(); repeat(31) { t.step(1f) }; assertTrue("about 30 s max", t.done)
+        val s = com.combo.monkeycompanion.brain.Onboarding.Run(); s.skip(); assertTrue(s.done)
+        val t = com.combo.monkeycompanion.brain.Onboarding.Run(); repeat(31) { t.step(1f) }; assertTrue("about 30 s max", t.done)
     }
     @Test fun sevenDailyTipsOncePerDayRespectingBlocks() {
         assertEquals(7, O.tips.size)
