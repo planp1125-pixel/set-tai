@@ -42,21 +42,27 @@ jobs:
           }
           GR
           ./gradlew --init-script "$RUNNER_TEMP/ci.init.gradle.kts" :app:testFullDebugUnitTest --stacktrace
-      - name: Build release APKs
+      - name: Build release APKs + Play bundle
         env:
           SETTAI_KEYSTORE_PASSWORD: ${{ secrets.SETTAI_KEYSTORE_PASSWORD }}
           SETTAI_KEY_ALIAS: ${{ secrets.SETTAI_KEY_ALIAS }}
           SETTAI_KEY_PASSWORD: ${{ secrets.SETTAI_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleFullRelease :app:assemblePlayRelease --stacktrace
-      - name: Collect APKs
+        run: ./gradlew :app:assembleFullRelease :app:assemblePlayRelease :app:bundlePlayRelease --stacktrace
+      - name: Collect APKs + AAB
         run: |
+          set -e
           mkdir -p out
-          find app/build/outputs/apk -name '*-release*.apk' -exec cp {} out/ \;
+          cp "$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)" out/set-tai-full-release.apk
+          cp "$(find app/build/outputs/apk/play/release -name '*.apk' | head -1)" out/set-tai-play-release.apk
+          cp "$(find app/build/outputs/bundle/playRelease -name '*.aab' | head -1)" out/set-tai-play-release.aab
           ls -l out
+          for f in out/*; do echo "== $f"; keytool -printcert -jarfile "$f" | grep -E 'Owner|SHA256' || true; done
       - uses: actions/upload-artifact@v4
         with:
-          name: settai-android-apks
-          path: out/*.apk
+          name: set-tai-android
+          path: |
+            out/*.apk
+            out/*.aab
           if-no-files-found: error
 
   desktop-linux:
