@@ -1,0 +1,268 @@
+# Settai v9.5 — Official Baseline Manifest
+
+This is the **official v9.5 baseline** (`versionCode 22`, `versionName 9.5`), recorded on **2026-10-25**.
+Use it to compare any future changes, including changes made by other AIs or developers, against v9.5.
+
+- Package: `com.combo.monkeycompanion`
+- Git commit (live build repo `/workspace/monkey-companion`, HEAD): `037292cb5cbdfb94a3163b43aa7f29b9ae372364` (`037292c`, 2026-10-24 00:05 IST). The working tree was clean.
+- The `settai-next/` source is byte-identical to that commit's tracked files, with one exception: `README.md` was rewritten for the handoff, and the old one is kept at `docs/README-v7-legacy.md`. `FUTURE_PLAN.md`, `docs/CHANGELOG.md` and `docs/README-v7-legacy.md` were added. These are docs only.
+
+## Release artifacts (SHA-256)
+| File | SHA-256 |
+|---|---|
+| `settai-v9.5.apk` (full) | `891cda1030dac193ae74d36c1305ae7ed15d70739ccbc66d973c92891754cbcd` |
+| `settai-v9.5-play.apk` | `e5882c30673a9464af9d337f753f5a0cff1f522406e0f6bd96792a8c1e8806e3` |
+| `settai-v9.5-src.zip` | `508585e980e5dc57656757684766d7357419e5056c9ee78ae086073e47e7991f` |
+| `settai-v9.5-preview.png` | `a82710b9a76cfa514826867dd7e99e2b5ad52365fdd25adbbb78fb9ecd087cec` |
+
+## How to diff a later version against this baseline (one command)
+```bash
+cd settai-next && sha256sum -c --quiet ../BASELINE_MANIFEST.sha256    # lists every modified or missing file
+# new files:  comm -13 <(awk '{print $2}' ../BASELINE_MANIFEST.sha256 | sort) <(find . -type f -not -path '*/build/*' -not -path '*/.gradle/*' | sed 's|^./||' | sort)
+```
+Paths in `BASELINE_MANIFEST.sha256` are relative to the `settai-next/` project root. `docs/BASELINE_MANIFEST.*` itself is excluded.
+
+## Rules for future AIs and developers
+1. **Keep this manifest** and the `.sha256` file unchanged. They describe v9.5 forever.
+2. **Add every change to `docs/CHANGELOG.md`** under a new version number, with what changed and which files.
+3. **Never reuse `versionCode 22`** (or 19–21). The next build is 23 or higher, and every build gets a new versionCode and versionName.
+4. Each release ships a full APK, a play APK, a src zip and a preview PNG.
+5. Overlay app only. AI stays OFF unless the user enables Give Brain. No raw photo cutouts. v9.5 stays the fallback.
+6. Follow `FUTURE_PLAN.md` (M1–M8 order, with analysis and approval before any source change).
+
+## Source files (233 files)
+| Path | Lines | SHA-256 |
+|---|---|---|
+| `.gitignore` | 4 | `e03f4c08a419080084eecd911023e1fe3e9b8bbeba7cd1c46b11439ee9339736` |
+| `FUTURE_PLAN.md` | 141 | `7f61fa5f26e3586db29688985b73a6fdc7a75a43b927384582f494f85d13dbe1` |
+| `README.md` | 65 | `e9691d76a3385dcba84e9b1e0f3feeca4ec393f790f811d3ec4449de5b4bde30` |
+| `app/build.gradle.kts` | 65 | `ffd6f5a5440ca42c9fb254d3fb12c268df617ea755e827bcd8a351b710c42c20` |
+| `app/src/debug/AndroidManifest.xml` | 14 | `d80414ce2d6d933c8d0c72b72e4f23a0d3f1248c3af50abe305f1fbfd2f4b3bb` |
+| `app/src/debug/java/com/combo/monkeycompanion/PreviewRenderReceiver.kt` | 20 | `2b662eab6366d0006f4b4b0b040167c2e0e0520cdf91e7837f582ca56b2c67a7` |
+| `app/src/debug/java/com/combo/monkeycompanion/PreviewSheet.kt` | 477 | `6067d16a7d3a274cb6dfdf85a60a08d94a68f3c8c0f1c18f3a5f4b9677bcbace` |
+| `app/src/debug/java/com/combo/monkeycompanion/PreviewV3.kt` | 183 | `070b43cb089eb3bd39b97d129874053046459789eb87195e9591a10b9757131f` |
+| `app/src/debug/java/com/combo/monkeycompanion/PreviewV42.kt` | 229 | `35569cb6f9a954eaddf84cf7bfdc70a70204bf62f4f535672ba9852305142bb9` |
+| `app/src/debug/java/com/combo/monkeycompanion/PreviewV44.kt` | 254 | `b7e9006864ffb73e52a5b48ca01116e656a016e969021d26c81880b87e9bdd74` |
+| `app/src/debug/java/com/combo/monkeycompanion/PreviewV45.kt` | 70 | `ec49dc683e02ad5ee768802127ddb65877c7d24fecb55ffcb20323bf006d0a51` |
+| `app/src/debug/java/com/combo/monkeycompanion/PreviewV5.kt` | 125 | `8a1797d4c77d5927351f46992920b2ac1f92588fb0f7ba2ed7174acc4a2426df` |
+| `app/src/debug/java/com/combo/monkeycompanion/PreviewV6.kt` | 262 | `7ab93e8f0950245567a2d91e98811cf874b23483dbd4756a9ffb47231f3cd5dd` |
+| `app/src/debug/java/com/combo/monkeycompanion/PreviewV7.kt` | 338 | `e65029f78baad2f44e92300b877d8b6854df8ef7e2f543c87b0ea880cf3ebbf8` |
+| `app/src/debug/java/com/combo/monkeycompanion/PreviewV8.kt` | 368 | `e588d5d35a44748f55844e2d75e2c8deda3a15ad69e6521f4a282b0838d5457a` |
+| `app/src/main/AndroidManifest.xml` | 175 | `893f6b980add56619ad9d06c196f2c46afb7613f23eceb4e7ad9aa8c29db4295` |
+| `app/src/main/java/com/combo/monkeycompanion/App.kt` | 27 | `af60be660ddf97e58640fa101d27452cf092bfbe8bf6ef14ab075eb903346ad6` |
+| `app/src/main/java/com/combo/monkeycompanion/MainActivity.kt` | 1079 | `f5e32e421b2ab023fcbdd9a4ec09b90ddabbe69ffc7ea2ae70d2760dca254cf9` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/AgentSafety.kt` | 57 | `3ea2c42a10e0ada20ebbf7fd6b07f9eb8bb4b5753ecdb6bec534cbcef3d6f70a` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/DailyUtilityEngine.kt` | 489 | `a221501cb98c6abd967e6334ceb02ec7d4833982260513ff0969bdaf2e2f3869` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/DrivingNotice.kt` | 34 | `0b8845d37a95c998810c91debd5dd906e4810b29e1fa44fa5b88a343d676c9d1` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/ForegroundAppTracker.kt` | 92 | `257e8eaf0cb444ee997fba6ac56d3aa5a3a3cfc61c26b0753c8a0f16e645485c` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/Memory.kt` | 126 | `4d588ff8b56b6973834e9e4ef9162b44399b2f0749923284bd25ea66a559bee7` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/NotifSummary.kt` | 508 | `2d8f9b9d91048e49b9bf56c1c552d70e9020f5d8699eb51d4488fae48f34325f` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/Notifs.kt` | 57 | `b203f2997ceebd0303db80af1acb08bee47434df53a8f850bfa82c01ec084ba3` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/Otp.kt` | 23 | `f2190fbb715b545e627f64b2e4753fe1e35245b77d64c7b04059891301bf169c` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/Proactive.kt` | 283 | `5e8a3f311d4a08577fcb18307043aeafd21ab2f353e9b1e6d944c55afdd979c4` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/ProactiveGate.kt` | 154 | `379c1c6e50a3bb9d99063eaadea21ca4f7e4598b5aa4b3559fd44da7c280070e` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/ProactiveLines.kt` | 82 | `cdd9d77d37c9fad3c2ca1ac6971ddedf8a73e900754476341f1a434430d74687` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/ReplyReports.kt` | 57 | `7786a1b0b28f5428264548ccf730cc5ffe7b85a5ab3f655a12a2c1a8ab8d2c2e` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/RoutineRuntime.kt` | 223 | `726e8ac1ab1c597ed4c92062d4e7c732aea586eb0c43428d5090a27d820cf956` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/Routines.kt` | 140 | `2c864b8c806af7372a0ec15e9cc319f0de2333143200dcb30321a4ab81ebaed1` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/ScreenAgent.kt` | 38 | `0d99efeb73dacdd73f164e9888f60efccb9c7e5ad64d455df4c3ffd821565abb` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/ScreenDigest.kt` | 433 | `31253d17d59fad1217a4fecbd2bae63afccce3dcd1860578cf2ea0a2d3e21764` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/ScreenModel.kt` | 105 | `e829af2cb25fb0105d5b0698ac6faa6a79c6c4349751c7baf08dd5815faf43df` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/ScreenTalk.kt` | 275 | `b48e951ec4bba397d1f1da55da58f7fabbbe8f18b9800dcbb7451d92d1f2d7ba` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/SettaiAccessibilityService.kt` | 188 | `ba13dd1e13ab20557ff06618035c71b3b512c316a6a82dfe56a53ba97f58c091` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/Voice.kt` | 186 | `423205ca232711a5b974fb01507988283a276ea84b256e24bd9bfb887ef88559` |
+| `app/src/main/java/com/combo/monkeycompanion/agent/Web.kt` | 84 | `e32f9f66f840ab73db468f55f556973d4735e9a46f401ff99ff3861b83cea3c5` |
+| `app/src/main/java/com/combo/monkeycompanion/ai/AgentPrompt.kt` | 51 | `b48b7e38dadbf15c87e0cbcab03174ba8ebc33224b346b63b58232a4d6b97bb0` |
+| `app/src/main/java/com/combo/monkeycompanion/ai/AppSettings.kt` | 259 | `32549f59352fc2122eb4f49fe613a801fc5b7ffda05974f90fa420fa8d6d7b6f` |
+| `app/src/main/java/com/combo/monkeycompanion/ai/ChatHub.kt` | 554 | `a3ae1c2ecc1346d8f13452e607ac4a6d0c5813367ad7d663a10dd392c7d5bd53` |
+| `app/src/main/java/com/combo/monkeycompanion/ai/ChatMemory.kt` | 59 | `2541b9073ee4380827073d93336212b4c8dd96ea1543855bd3b96f762a561904` |
+| `app/src/main/java/com/combo/monkeycompanion/ai/ModelStore.kt` | 142 | `214d55e9e16a06c5cae32da2429a20db6838425cabee2c4c9c214e0745f4eb91` |
+| `app/src/main/java/com/combo/monkeycompanion/ai/OfflineBrain.kt` | 115 | `7851f815118c3c955bc1c57a2236a3578a2fea6a50d9c38be0510f5143296ff1` |
+| `app/src/main/java/com/combo/monkeycompanion/ai/SecureStore.kt` | 50 | `270f79938f96061cced0689d2699305aeccb38fed85dfb0bd73faa3e0c5250bd` |
+| `app/src/main/java/com/combo/monkeycompanion/character/CustomCompanionStore.kt` | 116 | `5f5e94f8390db954caddca85dcef02d0f3d5c8c939fdfcc59f5bc7e99c68dd6a` |
+| `app/src/main/java/com/combo/monkeycompanion/character/PhotoCompanionAnalyzer.kt` | 1043 | `549e3388b05810ddeaca22b33a93aeca4517889e514039a8121ba108b94f7a65` |
+| `app/src/main/java/com/combo/monkeycompanion/fun5/ClipMaker.kt` | 190 | `003bfe5a9ca3b20ad3d24313ed52654db4bb69dd27b458f2347cfa875b600318` |
+| `app/src/main/java/com/combo/monkeycompanion/fun5/Fun5Store.kt` | 46 | `05ffdaa9ef1f42bf76d3d8c27b6ec3c15391dee00235c50d1a6de45cee7318f9` |
+| `app/src/main/java/com/combo/monkeycompanion/fun5/MotionSensor.kt` | 34 | `8ed50604a39f66a2e8ac76d3c20a733b4b0a99023dc48bd220f049b19ca11dae` |
+| `app/src/main/java/com/combo/monkeycompanion/fun5/PairActivity.kt` | 114 | `5538dadff4f9361e979d3b7d4bea6de7b7870480cf92631b9a076c83502452f5` |
+| `app/src/main/java/com/combo/monkeycompanion/fun5/PairHub.kt` | 165 | `869375ec7f98e4ca8e60875445a230d03a24fd7244c1f58bf62a3b048b0c4d1f` |
+| `app/src/main/java/com/combo/monkeycompanion/fun5/Props5.kt` | 193 | `b4d95b10423c9a9a79742889b66ba9f24b980203e88978213c0015eefa2662b4` |
+| `app/src/main/java/com/combo/monkeycompanion/fun5/Stage.kt` | 560 | `690541415989ee20ba78b2876ef76d14a96a5f52e842e7deeb8aeaca717a00c2` |
+| `app/src/main/java/com/combo/monkeycompanion/mind/MindHub.kt` | 415 | `ad0be1c63ed6e89aa2965881c7881edf0e126b5d42949d725fcb4e46f044d3ef` |
+| `app/src/main/java/com/combo/monkeycompanion/overlay/EnergyMeter.kt` | 73 | `46d9a7544dfdccffefdd6b1734b94ca91495570335cdb7337bb697c4a87cbfe7` |
+| `app/src/main/java/com/combo/monkeycompanion/overlay/MonkeyOverlayService.kt` | 588 | `31dd4b9f6df44baa765c662bfe1d88efe9da0c02dc14931033b616cbcba430dd` |
+| `app/src/main/java/com/combo/monkeycompanion/overlay/MonkeyView.kt` | 5704 | `97e63b85059fd3fb9afddce43b8a2b8733409aa06b2e3ddf2203be6bbdde7d53` |
+| `app/src/main/java/com/combo/monkeycompanion/overlay/Portraits.kt` | 24 | `5a51adff27352b5366842bfd9af6c72523fa368b67aff85dba808dc9f0e360bd` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/ActionLog.kt` | 40 | `a07a69448ebe0da1be2674d22c7d8210db1bad3c3f738e6a64ffba07e0e11f0b` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/AgentCaps.kt` | 135 | `1749f82f49e5c5be1300fd9be9ec25528a7fe9b6a3b35197f22b47e607ba706e` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/AgentCommands.kt` | 63 | `207e83fbe3a9893c2fe1ab314fe0ad51652cbc4be8051a749b47a2781773396c` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/Capabilities.kt` | 549 | `d8e009367b5559eb30055cbf58657a4386bdf308f70fc5493d211acddf3826b0` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/ClockCommands.kt` | 163 | `0bf8f9227e56ca4f196f32cbe14e8e68097101e725816ec6f4656311a6cad7d2` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/ClockPowers.kt` | 105 | `cff6d54d9bbdabb1db0f48038f7a5b85a0200adbbf886bceb7896a964221a7b5` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/ExtraCaps.kt` | 134 | `9a465d1fc734276827928d17d317830f0e06fcfad54bafdce5ce5074a8c5e7af` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/LaunchGate.kt` | 79 | `b55809c0c1148e4c392997c9281821027b75f49b343aae03fa195c493896078d` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/MoreCaps.kt` | 191 | `89f5bed6f857b0e5ab4038da272376e82a1afab2aaf0b8c20a5ef0390fc4c938` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/PhoneCommands.kt` | 228 | `464ecb7d08c0a0a5ed41b4b6aa9b010ff1d44aa8b5439e2971f130012270905b` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/PhonePowers.kt` | 146 | `7777d3be8adf783d4df5a6df4aa9ac32bd1a05cb46424c4d988faeaf1e0ee178` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/PowerTags.kt` | 33 | `aa92ee6d622509e8fb3f3891f9b1c33f500ee43ecb40e8d7699a977921616060` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/SettaiClock.kt` | 179 | `57427de417093233790dfcdb44e5f9c08bf1045cc49c909129fe8f3c3d4a6cbc` |
+| `app/src/main/java/com/combo/monkeycompanion/powers/SettaiNotificationListener.kt` | 150 | `075c6175c77a3bf2fd3731cc82a62f3352f0756e698a7fea9d1ebae0063ed178` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/AgentExtras.kt` | 49 | `1e87628ce6c404f3b7bbefb83758d2f52fc84f2a31b3c9eb050598fc6c1283c8` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/AgentListActivities.kt` | 174 | `7b582531bb8ec9c679319238e12b6ef975b9dabb26ee0583c8827039b76baf46` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/CapabilitiesActivity.kt` | 164 | `5153b60a647ceff14208a3530e1d21bb7a0cc3e883dbedfaf1d315c53d7418f1` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/CharacterViews.kt` | 166 | `77c18584c81c55186727c3707a8567fedddce66adab67db4d367a8165297ba1c` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/ChatActivity.kt` | 29 | `e399c1dcec1c5aca7dd44ea42f249cf12e65a84133ba4eb319235eedd443b9da` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/ChatPanelView.kt` | 264 | `110fee55a7ff2b62f2dc0d8c05ff54d982b858e8d272c3a6a70ad32fc4d9c41f` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/CompanionStudioActivity.kt` | 1733 | `1593bed5aa8a3cdd6acede77010da4a0794379c20c6b1f2712f533d1b1273d37` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/DiaryActivity.kt` | 443 | `46b676beb2059a36d7695c2fa59a83370ca9c13e8c1d7742227d7b19b1219da0` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/MenuSettingsActivity.kt` | 231 | `42c201972485fed0ad334aa8466bcf8ab80e28ae6b4ecc6fcc625c0a35b21ce3` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/RingActivity.kt` | 106 | `1873ab779cb8c7939a9adce8411e9ed5afa7446918d2aca5e903d83b4ba1211c` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/SettingsActivity.kt` | 910 | `ee1c29a2d8e90c365009ab6ebe04dd81d20692ab085551253c6344eff3c5e74e` |
+| `app/src/main/java/com/combo/monkeycompanion/ui/SkillsActivity.kt` | 214 | `fe012cad7e647c7847be765c399c7f6ce634654cbf8595b5a19850649bff2ef4` |
+| `app/src/main/java/com/combo/monkeycompanion/wallpaper/SettaiWallpaperService.kt` | 206 | `faa6d6b11f678c560dcde23614e95c9b9c5e247ad72a030952e3c68a8da25a6d` |
+| `app/src/main/java/com/combo/monkeycompanion/wallpaper/SpotsEditorActivity.kt` | 242 | `876aa3d6ceb1ffb2a9a67deaa421998906cbbc013121fcc6f112436fff473c5c` |
+| `app/src/main/java/com/combo/monkeycompanion/wallpaper/WallpaperBackground.kt` | 135 | `97b85068b2bdb8ab9c3368c6da84c1656dfc8d12830fcf2d158dae961a83e9b6` |
+| `app/src/main/java/com/combo/monkeycompanion/wallpaper/WallpaperPrefs.kt` | 54 | `066f16a9538a86023097aa0b3c19fc5d2801f4f431841d227e1e4509d26f2ecb` |
+| `app/src/main/res/drawable/ic_launcher_foreground.xml` | 16 | `2303c3545192e723e1802138842608476914bbce53ce29f83ede2bd9f1bccdec` |
+| `app/src/main/res/drawable/ic_launcher_mono.xml` | 6 | `97b372ae71f8cdecd14a315a927c1dc5799be7765227de0cb21fa752fd375d06` |
+| `app/src/main/res/drawable/ic_stat_monkey.xml` | 6 | `eb7732d3c5937e78429712b9e66f31491e7b289cb4e1ee146295b88c1d7f15a4` |
+| `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` | 6 | `e6eeb7dbdbdec808b930c6ea8053c147374600618034037c7e7b15afc0f3aad2` |
+| `app/src/main/res/values/colors.xml` | 4 | `0232a3aaf5923e0ec4723cff7bc560c630bc2297ae8f9995b085c8b2e78302d1` |
+| `app/src/main/res/values/strings.xml` | 16 | `dc513f224298be3050983e796c859118d46c3e224ec99717499b5f1cde9c5767` |
+| `app/src/main/res/xml/accessibility_service_config.xml` | 12 | `c9a6e224100fcc0ea97a878aa69c3022c183e9d68d62babcd83359a1f61dae65` |
+| `app/src/main/res/xml/clip_paths.xml` | 4 | `b6cc6d28d1d2a5551594c08923955bb36bf4ab9577c90c628785adb92e6ccc92` |
+| `app/src/main/res/xml/settai_wallpaper.xml` | 5 | `9c6c02ec807fda45626ded4825ede5d4d10f50371e22631ff86a1be36bd45cc0` |
+| `app/src/main/res/xml/shortcuts.xml` | 14 | `9846f266280eb7a870f4db62369e17e91880232c18e1ab9e71bba330de434a50` |
+| `app/src/play/AndroidManifest.xml` | 14 | `60793ab4c1077dba07b3834d3feae674a48ea4e2551e81a4df753a7825743b8e` |
+| `app/src/test/java/com/combo/monkeycompanion/PreviewSheetTest.kt` | 212 | `accf0c5124d6c82fb3684c0040b67a3f5c5920df8642aca852e1502a0501207c` |
+| `app/src/test/java/com/combo/monkeycompanion/agent/AgentCommandsTest.kt` | 52 | `6c4e9545d73e47a3974d58f80870c37f9caa3b7e4a9041a661cdb76d70eb067d` |
+| `app/src/test/java/com/combo/monkeycompanion/agent/AgentSafetyTest.kt` | 111 | `688b5e5791aa14d1c844b86c073db3c195bc90ebe71297faf92f313684f704ee` |
+| `app/src/test/java/com/combo/monkeycompanion/agent/MemoryAndRoutinesTest.kt` | 134 | `7813fcd5774c8f9c85a72891ec44bab8d2ad765062b3c78f0415e86a41a412b3` |
+| `app/src/test/java/com/combo/monkeycompanion/agent/NotifSummaryCardTest.kt` | 240 | `84b92f26ee873d23d2e5d4f3810ec2cf329c5d6fca12b930a98374c907f62971` |
+| `app/src/test/java/com/combo/monkeycompanion/agent/ProactiveTest.kt` | 135 | `ef939ad6592b72c716a69033f7d7664a0c8e3811f2f027152b7d4d11dfe4d94f` |
+| `app/src/test/java/com/combo/monkeycompanion/agent/ReportsTest.kt` | 43 | `6786a56ba711b4f8f186880326dff558667ef85b00199fda44513f0ef97c0c4a` |
+| `app/src/test/java/com/combo/monkeycompanion/agent/ScreenDigestTest.kt` | 191 | `8f8fd6160ad4275aa4f87b70062407875faff9998d7d46b976b9a61debf06391` |
+| `app/src/test/java/com/combo/monkeycompanion/agent/WebAndMoreTest.kt` | 67 | `0ec36781602f72ff2ad26d4a19a846244e88fee792e6355dc6e9e68b27c76fa9` |
+| `app/src/test/java/com/combo/monkeycompanion/ai/ActionParserTest.kt` | 64 | `2cda243a3d47f4806b56f657b0df90becda0880e44f99d4dd863f542e9a589b3` |
+| `app/src/test/java/com/combo/monkeycompanion/brain/GesturesTest.kt` | 44 | `7345da7acc663edac4825e119ba9e6f7800ffdf0651101f5c5b93817c54e1c83` |
+| `app/src/test/java/com/combo/monkeycompanion/brain/LandingsTest.kt` | 127 | `5f31d609c0f1961a33567d87a270c37ec6f841cbe55c58b5cdcc9bc0279e650b` |
+| `app/src/test/java/com/combo/monkeycompanion/brain/LongPressMenuTest.kt` | 133 | `88bcf9624311a1305f3fea1d701ed3bb0a51bbd63c2b57c153a478a60f50b13e` |
+| `app/src/test/java/com/combo/monkeycompanion/brain/PeekFaceTest.kt` | 72 | `a6894f90feecae4e2f283599bf153198a1c6a2dfd66edfd43b923036f1a5b808` |
+| `app/src/test/java/com/combo/monkeycompanion/brain/PhoneMomentsTest.kt` | 63 | `589b030949f1bbacd318b258be9accb4622d7c7ff36249722e1f8ad37407bd78` |
+| `app/src/test/java/com/combo/monkeycompanion/character/CustomCompanionStudioTest.kt` | 945 | `717629b4e57c7abb4f491fcec68543ac459587c9a637967e5c44293cf86b7023` |
+| `app/src/test/java/com/combo/monkeycompanion/fun/CharactersTest.kt` | 215 | `119ece7e2d20e6c873ef64335a8dc37f1ac25b68bd23ad253293eff7e5f4b0fb` |
+| `app/src/test/java/com/combo/monkeycompanion/fun/GagsAndLinesTest.kt` | 155 | `7e80797bb8e60211117699913f61ff30f2c75a72a94406f46df38ebdabf1ca05` |
+| `app/src/test/java/com/combo/monkeycompanion/fun/PowersTest.kt` | 130 | `62b29a693de50ff1c966fd4134dced1c8a66b1989c799229a9fc13c732113346` |
+| `app/src/test/java/com/combo/monkeycompanion/fun/RenderBenchmarkTest.kt` | 137 | `709c1d5dc9785b8b015e10178819e52914d7492d40127d12feaad2916f647e35` |
+| `app/src/test/java/com/combo/monkeycompanion/fun/RestAndScreenTest.kt` | 201 | `3727e80ead6dee15c2d9c15b3add258481b9fce7c8f6c4560d4480a9eb6adf59` |
+| `app/src/test/java/com/combo/monkeycompanion/heart/HeartAndCoPresenceTest.kt` | 168 | `efe0fc27e29a466cf6134e50024d30279eec1f650c2c8561113f52657e4c37d0` |
+| `app/src/test/java/com/combo/monkeycompanion/landing/LandingE2ETest.kt` | 342 | `0fb20cf2c9a3567d0455c63c4120302b43ca9a113a1f674bfdf644974c11b909` |
+| `app/src/test/java/com/combo/monkeycompanion/landing/LandingFlightTest.kt` | 70 | `770114f262f03a8a916d077832233ec2677bb1ac574e525e25e2412dba637c16` |
+| `app/src/test/java/com/combo/monkeycompanion/mind/DaySimTest.kt` | 186 | `9ab7c9356faea807e50aa63c208a439ec2736d84ba54218b3f44e7aad1f3be07` |
+| `app/src/test/java/com/combo/monkeycompanion/mind/MindTest.kt` | 250 | `375de11555c81f9a6a09ebedb0fd1d128bf11ec0d3acadc5ee0549c0d5db2c35` |
+| `app/src/test/java/com/combo/monkeycompanion/powers/ClockCommandsTest.kt` | 86 | `c7686ddd38081872e38abd36c4a2e5c9392ad760902093b0b5b911df57a0afd6` |
+| `app/src/test/java/com/combo/monkeycompanion/powers/DispatchTest.kt` | 147 | `c5e6da9db18ec16523675ff0e47aec67e433c23240e56086863317a2bc2dcb1f` |
+| `app/src/test/java/com/combo/monkeycompanion/powers/PhoneCommandsTest.kt` | 106 | `a3f5c854c2acd4862cdce9cdf74581781aade1fe1024093e76fe3474f5f01da6` |
+| `app/src/test/java/com/combo/monkeycompanion/realpath/RealOverlayPathTest.kt` | 281 | `0b5d20d2b0e585df61a6405fef5b0782e09651688314ae7c21754d67f554acb8` |
+| `app/src/test/java/com/combo/monkeycompanion/v5/ClipRendererTest.kt` | 65 | `fc1e56747c3f6ab3eab357373e9f1180ca5dda65610fa1d15da37204260c4cf4` |
+| `app/src/test/java/com/combo/monkeycompanion/v5/V5LogicTest.kt` | 227 | `defa8febb8df4f38d275e3288a6b88a999459ec733d765f80e579e51d106b651` |
+| `app/src/test/java/com/combo/monkeycompanion/world/WorldTest.kt` | 153 | `8b1565c31933c932d88cc57c435d1a6239764497bacd32aca1e434ae9014c366` |
+| `build.gradle.kts` | 8 | `98ed0fc53dbcf440e7513fe5f243df57ffbf9fd83ad5ad0930c201af32de2ae6` |
+| `desktop/build.gradle.kts` | 56 | `71382731a96f067e503889cc4a37118ff2ff719083da97706a2d1cbf76746a96` |
+| `desktop/packaging/README-desktop.md` | 38 | `c764c1b71653880e2f70d2ee8b50c25673973b14cd4fa76c1cc03c7f56a6f256` |
+| `desktop/packaging/build-deb.sh` | 90 | `f7c8a15c5598da7f99198576cd6056ab37538544dcb9598f7d59cb11942f8ed9` |
+| `desktop/packaging/build-windows.sh` | 50 | `6eec4af86e20403d48d29f9d878e8cc3dec6fc10fa4992a1d979589f607a05c9` |
+| `desktop/packaging/settai.desktop` | 11 | `6f3646279502fa506018c07b069f4f0184bbc62af57c70fc11cc4a40b28e2e48` |
+| `desktop/packaging/windows/README-windows.txt` | 30 | `a2c6f150c6693ba55699ab9fd9655138a7b63a58424fbd46b402efba2fa93a41` |
+| `desktop/packaging/windows/debug-console.cmd` | 5 | `35296b562f75da2fa1911ddb6192a3f893a7d6e432097b47bd75dd2413780ea8` |
+| `desktop/packaging/windows/launcher.c` | 35 | `6db168f79675601bd3c2b129a19ecad62bcb2284fb17903d9267c531fcf5f592` |
+| `desktop/packaging/windows/launcher.rc` | 22 | `d97df8b7a21d7644f0389fb491876c0f75636c5e20a70e3c46a5bcbd93e94555` |
+| `desktop/packaging/windows/settai.nsi` | 89 | `c4e56430ef69a43d5b7850ca28bbf37448dcaeae955946723bc2e374c0296cad` |
+| `desktop/src/main/kotlin/android/graphics/Shim.kt` | 358 | `fe8237b2ddcaa3d77610a77d11042c1212dc537dcee9f7c1a8020983b76e8e08` |
+| `desktop/src/main/kotlin/android/text/Text.kt` | 72 | `a528d71ea049138e0f91018909178f616bdda47793aadb11b4429627873f34c4` |
+| `desktop/src/main/kotlin/com/combo/settai/desktop/Config.kt` | 67 | `ab620b37620a403746d3571a99d79a19511bf5d492aae6b5581864da8b13d47d` |
+| `desktop/src/main/kotlin/com/combo/settai/desktop/DesktopChat.kt` | 236 | `97cd867b4bff9678d91e90cf7487c326e97931e2fc08d594fea52469a8267aa3` |
+| `desktop/src/main/kotlin/com/combo/settai/desktop/Main.kt` | 311 | `f36d9ea9e538245cc961bc8d329975d9b26ba02f4134e286a4935ea8d1cbfc5a` |
+| `desktop/src/main/kotlin/com/combo/settai/desktop/Ollama.kt` | 48 | `bd9e15c61371770c02606d97b07b1b84c851e261bbed4a975b5c4b8f7fd1561c` |
+| `desktop/src/main/kotlin/com/combo/settai/desktop/Platform.kt` | 100 | `29e3db598bd615068feba02750d403ad4703bde1e4422cce0bb82950ef6190af` |
+| `desktop/src/main/kotlin/com/combo/settai/desktop/Stage.kt` | 1762 | `2a154c02d0a8217e2f26dae4912eeeb8b3d8973df87b39d819524ddbdd774cf9` |
+| `desktop/src/main/kotlin/com/combo/settai/desktop/Support.kt` | 57 | `393d2b68e42a03d7bd4e7c36d23e467f0e4c8709d2cdeee83ea0bb9bca6a788f` |
+| `desktop/src/main/kotlin/com/combo/settai/desktop/SystemInfo.kt` | 91 | `a327532bbb7a63e6b7b0dd0a90f4f4c941a8ee24a88cca3bda90abba3e222944` |
+| `desktop/src/main/kotlin/com/combo/settai/desktop/Windows.kt` | 211 | `2fd19d5d5717dc3cb0e882609f3043940198640f6cb154f5648157b0045598b5` |
+| `desktop/src/main/kotlin/com/combo/settai/desktop/win/WindowsPlatform.kt` | 154 | `72ca7d2dc83e31f3577d837ea52ee08a39dcab66a558ad14c25a66a0b29180ef` |
+| `docs/CHANGELOG.md` | 43 | `0aba55bc19254e50ab3192cc66a36c0ad99e4c81fa8920670be3ea131919b1c7` |
+| `docs/README-v7-legacy.md` | 92 | `f6317c0e9f7d2e5d3eece52ec82e9f77cdb1c34c77b9d3108460ac02cb483f25` |
+| `gradle.properties` | 3 | `d5f372c6d46ad7c8d33f714bfae564eb5e1d73a159c495df9bc782b33e3567c2` |
+| `gradle/wrapper/gradle-wrapper.jar` | 158 | `7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172` |
+| `gradle/wrapper/gradle-wrapper.properties` | 8 | `e0d27453fe160994494367df980512caf19cd4668848d79f349ee169b66a877b` |
+| `gradlew` | 251 | `b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409` |
+| `settings.gradle.kts` | 11 | `eac0e3010cc47051702f9d89c04f0d5d15201f2bd78c99d9c58668cef161d7d7` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/ai/Actions.kt` | 134 | `04e73cd7e93b65086f67ff20832037a95254397163ab35fbce970096d7cd92b5` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/ai/AnthropicBrain.kt` | 101 | `5618e0ed96fe3ef308880c67718eb80f8f10cad4f4b4a977f6238b2851eeb422` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/ai/Brain.kt` | 42 | `dcaf920488f269cdc2a705f2f90a25ed1ee020373e59e469d76f13c7314e31ac` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/ai/CannedBrain.kt` | 17 | `4fb400ec890de5ecd549a089a60fafb724bb1e6dac241a054bc9a57726fb4744` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/ai/ChatMsg.kt` | 4 | `fab1f3f43f73bbde082782d163e610999332573d776891fc6d95a38b9b4b8e7b` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/ai/Http.kt` | 33 | `df5ca2609f239ac3febdad2b184768a4dd74e966d52ae577dff0eafe2c8194d8` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/ai/OpenAiCompatBrain.kt` | 129 | `8ec2a25cb3f8905af569dab30c62bf4f162ee9828a684990ae4b03b0657d6502` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/ai/Persona.kt` | 125 | `18df12f6d8a15c0fd0dded0fa52264733d04848f4b2ef7739bf923ba4580143b` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/brain/Gestures.kt` | 39 | `6693c00c5df7cf2b317b28defef74c62e36adfc03972e161aa0d4a9c845a3730` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/brain/HeroPowers.kt` | 111 | `a901606edcb269ec714ff71861cf583f225662f840439f179fdba469c8d861bd` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/brain/LandingFlight.kt` | 177 | `3bb930d811b842b6a241ab112c28eb68100427e25cea357b78b743c62d67e9ba` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/brain/Landings.kt` | 140 | `fd0da8fe5d2ce2455da95f79de26558a0449eacffc0e9596904444f97a0e8655` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/brain/LongPressMenu.kt` | 154 | `65e478a13b7af5e7311425620c1c424db5143fd1a2a3ffe35aa0f403878cbf4e` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/brain/MonkeyState.kt` | 70 | `3da83f1303e3d227b80ce59099b6a1a7eccd38de8c4e6a4fa1b14bdad90e3a2d` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/brain/MoodController.kt` | 482 | `8b6060408966b893bb96f4d3794a68fb85ace6740d137829368acadc8edf5ddd` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/brain/PhoneMoments.kt` | 89 | `7db8238519a31b8d6a88ac5a3116c3fe021f49804eb76bcf70f701e00e58fa09` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/brain/PowerEntrances.kt` | 43 | `61c27f5c4fcb99b44a10dbcd160bb743b10a81bee7afc4bc04341ccc89d1a2a3` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/brain/Superpowers.kt` | 379 | `8f3f759b08036367ebd920e4cb665c66dd042aaec0ef070aa371ca784d0899d8` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/character/CatMouse.kt` | 145 | `2f85a6eff5076d3bcaa4d78efc00dd2ed67d075791697bdaf83584859cdbead5` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/character/Character.kt` | 165 | `9b8acd442828fdd0981412928ac44456da98909ec1e7fd5e7e99a572b2876000` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/character/CustomCompanion.kt` | 1534 | `1ffdc43e26647e92d3c74d2427cc4fcb6eaea1f62aa9a83c30ebe48753b74124` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/character/Heroes.kt` | 317 | `8611f11f5e9197162185f7999fb8364dbed547109026530d2a090f11934b56fd` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/character/MonkeyCharacter.kt` | 27 | `c59160c3b69aefdcbbaaaa24da22d20054a398232290364df9feea098fe22410` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/heart/CareCheckInStore.kt` | 99 | `f66cd5d4c2613143395083307557677b255609c0a3eceeac72c446c1e050d58a` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/heart/CoPresence.kt` | 170 | `b5870255b1f57eaecb5fa70ed64b74c2529d5493d7a5310542414ecde288f2e7` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/heart/HeartEngine.kt` | 225 | `696dbd662fbd3ee2da92ebe7c118f88d245651956dc9a6f378a5559836bb7f9b` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/mind/Diary.kt` | 301 | `50a65c33a0f66dbffb2b637148d15a9882c7388237161ff155f3e0e0cf19cbaa` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/mind/Drives.kt` | 60 | `4cb4d70b9aa3e2f9332bcf243eb47117d71b7f2bfcbce21b11dcaf293d26e18d` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/mind/Habituation.kt` | 29 | `3bf35e9f29cfb19bdf8fbe5d2e668b8fd9b0ba76d26bd1c91b33fdf2e92c1fad` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/mind/Mind.kt` | 407 | `12e00c7e27e1b93cdef3455e3d14891226fa0652c65c48464774974b2356fe03` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/mind/MindLines.kt` | 70 | `36b0f85dda550d81e4547d1ad9eefac846351d9488b66da1a6be12b391521668` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/mind/Personality.kt` | 138 | `ec1e28fa87a76692de129462b5fcab3b1f6783bee6a2ff89b2261defedd57f88` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/mind/Scene.kt` | 69 | `4a4e5c19eab4753cc1d046901fd858f1fcfd1b29644e0eae6a6184a6e824c805` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/Animations.kt` | 1323 | `15cec8d212473d6e5ff5118dc91ff1156b18f02dc623ebba5e91f387c94367df` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/Cape.kt` | 101 | `17445a41d5aa961bd0648edcc438e989cf17a6b2d53846e167a4024721c73e27` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/CatMouseRenderers.kt` | 472 | `12677d529155f5ba0fa3bdd5b110d4f5256f84a5225d2e061c024c34ee843e7e` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/ChibiHumanRenderer.kt` | 1376 | `5e20427dc48a7086b1b541d597155d0b4cb5753baca00d0db0898bec97d0eab0` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/Climber.kt` | 486 | `4060db0b79c374ec339886e7a6a646dc92451322be552a87f771024f7fc3e6fc` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/HeartFx.kt` | 290 | `b30b8ee0eabee86d58ef0bda6979d08ce438984a484b301a62c3660693f0ae6b` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/HeroRenderers.kt` | 587 | `fc0bb1d2ec5f4e49c66f401ed9fba1854177ace7f310389eb83b42f67a3b0a06` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/LandingFx.kt` | 107 | `59db67e4e1588de9d5f2bc2bd7e2a96795f39def7203b0259f0bb089716949ce` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/MomentFx.kt` | 200 | `eff29c3e5389cf8a3be61fbaf250053237203c2362b34927985a2f9df2d98c53` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/MonkeyRenderer.kt` | 1266 | `7a38e234c726200ee30ef5fb0b1c333d5c1027a3b6569a8c8fe76e176c1e47e9` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/MonkeyRig.kt` | 208 | `4fb0c167d3550c12a3c1ec58e433d6da4869f91c5055e7143319f8a47386462e` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/Particles.kt` | 308 | `ea2b8d66c890452049ab9d3bc6967f44728fafcebc8072f71e2e858016606695` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/PeekFace.kt` | 204 | `4f4b330202289088be7328d71e5afe5a9c33c6e12d3c949bef6efb1b3791fc04` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/Pose.kt` | 156 | `693351b8f37bee7e2c0bc1792e6937bd0eb660973c94bde55835150bb15de099` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/rig/ScreenFx.kt` | 317 | `6a0e79686078ae23827029a28e4aee19821fc5d96c86e9ef65ab1a1d099fff76` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/speech/CloudBubble.kt` | 435 | `c8afad2fefdb93ef16f0a2963314d85b6663723674a0a325f4661f97a72c72db` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/speech/HeroLines.kt` | 78 | `ad7ef8bafc32ea9037450e38ef5eae5c0827b481657f7042dd4559498d9738d0` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/speech/Lines.kt` | 303 | `5e51d85a5758254bdc8ab567626185940ec03cf2de47064aaa1facd075e5cd5e` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/speech/Speech.kt` | 15 | `37931667c51e1084e41828f03023ee1d4b473267097186cfb6c5fe9c95f3d3b0` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/v5/ClipScript.kt` | 44 | `b93436f9c63755765b64eff72395af4eb9367431eac07947c29a694456cbd6ed` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/v5/Cricket.kt` | 53 | `751effaec37211c036b3d4ce7aff46edf5fcc68a2dda16c0a1a0a172f40c725a` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/v5/Festivals.kt` | 111 | `9c0a15580977948c1436fb86210cafe7310c88ff899b165d2bdb70481dc9be7d` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/v5/Friendship.kt` | 90 | `f09ae2fb053bad33912afdf83477af0aae80414c467a499ff95112a7c8e28b34` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/v5/Games.kt` | 132 | `283d45888edf79cc025606878924401eae90a07c25b46704279f8e6f54a4fdd9` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/v5/Motion.kt` | 72 | `e05e0d7c18ae3312e2000c169ce3a9ee85cae2d7ff12fa900d9bc9ef7357643a` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/v5/NotifMunch.kt` | 28 | `74eaf4ea37476206a41289eab8aca4570343dbc88375873bbbd5e499c6503213` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/v5/PairProtocol.kt` | 113 | `893726fab4ad46d3965d1c0fe71ca795134369a26d83a7313db59b0fe6d0460f` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/v5/SleepNag.kt` | 47 | `58e13295986429073573de8d0f299b71852a84a689213dc89cbac5dcef58c387` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/v5/WeatherMood.kt` | 42 | `ba11f346297637c51566f10b882c42855eba1dae9d13d6bb4a2bfcd4ee3436de` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/world/CatMouseBehaviors.kt` | 174 | `1a6f9d0beef13c3b4fd95307dfdb21dc5c02ff007951db8c7de41d5b72396214` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/world/Director.kt` | 194 | `70cb518e04e535ff384e5b1021c72b2284ce69aef7cf1714377d2efeed92fd56` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/world/Population.kt` | 83 | `e0695d97ea1ea854758330eedb1531d75ea9ececac93fc3dcd616c69b232dd9a` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/world/WorldClock.kt` | 241 | `7a0848fe5f4f509360ac847c305d4b70b398dcff2eb051027b6454ee43ccb446` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/world/WorldPlaces.kt` | 138 | `efa6e90c00d2039b95185e2cc967807eb4161882458a7e2dec1eba9f5bdbbe91` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/world/WorldState.kt` | 135 | `e9ac66a7b8c7920b298ebf27c60a05129e013b9215d33b7441466072067d071e` |
+| `shared/src/main/kotlin/com/combo/monkeycompanion/world/WorldStore.kt` | 88 | `c15b0d8cc877eb902f0f66c82bc091205c953a122dca5789ef33c9203e9ead80` |

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Settai
+GenericName=Desktop monkey companion
+Comment=A cheeky animated monkey that lives on your desktop and chats with you
+Exec=/opt/settai/bin/Settai
+Icon=settai
+Terminal=false
+Categories=Utility;Amusement;
+Keywords=monkey;companion;pet;chat;ai;ollama;
+StartupWMClass=Settai

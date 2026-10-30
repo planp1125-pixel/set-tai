@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Play Store flavor: removes restricted permissions & AccessibilityService that Google Play's automated policy scanner rejects on non-exempt apps. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:node="remove" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" tools:node="remove" />
+
+    <application>
+        <service
+            android:name=".agent.SettaiAccessibilityService"
+            tools:node="remove" />
+    </application>
+</manifest>

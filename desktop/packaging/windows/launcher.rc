@@ -1,0 +1,22 @@
+1 ICON "settai.ico"
+1 VERSIONINFO
+FILEVERSION 3,0,0,0
+PRODUCTVERSION 3,0,0,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904b0"
+    BEGIN
+      VALUE "CompanyName", "COMBO MEALS"
+      VALUE "FileDescription", "Settai - desktop monkey companion"
+      VALUE "FileVersion", "3.0"
+      VALUE "ProductName", "Settai"
+      VALUE "ProductVersion", "3.0"
+      VALUE "OriginalFilename", "Settai.exe"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

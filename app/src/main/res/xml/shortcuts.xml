@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="bring_back"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_bring_back"
+        android:shortcutLongLabel="@string/shortcut_bring_back_long">
+        <intent
+            android:action="com.combo.monkeycompanion.BRING_BACK"
+            android:targetPackage="com.combo.monkeycompanion"
+            android:targetClass="com.combo.monkeycompanion.MainActivity" />
+    </shortcut>
+</shortcuts>

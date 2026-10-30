@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Settai</string>
+    <string name="channel_name">Settai on screen</string>
+    <string name="channel_desc">Shown while Settai is living on the screen.</string>
+    <string name="notif_title">Settai is awake 🐒</string>
+    <string name="notif_text">Tap = tickle · Double-tap = chat · Long-press = menu. Tap Stop to send it to sleep.</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_dance">Dance!</string>
+    <string name="action_chat">Chat</string>
+    <string name="wallpaper_desc">Settai lives in your wallpaper: it roams, climbs your widgets, hides and peeks, naps and wakes up.</string>
+    <string name="shortcut_bring_back">Bring Settai back</string>
+    <string name="shortcut_bring_back_long">Bring Settai back 🐒</string>
+    <string name="a11y_summary">Lets Settai read the screen and tap / type / scroll for you, only when you ask it in chat. Every tap and every bit of typing asks Yes/No first.</string>
+    <string name="a11y_description">Settai screen agent (optional).\n\nWhat it does: when YOU ask (for example “open WhatsApp and find Amma\'s chat”), Settai reads the buttons and text on the current screen and taps, types, scrolls or presses Back/Home step by step. It shows “Settai is driving” while it works; tap Settai or Stop to take over.\n\nWhat it never does: act on its own, touch the lock screen, type or tap in password fields, or drive banking / payment / wallet apps (you can add more apps to the block list). Every tap and typed text asks Yes/No in Settai\'s bubble first, and nothing is sent automatically.\n\nData: the screen text is used only for your request. With an online brain it is sent to the AI provider you chose in Settai\'s settings; with the on-device brain it never leaves the phone. Nothing is stored except a short “Recent actions” log on the phone.</string>
+</resources>
