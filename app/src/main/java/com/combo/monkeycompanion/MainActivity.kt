@@ -107,6 +107,7 @@ class MainActivity : Activity() {
         CustomCompanionStore.init(this)
         ChatHub.init(this)
         com.combo.monkeycompanion.mind.MindHub.init(this)
+        migrateBillaChittuCombo()
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
             (if (Build.VERSION.SDK_INT >= 26) View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0)
@@ -671,9 +672,8 @@ class MainActivity : Activity() {
             textSize = 12.2f; setTextColor(soft); setPadding(0, dp(8), 0, dp(2))
         })
         val MH = com.combo.monkeycompanion.mind.MindHub
-        val P = com.combo.monkeycompanion.world.Population
         val slotBtns = ArrayList<Button>()
-        fun nameOf(id: String?) = if (id.isNullOrBlank()) "🎲 Auto" else P.displayName(id)
+        fun nameOf(id: String?) = if (id.isNullOrBlank()) "🎲 Auto" else com.combo.monkeycompanion.world.Population.displayName(id)
         fun refreshSlots() {
             val mode = com.combo.monkeycompanion.world.Population.Mode.of(MH.neighbourMode)
             slotBtns.getOrNull(0)?.text = "⭐ Lead: ${CharacterRegistry.current.name}"
@@ -681,11 +681,22 @@ class MainActivity : Activity() {
             slotBtns.getOrNull(2)?.apply { text = "Partner 2: ${nameOf(MH.customPartner2Id)}"; isEnabled = mode == com.combo.monkeycompanion.world.Population.Mode.TRIO }
         }
         fun pickSlot(slot: Int) {
-            val chars = CharacterRegistry.allWithCustom
-            val labels = (if (slot == 0) emptyList() else listOf("🎲 Auto (let them choose)")) + chars.map { it.name }
+            // v10.13: Billa & Chittu only come as a pair
+            val chars = CharacterRegistry.allWithCustom.filter { it.id != "billa" && it.id != "chittu" }
+            val combo = "🐱🐭 Billa & Chittu (chase show)"
+            val labels = (if (slot == 0) emptyList() else listOf("🎲 Auto (let them choose)")) + combo + chars.map { it.name }
             android.app.AlertDialog.Builder(this).setTitle(if (slot == 0) "Pick the lead" else "Pick partner $slot")
-                .setItems(labels.toTypedArray()) { _, which ->
-                    val pick = if (slot == 0) chars[which].id else if (which == 0) null else chars[which - 1].id
+                .setItems(labels.toTypedArray()) { _, which0 ->
+                    val off = if (slot == 0) 0 else 1
+                    if (slot > 0 && which0 == 0) { /* auto */ } else if (which0 == off) {
+                        val curLead = CharacterRegistry.current.id
+                        if (slot == 0 || curLead == "billa" || curLead == "chittu") MH.setCrew(this, "billa", com.combo.monkeycompanion.world.Population.Mode.DUO.let { d -> if (com.combo.monkeycompanion.world.Population.Mode.of(MH.neighbourMode) == com.combo.monkeycompanion.world.Population.Mode.TRIO) com.combo.monkeycompanion.world.Population.Mode.TRIO else d }, "chittu", MH.customPartner2Id?.takeIf { it != "billa" && it != "chittu" })
+                        else MH.setCrew(this, curLead, com.combo.monkeycompanion.world.Population.Mode.TRIO, "billa", "chittu")
+                        MonkeyOverlayService.syncCrew(this); refresh(); refreshMindCard(); refreshSlots()
+                        return@setItems
+                    }
+                    val which = if (slot == 0) which0 - 1 else which0 - 1
+                    val pick = if (slot == 0) chars[which].id else if (which0 == 0) null else chars[which - 1].id
                     var lead = CharacterRegistry.current.id
                     var p1 = MH.customPartner1Id
                     var p2 = MH.customPartner2Id
@@ -699,7 +710,7 @@ class MainActivity : Activity() {
                     MH.setCrew(this, lead, mode, p1, p2)
                     MonkeyOverlayService.syncCrew(this)
                     refresh(); refreshMindCard(); refreshSlots()
-                    Toast.makeText(this, "On screen: " + MH.activeCreatures().joinToString(" + ") { P.displayName(it) }, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "On screen: " + MH.activeCreatures().joinToString(" + ") { com.combo.monkeycompanion.world.Population.displayName(it) }, Toast.LENGTH_SHORT).show()
                 }.show()
         }
         for (slot in 0..2) {
@@ -721,11 +732,25 @@ class MainActivity : Activity() {
         return col
     }
 
+    /** v10.13: Billa and Chittu are one combo now: users who had either one selected get both on screen. */
+    private fun migrateBillaChittuCombo() {
+        val p = getSharedPreferences("settai_v3", MODE_PRIVATE)
+        if (p.getBoolean("combo_bc_migrated", false)) return
+        p.edit().putBoolean("combo_bc_migrated", true).apply()
+        val MH = com.combo.monkeycompanion.mind.MindHub
+        val cur = CharacterRegistry.current.id
+        if (cur == "billa" || cur == "chittu") {
+            val mode = com.combo.monkeycompanion.world.Population.Mode.of(MH.neighbourMode).let { if (it == com.combo.monkeycompanion.world.Population.Mode.SOLO) com.combo.monkeycompanion.world.Population.Mode.DUO else it }
+            MH.setCrew(this, "billa", mode, "chittu", MH.customPartner2Id?.takeIf { it != "billa" && it != "chittu" })
+        }
+    }
+
     fun populateRosterGrid() {
         val gridBox = rosterGridContainer ?: return
         gridBox.removeAllViews()
         charThumbs.clear()
-        val allChars = CharacterRegistry.allWithCustom
+        // v10.13: one "Billa & Chittu" entry (shown with Billa's thumbnail) instead of two separate leads
+        val allChars = CharacterRegistry.allWithCustom.filter { it.id != "chittu" }
         for (chunk in allChars.chunked(3)) {
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -737,16 +762,24 @@ class MainActivity : Activity() {
                     layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { leftMargin = dp(4); rightMargin = dp(4) }
                 }
                 val pv = CharacterPreviewView(this, c).apply {
-                    picked = c.id == CharacterRegistry.current.id
+                    picked = c.id == CharacterRegistry.current.id || (c.id == "billa" && CharacterRegistry.current.id == "chittu")
                     layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, dp(112))
                 }
                 charThumbs.add(pv)
                 cell.addView(pv)
                 cell.addView(TextView(this).apply {
-                    text = c.name; textSize = 12.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
+                    text = if (c.id == "billa") "Billa & Chittu" else c.name; textSize = 12.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
                     gravity = Gravity.CENTER_HORIZONTAL
                 })
                 cell.setOnClickListener {
+                    if (c.id == "billa") {
+                        val MH = com.combo.monkeycompanion.mind.MindHub
+                        val mode = com.combo.monkeycompanion.world.Population.Mode.of(MH.neighbourMode).let { if (it == com.combo.monkeycompanion.world.Population.Mode.SOLO) com.combo.monkeycompanion.world.Population.Mode.DUO else it }
+                        MH.setCrew(this@MainActivity, "billa", mode, "chittu", MH.customPartner2Id?.takeIf { it != "billa" && it != "chittu" })
+                        MonkeyOverlayService.syncCrew(this@MainActivity); refresh(); refreshMindCard()
+                        Toast.makeText(this@MainActivity, "Billa & Chittu! Double-tap either one for a chase show 🐱🐭", Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
                     ChatHub.settings.characterId = c.id
                     ChatHub.settings.applyCharacter()
                     MonkeyOverlayService.syncCrew(this@MainActivity)

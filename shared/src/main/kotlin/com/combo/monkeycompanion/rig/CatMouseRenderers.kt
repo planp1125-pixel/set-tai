@@ -34,11 +34,12 @@ class BillaRenderer : MonkeyRenderer() {
 
     private val catHeadShader = RadialGradient(-12f, -50f, 52f, intArrayOf(CAT_LIGHT, CAT_FUR, CAT_DARK), floatArrayOf(0f, 0.6f, 1f), Shader.TileMode.CLAMP)
     private val catTorso = Path().apply {
-        moveTo(0f, -61f)
-        cubicTo(16f, -61f, 25f, -44f, 26f, -22f)
-        cubicTo(27f, -2f, 16f, 6f, 0f, 6f)
-        cubicTo(-16f, 6f, -27f, -2f, -26f, -22f)
-        cubicTo(-25f, -44f, -16f, -61f, 0f, -61f)
+        // v10.13: chubby rounded belly
+        moveTo(0f, -60f)
+        cubicTo(19f, -60f, 33f, -42f, 33f, -20f)
+        cubicTo(33f, 0f, 19f, 7f, 0f, 7f)
+        cubicTo(-19f, 7f, -33f, 0f, -33f, -20f)
+        cubicTo(-33f, -42f, -19f, -60f, 0f, -60f)
         close()
     }
     // Clean symmetric pointed cat ears from y=-52f to y=-78f, with a subtle outer nick on the left ear
@@ -86,8 +87,13 @@ class BillaRenderer : MonkeyRenderer() {
             tmp.lineTo(rig.tailPts[ix], rig.tailPts[ix + 1])
         }
         stroke.shader = null
-        stroke.color = OUTLINE; stroke.strokeWidth = 12f + 2 * OW; c.drawPath(tmp, stroke)
-        stroke.color = CAT_FUR; stroke.strokeWidth = 12f; c.drawPath(tmp, stroke)
+        stroke.color = OUTLINE; stroke.strokeWidth = 14f + 2 * OW; c.drawPath(tmp, stroke)
+        stroke.color = CAT_FUR; stroke.strokeWidth = 14f; c.drawPath(tmp, stroke)
+        // v10.13 fluffy tip
+        val tx = rig.tailPts[TAIL_SEGS * 2]; val ty = rig.tailPts[TAIL_SEGS * 2 + 1]
+        fill.shader = null; fill.color = CAT_LIGHT
+        c.drawCircle(tx, ty, 10f, fill); c.drawCircle(tx, ty, 10f, outline)
+        c.drawCircle(tx - 5f, ty - 4f, 6f, fill)
         // Tabby tail rings
         fill.shader = null; fill.color = STRIPE
         for (i in 2 until TAIL_SEGS step 2) {
@@ -101,14 +107,14 @@ class BillaRenderer : MonkeyRenderer() {
         c.drawPath(catTorso, fill); c.drawPath(catTorso, outline)
         // Cream belly patch
         fill.color = CREAM
-        oval.set(-15f, -46f, 15f, 0f)
+        oval.set(-20f, -44f, 20f, 2f)
         c.drawOval(oval, fill)
         // Tabby side stripes
         stroke.color = STRIPE; stroke.strokeWidth = 3f
         for (i in 0..2) {
             val y = -44f + i * 11f
-            c.drawLine(-24f, y, -16f, y + 2f, stroke)
-            c.drawLine(16f, y + 2f, 24f, y, stroke)
+            c.drawLine(-31f, y, -22f, y + 2f, stroke)
+            c.drawLine(22f, y + 2f, 31f, y, stroke)
         }
         c.restore()
     }
@@ -149,8 +155,11 @@ class BillaRenderer : MonkeyRenderer() {
         c.drawPath(earL, fill); c.drawPath(earL, outline)
         c.drawPath(earR, fill); c.drawPath(earR, outline)
         fill.shader = catHeadShader
-        c.drawCircle(0f, HEAD_CY, HEAD_R, fill); fill.shader = null
-        c.drawCircle(0f, HEAD_CY, HEAD_R, outline)
+        c.drawCircle(0f, HEAD_CY + 2f, HEAD_R * 1.1f, fill); fill.shader = null
+        c.drawCircle(0f, HEAD_CY + 2f, HEAD_R * 1.1f, outline)
+        // fluffy cheek tufts
+        fill.color = CAT_FUR
+        for (sd in intArrayOf(-1, 1)) { tmp.reset(); tmp.moveTo(sd * HEAD_R * 1.0f, HEAD_CY + 4f); tmp.lineTo(sd * (HEAD_R * 1.1f + 7f), HEAD_CY + 10f); tmp.lineTo(sd * HEAD_R * 0.95f, HEAD_CY + 14f); tmp.close(); c.drawPath(tmp, fill); c.drawPath(tmp, outline) }
         c.restore()
         drawArms(c, rig)
         drawTail(c, rig)
@@ -160,17 +169,14 @@ class BillaRenderer : MonkeyRenderer() {
 
     override fun drawHeadBase(c: Canvas, p: Pose, t: Float) {
         // Visible Cat Neck connecting torso collar (+4.5f) to chin (-5.5f)
-        lastRenderedNeckHeight = 11.0f
+        // v10.13: short chubby neck (fur ruff), mostly hidden under the big head
+        lastRenderedNeckHeight = 5.0f
         fill.shader = null; fill.color = CAT_FUR
-        oval.set(-8.0f, -8.5f, 8.0f, 4.8f)
-        c.drawRoundRect(oval, 3.5f, 3.5f, fill)
+        oval.set(-13f, -6f, 13f, 5f)
+        c.drawOval(oval, fill)
         fill.color = CREAM
-        oval.set(-4.6f, -7.5f, 4.6f, 4.2f)
-        c.drawRoundRect(oval, 2.5f, 2.5f, fill)
-        outline.strokeWidth = 2.0f
-        c.drawLine(-8.0f, -5.5f, -8.0f, 3.8f, outline)
-        c.drawLine(8.0f, -5.5f, 8.0f, 3.8f, outline)
-        outline.strokeWidth = OW
+        oval.set(-8f, -5f, 8f, 4f)
+        c.drawOval(oval, fill)
 
         // Pointed cat ears with pink inner triangles on both sides
         fill.shader = null; fill.color = CAT_FUR
@@ -182,8 +188,11 @@ class BillaRenderer : MonkeyRenderer() {
 
         // Head circle
         fill.shader = catHeadShader
-        c.drawCircle(0f, HEAD_CY, HEAD_R, fill); fill.shader = null
-        c.drawCircle(0f, HEAD_CY, HEAD_R, outline)
+        c.drawCircle(0f, HEAD_CY + 2f, HEAD_R * 1.1f, fill); fill.shader = null
+        c.drawCircle(0f, HEAD_CY + 2f, HEAD_R * 1.1f, outline)
+        // fluffy cheek tufts
+        fill.color = CAT_FUR
+        for (sd in intArrayOf(-1, 1)) { tmp.reset(); tmp.moveTo(sd * HEAD_R * 1.0f, HEAD_CY + 4f); tmp.lineTo(sd * (HEAD_R * 1.1f + 7f), HEAD_CY + 10f); tmp.lineTo(sd * HEAD_R * 0.95f, HEAD_CY + 14f); tmp.close(); c.drawPath(tmp, fill); c.drawPath(tmp, outline) }
 
         // Subtle forehead tabby stripes neatly above the brows (y = -58f..-64f)
         stroke.color = STRIPE; stroke.strokeWidth = 2.4f
@@ -222,13 +231,13 @@ class BillaRenderer : MonkeyRenderer() {
                 continue
             }
             val open = p.eyeOpen
-            val ry = 7f * open
+            val ry = 9f * open
             if (ry < 1.3f) {
                 stroke.shader = null; stroke.color = EYE; stroke.strokeWidth = 2.4f
                 c.drawLine(ex - 5f, ey, ex + 5f, ey, stroke)
                 continue
             }
-            val rx = 6.2f * (if (open > 1f) 1f + (open - 1f) * 0.45f else 1f)
+            val rx = 7.8f * (if (open > 1f) 1f + (open - 1f) * 0.45f else 1f)
             // Golden-yellow cat iris
             fill.shader = null; fill.color = YELLOW_EYE
             oval.set(ex - rx, ey - ry, ex + rx, ey + ry)
@@ -236,7 +245,7 @@ class BillaRenderer : MonkeyRenderer() {
             outline.strokeWidth = 1.5f; c.drawOval(oval, outline); outline.strokeWidth = OW
             // Vertical dark slit pupil
             fill.color = STRIPE
-            val pw = if (open > 1.2f) 3.2f else 2.1f
+            val pw = if (open > 1.2f) 4.6f else 3.4f   // rounder, friendlier pupils
             oval.set(ex - pw, ey - ry * 0.82f, ex + pw, ey + ry * 0.82f)
             c.drawOval(oval, fill)
             // Eye highlight glint
@@ -267,15 +276,17 @@ class ChittuRenderer : MonkeyRenderer() {
         val CHEESE = Color.rgb(0xFF, 0xCA, 0x28)
         val CHEESE_HOLE = Color.rgb(0xF5, 0x7F, 0x17)
         val CHILLI = Color.rgb(0xD5, 0x00, 0x00)
+        /** v10.13: big round cartoon head. */
+        const val CHITTU_HEAD_R = 34.5f
     }
 
     private val mouseHeadShader = RadialGradient(-10f, -48f, 48f, intArrayOf(MOUSE_LIGHT, MOUSE_FUR, MOUSE_DARK), floatArrayOf(0f, 0.6f, 1f), Shader.TileMode.CLAMP)
 
     override fun drawLegs(c: Canvas, rig: MonkeyRig) {
-        limb(c, rig.legL, LEG * 0.85f, 8.5f, MOUSE_FUR, true); limb(c, rig.legR, LEG * 0.85f, 8.5f, MOUSE_FUR, true)
-        limb(c, rig.legL, LEG * 0.85f, 8.5f, MOUSE_FUR, false); limb(c, rig.legR, LEG * 0.85f, 8.5f, MOUSE_FUR, false)
-        blob(c, rig.legL, -2f, LEG * 0.85f + 2f, 7.5f, 5f, CREAM)
-        blob(c, rig.legR, 2f, LEG * 0.85f + 2f, 7.5f, 5f, CREAM)
+        limb(c, rig.legL, LEG * 0.85f, 6.2f, MOUSE_FUR, true); limb(c, rig.legR, LEG * 0.85f, 6.2f, MOUSE_FUR, true)
+        limb(c, rig.legL, LEG * 0.85f, 6.2f, MOUSE_FUR, false); limb(c, rig.legR, LEG * 0.85f, 6.2f, MOUSE_FUR, false)
+        blob(c, rig.legL, -2f, LEG * 0.85f + 2f, 8.5f, 5f, Color.rgb(0xF8, 0xB4, 0xC4))
+        blob(c, rig.legR, 2f, LEG * 0.85f + 2f, 8.5f, 5f, Color.rgb(0xF8, 0xB4, 0xC4))
     }
 
     override fun drawTail(c: Canvas, rig: MonkeyRig) {
@@ -286,17 +297,22 @@ class ChittuRenderer : MonkeyRenderer() {
             tmp.lineTo(rig.tailPts[ix], rig.tailPts[ix + 1])
         }
         stroke.shader = null
-        stroke.color = OUTLINE; stroke.strokeWidth = 6f + 2 * OW; c.drawPath(tmp, stroke)
-        stroke.color = Color.rgb(0xD7, 0x99, 0x82); stroke.strokeWidth = 6f; c.drawPath(tmp, stroke)
+        // v10.13: long thin tail with a little curl at the tip
+        val n = TAIL_SEGS * 2
+        val lx = rig.tailPts[n]; val ly = rig.tailPts[n + 1]
+        val dx = lx - rig.tailPts[n - 2]; val dy = ly - rig.tailPts[n - 1]
+        tmp.quadTo(lx + dx * 1.6f, ly + dy * 1.6f, lx + dx * 1.2f - dy * 1.2f, ly + dy * 1.2f + dx * 1.2f)
+        stroke.color = OUTLINE; stroke.strokeWidth = 3.6f + 2 * OW; c.drawPath(tmp, stroke)
+        stroke.color = Color.rgb(0xE8, 0xA6, 0x9A); stroke.strokeWidth = 3.6f; c.drawPath(tmp, stroke)
     }
 
     override fun drawTorso(c: Canvas, rig: MonkeyRig) {
         c.save(); c.concat(rig.hips); c.scale(0.88f, 0.88f)
         fill.shader = null; fill.color = MOUSE_FUR
-        oval.set(-22f, -58f, 22f, 5f)
+        oval.set(-21f, -50f, 21f, 5f)      // small round pear body
         c.drawOval(oval, fill); c.drawOval(oval, outline)
         fill.color = CREAM
-        oval.set(-14f, -46f, 14f, 1f)
+        oval.set(-13f, -38f, 13f, 1f)
         c.drawOval(oval, fill)
         if (has("vest")) {
             fill.color = VEST_RED
@@ -309,12 +325,12 @@ class ChittuRenderer : MonkeyRenderer() {
     }
 
     override fun drawArms(c: Canvas, rig: MonkeyRig) {
-        limb(c, rig.armLUpper, rig.upperLen, 8f, MOUSE_FUR, true); limb(c, rig.armLFore, rig.foreLen, 7.5f, MOUSE_FUR, true)
-        limb(c, rig.armRUpper, rig.upperLen, 8f, MOUSE_FUR, true); limb(c, rig.armRFore, rig.foreLen, 7.5f, MOUSE_FUR, true)
-        limb(c, rig.armLUpper, rig.upperLen, 8f, MOUSE_FUR, false); limb(c, rig.armLFore, rig.foreLen, 7.5f, MOUSE_FUR, false)
-        limb(c, rig.armRUpper, rig.upperLen, 8f, MOUSE_FUR, false); limb(c, rig.armRFore, rig.foreLen, 7.5f, MOUSE_FUR, false)
-        blob(c, rig.armLFore, 0f, rig.foreLen + 2f, 6.5f, 6f, CREAM)
-        blob(c, rig.armRFore, 0f, rig.foreLen + 2f, 6.5f, 6f, CREAM)
+        limb(c, rig.armLUpper, rig.upperLen, 5.8f, MOUSE_FUR, true); limb(c, rig.armLFore, rig.foreLen, 5.4f, MOUSE_FUR, true)
+        limb(c, rig.armRUpper, rig.upperLen, 5.8f, MOUSE_FUR, true); limb(c, rig.armRFore, rig.foreLen, 5.4f, MOUSE_FUR, true)
+        limb(c, rig.armLUpper, rig.upperLen, 5.8f, MOUSE_FUR, false); limb(c, rig.armLFore, rig.foreLen, 5.4f, MOUSE_FUR, false)
+        limb(c, rig.armRUpper, rig.upperLen, 5.8f, MOUSE_FUR, false); limb(c, rig.armRFore, rig.foreLen, 5.4f, MOUSE_FUR, false)
+        blob(c, rig.armLFore, 0f, rig.foreLen + 2f, 5.5f, 5f, CREAM)
+        blob(c, rig.armRFore, 0f, rig.foreLen + 2f, 5.5f, 5f, CREAM)
         // Only draw hand props when that arm is not raised above shoulder/head height (< 75 deg)
         if (has("cheese") && pose.armRRaise < 75f) {
             c.save(); c.concat(rig.armRFore); c.translate(0f, rig.foreLen + 6f)
@@ -342,13 +358,13 @@ class ChittuRenderer : MonkeyRenderer() {
         c.save(); c.concat(rig.head)
         fill.shader = null
         for (s in intArrayOf(-1, 1)) {
-            val ex = s * 30f; val ey = -48f
+            val ex = s * 31f; val ey = -58f
             fill.color = MOUSE_FUR
-            c.drawCircle(ex, ey, 16.5f, fill); c.drawCircle(ex, ey, 16.5f, outline)
+            c.drawCircle(ex, ey, 21f, fill); c.drawCircle(ex, ey, 21f, outline)
         }
         fill.shader = mouseHeadShader
-        c.drawCircle(0f, HEAD_CY, HEAD_R * 0.92f, fill); fill.shader = null
-        c.drawCircle(0f, HEAD_CY, HEAD_R * 0.92f, outline)
+        c.drawCircle(0f, -33f, CHITTU_HEAD_R, fill); fill.shader = null
+        c.drawCircle(0f, -33f, CHITTU_HEAD_R, outline)
         c.restore()
         drawArms(c, rig)
         drawTail(c, rig)
@@ -356,59 +372,68 @@ class ChittuRenderer : MonkeyRenderer() {
 
     var lastRenderedNeckHeight: Float = 0f; private set
 
+    /** v10.13 cute redesign: NO visible neck — the big round head sits right on the small round body. */
     override fun drawHeadBase(c: Canvas, p: Pose, t: Float) {
-        // Clear Visible Cylindrical Neck for Chittu (Chottu) connecting scaled torso (+6.5f) up to chin (-6.5f)
-        lastRenderedNeckHeight = 12.5f
-        fill.shader = null
-        fill.color = MOUSE_FUR
-        oval.set(-7.0f, -9.5f, 7.0f, 7.2f)
-        c.drawRoundRect(oval, 3.5f, 3.5f, fill)
-        fill.color = CREAM
-        oval.set(-4.2f, -8.5f, 4.2f, 6.6f)
-        c.drawRoundRect(oval, 2.5f, 2.5f, fill)
-        // Soft curved sub-mental chin shadow on top of the neck
-        fill.color = MOUSE_DARK
-        oval.set(-7.0f, -9.5f, 7.0f, -3.8f)
-        c.drawRoundRect(oval, 2.5f, 2.5f, fill)
-        // Crisp left & right neck outline strokes + neat red collar rim at base
-        outline.strokeWidth = 2.0f
-        c.drawLine(-7.0f, -5.8f, -7.0f, 5.8f, outline)
-        c.drawLine(7.0f, -5.8f, 7.0f, 5.8f, outline)
-        outline.strokeWidth = OW
-        if (has("vest")) {
-            fill.color = VEST_RED
-            oval.set(-8.5f, 3.8f, 8.5f, 7.5f)
-            c.drawRoundRect(oval, 2.5f, 2.5f, fill)
-            fill.color = BADGE_GOLD
-            c.drawCircle(0f, 5.6f, 2.1f, fill)
-        }
-
-        // Cute round mouse ears positioned cleanly on the sides of the head (ex = +/-30f, ey = -50f, r = 16.5f)
+        lastRenderedNeckHeight = 0f
+        // Big round ears (pink inside), drawn first so the head overlaps their base
         fill.shader = null
         for (s in intArrayOf(-1, 1)) {
-            val ex = s * 30f; val ey = -50f
+            val ex = s * 31f; val ey = -58f
             fill.color = MOUSE_FUR
-            c.drawCircle(ex, ey, 16.5f, fill); c.drawCircle(ex, ey, 16.5f, outline)
-            fill.color = Color.rgb(0xF4, 0xA8, 0xB8)
-            c.drawCircle(ex, ey, 10.5f, fill)
+            c.drawCircle(ex, ey, 21f, fill); c.drawCircle(ex, ey, 21f, outline)
+            fill.color = Color.rgb(0xF8, 0xB4, 0xC4)
+            c.drawCircle(ex, ey, 13.5f, fill)
         }
-        // Head circle raised slightly (-36.5f, r = 30.2f -> bottom at -6.3f) so the neck (-6.3f..+5.8f) is clearly visible!
+        // Big round head reaching down onto the body (bottom at +1.5, overlapping the torso top: no neck gap)
         fill.shader = mouseHeadShader
-        c.drawCircle(0f, -36.5f, HEAD_R * 0.89f, fill); fill.shader = null
-        c.drawCircle(0f, -36.5f, HEAD_R * 0.89f, outline)
-
-        // Cream cheeks & snout
+        c.drawCircle(0f, -33f, CHITTU_HEAD_R, fill); fill.shader = null
+        c.drawCircle(0f, -33f, CHITTU_HEAD_R, outline)
+        if (has("vest")) {
+            fill.color = VEST_RED
+            oval.set(-12f, -2.5f, 12f, 3.5f)
+            c.drawRoundRect(oval, 3f, 3f, fill)
+            fill.color = BADGE_GOLD
+            c.drawCircle(0f, 0.5f, 2.2f, fill)
+        }
+        // Rosy cheeks + small cream snout
+        fill.color = Color.argb(120, 0xFF, 0x8A, 0x9A)
+        c.drawCircle(-20f, -22f, 5.5f, fill); c.drawCircle(20f, -22f, 5.5f, fill)
         fill.color = CREAM
-        oval.set(-20f, -34f, 20f, -8f)
+        oval.set(-15f, -31f, 15f, -12f)
         c.drawOval(oval, fill)
-
-        // Twitching mouse whiskers
-        stroke.color = OUTLINE; stroke.strokeWidth = 1.6f
+        // Twitching whiskers
+        stroke.color = OUTLINE; stroke.strokeWidth = 1.4f
         val tw = 3f * sin(t * 14f)
         for (i in -1..1) {
-            val wy = -23f + i * 3.5f
-            c.drawLine(-14f, wy, -33f, wy + i * 2.5f + tw, stroke)
-            c.drawLine(14f, wy, 33f, wy + i * 2.5f - tw, stroke)
+            val wy = -22f + i * 3.5f
+            c.drawLine(-13f, wy, -34f, wy + i * 2.5f + tw, stroke)
+            c.drawLine(13f, wy, 34f, wy + i * 2.5f - tw, stroke)
+        }
+    }
+
+    /** Big shiny cartoon eyes (white, large dark pupils, two glints). */
+    override fun drawEyes(c: Canvas, p: Pose) {
+        for (s in intArrayOf(-1, 1)) {
+            val ex = s * 11.5f + p.lookX * 0.6f
+            val ey = -40f
+            if ((s < 0 && p.wink > 0.5f) || p.eyeOpen < 0.15f) {
+                stroke.shader = null; stroke.color = EYE; stroke.strokeWidth = 2.4f
+                tmp.reset(); tmp.moveTo(ex - 7f, ey); tmp.quadTo(ex, ey + 4f, ex + 7f, ey); c.drawPath(tmp, stroke); continue
+            }
+            if (p.eyesHappy > 0.5f) {
+                stroke.shader = null; stroke.color = EYE; stroke.strokeWidth = 2.8f
+                tmp.reset(); tmp.moveTo(ex - 7f, ey + 2f); tmp.quadTo(ex, ey - 8f, ex + 7f, ey + 2f); c.drawPath(tmp, stroke); continue
+            }
+            val open = p.eyeOpen.coerceIn(0.15f, 1.5f)
+            val rx = 8.2f; val ry = 10f * open
+            fill.shader = null; fill.color = Color.WHITE
+            oval.set(ex - rx, ey - ry, ex + rx, ey + ry); c.drawOval(oval, fill)
+            outline.strokeWidth = 1.6f; c.drawOval(oval, outline); outline.strokeWidth = OW
+            val px = ex + p.lookX * 0.5f; val py = ey + 1.5f + p.lookY * 0.4f
+            fill.color = EYE
+            oval.set(px - 5.2f, py - minOf(6.5f, ry * 0.8f), px + 5.2f, py + minOf(6.5f, ry * 0.8f)); c.drawOval(oval, fill)
+            fill.color = Color.WHITE
+            c.drawCircle(px + 1.8f, py - 2.6f, 2.1f, fill); c.drawCircle(px - 1.8f, py + 2.2f, 1f, fill)
         }
     }
 

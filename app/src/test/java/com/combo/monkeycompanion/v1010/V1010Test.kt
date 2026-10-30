@@ -115,12 +115,17 @@ class V1010Test {
     }
 
     @Test fun otherCharactersAlsoPlayTheirSignaturePowerFirst() {
-        for (id in listOf("monkey", "billa", "superboy")) {
+        for (id in listOf("monkey", "superboy")) {
             val ch = CharacterRegistry.byId(id) ?: continue
             val v = view(id)
             doubleTap(v)
             assertSame("$id first double-tap", ch.signaturePower, v.debugLastShortcut)
         }
+        // v10.13: double-tap Billa starts the Billa-vs-Chittu chase show instead of a power
+        val b = view("billa")
+        doubleTap(b)
+        org.junit.Assert.assertNotNull("billa double-tap starts the chase show", com.combo.monkeycompanion.overlay.ChaseShowHub.show)
+        com.combo.monkeycompanion.overlay.ChaseShowHub.finish(null)
     }
 
     @Test fun singleTapsNeverLaunchAFlight() {

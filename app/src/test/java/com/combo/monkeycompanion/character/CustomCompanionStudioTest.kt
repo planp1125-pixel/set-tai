@@ -356,7 +356,7 @@ class CustomCompanionStudioTest {
         Chittu.fill(pose, MonkeyState.IDLE, 1.0f, 1.0f, actx, Wear(Chittu))
         rig.layout(pose, 120f, 200f, 1.2f, 1f)
         chittuR.draw(testCanvas, rig, pose, 1.0f)
-        assertTrue("Chittu neck height > 10f (${chittuR.lastRenderedNeckHeight})", chittuR.lastRenderedNeckHeight > 10f)
+        assertTrue("v10.13 cute Chittu: no visible neck (${chittuR.lastRenderedNeckHeight})", chittuR.lastRenderedNeckHeight == 0f)
         assertEquals(Chittu, CharacterRegistry.byId("chottu"))
 
         // 3. Verify Solo (1), Duo (2), and Trio (3) companion counts & Cat + Mouse Duo Combo

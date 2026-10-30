@@ -131,6 +131,11 @@ object MindHub {
             if (lastSkitAt == 0L) { lastSkitAt = now; return "warming up" }
             if (now - lastSkitAt < nextSkitGapMs) return "resting"
         }
+        // v10.13: Billa & Chittu on screen = the real chase show (every few minutes)
+        if (forceId == null && "billa" in crew && "chittu" in crew && showActor != null) {
+            lastSkitAt = now; nextSkitGapMs = (3 * 60_000L + skits.rnd.nextLong(2 * 60_000L))
+            showActor?.invoke(); return null
+        }
         val run = skits.start(crew, forceId) ?: return "no skit fits this crew"
         skitRun = run; lastSkitAt = now
         nextSkitGapMs = (2 * 60_000L + skits.rnd.nextLong(2 * 60_000L))
@@ -256,6 +261,8 @@ object MindHub {
     /** App in front changed (already debounced by Proactive). */
     /** v10.13: the overlay hears every foreground-app change (Selfie Photobomb looks for camera apps). */
     @Volatile var onAppChanged: ((String) -> Unit)? = null
+    /** v10.13: starts the Billa-vs-Chittu chase show (set by the overlay). */
+    @Volatile var showActor: (() -> Unit)? = null
 
     fun perceive(pkg: String) {
         runCatching { onAppChanged?.invoke(pkg) }

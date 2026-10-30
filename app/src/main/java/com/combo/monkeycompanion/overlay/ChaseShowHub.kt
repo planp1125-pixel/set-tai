@@ -9,11 +9,14 @@ import kotlin.random.Random
 object ChaseShowHub {
     /** Separate RNG: never the frame-loop RNG. */
     private val rnd = Random(System.nanoTime())
-    @Volatile var show: ChaseShow? = null; private set
+    @Volatile private var cur: ChaseShow? = null
+    /** The running show (null once it is over, even if no window finished it). */
+    val show: ChaseShow? get() { val s = cur ?: return null; if (t() > s.total + 3f) { cur = null; guestSet = emptySet() }; return cur }
     private var startMs = 0L
     private var last: ChaseShow? = null
     /** Characters spawned only for the show (removed again afterwards). */
-    @Volatile var guests: Set<String> = emptySet(); private set
+    @Volatile private var guestSet: Set<String> = emptySet()
+    val guests: Set<String> get() = if (show == null) emptySet() else guestSet
 
     /** Windows by character id: woken (frame loop started) when a show begins. */
     val wakers = LinkedHashMap<String, () -> Unit>()
@@ -22,18 +25,18 @@ object ChaseShowHub {
 
     fun start(ctx: Context?, onScreen: List<String>): ChaseShow {
         val s = ChaseShow.random(rnd, last)
-        last = s; show = s
-        guests = setOf("billa", "chittu") - onScreen.toSet()
-        startMs = SystemClock.uptimeMillis() + if (guests.isEmpty()) 150L else 700L
-        if (guests.isNotEmpty() && ctx != null) runCatching { MonkeyOverlayService.syncCrew(ctx) }
+        last = s; cur = s
+        guestSet = setOf("billa", "chittu") - onScreen.toSet()
+        startMs = SystemClock.uptimeMillis() + if (guestSet.isEmpty()) 150L else 700L
+        if (guestSet.isNotEmpty() && ctx != null) runCatching { MonkeyOverlayService.syncCrew(ctx) }
         for (w in wakers.values.toList()) runCatching { w() }
         return s
     }
 
     fun finish(ctx: Context?) {
-        if (show == null) return
-        show = null
-        val had = guests.isNotEmpty(); guests = emptySet()
+        if (cur == null) return
+        cur = null
+        val had = guestSet.isNotEmpty(); guestSet = emptySet()
         if (had && ctx != null) runCatching { MonkeyOverlayService.syncCrew(ctx) }
     }
 }

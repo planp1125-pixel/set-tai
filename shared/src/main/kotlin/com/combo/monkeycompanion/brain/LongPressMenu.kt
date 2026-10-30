@@ -177,7 +177,7 @@ object LongPressMenu {
         "sleep" to ("😴" to "Sleep"), "focus" to ("📚" to "Study"), "breathe" to ("🫧" to "Breathe"),
         "comfort_hug" to ("🫂" to "Hug"), "comfort_sign" to ("📣" to "Cheer"), "comfort_coffee" to ("☕" to "Coffee"),
         "chat" to ("💬" to "Chat"), "talk" to ("🎤" to "Mic"), "screen" to ("👀" to "Screen"), "missed" to ("🔔" to "Notifications"),
-        "hide" to ("🙈" to "Hide"),
+        "hide" to ("🙈" to "Hide"), "quit" to ("✕" to "Quit"),
     )
     /** Icon + label for a group or grouped item (null = not part of the grouped popup). */
     fun groupedEntry(id: String): Pair<String, String>? =

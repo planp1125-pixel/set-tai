@@ -1415,6 +1415,7 @@ class MonkeyView(
      */
     private fun refreshQuipSettings() {
         val st = ChatHub.settings
+        sysSaver = runCatching { (context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager).isPowerSaveMode }.getOrDefault(false)
         saver = st.batterySaver
         restSecs = st.effectiveRestSeconds
         comeOutOnUnlock = st.comeOutOnUnlock
@@ -1683,7 +1684,18 @@ class MonkeyView(
         return 1000L / fps
     }
 
-    private fun frameIntervalMs(calm: Boolean): Long = adaptiveFrameDelayMs(calm).coerceAtLeast(0L)
+    /**
+     * v10.13 battery: after 15 s of being completely still (calm idle, nothing on screen moving), drop to 15 fps;
+     * phone Battery Saver on = 15 fps for any calm frame. Any touch / move / bubble resets to the normal pace.
+     */
+    private var calmFor = 0f
+    private var sysSaver = false
+    val debugDeepIdle get() = calmFor >= 15f || sysSaver
+    private fun frameIntervalMs(calm: Boolean): Long {
+        val base = adaptiveFrameDelayMs(calm).coerceAtLeast(0L)
+        if (!calm || base == 0L) return base
+        return if (calmFor >= 15f || sysSaver) max(base, 66L) else base
+    }
 
     private fun postNext(wallStartNanos: Long, intervalMs: Long) {
         val ch = Choreographer.getInstance()
@@ -1990,6 +2002,7 @@ class MonkeyView(
             com.combo.monkeycompanion.mind.MindHub.actor = { d -> executeMind(d) }
             com.combo.monkeycompanion.mind.MindHub.banterActor = { b -> startNeighbourBanter(b) }
             com.combo.monkeycompanion.mind.MindHub.onAppChanged = { pkg -> ui.post { onForegroundApp(pkg) } }
+            com.combo.monkeycompanion.mind.MindHub.showActor = { ui.post { startChaseShow() } }
             ui.removeCallbacks(toolTick); ui.postDelayed(toolTick, 20_000L)
             com.combo.monkeycompanion.mind.MindHub.onMorningTrace = { tr ->
                 ui.postDelayed({ if (!paused && !hiddenTab && !dragging) say("🌙 ${tr.line}", 5000L) }, 3600L)
@@ -2184,6 +2197,7 @@ class MonkeyView(
             com.combo.monkeycompanion.mind.MindHub.actor = null
             com.combo.monkeycompanion.mind.MindHub.banterActor = null
             com.combo.monkeycompanion.mind.MindHub.onAppChanged = null
+            com.combo.monkeycompanion.mind.MindHub.showActor = null
             ui.removeCallbacks(toolTick); removeBiteHole()
             com.combo.monkeycompanion.mind.MindHub.onMorningTrace = null
             com.combo.monkeycompanion.mind.MindHub.onComfortRequested = null
@@ -2570,6 +2584,9 @@ class MonkeyView(
         if (restNap && controller.isAsleep && controller.stateTime > 1.5f && entKind == EntKind.NONE) {
             running = false; EnergyMeter.mode = "stopped: napping (auto-rest, 0 fps)"; return
         }
+        calmFor = if (calm && !showOn) calmFor + dt else 0f
+        // v10.13: phone Battery Saver on and nothing happening for a while: curl up asleep (sleep = low fps cap)
+        if (sysSaver && calmFor > 45f && !controller.isAsleep && host != null && !wp && !hiddenTab) { calmFor = 0f; onAction(BodyAction.SLEEP) }
         val iv = frameIntervalMs(calm)
         EnergyMeter.mode = when {
             iv == 0L -> "full speed (dragging / moving)"
@@ -6000,7 +6017,7 @@ class MonkeyView(
     /** Double-tap: a random one of this character's powers (never the same twice in a row), no cooldown. */
     private fun doubleTapPower() {
         // v10.13: double-tap Billa = the Tom-and-Jerry chase show with Chittu (spawned for the show if needed).
-        if (character.id == "billa" && host != null && !wp) { startChaseShow(); return }
+        if ((character.id == "billa" || character.id == "chittu") && host != null && !wp) { startChaseShow(); return }
         val pw = powerShortcut.pick(character.powers, character.signaturePower, signatureSeen()) ?: return
         markSignatureSeen()
         debugLastShortcut = pw
