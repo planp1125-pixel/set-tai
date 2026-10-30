@@ -122,6 +122,7 @@ object MindHub {
             val m = mind() ?: return "not ready"
             val sc = sceneFor(m.scene.pkg, m.scene)
             director.canPlay(now, Population.Mode.of(neighbourMode), sc.keyboard, sc.call, sc.fullscreen, sc.dnd, sc.quietHours, ignoreCooldown = true)?.let { return it }
+            if (lastSkitAt == 0L) { lastSkitAt = now; return "warming up" }
             if (now - lastSkitAt < nextSkitGapMs) return "resting"
         }
         val run = skits.start(crew, forceId) ?: return "no skit fits this crew"
