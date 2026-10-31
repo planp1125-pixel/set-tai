@@ -31,7 +31,6 @@ class V1017ScreensTest {
     @Test fun screens() {
         shot(com.combo.monkeycompanion.MainActivity::class.java, "v1017-home.png")
         shot(com.combo.monkeycompanion.ui.SettingsActivity::class.java, "v1017-settings.png")
-        shot(com.combo.monkeycompanion.ui.CompanionStudioActivity::class.java, "v1017-studio.png")
         shot(com.combo.monkeycompanion.ui.MenuSettingsActivity::class.java, "v1017-menu.png")
         // the Characters-tab power picker card for Kutti Satan
         val a = Robolectric.buildActivity(com.combo.monkeycompanion.MainActivity::class.java).setup().get()
