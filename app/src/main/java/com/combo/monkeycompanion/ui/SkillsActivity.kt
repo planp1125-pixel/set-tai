@@ -34,10 +34,10 @@ import com.combo.monkeycompanion.powers.Capabilities
  */
 class SkillsActivity : Activity() {
     private val d by lazy { resources.displayMetrics.density }
-    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
-    private val brown = Color.rgb(0x1E, 0x22, 0x40)
-    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
-    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
+    private val cream = com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)
+    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
+    private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
+    private val accent = com.combo.monkeycompanion.theme.Th.rgb(0x6C, 0x5C, 0xE7)
     private lateinit var a11yStatus: TextView
 
     private fun dp(v: Int) = (v * d).toInt()
@@ -84,7 +84,7 @@ class SkillsActivity : Activity() {
         background = GradientDrawable().apply {
             cornerRadius = dp(24).toFloat()
             setColor(if (primary) accent else Color.WHITE)
-            setStroke(dp(2), if (primary) accent else Color.rgb(0xDD, 0xE0, 0xF0))
+            setStroke(dp(2), if (primary) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
         }
         setPadding(dp(14), dp(10), dp(14), dp(10))
         layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) }

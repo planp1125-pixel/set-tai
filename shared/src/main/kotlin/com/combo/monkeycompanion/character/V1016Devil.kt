@@ -10,6 +10,12 @@ import com.combo.monkeycompanion.brain.SpellSparksPower
 import com.combo.monkeycompanion.brain.Superpower
 import com.combo.monkeycompanion.brain.TeleportHopPower
 import com.combo.monkeycompanion.brain.VanishPortalPower
+import com.combo.monkeycompanion.brain.HeroSwoop
+import com.combo.monkeycompanion.brain.FireballPower
+import com.combo.monkeycompanion.brain.JugglePower
+import com.combo.monkeycompanion.brain.HeatVisionPower
+import com.combo.monkeycompanion.brain.DanceSpinPower
+import com.combo.monkeycompanion.brain.RocketBoostPower
 import com.combo.monkeycompanion.rig.AnimContext
 import com.combo.monkeycompanion.rig.DevilPeek
 import com.combo.monkeycompanion.rig.DevilRenderer
@@ -73,7 +79,9 @@ object KuttiSatan : Character("devil") {
         WardrobeItem("blush", "Blush", defaultOn = false, note = "Rosy cheeks when he's happy"),
     )
     override fun newRenderer() = DevilRenderer()
-    override val powers: List<Superpower> by lazy { listOf(VanishPortalPower, TeleportHopPower, FloatBuddyPower, SpellSparksPower, ShadowClonePower, DevilLevitatePower) }
+    override val powers: List<Superpower> by lazy { listOf(VanishPortalPower, TeleportHopPower, FloatBuddyPower, SpellSparksPower, ShadowClonePower, DevilLevitatePower,
+        // v10.17: the main character gets everything: flying, fireball, juggling, laser eyes, dancing, a Diwali rocket ride
+        HeroSwoop, FireballPower, JugglePower, HeatVisionPower, DanceSpinPower, RocketBoostPower) }
     override val signaturePower: Superpower get() = VanishPortalPower
     override val doubleTapTip: String get() = "Double-tap me and watch me vanish! 😈✨"
 
@@ -170,6 +178,18 @@ object KuttiSatan : Character("devil") {
                 p.dvClone = e
                 p.bodyRot = 8f * sin(t * 5f) * e; p.armLRaise = 40f + 60f * abs(sin(t * 5f)) * e; p.armRRaise = 40f + 60f * abs(sin(t * 5f + 1.6f)) * e
                 p.mouthSmile = 1f
+            }
+            "fireball" -> {   // wind-up (arm back), throw (arm forward), follow-through
+                p.dvFire = k
+                val wind = bell(0f, 0.35f, k, 0.5f); val thr = ss(0.3f, 0.42f, k)
+                p.armRRaise = 60f + 90f * wind - 40f * thr; p.armRElbow = -80f * wind; p.bodyRot = -8f * wind + 10f * thr * (1f - ss(0.6f, 1f, k))
+                p.armLRaise = 30f; p.mouthSmile = 1f; p.eyesHappy = if (k > 0.75f) 1f else 0f
+            }
+            "devjuggle" -> {
+                val e = bell(0f, 1f, k, 0.1f)
+                p.bananas = e; p.propT = t * (1.2f + 0.8f * k)
+                p.armLRaise = 55f + 12f * sin(t * 9f) * e; p.armRRaise = 55f + 12f * sin(t * 9f + 3.1f) * e
+                p.armLElbow = -60f * e; p.armRElbow = -60f * e; p.headRot = 4f * sin(t * 4.5f) * e; p.mouthSmile = 0.8f
             }
             "devilfloat" -> {
                 p.dvAura = when (ph) { PowerPhase.DROOP -> ss(0f, 1f, k); PowerPhase.FLY, PowerPhase.POSE -> 1f; else -> 0f }

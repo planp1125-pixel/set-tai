@@ -37,9 +37,9 @@ class ChatPanelView(
     private val d = resources.displayMetrics.density
     private fun dp(v: Int) = (v * d).toInt()
 
-    private val brown = Color.rgb(0x1E, 0x22, 0x40)
-    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
-    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
+    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
+    private val accent = com.combo.monkeycompanion.theme.Th.rgb(0x6C, 0x5C, 0xE7)
+    private val cream = com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)
 
     private val chipRow = LinearLayout(context).apply { orientation = HORIZONTAL; setPadding(0, dp(2), 0, dp(2)) }
     private val list = LinearLayout(context).apply { orientation = VERTICAL; setPadding(dp(10), dp(6), dp(10), dp(6)) }
@@ -56,7 +56,7 @@ class ChatPanelView(
         background = GradientDrawable().apply {
             setColor(cream)
             cornerRadius = if (floating) dp(22).toFloat() else 0f
-            if (floating) setStroke(dp(2), Color.rgb(0xDD, 0xE0, 0xF0))
+            if (floating) setStroke(dp(2), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
         }
         if (floating) elevation = dp(8).toFloat()
 
@@ -69,7 +69,7 @@ class ChatPanelView(
         titles.addView(TextView(context).apply {
             text = "\uD83D\uDCAC Chat with Set-Tai"; textSize = 17f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
         })
-        subtitle.textSize = 12f; subtitle.setTextColor(Color.rgb(0x64, 0x6A, 0x8C))
+        subtitle.textSize = 12f; subtitle.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C))
         titles.addView(subtitle)
         header.addView(titles, LayoutParams(0, WRAP_CONTENT, 1f))
         if (onClose != null) header.addView(Button(context).apply {
@@ -83,11 +83,11 @@ class ChatPanelView(
         // Pending action (confirm) row
         pendingRow.orientation = HORIZONTAL; pendingRow.gravity = Gravity.CENTER_VERTICAL
         pendingRow.setPadding(dp(12), dp(6), dp(12), dp(6))
-        pendingRow.background = GradientDrawable().apply { setColor(Color.rgb(0xEA, 0xE8, 0xFF)); cornerRadius = dp(14).toFloat() }
+        pendingRow.background = GradientDrawable().apply { setColor(com.combo.monkeycompanion.theme.Th.rgb(0xEA, 0xE8, 0xFF)); cornerRadius = dp(14).toFloat() }
         pendingText.textSize = 14f; pendingText.setTextColor(brown)
         pendingRow.addView(pendingText, LayoutParams(0, WRAP_CONTENT, 1f))
-        pendingRow.addView(pill("Yes", Color.rgb(0x4C, 0xAF, 0x50)) { ChatHub.confirmPending(true) })
-        pendingRow.addView(pill("No", Color.rgb(0xE5, 0x73, 0x73)) { ChatHub.confirmPending(false) })
+        pendingRow.addView(pill("Yes", com.combo.monkeycompanion.theme.Th.rgb(0x4C, 0xAF, 0x50)) { ChatHub.confirmPending(true) })
+        pendingRow.addView(pill("No", com.combo.monkeycompanion.theme.Th.rgb(0xE5, 0x73, 0x73)) { ChatHub.confirmPending(false) })
         pendingRow.visibility = GONE
         addView(pendingRow, LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { setMargins(dp(10), dp(4), dp(10), dp(4)) })
 
@@ -106,13 +106,13 @@ class ChatPanelView(
         input.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE
         input.imeOptions = EditorInfo.IME_ACTION_SEND
         input.setPadding(dp(14), dp(10), dp(14), dp(10))
-        input.background = GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(22).toFloat(); setStroke(dp(1), Color.rgb(0xDD, 0xE0, 0xF0)) }
+        input.background = GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(22).toFloat(); setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0)) }
         input.setOnEditorActionListener { _, id, _ -> if (id == EditorInfo.IME_ACTION_SEND) { submit(); true } else false }
         row.addView(input, LayoutParams(0, WRAP_CONTENT, 1f))
         // v4 push-to-talk (only when the Voice power is on and the mic is granted)
         if (com.combo.monkeycompanion.agent.Voice.canListen(context)) row.addView(Button(context).apply {
             text = "🎤"; textSize = 18f; isAllCaps = false
-            background = GradientDrawable().apply { setColor(Color.rgb(0xEA, 0xE8, 0xFF)); cornerRadius = dp(22).toFloat() }
+            background = GradientDrawable().apply { setColor(com.combo.monkeycompanion.theme.Th.rgb(0xEA, 0xE8, 0xFF)); cornerRadius = dp(22).toFloat() }
             setOnClickListener { listen() }
         }, LayoutParams(dp(48), dp(44)).apply { leftMargin = dp(6) })
         send.text = "Send"; send.isAllCaps = false; send.setTextColor(Color.WHITE); send.textSize = 15f
@@ -129,7 +129,7 @@ class ChatPanelView(
         for (c in all) chipRow.addView(TextView(context).apply {
             text = c.label; textSize = 13f; setTextColor(brown)
             setPadding(dp(12), dp(6), dp(12), dp(6))
-            background = GradientDrawable().apply { setColor(Color.rgb(0xFF, 0xE9, 0xC9)); cornerRadius = dp(16).toFloat(); setStroke(dp(1), Color.rgb(0xDD, 0xE0, 0xF0)) }
+            background = GradientDrawable().apply { setColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xE9, 0xC9)); cornerRadius = dp(16).toFloat(); setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0)) }
             setOnClickListener { if (!ChatHub.busy) ChatHub.quick(c) }
         }, LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { rightMargin = dp(6) })
     }
@@ -209,7 +209,7 @@ class ChatPanelView(
             setTextIsSelectable(!floating)
             background = GradientDrawable().apply {
                 cornerRadius = dp(16).toFloat()
-                setColor(if (m.fromUser) accent else if (m.note) Color.rgb(0xEA, 0xE8, 0xFF) else Color.WHITE)
+                setColor(if (m.fromUser) accent else if (m.note) com.combo.monkeycompanion.theme.Th.rgb(0xEA, 0xE8, 0xFF) else Color.WHITE)
             }
             maxWidth = (resources.displayMetrics.widthPixels * 0.75f).toInt()
         }
@@ -218,7 +218,7 @@ class ChatPanelView(
             val col = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
             col.addView(tv, LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
             col.addView(TextView(context).apply {
-                text = "⚑ Report"; textSize = 11f; setTextColor(Color.rgb(0xA8, 0x84, 0x60)); setPadding(dp(10), dp(2), dp(10), dp(4))
+                text = "⚑ Report"; textSize = 11f; setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xA8, 0x84, 0x60)); setPadding(dp(10), dp(2), dp(10), dp(4))
                 contentDescription = "Report this reply"
                 setOnClickListener {
                     com.combo.monkeycompanion.agent.ReplyReports.report(context, m.text)

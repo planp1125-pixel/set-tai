@@ -14,7 +14,11 @@ object BodySense {
     enum class Feeling(val word: String, val fadeMs: Long) {
         DIZZY("a bit dizzy", 45_000), SORE("a little sore", 90_000), ZAPPED("tingly from the zap", 60_000),
         ENERGISED("energised", 120_000), WARM("warm and cosy", 90_000), PUFFED("out of breath", 40_000),
-        TIRED("tired", 0), SLEEPY("sleepy", 0)
+        TIRED("tired", 0), SLEEPY("sleepy", 0),
+        // v10.17 motion, pain/comfort, needs, touch
+        WHOOSH("a whoosh in my tummy", 20_000), OUCH("a small ouch", 30_000), COZY("cozy", 60_000),
+        EXCITED("excited you're back", 90_000), SQUISHED("squished aside", 40_000), HELD("held gently", 25_000),
+        POKED("poked", 20_000), BORED("a bit bored", 0), FRESH("fresh", 0)
     }
 
     data class Event(val at: Long, val text: String, val feeling: Feeling? = null)
@@ -23,13 +27,21 @@ object BodySense {
         val name: String, val position: String, val state: String, val power: String? = null,
         val battery: Int = -1, val charging: Boolean = false, val hour: Int = 12,
         val mood: String = "cheerful", val friendship: String = "", val asleep: Boolean = false,
+        /** v10.17: minutes since the human last touched / talked (-1 unknown), minutes since my last rest, surroundings. */
+        val quietMin: Int = -1, val restedMin: Int = -1, val keyboard: Boolean = false, val screen: String = "", val app: String = "",
+        /** v10.17: body energy 0..1 (-1 unknown). */
+        val energy: Float = -1f,
     )
+
+    /** v10.17: called for every recorded body event (the overlay turns it into a spontaneous-line trigger when Brain is on). */
+    @Volatile var onEvent: ((String) -> Unit)? = null
 
     private val log = ArrayDeque<Event>()
 
     @Synchronized fun record(text: String, feeling: Feeling? = null, now: Long = System.currentTimeMillis()) {
         log.addLast(Event(now, text, feeling))
         while (log.size > 12) log.removeFirst()
+        onEvent?.let { cb -> runCatching { cb(text) } }
     }
     @Synchronized fun clear() = log.clear()
     @Synchronized fun recent(now: Long = System.currentTimeMillis()): List<Event> = log.filter { now - it.at in 0..WINDOW_MS }
@@ -52,7 +64,9 @@ object BodySense {
         }
         if (s.asleep || s.hour in 0..5) out.add(Feeling.SLEEPY.word)
         if (s.battery in 0..19 && !s.charging) out.add(Feeling.TIRED.word + " (low battery)")
-        else if (s.hour >= 23) out.add(Feeling.TIRED.word)
+        else if (s.hour >= 23 || s.restedMin >= 120) out.add(Feeling.TIRED.word)
+        else if (s.restedMin in 0..10 && !s.asleep) out.add(Feeling.FRESH.word)
+        if (s.quietMin >= 10 && !s.asleep) out.add(Feeling.BORED.word)
         if (s.charging && s.battery >= 0) out.add(Feeling.ENERGISED.word)
         return out.toList().take(3)
     }
@@ -70,6 +84,10 @@ object BodySense {
             if (f.isNotEmpty()) append("; I feel ").append(f.joinToString(", "))
             append("; mood ").append(s.mood)
             if (s.friendship.isNotBlank()) append("; friendship ").append(s.friendship)
+            if (s.energy in 0f..1f) append("; energy ").append(when { s.energy < 0.25f -> "very low"; s.energy < 0.5f -> "low"; s.energy < 0.8f -> "ok"; else -> "full" })
+            if (s.keyboard) append("; the keyboard is pushing me aside")
+            if (s.screen.isNotBlank()) append("; screen ").append(s.screen)
+            if (s.app.isNotBlank()) append("; you're in a ").append(s.app).append(" app")
             if (s.battery >= 0) append("; battery ").append(s.battery).append('%').append(if (s.charging) " charging" else "")
             append("; ").append(timeOfDay(s.hour))
         }

@@ -52,7 +52,7 @@ class RingActivity : Activity() {
         val d = resources.displayMetrics.density
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            setBackgroundColor(Color.rgb(46, 92, 52)); setPadding((24 * d).toInt(), (48 * d).toInt(), (24 * d).toInt(), (48 * d).toInt())
+            setBackgroundColor(com.combo.monkeycompanion.theme.Th.rgb(46, 92, 52)); setPadding((24 * d).toInt(), (48 * d).toInt(), (24 * d).toInt(), (48 * d).toInt())
         }
         root.addView(TextView(this).apply {
             text = intent.getStringExtra("title") ?: "⏰"; textSize = 30f; setTextColor(Color.WHITE); gravity = Gravity.CENTER
@@ -60,7 +60,7 @@ class RingActivity : Activity() {
         val rawLine = intent.getStringExtra("line").orEmpty()
         root.addView(TextView(this).apply {
             text = (if (rawLine.isNotBlank()) "$rawLine\n" else "") + "🥁 *Tap-tap-thump!* Settai is drumming on the glass from below to wake you up!"
-            textSize = 18f; setTextColor(Color.rgb(255, 240, 210)); gravity = Gravity.CENTER
+            textSize = 18f; setTextColor(com.combo.monkeycompanion.theme.Th.rgb(255, 240, 210)); gravity = Gravity.CENTER
             setPadding(0, (12 * d).toInt(), 0, (12 * d).toInt())
         })
         val stage = FrameLayout(this)

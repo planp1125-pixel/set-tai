@@ -195,6 +195,12 @@ class AppSettings(ctx: Context) {
         return id
     }
 
+    /** v10.17: power ids switched on for a character (null = never changed = its own powers). */
+    fun enabledPowers(id: String): Set<String>? = p.getString("powers_on_$id", null)?.split(',')?.filter { it.isNotBlank() }?.toSet()
+    fun setEnabledPowers(id: String, ids: Set<String>?) {
+        if (ids == null) p.edit().remove("powers_on_$id").apply() else p.edit().putString("powers_on_$id", ids.joinToString(",")).apply()
+    }
+
     /** v4.1: a character's wardrobe ([com.combo.monkeycompanion.character.Wear.encode]); null = defaults. */
     fun wardrobeFor(id: String): String? = p.getString("wear_$id", null)
     fun setWardrobeFor(id: String, v: String) = p.edit().putString("wear_$id", v).apply()

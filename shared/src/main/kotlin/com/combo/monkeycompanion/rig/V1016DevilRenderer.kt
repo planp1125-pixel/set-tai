@@ -70,6 +70,7 @@ class DevilRenderer : HumanRenderer() {
     override fun drawFront(c: Canvas, rig: MonkeyRig, p: Pose, t: Float) {
         if (p.dvAura > 0.02f) aura(c, rig, p.dvAura.coerceIn(0f, 1f), t, behind = false)
         if (p.dvSpell > 0.02f) spell(c, rig, p.dvSpell.coerceIn(0f, 1f), t)
+        if (p.dvFire > 0.02f) fireball(c, rig, p.dvFire.coerceIn(0f, 1f), t)
     }
 
     /** Long thin curvy tail (outline + white) with the red heart tip pointing along the last segment. */
@@ -255,6 +256,29 @@ class DevilRenderer : HumanRenderer() {
             if (front == behind) continue
             val x = pts[0] + cos(ang) * 46f * s; val y = pts[1] + sin(ang) * 14f * s + 30f * s * sin(t * 1.3f + i)
             star(c, x, y, (4f + 2f * sin(t * 7f + i)) * s, if (i % 3 == 0) Color.WHITE else RED, (230 * e).toInt())
+        }
+    }
+
+    /** v10.17 fireball: glows in the right hand while winding up, then flies off with a trail and fizzles into sparks. */
+    private fun fireball(c: Canvas, rig: MonkeyRig, k: Float, t: Float) {
+        val s = rig.scale
+        hp[0] = 0f; hp[1] = rig.foreLen * ARM_K + 4f; rig.armRFore.mapPoints(hp)
+        val fly = ((k - 0.4f) / 0.45f).coerceIn(0f, 1f)
+        val x = hp[0] + 150f * s * fly; val y = hp[1] - 40f * s * fly + 60f * s * fly * fly
+        val fade = 1f - ((k - 0.85f) / 0.15f).coerceIn(0f, 1f)
+        val r = (5f + 4f * minOf(1f, k * 3f)) * s * (1f + 0.08f * sin(t * 30f))
+        if (fly > 0f) for (i in 1..4) {   // trail
+            val f = fly - i * 0.06f; if (f <= 0f) break
+            fill.shader = null; fill.color = Color.rgb(0xFF, 0x7A, 0x1A); fill.alpha = (110 * fade * (1f - i / 5f)).toInt()
+            c.drawCircle(hp[0] + 150f * s * f, hp[1] - 40f * s * f + 60f * s * f * f, r * (1f - i * 0.15f), fill)
+        }
+        fill.color = RED; fill.alpha = (230 * fade).toInt(); c.drawCircle(x, y, r * 1.35f, fill)
+        fill.color = Color.rgb(0xFF, 0x9A, 0x3C); fill.alpha = (255 * fade).toInt(); c.drawCircle(x, y, r, fill)
+        fill.color = Color.rgb(0xFF, 0xE8, 0x9A); fill.alpha = (255 * fade).toInt(); c.drawCircle(x, y, r * 0.45f, fill)
+        fill.alpha = 255
+        if (k > 0.85f) for (i in 0 until 6) {
+            val a = i * 1.047f; val d = (k - 0.85f) / 0.15f * 16f * s
+            star(c, x + cos(a) * d, y + sin(a) * d, 3f * s, RED, (255 * fade).toInt())
         }
     }
 

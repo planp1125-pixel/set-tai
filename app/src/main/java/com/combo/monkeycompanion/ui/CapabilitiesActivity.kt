@@ -24,10 +24,10 @@ import com.combo.monkeycompanion.powers.Perm
 class CapabilitiesActivity : Activity() {
     private val d by lazy { resources.displayMetrics.density }
     private fun dp(v: Int) = (v * d).toInt()
-    private val brown = Color.rgb(0x1E, 0x22, 0x40)
-    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
-    private val good = Color.rgb(0x2E, 0x7D, 0x32)
-    private val warn = Color.rgb(0xC6, 0x28, 0x28)
+    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
+    private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
+    private val good = com.combo.monkeycompanion.theme.Th.rgb(0x2E, 0x7D, 0x32)
+    private val warn = com.combo.monkeycompanion.theme.Th.rgb(0xC6, 0x28, 0x28)
 
     override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); ChatHub.init(this) }
     override fun onResume() { super.onResume(); setContentView(build()) }
@@ -79,7 +79,7 @@ class CapabilitiesActivity : Activity() {
                 "• Send SMS, place calls, or save calendar events silently — Settai fills them in and you press send/call/save.\n" +
                 "• Read live CPU load or temperatures other than the battery's.\n" +
                 "• Open other apps while Settai's not visible on screen (Android blocks background launches) — Settai posts a tap-to-open notification instead.", 13f, color = soft)))
-        return ScrollView(this).apply { setBackgroundColor(Color.rgb(0xF3, 0xF4, 0xFA)); addView(col) }
+        return ScrollView(this).apply { setBackgroundColor(com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)); addView(col) }
     }
 
     /** Which special access each agent group needs (each gets its own Grant button). */

@@ -48,6 +48,8 @@ interface StageHost {
     fun headTop(out: FloatArray)
     fun feet(out: FloatArray)
     fun say(text: String, ms: Long)
+    /** v10.17: instructions / game rules: shown even when the AI speaks for the character. */
+    fun sayInfo(text: String, ms: Long) = say(text, ms)
     fun chips(text: String, chips: List<QuickChip>)
     fun play(s: MonkeyState, secs: Float)
     fun gag(g: Gag): Boolean
@@ -268,8 +270,8 @@ class Stage(private val h: StageHost) : PairHub.Listener {
             else -> {
                 if (!h.free() || faceDownMask) return
                 when (e) {
-                    MotionDetector.Event.SHAKE -> { dizzyUntil = t + 3.2f; h.play(MonkeyState.STARTLED, 1.4f); h.say(shakeLine(false), 2400L); h.wake(); com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.SHAKE) }
-                    MotionDetector.Event.HARD_SHAKE -> { dizzyUntil = t + 2f; h.play(MonkeyState.ANGRY, 2.4f); h.say(shakeLine(true), 2600L); h.wake(); com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.HARD_SHAKE) }
+                    MotionDetector.Event.SHAKE -> { dizzyUntil = t + 3.2f; com.combo.monkeycompanion.ai.BodySense.record("you shook the phone", com.combo.monkeycompanion.ai.BodySense.Feeling.DIZZY); h.play(MonkeyState.STARTLED, 1.4f); h.say(shakeLine(false), 2400L); h.wake(); com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.SHAKE) }
+                    MotionDetector.Event.HARD_SHAKE -> { dizzyUntil = t + 2f; com.combo.monkeycompanion.ai.BodySense.record("you shook the phone hard", com.combo.monkeycompanion.ai.BodySense.Feeling.DIZZY); h.play(MonkeyState.ANGRY, 2.4f); h.say(shakeLine(true), 2600L); h.wake(); com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.HARD_SHAKE) }
                     MotionDetector.Event.TILT_LEFT -> h.slideToEdge(-1)
                     MotionDetector.Event.TILT_RIGHT -> h.slideToEdge(1)
                     else -> Unit
@@ -404,11 +406,11 @@ class Stage(private val h: StageHost) : PairHub.Listener {
     fun startGame(g: Games.Game) {
         endGames(false)
         when (g) {
-            Games.Game.BANANA -> { banana = BananaCatch(); bananaTarget = h.charX(); h.say(if (motion.active) "Catch the bananas! Tilt the phone or drag me 🍌" else "Catch the bananas! Drag me left and right 🍌", 2500L) }
+            Games.Game.BANANA -> { banana = BananaCatch(); bananaTarget = h.charX(); h.sayInfo(if (motion.active) "Catch the bananas! Tilt the phone or drag me 🍌" else "Catch the bananas! Drag me left and right 🍌", 2500L) }
             Games.Game.STARE -> {
                 val lvl = Friendship.level(Fun5Store.friendship(c).xp)
                 stare = StaringContest(Random, 4f, 10f + lvl.coerceAtMost(8))
-                h.say("Staring contest! 👀 Tap me the moment YOU blink. Go!", 2600L)
+                h.sayInfo("Staring contest! 👀 Tap me the moment YOU blink. Go!", 2600L)
             }
             Games.Game.RPS -> h.chips("Rock, paper, scissors… shoot! ✊✋✌️", Rps.Hand.entries.map { QuickChip("v5", "${it.icon} ${it.label}", "rps_" + it.name) })
         }
@@ -474,7 +476,7 @@ class Stage(private val h: StageHost) : PairHub.Listener {
             }
         }
     }
-    fun endGames(say: Boolean) { if (say && playing) h.say("Game over! 👋", 1500L); banana = null; stare = null }
+    fun endGames(say: Boolean) { if (say && playing) h.sayInfo("Game over! 👋", 1500L); banana = null; stare = null }
     private fun hudLine() = banana?.let { "🍌 ${it.score}   ⏱ ${(it.seconds - it.t).toInt().coerceAtLeast(0)}s" } ?: stare?.let { "👀 Don't blink!  ${"%.1f".format(it.t)} s" } ?: ""
     private fun drawBananas(cv: Canvas, b: BananaCatch) {
         val w = h.screenW(); h.feet(tmpB); val ground = tmpB[1]
@@ -487,8 +489,8 @@ class Stage(private val h: StageHost) : PairHub.Listener {
         when {
             arg.startsWith("game_") -> Games.byId(arg.removePrefix("game_"))?.let { startGame(it) }
             arg.startsWith("rps_") -> playRps(Rps.Hand.valueOf(arg.removePrefix("rps_")))
-            arg == "nag_ok" -> { h.say("Goodnight! 🌙 I'll guard the phone.", 2500L); h.play(MonkeyState.SLEEP, 4f) }
-            arg == "nag_snooze" -> { snoozedUntil = SystemClock.elapsedRealtime() + SleepNag.SNOOZE_MS; saveNag(); h.say("Fine, 20 more minutes. I'm counting ⏰", 2500L) }
+            arg == "nag_ok" -> { h.sayInfo("Goodnight! 🌙 I'll guard the phone.", 2500L); h.play(MonkeyState.SLEEP, 4f) }
+            arg == "nag_snooze" -> { snoozedUntil = SystemClock.elapsedRealtime() + SleepNag.SNOOZE_MS; saveNag(); h.sayInfo("Fine, 20 more minutes. I'm counting ⏰", 2500L) }
             else -> return false
         }
         return true

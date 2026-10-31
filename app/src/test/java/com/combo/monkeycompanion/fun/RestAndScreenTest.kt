@@ -59,9 +59,15 @@ class RestAndScreenTest {
         val (v, host) = newView(30)
         v.debugFrames(30)
         assertFalse(v.debugHidden)
-        // Let the real (Choreographer-paced) loop run for 40 s of idle.
-        shadowOf(android.os.Looper.getMainLooper()).idleFor(Duration.ofSeconds(40))
-        assertTrue("hid after rest timeout", v.debugHidden)
+        // Let the real (Choreographer-paced) loop run. Never before the 30 s timeout; after it, as soon as the character
+        // is free to rest (its own autonomous bits, e.g. a dance or a power picked by the shared Random stream, finish
+        // first, so how long that takes depends on test order: wait in 1 s steps, bounded).
+        val looper = shadowOf(android.os.Looper.getMainLooper())
+        looper.idleFor(Duration.ofSeconds(28))
+        assertFalse("not hidden before the rest timeout", v.debugHidden)
+        var waited = 28
+        while (!v.debugHidden && waited < 150) { looper.idleFor(Duration.ofSeconds(1)); waited++ }
+        assertTrue("hid after rest timeout (waited $waited s)", v.debugHidden)
         assertTrue(v.debugResting)
         v.debugFrames(5)
         assertFalse("loop stopped while resting", v.debugLoopRunning)

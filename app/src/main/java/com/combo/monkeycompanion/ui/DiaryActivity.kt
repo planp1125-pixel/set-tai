@@ -45,14 +45,14 @@ class MoodBarsView(context: Context) : View(context) {
         set(v) { field = v; invalidate() }
 
     private val labelP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0x1E, 0x22, 0x40); textSize = 12f * d
+        color = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40); textSize = 12f * d
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
     private val valP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0x64, 0x6A, 0x8C); textSize = 11.5f * d; textAlign = Paint.Align.RIGHT
+        color = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C); textSize = 11.5f * d; textAlign = Paint.Align.RIGHT
         typeface = Typeface.create("sans-serif", Typeface.NORMAL)
     }
-    private val trackP = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0xF3, 0xE5, 0xD0) }
+    private val trackP = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xE5, 0xD0) }
     private val fillP = Paint(Paint.ANTI_ALIAS_FLAG)
     private val r = RectF()
 
@@ -64,13 +64,13 @@ class MoodBarsView(context: Context) : View(context) {
 
     override fun onDraw(c: Canvas) {
         val rows = listOf(
-            Triple("⚡ Energy", drives.energy, Color.rgb(0x43, 0xA0, 0x47)),
-            Triple("🧭 Curiosity", drives.curiosity, Color.rgb(0x1E, 0x88, 0xE5)),
-            Triple("💛 Social", drives.social, Color.rgb(0xFB, 0x8C, 0x00)),
-            Triple("😈 Boredom", drives.boredom, Color.rgb(0x8E, 0x24, 0xAA)),
-            Triple("😌 Content", drives.contentment, Color.rgb(0x00, 0x89, 0x7B)),
-            Triple("😤 Grumpy", drives.annoyance, Color.rgb(0xE5, 0x39, 0x35)),
-            Triple("🤫 Focus respect", focus, Color.rgb(0x54, 0x6E, 0x7A)),
+            Triple("⚡ Energy", drives.energy, com.combo.monkeycompanion.theme.Th.rgb(0x43, 0xA0, 0x47)),
+            Triple("🧭 Curiosity", drives.curiosity, com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x88, 0xE5)),
+            Triple("💛 Social", drives.social, com.combo.monkeycompanion.theme.Th.rgb(0xFB, 0x8C, 0x00)),
+            Triple("😈 Boredom", drives.boredom, com.combo.monkeycompanion.theme.Th.rgb(0x8E, 0x24, 0xAA)),
+            Triple("😌 Content", drives.contentment, com.combo.monkeycompanion.theme.Th.rgb(0x00, 0x89, 0x7B)),
+            Triple("😤 Grumpy", drives.annoyance, com.combo.monkeycompanion.theme.Th.rgb(0xE5, 0x39, 0x35)),
+            Triple("🤫 Focus respect", focus, com.combo.monkeycompanion.theme.Th.rgb(0x54, 0x6E, 0x7A)),
         )
         val rowH = 22f * d
         val labelW = 112f * d
@@ -102,10 +102,10 @@ class MoodBarsView(context: Context) : View(context) {
  */
 class DiaryActivity : Activity() {
     private val d by lazy { resources.displayMetrics.density }
-    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
-    private val brown = Color.rgb(0x1E, 0x22, 0x40)
-    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
-    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
+    private val cream = com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)
+    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
+    private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
+    private val accent = com.combo.monkeycompanion.theme.Th.rgb(0x6C, 0x5C, 0xE7)
     private lateinit var who: Character
 
     private fun dp(v: Int) = (v * d).toInt()
@@ -150,7 +150,7 @@ class DiaryActivity : Activity() {
                 background = GradientDrawable().apply {
                     cornerRadius = dp(20).toFloat()
                     setColor(if (sel) accent else Color.WHITE)
-                    setStroke(dp(1), if (sel) accent else Color.rgb(0xDD, 0xE0, 0xF0))
+                    setStroke(dp(1), if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
                 }
                 setPadding(dp(12), dp(6), dp(12), dp(6))
                 setOnClickListener { who = c; rebuild() }
@@ -250,7 +250,7 @@ class DiaryActivity : Activity() {
                     setTextColor(if (sel) Color.WHITE else brown)
                     background = GradientDrawable().apply {
                         cornerRadius = dp(14).toFloat()
-                        setColor(if (sel) accent else Color.rgb(0xFF, 0xF9, 0xEE))
+                        setColor(if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF9, 0xEE))
                     }
                     setPadding(dp(6), dp(4), dp(6), dp(4))
                     setOnClickListener {
@@ -275,7 +275,7 @@ class DiaryActivity : Activity() {
                     setTextColor(if (sel) Color.WHITE else brown)
                     background = GradientDrawable().apply {
                         cornerRadius = dp(14).toFloat()
-                        setColor(if (sel) accent else Color.rgb(0xFF, 0xF9, 0xEE))
+                        setColor(if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF9, 0xEE))
                     }
                     setPadding(dp(6), dp(4), dp(6), dp(4))
                     setOnClickListener {
@@ -313,7 +313,7 @@ class DiaryActivity : Activity() {
             }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
             noteBtnRow.addView(Button(this).apply {
                 text = "🧹 Clear Unpinned"; isAllCaps = false; textSize = 13f; setTextColor(brown)
-                background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.rgb(0xF5, 0xE6, 0xD0)) }
+                background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(com.combo.monkeycompanion.theme.Th.rgb(0xF5, 0xE6, 0xD0)) }
                 setOnClickListener {
                     diary.clearUnpinned()
                     MindHub.flush()
@@ -348,8 +348,8 @@ class DiaryActivity : Activity() {
                         setPadding(dp(12), dp(8), dp(12), dp(8))
                         background = GradientDrawable().apply {
                             cornerRadius = dp(12).toFloat()
-                            setColor(if (entry.pinned) Color.rgb(0xFF, 0xF3, 0xD6) else Color.rgb(0xFF, 0xF9, 0xEE))
-                            setStroke(dp(1), if (entry.pinned) accent else Color.rgb(0xF0, 0xDF, 0xC4))
+                            setColor(if (entry.pinned) com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF3, 0xD6) else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF9, 0xEE))
+                            setStroke(dp(1), if (entry.pinned) accent else com.combo.monkeycompanion.theme.Th.rgb(0xF0, 0xDF, 0xC4))
                         }
                         layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) }
                     }

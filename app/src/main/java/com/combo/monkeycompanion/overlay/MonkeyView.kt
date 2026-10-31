@@ -1,5 +1,7 @@
 package com.combo.monkeycompanion.overlay
 
+import com.combo.monkeycompanion.ai.BodySense as BSN
+
 import android.annotation.SuppressLint
 import android.app.KeyguardManager
 import android.content.Context
@@ -177,6 +179,7 @@ class MonkeyView(
         override fun headTop(out: FloatArray) { rig.headTop(out); out[0] += winX + sinkX; out[1] += winY }
         override fun feet(out: FloatArray) { feetScreen(out) }
         override fun say(text: String, ms: Long) = this@MonkeyView.say(text, ms)
+        override fun sayInfo(text: String, ms: Long) = this@MonkeyView.sayInfo(text, ms)
         override fun chips(text: String, chips: List<com.combo.monkeycompanion.agent.QuickChip>) { showBubble(text, 14f, chips = chips, reply = false) }
         override fun play(s: MonkeyState, secs: Float) { if (!controller.isAsleep || s == MonkeyState.SLEEP) controller.play(s, secs) }
         override fun gag(g: com.combo.monkeycompanion.brain.Gag) = controller.gag(g)
@@ -227,17 +230,17 @@ class MonkeyView(
             cmd == "focus_20" -> startFocusBuddy(20)
             cmd == "demo_otp" -> {
                 com.combo.monkeycompanion.agent.DailyUtilityEngine.triggerDemoOtp(context, "482910", "HDFC Bank")
-                say("🔐 Caught OTP 482910 from HDFC Bank! Tap the green pill on me to copy it in 1 tap 📋", 4500L)
+                sayInfo("🔐 Caught OTP 482910 from HDFC Bank! Tap the green pill on me to copy it in 1 tap 📋", 4500L)
                 invalidate()
             }
             cmd == "demo_delivery" -> {
                 com.combo.monkeycompanion.agent.DailyUtilityEngine.triggerDemoDelivery(context, "🛵 Swiggy: Order arriving in 4 mins")
-                say("🛵 Live Delivery Tracker pinned: Swiggy order arriving in 4 mins!", 4000L)
+                sayInfo("🛵 Live Delivery Tracker pinned: Swiggy order arriving in 4 mins!", 4000L)
                 invalidate()
             }
             cmd == "eye_break" -> {
                 com.combo.monkeycompanion.agent.DailyUtilityEngine.triggerEyeBreakNow(20f)
-                say("🧘 20-20-20 Eye & Neck Break! Look 20ft away for 20 seconds, machan 👀🌿", 4500L)
+                sayInfo("🧘 20-20-20 Eye & Neck Break! Look 20ft away for 20 seconds, machan 👀🌿", 4500L)
                 invalidate()
             }
             cmd == "breathe" -> startBreatheBuddy()
@@ -270,7 +273,7 @@ class MonkeyView(
         if (clipBusy) return
         clipBusy = true
         val bit = com.combo.monkeycompanion.v5.ClipScript.pick(hint)
-        say("🎬 Lights, camera… ${bit.title}! Making a 5 s clip…", 3000L)
+        sayInfo("🎬 Lights, camera… ${bit.title}! Making a 5 s clip…", 3000L)
         val r = com.combo.monkeycompanion.fun5.ClipRenderer(character, wear, bit)
         Thread {
             val res = runCatching { com.combo.monkeycompanion.fun5.ClipMaker.encode(context, r) }
@@ -278,10 +281,10 @@ class MonkeyView(
                 clipBusy = false
                 res.onSuccess { f ->
                     stage.xp(com.combo.monkeycompanion.v5.Friendship.Source.CLIP)
-                    say("Clip ready! Pick WhatsApp status or anyone 📤 (you press post)", 3500L)
+                    sayInfo("Clip ready! Pick WhatsApp status or anyone 📤 (you press post)", 3500L)
                     runCatching { com.combo.monkeycompanion.fun5.ClipMaker.share(context, f, com.combo.monkeycompanion.v5.ClipScript.caption(bit, character.name)) }
                     stageHost.log("Clip: ${bit.title}", "${f.length() / 1024} KB, share sheet opened")
-                }.onFailure { e -> say("Camera jammed 🎬😵 (${e.message?.take(40)})", 3500L); stageHost.log("Clip failed", "${e.message}") }
+                }.onFailure { e -> sayInfo("Camera jammed 🎬😵 (${e.message?.take(40)})", 3500L); stageHost.log("Clip failed", "${e.message}") }
             }
         }.start()
     }
@@ -391,7 +394,7 @@ class MonkeyView(
             val effectiveY = if (tweenT >= 0f) tToY else my
             if (!keyboardDodge || effectiveY > safeY + 2f) {
                 val first = !keyboardDodge
-                if (first) { keyboardDodge = true; preDodgeX = mx; preDodgeY = my; preDodgeSurf = surf }
+                if (first) { keyboardDodge = true; preDodgeX = mx; preDodgeY = my; preDodgeSurf = surf; BSN.record("the keyboard pushed me aside", BSN.Feeling.SQUISHED) }
                 if (falling) { falling = false; vy = 0f; arc = null; landStyle = Landings.Style.SIMPLE }
                 val fx = mx; val fy = my
                 val left = mx + boxW / 2f < sw() / 2f
@@ -575,6 +578,7 @@ class MonkeyView(
         tweenT = -1f; tweenDone = null
         falling = true; vy = 0f
         landStyle = Landings.Style.SIMPLE; landBeat = 0f; landBounced = false
+        BSN.record("I'm falling", BSN.Feeling.WHOOSH)   // v10.17 motion feeling
     }
 
     /** Animate the box from (fx, fy) to its current (mx, my); [arc] = leap height in px. */
@@ -702,7 +706,9 @@ class MonkeyView(
 
     /** The user did something with Settai: restart the idle clock. */
     fun noteInteraction() {
-        lastInteract = SystemClock.elapsedRealtime()
+        val nowE = SystemClock.elapsedRealtime()
+        if (lastInteract > 0L && nowE - lastInteract > 20 * 60_000L) BSN.record("you came back after a long while", BSN.Feeling.EXCITED)   // v10.17
+        lastInteract = nowE
         controller.touched()
         restGoIn = -1f
     }
@@ -741,7 +747,7 @@ class MonkeyView(
     private var aiReply: String? = null
 
     // ---- v10.14 speech only when settled: lines (and chat replies) that arrive mid-flight wait for the landing ----
-    private class HeldLine(val text: String, val ms: Long, val at: Float)
+    private class HeldLine(val text: String, val ms: Long, val at: Float, val voice: Voice = Voice.SCRIPT)
     private val heldLines = ArrayDeque<HeldLine>()
     private var heldReply: String? = null; private var heldReplyDone = false
     private var settledFor = 0f
@@ -758,16 +764,65 @@ class MonkeyView(
         heldAction?.let { a -> heldAction = null; onAction(a) }   // v10.15: body actions also wait until settled
         heldReply?.let { r -> heldReply = null; onReply(r, heldReplyDone); return }
         while (heldLines.isNotEmpty() && t - heldLines.first().at > HELD_STALE_SECS) heldLines.removeFirst()   // stale: drop
-        heldLines.removeFirstOrNull()?.let { h -> heldLines.clear(); say(h.text, h.ms) }
+        heldLines.removeFirstOrNull()?.let { h -> heldLines.clear(); speak(h.text, h.ms, h.voice) }
+        stepBodyVoice()
     }
 
-    override fun say(text: String, durationMs: Long) {
+    /** v10.17: who wrote a line: a scripted (canned) line, an info/utility message, or the AI's own body-felt line. */
+    private enum class Voice { SCRIPT, INFO, AI }
+    /** Scripted lines: with Give Brain ON they are not shown; the moment asks the AI for its own line instead. */
+    override fun say(text: String, durationMs: Long) = speak(text, durationMs, Voice.SCRIPT)
+    /** Reminders, permissions, errors, instructions: always shown as written. */
+    fun sayInfo(text: String, durationMs: Long = 3500L) = speak(text, durationMs, Voice.INFO)
+
+    // ---- v10.17 AI speech from Body Sense (Give Brain ON): no canned lines; short spontaneous lines at real moments ----
+    private val bodyVoice = com.combo.monkeycompanion.ai.BodyVoice()
+    private var lastRestAt = 0L
+    init {
+        // v10.17: every body event (fall, bump, hold, keyboard push, charger, fling...) is a moment the AI may speak about
+        BSN.onEvent = { what -> post { if (live && aiVoiceOn()) bodyMoment(what) } }
+    }
+    private var aiVoiceCache = false
+    private var aiVoiceAt = -1L
+    private fun aiVoiceOn(): Boolean {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - aiVoiceAt > 1000L || aiVoiceAt < 0L) { aiVoiceAt = now; aiVoiceCache = runCatching { ChatHub.isBrainEnabled() }.getOrDefault(false) }
+        return aiVoiceCache
+    }
+    private fun nowSec() = android.os.SystemClock.uptimeMillis() / 1000f
+    /** A scripted line would have played here: something happened. Ask the AI (rate-limited) instead. */
+    private fun bodyMoment(kind: String) {
+        val now = nowSec()
+        if (!bodyVoice.wantEvent(now)) return
+        askBodyVoice(com.combo.monkeycompanion.ai.BodyVoice.eventText(kind), now)
+    }
+    /** Per frame (cheap, no RNG): a long quiet stretch gets one spontaneous line now and then. */
+    private fun stepBodyVoice() {
+        if (debugQuiet || hiddenTab || bubbleOn || pendingShown || thinkingBubble || typing) return
+        if (controller.state != MonkeyState.IDLE) return
+        val now = nowSec()
+        bodyVoice.expire(now)
+        if (!bodyVoice.wantIdle(now) || !aiVoiceOn()) return
+        askBodyVoice(com.combo.monkeycompanion.ai.BodyVoice.IDLE_EVENT, now)
+    }
+    private fun askBodyVoice(event: String, now: Float) {
+        if (ChatHub.busy) return
+        val tok = bodyVoice.begin(now)
+        ChatHub.spontaneous(event) { line ->
+            if (!bodyVoice.accept(tok, nowSec())) return@spontaneous   // too slow / superseded: dropped, never canned text
+            if (line.isNullOrBlank() || !aiVoiceOn() || !live) return@spontaneous
+            speak(line, com.combo.monkeycompanion.speech.Speech.defaultDuration(line).coerceIn(2200L, 5000L), Voice.AI)
+        }
+    }
+
+    private fun speak(text: String, durationMs: Long, voice: Voice) {
         if (debugQuiet) return
+        if (voice == Voice.SCRIPT && aiVoiceOn()) { bodyMoment(controller.state.name.lowercase().replace('_', ' ')); return }
         if (movingNow || (settledFor < SETTLE_SECS && (heldLines.isNotEmpty() || heldReply != null))) {
             if (heldLines.size >= 4) heldLines.removeFirst()
-            heldLines.addLast(HeldLine(text, durationMs, t)); return
+            heldLines.addLast(HeldLine(text, durationMs, t, voice)); return
         }
-        aiReply = null
+        aiReply = if (voice == Voice.AI) text else null
         if (hiddenTab || controller.state == MonkeyState.HIDDEN) return  // nobody to see the bubble
         if (pendingShown || thinkingBubble) return  // don't cover a question or the thinking cloud
         if (typing) return  // don't swap the line the user is replying to
@@ -1087,18 +1142,18 @@ class MonkeyView(
                 com.combo.monkeycompanion.agent.DailyUtilityEngine.snoozeDoomscrollMinutes(5)
                 wasTuckedBeforeUtilityAlert = false
                 autoReTuckTimer = 0f
-                say("⏰ Snoozed for 5 minutes! Tucking back beside the screen 👈", 1800L)
+                sayInfo("⏰ Snoozed for 5 minutes! Tucking back beside the screen 👈", 1800L)
                 hideToEdge(preAlertHideSide, rest = true)
             }
             "notif_card", "notifs", "miss" -> openNotifSummaryCard(useDemoIfEmpty = false)
             "notif_card_demo" -> openNotifSummaryCard(useDemoIfEmpty = true)
             "perm_notifs" -> runCatching {
                 context.startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                say("Switch on 'Settai' in Notification Access, then tap me again! 📬", 4800L)
+                sayInfo("Switch on 'Settai' in Notification Access, then tap me again! 📬", 4800L)
             }
             "perm_mic" -> runCatching {
                 context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + context.packageName)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
-                say("Tap Permissions → Microphone → Allow, then long-press me → 🎤 Talk!", 5000L)
+                sayInfo("Tap Permissions → Microphone → Allow, then long-press me → 🎤 Talk!", 5000L)
             }
             else -> ChatHub.quick(c)
         }
@@ -1183,6 +1238,7 @@ class MonkeyView(
             LongPressMenu.NEXT -> Triple("➡️", "Next", false)
             LongPressMenu.RANDOM -> Triple("🎲", LongPressMenu.powerLabel("Random", cool), cooling)
             "quit" -> Triple("✕", "✕", false)
+            "choose_powers" -> Triple("☑️", "Choose", false)
             "context" -> when (ChatHub.contextChips().firstOrNull()?.id) {
                 "worth" -> Triple("🍿", "Worth it?", false)
                 "cheaper" -> Triple("🏷️", "Cheaper?", false)
@@ -1201,7 +1257,7 @@ class MonkeyView(
             RingKind.MAIN -> LongPressMenu.groupedMain()
             RingKind.GROUP -> listOf(LongPressMenu.BACK) + LongPressMenu.groupItems(ringGroup)
             RingKind.MORE -> LongPressMenu.page(menuLayout().more, page)
-            RingKind.POWERS -> LongPressMenu.page(LongPressMenu.powerRing(character.powers).map { LongPressMenu.pin(it) }, page, random = true)
+            RingKind.POWERS -> LongPressMenu.page(LongPressMenu.powerRing(com.combo.monkeycompanion.brain.PowerPrefs.enabled(character)).map { LongPressMenu.pin(it) }, page, random = true).let { if (com.combo.monkeycompanion.brain.PowerPrefs.choosable(character)) it + "choose_powers" else it }
         }
         val used = prefs.getStringSet("usedItems", emptySet()) ?: emptySet()
         val entries = ids.map { id -> ringEntry(id).let { e -> if (LongPressMenu.groupedEntry(id) != null && com.combo.monkeycompanion.brain.Onboarding.isNew(id, used)) Triple(e.first, com.combo.monkeycompanion.brain.Onboarding.label(e.second, true), e.third) else e } }
@@ -1209,7 +1265,7 @@ class MonkeyView(
         val title = when {
             firstOpen -> "Tap a group · tap outside to close"
             kind == RingKind.GROUP -> LongPressMenu.GROUPS.firstOrNull { it.id == ringGroup }?.let { "${it.icon} ${it.label}" } ?: ""
-            kind == RingKind.POWERS -> "${character.name}'s powers" + if (LongPressMenu.pageCount(LongPressMenu.powerRing(character.powers)) > 1) " (${page + 1}/${LongPressMenu.pageCount(LongPressMenu.powerRing(character.powers))})" else ""
+            kind == RingKind.POWERS -> "${character.name}'s powers" + if (LongPressMenu.pageCount(LongPressMenu.powerRing(com.combo.monkeycompanion.brain.PowerPrefs.enabled(character))) > 1) " (${page + 1}/${LongPressMenu.pageCount(LongPressMenu.powerRing(com.combo.monkeycompanion.brain.PowerPrefs.enabled(character)))})" else ""
             kind == RingKind.MORE -> "More"
             else -> "🧠 What's ${character.name} thinking?"
         }
@@ -1228,7 +1284,7 @@ class MonkeyView(
     private fun onMenuItem(id: String) {
         ui.removeCallbacks(ringTick)
         if (id == "onb_skip") { endOnboarding(); return }
-        if (id == "think_stop") { ChatHub.cancel(); thinkingBubble = false; say("Okay, stopped 🤐", 1500L); return }
+        if (id == "think_stop") { ChatHub.cancel(); thinkingBubble = false; sayInfo("Okay, stopped 🤐", 1500L); return }
         run { val u = prefs.getStringSet("usedItems", emptySet()) ?: emptySet(); if (id !in u) prefs.edit().putStringSet("usedItems", u + id).apply() }
         val Q = com.combo.monkeycompanion.agent.QuickChip
         when {
@@ -1239,7 +1295,7 @@ class MonkeyView(
             id == LongPressMenu.MORE -> showRing(RingKind.MORE, 0)
             id == LongPressMenu.BACK -> showRing(RingKind.MAIN, 0)
             id == LongPressMenu.NEXT -> showRing(ringKind, LongPressMenu.nextPage(
-                if (ringKind == RingKind.POWERS) LongPressMenu.powerRing(character.powers) else menuLayout().more, ringPage))
+                if (ringKind == RingKind.POWERS) LongPressMenu.powerRing(com.combo.monkeycompanion.brain.PowerPrefs.enabled(character)) else menuLayout().more, ringPage))
             id == LongPressMenu.RANDOM -> firePower(null)
             id.startsWith("force:") -> {
                 val pw = Superpowers.byId(id.removePrefix("force:")) ?: Superpowers.choose(Superpowers.RANDOM)
@@ -1251,10 +1307,11 @@ class MonkeyView(
                 "talk" -> if (com.combo.monkeycompanion.agent.Voice.enabled(context)) startListen(hold = false)
                     else if (accessGranted("talk") == true) {   // v10.13.1: mic already allowed → just switch Voice on, no re-prompt
                         com.combo.monkeycompanion.ai.AppSettings(context).setGroupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE, true); startListen(hold = false)
-                    } else say("Switch on the Voice power (Settings › Phone powers) and I'll listen 🎤", 4000L)
+                    } else sayInfo("Switch on the Voice power (Settings › Phone powers) and I'll listen 🎤", 4000L)
                 "missed" -> openNotifSummaryCard(useDemoIfEmpty = false)
                 "screen" -> ChatHub.quick(Q.SCREEN)
                 "powers" -> showRing(RingKind.POWERS, 0)
+                "choose_powers" -> runCatching { context.startActivity(Intent(context, com.combo.monkeycompanion.ui.PowerChoiceActivity::class.java).putExtra("id", character.id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 "funny" -> doSomethingFunny()
                 "skit" -> startSkitNow()
                 "show" -> startChaseShow()
@@ -1314,7 +1371,7 @@ class MonkeyView(
             showBubble(V.missLine(com.combo.monkeycompanion.agent.Voice.Miss.NO_PERMISSION), 8f, chips = listOf(com.combo.monkeycompanion.agent.QuickChip("perm_mic", "Allow mic"), com.combo.monkeycompanion.agent.QuickChip.LATER), reply = false)
             return
         }
-        if (ChatHub.busy) { listenTap = false; say("Wait wait, I'm still thinking! 🤔", 2500L); return }
+        if (ChatHub.busy) { listenTap = false; sayInfo("Wait wait, I'm still thinking! 🤔", 2500L); return }
         perkTarget = 1f; listenTap = true
         showBubble("🎤 Listening… tap me to send", 30f, talk = false, reply = false)
         var miss: com.combo.monkeycompanion.agent.Voice.Miss? = null
@@ -1532,7 +1589,7 @@ class MonkeyView(
             if (restNap) { restNap = false; controller.wakeUp(line); start() }
             return
         }
-        say(line, 4500L); start()
+        sayInfo(line, 4500L); start()
     }
 
     private val statusReceiver = object : BroadcastReceiver() {
@@ -1696,6 +1753,7 @@ class MonkeyView(
         if (quiet < restSecs || !restAllowed()) return
         say(Lines.pick(if (wp) Lines.SLEEPY else Lines.REST), 2600L)
         restGoIn = 2.2f
+        lastRestAt = SystemClock.elapsedRealtime(); BSN.record("I curled up to rest", BSN.Feeling.COZY)   // v10.17
     }
 
     private fun restAllowed(): Boolean {
@@ -1911,7 +1969,7 @@ class MonkeyView(
             if (!live) return
             val due = runCatching { com.combo.monkeycompanion.agent.ToolStore.collectDue(context) }.getOrDefault(emptyList())
             for ((i, line) in due.withIndex()) ui.postDelayed({
-                say(line, 6000L); if (!running && live && !paused) start()
+                sayInfo(line, 6000L); if (!running && live && !paused) start()
             }, i * 6500L)
             maybeDailyTip()
             ui.postDelayed(this, 30_000L)
@@ -1951,15 +2009,15 @@ class MonkeyView(
     private fun onbGesture(g: com.combo.monkeycompanion.brain.Onboarding.Gesture): Boolean {
         val r = onb ?: return false
         val praise = r.onGesture(g) ?: return false
-        if (r.done) { onb = null; ui.removeCallbacks(onbTick); ui.postDelayed({ say("$praise\nYou're ready! Have fun 🙌", 3500L) }, 350L) }
-        else ui.postDelayed({ say(praise, 1500L); ui.postDelayed({ showOnbStep() }, 1600L) }, 350L)
+        if (r.done) { onb = null; ui.removeCallbacks(onbTick); ui.postDelayed({ sayInfo("$praise\nYou're ready! Have fun 🙌", 3500L) }, 350L) }
+        else ui.postDelayed({ sayInfo(praise, 1500L); ui.postDelayed({ showOnbStep() }, 1600L) }, 350L)
         return g == com.combo.monkeycompanion.brain.Onboarding.Gesture.HOLD && r.done
     }
 
     private fun endOnboarding() {
         if (onb == null) return
         onb = null; ui.removeCallbacks(onbTick)
-        say("Okay! Hold me any time to see everything 😉", 2500L)
+        sayInfo("Okay! Hold me any time to see everything 😉", 2500L)
     }
 
     private fun maybeDailyTip() {
@@ -1973,7 +2031,7 @@ class MonkeyView(
         val blocked = quiet || sit?.typing == true || sit?.fullscreen == true || sit?.inCall == true || hiddenTab || bubbleOn || mod < 9 * 60
         val tip = com.combo.monkeycompanion.brain.Onboarding.tipFor(today - inst, prefs.getLong("lastTipDay", -1L) - inst, blocked) ?: return
         prefs.edit().putLong("lastTipDay", today).apply()
-        say("💡 $tip", 6000L)
+        sayInfo("💡 $tip", 6000L)
     }
 
     private fun onToolItem(t: com.combo.monkeycompanion.brain.CareTools.Tool) {
@@ -1988,7 +2046,7 @@ class MonkeyView(
         val now = System.currentTimeMillis()
         val st = T.toggle(t, S.get(context, t), !S.get(context, t).on, now)
         S.put(context, t, st)
-        say(if (st.on) "${t.icon} ${t.label} reminder ON · ${T.describe(t, st)}" else "${t.icon} ${t.label} reminder OFF", 3500L)
+        sayInfo(if (st.on) "${t.icon} ${t.label} reminder ON · ${T.describe(t, st)}" else "${t.icon} ${t.label} reminder OFF", 3500L)
     }
 
     private fun setCustomReminder(mins: Int) {
@@ -1996,7 +2054,7 @@ class MonkeyView(
         val S = com.combo.monkeycompanion.agent.ToolStore
         val st = T.toggle(com.combo.monkeycompanion.brain.CareTools.Tool.CUSTOM, S.get(context, com.combo.monkeycompanion.brain.CareTools.Tool.CUSTOM).copy(value = mins), true, System.currentTimeMillis())
         S.put(context, com.combo.monkeycompanion.brain.CareTools.Tool.CUSTOM, st)
-        say("⏰ Okay! I'll remind you in ${if (mins < 60) "$mins min" else "${mins / 60} h"} 👍", 3500L)
+        sayInfo("⏰ Okay! I'll remind you in ${if (mins < 60) "$mins min" else "${mins / 60} h"} 👍", 3500L)
     }
 
     // ---- v10.13 🎮 Screen Eater: bites a cartoon hole in the screen; tap the hole to fix it ----
@@ -2017,12 +2075,12 @@ class MonkeyView(
             if (android.os.Build.VERSION.SDK_INT >= 26) android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else @Suppress("DEPRECATION") android.view.WindowManager.LayoutParams.TYPE_PHONE,
             android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             android.graphics.PixelFormat.TRANSLUCENT).apply { gravity = android.view.Gravity.TOP or android.view.Gravity.START; title = "SettaiBite" }
-        if (runCatching { wm.addView(v, lp) }.isFailure) { say("Can't bite the screen right now 😅", 2500L); return }
+        if (runCatching { wm.addView(v, lp) }.isFailure) { sayInfo("Can't bite the screen right now 😅", 2500L); return }
         biteView = v
         controller.play(MonkeyState.GAG, 2.4f)
         say("Nom nom nom! Screen romba crunchy 😋", 2600L)
         for (i in 0..2) ui.postDelayed({ biteView?.addBite(); performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY) }, 300L + i * 550L)
-        ui.postDelayed({ if (biteView != null) say("Tap the hole to fix it 🙈", 2500L) }, 2400L)
+        ui.postDelayed({ if (biteView != null) sayInfo("Tap the hole to fix it 🙈", 2500L) }, 2400L)
     }
 
     private fun removeBiteHole() {
@@ -2061,12 +2119,12 @@ class MonkeyView(
         bubbleOn = false; updateGeometry(); invalidate()
         controller.play(MonkeyState.HAPPY_PAT, 3f)
         runCatching { context.startActivity(Intent(context, com.combo.monkeycompanion.ui.SelfieShotActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            .onFailure { say("Screen capture isn't available here 😅", 2500L) }
+            .onFailure { sayInfo("Screen capture isn't available here 😅", 2500L) }
     }
 
     fun startSkitNow() {
         val why = com.combo.monkeycompanion.mind.MindHub.trySkit(force = true)
-        if (why != null) say("No skit right now: $why 🎬", 3200L)
+        if (why != null) sayInfo("No skit right now: $why 🎬", 3200L)
     }
 
     private fun drawSkitProp(canvas: Canvas) {
@@ -3891,6 +3949,7 @@ class MonkeyView(
             my = (ground() * 0.35f).coerceAtLeast(topY() + 24 * d)
         }
         edgeThrustFailurePhase = 1
+        BSN.record("I bumped into the screen edge", BSN.Feeling.OUCH)   // v10.17 small ouch
         edgeThrustFailureTimer = 0.42f
         edgeThrustMultiplier = 0.18f
         edgeCrashRot = if (mx + boxW / 2f < sw() / 2f) -22f else 22f
@@ -5264,9 +5323,9 @@ class MonkeyView(
     private var sideQuipLine: String? = null
     private var sideQuipState: MonkeyState = MonkeyState.WAVE
     private var sideQuipUntil = 0f
-    private val nPillFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0xFF, 0xF8, 0xE8) }
-    private val nPillStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0x5A, 0x36, 0x18); style = Paint.Style.STROKE; strokeWidth = 2f * d }
-    private val nPillText = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0x3A, 0x22, 0x10); textSize = 11.5f * d; textAlign = Paint.Align.CENTER; isFakeBoldText = true }
+    private val nPillFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF8, 0xE8) }
+    private val nPillStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0x5A, 0x36, 0x18); style = Paint.Style.STROKE; strokeWidth = 2f * d }
+    private val nPillText = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0x3A, 0x22, 0x10); textSize = 11.5f * d; textAlign = Paint.Align.CENTER; isFakeBoldText = true }
 
     val debugBanter get() = banter
 
@@ -5470,12 +5529,12 @@ class MonkeyView(
         by = by.coerceIn(r + 2 * d, max(r + 2 * d, (if (wp) (host?.screenHeight() ?: height).toFloat() else winH.toFloat()) - r - 2 * d))
         lastBtnX = bx; lastBtnY = by
         if (hint) {  // soft pulsing ring
-            btnPaint.style = Paint.Style.STROKE; btnPaint.strokeWidth = 3 * d; btnPaint.color = Color.rgb(0xE8, 0x8A, 0x2E)
+            btnPaint.style = Paint.Style.STROKE; btnPaint.strokeWidth = 3 * d; btnPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0xE8, 0x8A, 0x2E)
             val ring = (t * 1.3f) % 1f
             btnPaint.alpha = ((1f - ring) * 0.8f * a).toInt()
             canvas.drawCircle(bx, by, r * (1f + ring * 0.8f), btnPaint)
         }
-        btnPaint.style = Paint.Style.FILL; btnPaint.color = Color.rgb(0xE8, 0x8A, 0x2E); btnPaint.alpha = a
+        btnPaint.style = Paint.Style.FILL; btnPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0xE8, 0x8A, 0x2E); btnPaint.alpha = a
         canvas.drawCircle(bx, by, r, btnPaint)
         btnPaint.style = Paint.Style.STROKE; btnPaint.strokeWidth = 2 * d; btnPaint.color = Color.WHITE; btnPaint.alpha = a
         canvas.drawCircle(bx, by, r, btnPaint)
@@ -5497,7 +5556,7 @@ class MonkeyView(
         val tw = tabW                           // thickness (the window grows while peeking)
         val tl = if (hideSide == 2) w else h   // length along the edge
         tabPaint.style = Paint.Style.FILL
-        tabPaint.color = Color.argb(150, 0x3A, 0x26, 0x18)
+        tabPaint.color = com.combo.monkeycompanion.theme.Th.argb(150, 0x3A, 0x26, 0x18)
         tmpR.set(-tw, 0f, tw * 0.95f, tl); c.drawRoundRect(tmpR, tw * 0.6f, tw * 0.6f, tabPaint)
         // peeking face: half a head with ear and two eyes (slides further out during a peek)
         val peek = tabPeekAmount()
@@ -5511,7 +5570,7 @@ class MonkeyView(
         c.translate(-peek * tw * 0.95f, 0f)
         // arrow chevron pointing into the screen
         tabPaint.style = Paint.Style.STROKE; tabPaint.strokeWidth = 2.6f * d; tabPaint.strokeCap = Paint.Cap.ROUND
-        tabPaint.color = Color.argb(220, 255, 255, 255)
+        tabPaint.color = com.combo.monkeycompanion.theme.Th.argb(220, 255, 255, 255)
         val ay = tl * 0.74f
         tabPath.reset(); tabPath.moveTo(tw * 0.28f, ay - tw * 0.3f); tabPath.lineTo(tw * 0.6f, ay); tabPath.lineTo(tw * 0.28f, ay + tw * 0.3f)
         c.drawPath(tabPath, tabPaint)
@@ -5523,7 +5582,7 @@ class MonkeyView(
             val br = 9.5f * d
             val bx = if (hideSide == 2) w * 0.78f else w * 0.5f
             val by = if (hideSide == 2) h * 0.5f else h * 0.78f
-            tabPaint.style = Paint.Style.FILL; tabPaint.color = Color.rgb(0x8E, 0x24, 0xAA)
+            tabPaint.style = Paint.Style.FILL; tabPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0x8E, 0x24, 0xAA)
             c.drawCircle(bx, by, br, tabPaint)
             tabPaint.style = Paint.Style.STROKE; tabPaint.strokeWidth = 1.6f * d; tabPaint.color = Color.WHITE
             c.drawCircle(bx, by, br, tabPaint)
@@ -5585,6 +5644,7 @@ class MonkeyView(
         if (tracking && !dragging) {
             performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             longPressed = true
+            BSN.record("you're holding me", BSN.Feeling.HELD)
             if (host != null && !wp) openMenu()   // v4.3: long-press = options menu (✕ Quit lives there)
             else { say(com.combo.monkeycompanion.brain.Gestures.coachLine(false), 3000L); hintUntil = 4f }
         }
@@ -6157,6 +6217,8 @@ class MonkeyView(
     }
 
     private fun handleTap(e: MotionEvent) {
+        // v10.17 touch strength: a firm press reads as a poke, a light one as a gentle tap
+        BSN.record(if (e.pressure > 0.6f || e.size > 0.35f) "you poked me firmly" else "you tapped me gently", BSN.Feeling.POKED)
         onbGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.TAP)
         if (com.combo.monkeycompanion.agent.ScreenAgent.driving) { ChatHub.stopDriving(); return }   // v4: tap = take the wheel back
         if (v5On && stage.onTap()) return   // v5 games: staring contest "I blinked", banana game taps
@@ -6220,7 +6282,7 @@ class MonkeyView(
         onbGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.DOUBLE_TAP)
         // v10.13: double-tap Billa = the Tom-and-Jerry chase show with Chittu (spawned for the show if needed).
         if ((character.id == "billa" || character.id == "chittu") && host != null && !wp) { startChaseShow(); return }
-        val pw = powerShortcut.pick(character.powers, character.signaturePower, signatureSeen()) ?: return
+        val pw = powerShortcut.pick(com.combo.monkeycompanion.brain.PowerPrefs.enabled(character), character.signaturePower, signatureSeen()) ?: return
         markSignatureSeen()
         debugLastShortcut = pw
         reactionLayer.clear()
@@ -6915,7 +6977,11 @@ class MonkeyView(
         val fr = runCatching { com.combo.monkeycompanion.v5.Friendship.title(com.combo.monkeycompanion.v5.Friendship.level(com.combo.monkeycompanion.fun5.Fun5Store.friendship(context).xp)) }.getOrDefault("")
         val snap = com.combo.monkeycompanion.ai.BodySense.Snapshot(name = character.name, position = where, state = state,
             power = if (powerOn) flight.power?.title else null, battery = lvl, charging = plugged,
-            hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY), mood = mood, friendship = fr, asleep = controller.isAsleep)
+            hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY), mood = mood, friendship = fr, asleep = controller.isAsleep,
+            quietMin = if (lastInteract > 0L) ((SystemClock.elapsedRealtime() - lastInteract) / 60_000L).toInt() else -1,
+            restedMin = if (lastRestAt > 0L) ((SystemClock.elapsedRealtime() - lastRestAt) / 60_000L).toInt() else -1,
+            keyboard = keyboardDodge, energy = runCatching { com.combo.monkeycompanion.mind.MindHub.world.state.energy }.getOrDefault(-1f),
+            app = runCatching { com.combo.monkeycompanion.agent.SettaiAccessibilityService.instance?.currentPkg?.let { com.combo.monkeycompanion.agent.Proactive.typeGuess(it)?.label } }.getOrNull() ?: "")
         return buildString {
             append("you live in the ").append(if (wp) "live wallpaper (behind the home-screen icons)" else "floating overlay on top of apps")
             if (temp >= 40f) append("; phone feels hot (").append(temp).append("°C)")

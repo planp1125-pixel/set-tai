@@ -73,3 +73,19 @@ object DevilLevitatePower : Superpower("devilfloat", "Levitate", "Floats high up
         PowerStep(PowerPhase.POSE, 0.6f),
     )
 }
+
+/** v10.17: winds up and throws a red-orange fireball across the screen (it fizzles into sparks). */
+object FireballPower : Superpower("fireball", "Fireball throw", "Winds up and hurls a little fireball across the screen", emptySet()) {
+    override val startLines get() = listOf("Hot hot HOT! 🔥😈", "Fireball, coming through! 🔥", "Catch! …no, don't catch 🔥")
+    override val landLines get() = listOf("Fizzle! Nobody got burnt 😇🔥", "Okay, that was a warm one 😏")
+    override val crashChance get() = 0f
+    override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random) = listOf(PowerStep(PowerPhase.POSE, 2.6f))
+}
+
+/** v10.17: juggles three little balls, faster and faster, then catches them all. */
+object JugglePower : Superpower("devjuggle", "Juggling balls", "Juggles three balls and catches them all", emptySet()) {
+    override val startLines get() = listOf("Watch this! 🤹😈", "One, two, three… magic hands! 🤹")
+    override val landLines get() = listOf("Didn't drop a single one 😎", "Ta-daa! Clap now 👏😈")
+    override val crashChance get() = 0f
+    override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random) = listOf(PowerStep(PowerPhase.POSE, 3.4f))
+}

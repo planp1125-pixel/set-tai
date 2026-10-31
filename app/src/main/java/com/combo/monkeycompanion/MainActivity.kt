@@ -96,11 +96,11 @@ class MainActivity : Activity() {
     private var homePreview: MonkeyView? = null
     var activeTab: Tab = Tab.HOME; private set
 
-    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
-    private val brown = Color.rgb(0x1E, 0x22, 0x40)
-    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
-    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
-    private val purple = Color.rgb(0x09, 0x84, 0xE3)
+    private val cream = com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)
+    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
+    private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
+    private val accent = com.combo.monkeycompanion.theme.Th.rgb(0x6C, 0x5C, 0xE7)
+    private val purple = com.combo.monkeycompanion.theme.Th.rgb(0x09, 0x84, 0xE3)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -143,7 +143,7 @@ class MainActivity : Activity() {
             val sel = t == tab
             btn.background = GradientDrawable().apply {
                 cornerRadius = dp(16).toFloat()
-                setColor(if (sel) Color.rgb(0xFF, 0xEC, 0xD2) else Color.TRANSPARENT)
+                setColor(if (sel) com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xEC, 0xD2) else Color.TRANSPARENT)
             }
             for (i in 0 until btn.childCount) {
                 val tv = btn.getChildAt(i) as? TextView ?: continue
@@ -174,7 +174,7 @@ class MainActivity : Activity() {
             btn.background = GradientDrawable().apply {
                 cornerRadius = dp(18).toFloat()
                 setColor(if (sel) accent else Color.WHITE)
-                setStroke(dp(1), if (sel) accent else Color.rgb(0xDD, 0xE0, 0xF0))
+                setStroke(dp(1), if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
             }
         }
         val curScale = com.combo.monkeycompanion.overlay.CompanionSize.get(this, CharacterRegistry.current.id)
@@ -184,7 +184,7 @@ class MainActivity : Activity() {
             btn.background = GradientDrawable().apply {
                 cornerRadius = dp(16).toFloat()
                 setColor(if (sel) purple else Color.WHITE)
-                setStroke(dp(1), if (sel) purple else Color.rgb(0xDD, 0xE0, 0xF0))
+                setStroke(dp(1), if (sel) purple else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
             }
         }
         val curChar = CharacterRegistry.current
@@ -248,12 +248,12 @@ class MainActivity : Activity() {
             setPadding(dp(16), dp(10), dp(16), dp(10))
             background = GradientDrawable().apply {
                 setColor(Color.WHITE)
-                setStroke(dp(1), Color.rgb(0xF0, 0xDF, 0xC4))
+                setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xF0, 0xDF, 0xC4))
             }
         }
         val titleCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         titleCol.addView(TextView(this).apply {
-            text = "Set-Tai v10.16.2"
+            text = "Set-Tai v10.17"
             textSize = 20f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
         })
         topActiveBadge = TextView(this).apply {
@@ -309,7 +309,7 @@ class MainActivity : Activity() {
             setPadding(dp(8), dp(6), dp(8), dp(8))
             background = GradientDrawable().apply {
                 setColor(Color.WHITE)
-                setStroke(dp(1), Color.rgb(0xDD, 0xE0, 0xF0))
+                setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
             }
         }
         for (tab in Tab.entries) {
@@ -352,8 +352,8 @@ class MainActivity : Activity() {
             setPadding(dp(16), dp(14), dp(16), dp(16))
             background = GradientDrawable().apply {
                 cornerRadius = dp(22).toFloat()
-                setColor(Color.rgb(0x23, 0x1B, 0x3A))
-                setStroke(dp(2), Color.rgb(0xFF, 0xC1, 0x07))
+                setColor(com.combo.monkeycompanion.theme.Th.rgb(0x23, 0x1B, 0x3A))
+                setStroke(dp(2), com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xC1, 0x07))
             }
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
@@ -363,7 +363,7 @@ class MainActivity : Activity() {
         })
         studioCard.addView(TextView(this).apply {
             text = "Upload your photo (100% offline) to create a big 60fps look-alike with your real hair, beard & shirt — or swap onto Superboy & Ironboy bodies with all 18 powers!"
-            textSize = 12.8f; setTextColor(Color.rgb(0xE0, 0xD8, 0xF0)); setPadding(0, dp(4), 0, dp(10))
+            textSize = 12.8f; setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xE0, 0xD8, 0xF0)); setPadding(0, dp(4), 0, dp(10))
         })
         studioCard.addView(button("📸✨  Open Photo-to-Look-Alike Studio", primary = true) {
             startActivity(Intent(this@MainActivity, CompanionStudioActivity::class.java))
@@ -376,18 +376,18 @@ class MainActivity : Activity() {
             setPadding(dp(16), dp(12), dp(16), dp(14))
             background = GradientDrawable().apply {
                 cornerRadius = dp(20).toFloat()
-                setColor(Color.rgb(0x1E, 0x16, 0x33))
-                setStroke(dp(2), Color.rgb(0xFF, 0xC1, 0x07))
+                setColor(com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x16, 0x33))
+                setStroke(dp(2), com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xC1, 0x07))
             }
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
         giveBrainHomeCard.addView(TextView(this).apply {
             text = "🧠 Give Brain to Set-Tai (AI Model Opt-In)"
-            textSize = 17.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(Color.rgb(0xFF, 0xD5, 0x4F))
+            textSize = 17.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xD5, 0x4F))
         })
         homeBrainStatusTv = TextView(this).apply {
             text = ChatHub.giveBrainStatusLine()
-            textSize = 12.5f; setTextColor(Color.rgb(0xE0, 0xD8, 0xF0)); setPadding(0, dp(4), 0, dp(8))
+            textSize = 12.5f; setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xE0, 0xD8, 0xF0)); setPadding(0, dp(4), 0, dp(8))
         }
         giveBrainHomeCard.addView(homeBrainStatusTv)
         val gbHomeRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
@@ -406,7 +406,7 @@ class MainActivity : Activity() {
         val previewCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(10), dp(12), dp(12))
-            background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(Color.rgb(0xEA, 0xE8, 0xFF)) }
+            background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(com.combo.monkeycompanion.theme.Th.rgb(0xEA, 0xE8, 0xFF)) }
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
         val preview = MonkeyView(this, null) { startActivity(Intent(this, ChatActivity::class.java)) }.also { homePreview = it }
@@ -490,7 +490,7 @@ class MainActivity : Activity() {
         val utilCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(14), dp(16), dp(12))
-            background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(Color.WHITE); setStroke(dp(1), Color.rgb(0xE3, 0xE6, 0xF3)) }
+            background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(Color.WHITE); setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xE3, 0xE6, 0xF3)) }
             elevation = dp(2).toFloat()
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
@@ -510,7 +510,7 @@ class MainActivity : Activity() {
             }
             val set = Button(this).apply {
                 isAllCaps = false; textSize = 12.5f; setTextColor(accent)
-                background = GradientDrawable().apply { cornerRadius = dp(14).toFloat(); setColor(Color.rgb(0xEF, 0xED, 0xFF)) }
+                background = GradientDrawable().apply { cornerRadius = dp(14).toFloat(); setColor(com.combo.monkeycompanion.theme.Th.rgb(0xEF, 0xED, 0xFF)) }
                 setPadding(dp(10), dp(2), dp(10), dp(2))
             }
             fun refreshSet() { set.text = CT.describe(tool, TS.get(this@MainActivity, tool)) + " ›" }
@@ -794,6 +794,7 @@ class MainActivity : Activity() {
         }
     }
 
+
     private fun buildWorldAndCareTab(): View {
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -858,18 +859,18 @@ class MainActivity : Activity() {
             setPadding(dp(16), dp(14), dp(16), dp(14))
             background = GradientDrawable().apply {
                 cornerRadius = dp(20).toFloat()
-                setColor(Color.rgb(0x23, 0x1B, 0x3A))
-                setStroke(dp(2), Color.rgb(0xFF, 0xC1, 0x07))
+                setColor(com.combo.monkeycompanion.theme.Th.rgb(0x23, 0x1B, 0x3A))
+                setStroke(dp(2), com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xC1, 0x07))
             }
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
         giveBrainSettingsCard.addView(TextView(this).apply {
             text = "🧠 Give Brain to Set-Tai (Highlighted AI Control)"
-            textSize = 18f; setTypeface(typeface, Typeface.BOLD); setTextColor(Color.rgb(0xFF, 0xD5, 0x4F))
+            textSize = 18f; setTypeface(typeface, Typeface.BOLD); setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xD5, 0x4F))
         })
         settingsBrainStatusTv = TextView(this).apply {
             text = ChatHub.giveBrainStatusLine() + " — Strictly OFF until you enable Give Brain!"
-            textSize = 12.5f; setTextColor(Color.rgb(0xE0, 0xD8, 0xF0)); setPadding(0, dp(4), 0, dp(8))
+            textSize = 12.5f; setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xE0, 0xD8, 0xF0)); setPadding(0, dp(4), 0, dp(8))
         }
         giveBrainSettingsCard.addView(settingsBrainStatusTv)
         val gbSetRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
@@ -937,8 +938,8 @@ class MainActivity : Activity() {
         setTextColor(if (primary) Color.WHITE else brown)
         background = GradientDrawable().apply {
             cornerRadius = dp(16).toFloat()
-            if (primary) { colors = intArrayOf(accent, Color.rgb(0x8E, 0x7C, 0xFF)); orientation = GradientDrawable.Orientation.LEFT_RIGHT } else setColor(Color.WHITE)
-            setStroke(dp(1), if (primary) accent else Color.rgb(0xDD, 0xE0, 0xF0))
+            if (primary) { colors = intArrayOf(accent, com.combo.monkeycompanion.theme.Th.rgb(0x8E, 0x7C, 0xFF)); orientation = GradientDrawable.Orientation.LEFT_RIGHT } else setColor(Color.WHITE)
+            setStroke(dp(1), if (primary) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
         }
         setPadding(dp(14), dp(10), dp(14), dp(10))
         setOnClickListener { onClick() }
@@ -947,7 +948,7 @@ class MainActivity : Activity() {
     private fun section(title: String, status: TextView, btn: Button): View = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(16), dp(12), dp(16), dp(14))
-        background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(Color.WHITE); setStroke(dp(1), Color.rgb(0xE3, 0xE6, 0xF3)) }
+        background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(Color.WHITE); setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xE3, 0xE6, 0xF3)) }
         elevation = dp(2).toFloat()
         addView(TextView(context).apply {
             text = title; textSize = 16f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
@@ -1085,7 +1086,7 @@ class MainActivity : Activity() {
             topToggleBtn.text = if (running) "⏹ Stop Overlay" else "▶ Start Set-Tai"
             topToggleBtn.background = GradientDrawable().apply {
                 cornerRadius = dp(20).toFloat()
-                setColor(if (running) Color.rgb(0xC6, 0x28, 0x28) else accent)
+                setColor(if (running) com.combo.monkeycompanion.theme.Th.rgb(0xC6, 0x28, 0x28) else accent)
             }
         }
         startBtn.text = if (quit) "✨  Bring ${cur.name} Back" else "✨  Start ${cur.name} on Screen"

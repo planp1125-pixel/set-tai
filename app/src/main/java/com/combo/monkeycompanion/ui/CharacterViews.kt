@@ -46,7 +46,7 @@ class CharacterPreviewView(ctx: Context, who: Character, private val demo: Boole
     private val t0 = SystemClock.uptimeMillis()
     var picked = false
         set(v) { field = v; invalidate() }
-    private val frame = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 6f; color = Color.rgb(0xF2, 0x7A, 0x1C) }
+    private val frame = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 6f; color = com.combo.monkeycompanion.theme.Th.rgb(0xF2, 0x7A, 0x1C) }
     private val r = RectF()
     /** Name of the move playing (demo), for a caption. */
     var onMove: ((String) -> Unit)? = null
@@ -106,8 +106,8 @@ class CharacterPreviewView(ctx: Context, who: Character, private val demo: Boole
 
 /** Settings > Wardrobe: toggle each accessory of a character, pick styles, live preview. */
 class WardrobeActivity : Activity() {
-    private val brown = Color.rgb(0x1E, 0x22, 0x40)
-    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
+    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
+    private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -123,7 +123,7 @@ class WardrobeActivity : Activity() {
         val preview = CharacterPreviewView(this, who, demo = true).apply {
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, dp(260))
             onMove = { m -> caption.post { caption.text = "Now: $m" } }
-            background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.rgb(0xF3, 0xF4, 0xFA)) }
+            background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)) }
         }
         col.addView(preview); col.addView(caption)
         col.addView(TextView(this).apply {
@@ -161,6 +161,6 @@ class WardrobeActivity : Activity() {
             }
             col.addView(line)
         }
-        setContentView(ScrollView(this).apply { setBackgroundColor(Color.rgb(0xFF, 0xF8, 0xEE)); addView(col) })
+        setContentView(ScrollView(this).apply { setBackgroundColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF8, 0xEE)); addView(col) })
     }
 }

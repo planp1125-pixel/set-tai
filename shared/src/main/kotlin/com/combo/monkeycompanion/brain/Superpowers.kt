@@ -230,7 +230,7 @@ object Superpowers {
             Superpower.IceMonkey, Superpower.GiantMode, Superpower.TimeFreeze, Superpower.Magician)
     }
     /** v4.1: the current character's powers (Settings and random picks use these). */
-    val all: List<Superpower> get() = com.combo.monkeycompanion.character.CharacterRegistry.current.powers
+    val all: List<Superpower> get() = PowerPrefs.enabled(com.combo.monkeycompanion.character.CharacterRegistry.current)   // v10.17: the picker's choice
     /** Every power of every character. */
     val everything: List<Superpower> get() = com.combo.monkeycompanion.character.CharacterRegistry.all.flatMap { it.powers }.distinct()
 

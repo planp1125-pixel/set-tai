@@ -512,6 +512,26 @@ object ChatHub {
         }
     }
 
+    /**
+     * v10.17: one spontaneous line from Body Sense (Give Brain ON). Off the main thread; [cb] gets null on any failure.
+     * The caller drops answers that come back too late (no canned fallback).
+     */
+    fun spontaneous(event: String, cb: (String?) -> Unit) {
+        if (busy) return cb(null)
+        worker.execute {
+            val r = runCatching {
+                val b = brain()
+                if (!b.isReal) null
+                else com.combo.monkeycompanion.powers.PowerTags.visible(ActionParser.visible(act(cleanReply(b.chat(
+                    Persona.systemPrompt(false, bodyNow(), compact = settings.brainType == BrainType.OFFLINE),
+                    emptyList(), BodyVoice.request(event), null) {}), null))).trim()
+                    .takeIf { it.isNotBlank() && it.length < 180 }
+            }.getOrNull()
+            r?.let { spoke(it) }
+            main.post { cb(r) }
+        }
+    }
+
     /** Ask a brain a quick test question (used by Settings). */
     fun test(b: Brain, cb: (Result<String>) -> Unit) {
         worker.execute {

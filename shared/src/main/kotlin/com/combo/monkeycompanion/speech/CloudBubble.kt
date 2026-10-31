@@ -19,13 +19,13 @@ import kotlin.math.max
  */
 class CloudBubble(private val density: Float, textSizePx: Float) {
     private val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0x3A, 0x22, 0x10)
+        color = com.combo.monkeycompanion.theme.Th.rgb(0x3A, 0x22, 0x10)
         textSize = textSizePx
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
-    private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0x3A, 0x22, 0x10) }
+    private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0x3A, 0x22, 0x10) }
     private val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
-    private val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(40, 0, 0, 0) }
+    private val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.argb(40, 0, 0, 0) }
 
     private val btnPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
@@ -50,15 +50,15 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
     val fieldRect = RectF()
     private val sendRect = RectF()
     private val expandRect = RectF()
-    private val fieldFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0xFF, 0xF6, 0xE8) }
+    private val fieldFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF6, 0xE8) }
     private val fieldEdge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0xC9, 0x9A, 0x62); style = Paint.Style.STROKE; strokeWidth = 1.6f * density
+        color = com.combo.monkeycompanion.theme.Th.rgb(0xC9, 0x9A, 0x62); style = Paint.Style.STROKE; strokeWidth = 1.6f * density
     }
     private val hintPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = textSizePx * 0.9f
         typeface = Typeface.create("sans-serif", Typeface.NORMAL)
     }
-    private val sendFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0xE8, 0x8A, 0x2E) }
+    private val sendFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0xE8, 0x8A, 0x2E) }
     private val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         strokeWidth = 2f * density; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
@@ -91,7 +91,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
     private val chipH = 30f * density
     private val chipPad = 12f * density
     private val chipPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0x5A, 0x32, 0x10)
+        color = com.combo.monkeycompanion.theme.Th.rgb(0x5A, 0x32, 0x10)
         textSize = textSizePx * 0.86f
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         textAlign = Paint.Align.CENTER
@@ -103,7 +103,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
     private var arcIcons: List<String> = emptyList()
     private val arcR = 25f * density
     private val arcLabel = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0x3A, 0x22, 0x10); textSize = textSizePx * 0.72f
+        color = com.combo.monkeycompanion.theme.Th.rgb(0x3A, 0x22, 0x10); textSize = textSizePx * 0.72f
         typeface = Typeface.create("sans-serif-medium", Typeface.BOLD); textAlign = Paint.Align.CENTER
     }
     private val arcIcon = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = textSizePx * 1.45f; textAlign = Paint.Align.CENTER }
@@ -155,7 +155,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         val slop = 6 * density
         return arcMode && !titleRect.isEmpty && x >= titleRect.left - slop && x <= titleRect.right + slop && y >= titleRect.top - slop && y <= titleRect.bottom + slop
     }
-    private val titleFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0x3A, 0x22, 0x10) }
+    private val titleFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0x3A, 0x22, 0x10) }
     private val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textAlign = Paint.Align.CENTER; typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL) }
 
     private fun drawArc(c: Canvas, a: Int) {
@@ -174,7 +174,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
             shadow.alpha = a * 40 / 255
             c.drawCircle(r.centerX() + 2 * density, r.centerY() + 3 * density, r.width() / 2 + ow, shadow)
             edge.alpha = a; c.drawCircle(r.centerX(), r.centerY(), r.width() / 2 + ow, edge)
-            btnFill.color = if (i in arcDim) Color.rgb(0xE6, 0xE0, 0xD8) else if (quit) Color.rgb(0xFF, 0xE4, 0xE1) else Color.rgb(0xFF, 0xF4, 0xE2); btnFill.alpha = a
+            btnFill.color = if (i in arcDim) com.combo.monkeycompanion.theme.Th.rgb(0xE6, 0xE0, 0xD8) else if (quit) com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xE4, 0xE1) else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF4, 0xE2); btnFill.alpha = a
             c.drawCircle(r.centerX(), r.centerY(), r.width() / 2, btnFill)
             val ic = arcIcons.getOrNull(i).orEmpty()
             arcIcon.alpha = a; arcIcon.textSize = (if (quit) 0.75f else 1f) * arcR * 0.95f
@@ -312,7 +312,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         val textTop = if (buttons.isEmpty() && !reply) core.top + (core.height() - l.height) / 2f else core.top + pad
         if (chips) for (i in btnRects.indices) {
             val r = btnRects[i]
-            btnFill.color = Color.rgb(0xFF, 0xE9, 0xC9); btnFill.alpha = a
+            btnFill.color = com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xE9, 0xC9); btnFill.alpha = a
             c.drawRoundRect(r, chipH / 2, chipH / 2, btnFill)
             fieldEdge.alpha = a; c.drawRoundRect(r, chipH / 2, chipH / 2, fieldEdge)
             chipPaint.alpha = a
@@ -322,7 +322,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         }
         else for (i in btnRects.indices) {
             val r = btnRects[i]
-            btnFill.color = if (i == 0) Color.rgb(0x4C, 0xAF, 0x50) else Color.rgb(0xE5, 0x73, 0x73)
+            btnFill.color = if (i == 0) com.combo.monkeycompanion.theme.Th.rgb(0x4C, 0xAF, 0x50) else com.combo.monkeycompanion.theme.Th.rgb(0xE5, 0x73, 0x73)
             btnFill.alpha = a
             c.drawRoundRect(r, btnH / 2, btnH / 2, btnFill)
             btnPaint.alpha = a
@@ -341,7 +341,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         val ft = fieldText
         val shown = ft ?: replyHint
         if (shown.isNotEmpty()) {
-            hintPaint.color = if (ft == null) Color.rgb(0xA8, 0x84, 0x60) else Color.rgb(0x3A, 0x22, 0x10)
+            hintPaint.color = if (ft == null) com.combo.monkeycompanion.theme.Th.rgb(0xA8, 0x84, 0x60) else com.combo.monkeycompanion.theme.Th.rgb(0x3A, 0x22, 0x10)
             hintPaint.alpha = a
             val avail = r.width() - 2 * fieldPadX
             var txt = shown
@@ -363,7 +363,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         c.drawPath(iconPath, iconPaint)
         // Expand: outlined circle with two diagonal arrows (open the full chat panel).
         val ex = expandRect.centerX(); val ey = expandRect.centerY(); val k = expandD / 28f
-        iconPaint.style = Paint.Style.STROKE; iconPaint.color = Color.rgb(0x8A, 0x5A, 0x2E); iconPaint.alpha = a
+        iconPaint.style = Paint.Style.STROKE; iconPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0x8A, 0x5A, 0x2E); iconPaint.alpha = a
         c.drawCircle(ex, ey, expandD / 2 - density, iconPaint)
         val o = 5.5f * k; val h = 3f * k
         c.drawLine(ex - o, ey + o, ex + o, ey - o, iconPaint)
@@ -376,7 +376,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
     private fun closeY() = puffR * 0.9f
     private fun drawClose(c: Canvas, a: Int) {
         val x = closeX(); val y = closeY(); val r = 11f * density
-        iconPaint.style = Paint.Style.FILL; iconPaint.color = Color.rgb(0x8A, 0x5A, 0x2E); iconPaint.alpha = a
+        iconPaint.style = Paint.Style.FILL; iconPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0x8A, 0x5A, 0x2E); iconPaint.alpha = a
         c.drawCircle(x, y, r, iconPaint)
         iconPaint.style = Paint.Style.STROKE; iconPaint.color = Color.WHITE; iconPaint.alpha = a
         val o = 4.2f * density
@@ -392,14 +392,14 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
     private fun flagY() = puffR * 0.9f
     private fun drawFlag(c: Canvas, a: Int) {
         val x = flagX(); val y = flagY(); val r = flagR
-        iconPaint.style = Paint.Style.FILL; iconPaint.color = Color.rgb(0xFF, 0xF4, 0xE2); iconPaint.alpha = a
+        iconPaint.style = Paint.Style.FILL; iconPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF4, 0xE2); iconPaint.alpha = a
         c.drawCircle(x, y, r, iconPaint)
-        iconPaint.style = Paint.Style.STROKE; iconPaint.color = Color.rgb(0xA8, 0x84, 0x60); iconPaint.alpha = a
+        iconPaint.style = Paint.Style.STROKE; iconPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0xA8, 0x84, 0x60); iconPaint.alpha = a
         c.drawCircle(x, y, r, iconPaint)
         val u = r / 9f
         c.drawLine(x - 3 * u, y - 5 * u, x - 3 * u, y + 5 * u, iconPaint)
         iconPath.reset(); iconPath.moveTo(x - 3 * u, y - 5 * u); iconPath.lineTo(x + 4.5f * u, y - 2.5f * u); iconPath.lineTo(x - 3 * u, y); iconPath.close()
-        iconPaint.style = Paint.Style.FILL; iconPaint.color = Color.rgb(0xE5, 0x73, 0x73); c.drawPath(iconPath, iconPaint)
+        iconPaint.style = Paint.Style.FILL; iconPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0xE5, 0x73, 0x73); c.drawPath(iconPath, iconPaint)
     }
     /** True when (x, y) relative to the box hits the ⚑ report button. */
     fun reportAt(x: Float, y: Float): Boolean {

@@ -165,6 +165,7 @@ class Pose {
     var dvSmoke by slot(0f)        // 0..1 the red smoke puff + sparkles he vanishes into
     var dvSpell by slot(0f)        // 0..1 red spell sparks crackling between his fingers
     var dvAura by slot(0f)         // 0..1 red levitation sparkles around him (float tricks)
+    var dvFire by slot(0f)         // v10.17 0..1 fireball throw progress
     var dvClone by slot(0f)        // 0..1 shadow clones beside him
 
     fun reset() { System.arraycopy(defaults, 0, v, 0, count) }

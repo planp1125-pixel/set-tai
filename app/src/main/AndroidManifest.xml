@@ -187,6 +187,7 @@
         </provider>
         <activity android:name=".ui.RoutinesActivity" android:exported="false" android:label="Settai's routines" />
         <activity android:name=".ui.DiaryActivity" android:exported="false" android:label="Settai's diary" />
+        <activity android:name=".ui.PowerChoiceActivity" android:exported="false" android:label="Choose powers" />
         <activity android:name=".ui.SkillsActivity" android:exported="false" android:label="Settai's skills" />
         <activity android:name=".ui.CompanionStudioActivity" android:exported="false" android:label="Photo-to-Companion Studio" />
     </application>

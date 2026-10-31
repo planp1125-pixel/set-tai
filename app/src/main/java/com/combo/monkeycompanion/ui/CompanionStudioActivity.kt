@@ -130,10 +130,10 @@ class StudioLiveStageView(context: Context, var character: CustomCharacter) : Vi
 
     private val loupeClipPath = Path()
     private val loupeBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0xFF, 0xD5, 0x4F); style = Paint.Style.STROKE; strokeWidth = 2.6f * d
+        color = com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xD5, 0x4F); style = Paint.Style.STROKE; strokeWidth = 2.6f * d
     }
     private val loupeCrossPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0xFF, 0xD5, 0x4F); style = Paint.Style.STROKE; strokeWidth = 1.4f * d
+        color = com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xD5, 0x4F); style = Paint.Style.STROKE; strokeWidth = 1.4f * d
     }
 
     /**
@@ -184,20 +184,20 @@ class StudioLiveStageView(context: Context, var character: CustomCharacter) : Vi
     })
 
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val floorPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(90, 0xFF, 0xD5, 0x4F) }
+    private val floorPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.argb(90, 0xFF, 0xD5, 0x4F) }
     private val jetPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val dividerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0x00, 0xE5, 0xFF); strokeWidth = 2f * d }
+    private val dividerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0x00, 0xE5, 0xFF); strokeWidth = 2f * d }
     private val jetPath = Path()
     private val thumbRect = RectF()
     private val meshRect = RectF()
     private val thumbBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0x00, 0xE6, 0x76); style = Paint.Style.STROKE; strokeWidth = 2f * d
+        color = com.combo.monkeycompanion.theme.Th.rgb(0x00, 0xE6, 0x76); style = Paint.Style.STROKE; strokeWidth = 2f * d
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE; textSize = 12.8f * d; typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
     }
     private val subPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0x80, 0xDE, 0xEA); textSize = 11f * d
+        color = com.combo.monkeycompanion.theme.Th.rgb(0x80, 0xDE, 0xEA); textSize = 11f * d
     }
 
     fun resetView() {
@@ -314,7 +314,7 @@ class StudioLiveStageView(context: Context, var character: CustomCharacter) : Vi
 
     override fun onDraw(c: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
-        bgPaint.shader = LinearGradient(0f, 0f, 0f, h, Color.rgb(0x14, 0x17, 0x28), Color.rgb(0x26, 0x1D, 0x3A), Shader.TileMode.CLAMP)
+        bgPaint.shader = LinearGradient(0f, 0f, 0f, h, com.combo.monkeycompanion.theme.Th.rgb(0x14, 0x17, 0x28), com.combo.monkeycompanion.theme.Th.rgb(0x26, 0x1D, 0x3A), Shader.TileMode.CLAMP)
         c.drawRoundRect(0f, 0f, w, h, 22f * d, 22f * d, bgPaint)
 
         val sp = character.spec
@@ -355,7 +355,7 @@ class StudioLiveStageView(context: Context, var character: CustomCharacter) : Vi
 
             if (portraitBmp != null) {
                 thumbRect.set(14f * d, 48f * d, 114f * d, 148f * d)
-                c.drawRoundRect(thumbRect, 12f * d, 12f * d, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0x26, 0x22, 0x38) })
+                c.drawRoundRect(thumbRect, 12f * d, 12f * d, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0x26, 0x22, 0x38) })
                 c.drawBitmap(portraitBmp, null, thumbRect, Paint(Paint.FILTER_BITMAP_FLAG))
                 if (showFaceMesh) {
                     sp.faceMesh.drawFaceIdWireframe(c, thumbRect, t * 0.35f, d * 0.72f, selectedMeshFeature)
@@ -467,7 +467,7 @@ class StudioLiveStageView(context: Context, var character: CustomCharacter) : Vi
                 val wdt = 7f * sc
                 jetPaint.shader = LinearGradient(
                     fx, fy, fx, fy + len,
-                    intArrayOf(Color.rgb(0xFF, 0xF5, 0x9D), Color.rgb(0xFF, 0x98, 0x00), Color.TRANSPARENT),
+                    intArrayOf(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF5, 0x9D), com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0x98, 0x00), Color.TRANSPARENT),
                     floatArrayOf(0f, 0.5f, 1f),
                     Shader.TileMode.CLAMP
                 )
@@ -505,7 +505,7 @@ class StudioLiveStageView(context: Context, var character: CustomCharacter) : Vi
         loupeClipPath.reset()
         loupeClipPath.addCircle(lcx, lcy, r, Path.Direction.CW)
         c.clipPath(loupeClipPath)
-        c.drawColor(Color.rgb(0x10, 0x12, 0x20))
+        c.drawColor(com.combo.monkeycompanion.theme.Th.rgb(0x10, 0x12, 0x20))
         // Zoom 2.5x around (hx, hy) translated to (lcx, lcy)
         c.translate(lcx, lcy)
         c.scale(2.4f, 2.4f)
@@ -524,23 +524,23 @@ class StudioLiveStageView(context: Context, var character: CustomCharacter) : Vi
         val pillW = 92f * d
         val pillH = 18f * d
         val pillRect = RectF(lcx - pillW / 2f, lcy + r - pillH * 0.6f, lcx + pillW / 2f, lcy + r + pillH * 0.4f)
-        c.drawRoundRect(pillRect, 9f * d, 9f * d, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0xFF, 0xD5, 0x4F) })
+        c.drawRoundRect(pillRect, 9f * d, 9f * d, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xD5, 0x4F) })
         c.drawText(
             "🔍 ${target.shortLabel}",
             lcx,
             pillRect.centerY() + 4f * d,
-            Paint(labelPaint).apply { color = Color.rgb(0x1C, 0x14, 0x10); textSize = 10.2f * d; textAlign = Paint.Align.CENTER }
+            Paint(labelPaint).apply { color = com.combo.monkeycompanion.theme.Th.rgb(0x1C, 0x14, 0x10); textSize = 10.2f * d; textAlign = Paint.Align.CENTER }
         )
     }
 }
 
 class CompanionStudioActivity : Activity() {
     private val d by lazy { resources.displayMetrics.density }
-    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
-    private val brown = Color.rgb(0x1E, 0x22, 0x40)
-    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
-    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
-    private val purple = Color.rgb(0x09, 0x84, 0xE3)
+    private val cream = com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)
+    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
+    private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
+    private val accent = com.combo.monkeycompanion.theme.Th.rgb(0x6C, 0x5C, 0xE7)
+    private val purple = com.combo.monkeycompanion.theme.Th.rgb(0x09, 0x84, 0xE3)
     private val uiHandler = Handler(Looper.getMainLooper())
 
     private lateinit var draft: CustomCompanionSpec
@@ -761,14 +761,14 @@ class CompanionStudioActivity : Activity() {
             setPadding(dp(8), dp(6), dp(8), dp(6))
             background = GradientDrawable().apply {
                 cornerRadius = dp(14).toFloat()
-                setColor(if (darkTheme) Color.rgb(0x1B, 0x18, 0x2E) else Color.rgb(0xFF, 0xF8, 0xEB))
-                setStroke(dp(1), if (darkTheme) Color.rgb(0x00, 0xE5, 0xFF) else accent)
+                setColor(if (darkTheme) com.combo.monkeycompanion.theme.Th.rgb(0x1B, 0x18, 0x2E) else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF8, 0xEB))
+                setStroke(dp(1), if (darkTheme) com.combo.monkeycompanion.theme.Th.rgb(0x00, 0xE5, 0xFF) else accent)
             }
         }
         val statusTv = TextView(this).apply {
             text = "🎯 Active Mesh Target: ${stage.selectedMeshFeature.label} (Touch node, swipe trackpad, or tap ◀▲▼▶)"
             textSize = 11.8f; setTypeface(typeface, Typeface.BOLD)
-            setTextColor(if (darkTheme) Color.rgb(0x80, 0xDE, 0xEA) else brown)
+            setTextColor(if (darkTheme) com.combo.monkeycompanion.theme.Th.rgb(0x80, 0xDE, 0xEA) else brown)
             setPadding(0, 0, 0, dp(4))
         }
         box.addView(statusTv)
@@ -781,8 +781,8 @@ class CompanionStudioActivity : Activity() {
                 btn.setTextColor(if (sel) Color.WHITE else brown)
                 btn.background = GradientDrawable().apply {
                     cornerRadius = dp(16).toFloat()
-                    setColor(if (sel) accent else Color.rgb(0xFF, 0xF9, 0xEE))
-                    setStroke(dp(1), if (sel) accent else Color.rgb(0xDD, 0xE0, 0xF0))
+                    setColor(if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF9, 0xEE))
+                    setStroke(dp(1), if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
                 }
             }
         }
@@ -877,7 +877,7 @@ class CompanionStudioActivity : Activity() {
         }
         val wrap = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.rgb(0x0D, 0x0B, 0x18))
+            setBackgroundColor(com.combo.monkeycompanion.theme.Th.rgb(0x0D, 0x0B, 0x18))
             setPadding(dp(8), dp(8), dp(8), dp(8))
         }
 
@@ -930,7 +930,7 @@ class CompanionStudioActivity : Activity() {
 
         dlg.setContentView(wrap)
         dlg.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.rgb(0x0D, 0x0B, 0x18)))
+            setBackgroundDrawable(ColorDrawable(com.combo.monkeycompanion.theme.Th.rgb(0x0D, 0x0B, 0x18)))
             setLayout(MATCH_PARENT, MATCH_PARENT)
         }
         runCatching { dlg.show() }
@@ -1012,14 +1012,14 @@ class CompanionStudioActivity : Activity() {
             setPadding(dp(12), dp(8), dp(12), dp(8))
             background = GradientDrawable().apply {
                 cornerRadius = dp(12).toFloat()
-                setColor(Color.rgb(0xE8, 0xF5, 0xE9))
-                setStroke(dp(1), Color.rgb(0x43, 0xA0, 0x47))
+                setColor(com.combo.monkeycompanion.theme.Th.rgb(0xE8, 0xF5, 0xE9))
+                setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0x43, 0xA0, 0x47))
             }
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(8) }
         }
         guideBox.addView(TextView(this).apply {
             text = "🕸️ How 68-Pt Mesh Copying Works (Zero Tiny-Dot Poking Required!):"
-            textSize = 12.2f; setTypeface(typeface, Typeface.BOLD); setTextColor(Color.rgb(0x1B, 0x5E, 0x20))
+            textSize = 12.2f; setTypeface(typeface, Typeface.BOLD); setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0x1B, 0x5E, 0x20))
         })
         guideBox.addView(TextView(this).apply {
             text = "1️⃣ Tap a feature chip above (💇 Hairline, 🤨 Brows, 👁️ Eyes, 👃 Nose, 👄 Mouth, 🧔 Jaw, or 🧔 Chin). " +
@@ -1120,18 +1120,18 @@ class CompanionStudioActivity : Activity() {
             setPadding(dp(14), dp(12), dp(14), dp(12))
             background = GradientDrawable().apply {
                 cornerRadius = dp(18).toFloat()
-                setColor(Color.rgb(0x23, 0x1B, 0x3A))
-                setStroke(dp(2), Color.rgb(0xFF, 0xC1, 0x07))
+                setColor(com.combo.monkeycompanion.theme.Th.rgb(0x23, 0x1B, 0x3A))
+                setStroke(dp(2), com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xC1, 0x07))
             }
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
         val brainTitle = TextView(this).apply {
             text = if (ChatHub.isBrainEnabled()) "🧠 Give Brain: AI Model ENABLED ✅" else "🧠 Give Brain: AI Model OFF 🔒 (100% Local Mode)"
-            textSize = 15.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(Color.rgb(0xFF, 0xD5, 0x4F))
+            textSize = 15.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xD5, 0x4F))
         }
         val brainSub = TextView(this).apply {
             text = ChatHub.giveBrainStatusLine() + " — AI modeling is strictly OFF until you enable Give Brain!"
-            textSize = 12f; setTextColor(Color.rgb(0xE0, 0xD8, 0xF0)); setPadding(0, dp(3), 0, dp(8))
+            textSize = 12f; setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xE0, 0xD8, 0xF0)); setPadding(0, dp(3), 0, dp(8))
         }
         brainCard.addView(brainTitle)
         brainCard.addView(brainSub)
@@ -1165,8 +1165,8 @@ class CompanionStudioActivity : Activity() {
             setPadding(dp(12), dp(10), dp(12), dp(10))
             background = GradientDrawable().apply {
                 cornerRadius = dp(14).toFloat()
-                setColor(if (draft.bodyDetectedClearly) Color.rgb(0xE8, 0xF5, 0xE9) else Color.rgb(0xFF, 0xF8, 0xE1))
-                setStroke(dp(1), if (draft.bodyDetectedClearly) Color.rgb(0x66, 0xBB, 0x6A) else accent)
+                setColor(if (draft.bodyDetectedClearly) com.combo.monkeycompanion.theme.Th.rgb(0xE8, 0xF5, 0xE9) else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF8, 0xE1))
+                setStroke(dp(1), if (draft.bodyDetectedClearly) com.combo.monkeycompanion.theme.Th.rgb(0x66, 0xBB, 0x6A) else accent)
             }
         }
         suggBox.addView(TextView(this).apply {
@@ -1576,8 +1576,8 @@ class CompanionStudioActivity : Activity() {
         setTextColor(if (selected) Color.WHITE else brown)
         background = GradientDrawable().apply {
             cornerRadius = dp(18).toFloat()
-            setColor(if (selected) accent else Color.rgb(0xFF, 0xF9, 0xEE))
-            setStroke(dp(1), if (selected) accent else Color.rgb(0xDD, 0xE0, 0xF0))
+            setColor(if (selected) accent else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF9, 0xEE))
+            setStroke(dp(1), if (selected) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
         }
         setPadding(dp(8), dp(6), dp(8), dp(6))
         setOnClickListener { onClick() }
@@ -1588,7 +1588,7 @@ class CompanionStudioActivity : Activity() {
         setTextColor(if (primary) Color.WHITE else brown)
         background = GradientDrawable().apply {
             cornerRadius = dp(22).toFloat()
-            setColor(if (primary) purple else Color.rgb(0xF5, 0xE6, 0xD0))
+            setColor(if (primary) purple else com.combo.monkeycompanion.theme.Th.rgb(0xF5, 0xE6, 0xD0))
         }
         setPadding(dp(14), dp(10), dp(14), dp(10))
         setOnClickListener { onClick() }

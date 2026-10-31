@@ -46,10 +46,10 @@ class SettingsActivity : Activity() {
     private val s get() = ChatHub.settings
     private val d by lazy { resources.displayMetrics.density }
     private fun dp(v: Int) = (v * d).toInt()
-    private val brown = Color.rgb(0x1E, 0x22, 0x40)
-    private val soft = Color.rgb(0x64, 0x6A, 0x8C)
-    private val accent = Color.rgb(0x6C, 0x5C, 0xE7)
-    private val cream = Color.rgb(0xF3, 0xF4, 0xFA)
+    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
+    private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
+    private val accent = com.combo.monkeycompanion.theme.Th.rgb(0x6C, 0x5C, 0xE7)
+    private val cream = com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)
     private val ui = Handler(Looper.getMainLooper())
 
     private lateinit var onlineCard: View
@@ -91,7 +91,7 @@ class SettingsActivity : Activity() {
         setTextColor(if (primary) Color.WHITE else brown)
         background = GradientDrawable().apply {
             cornerRadius = dp(24).toFloat(); setColor(if (primary) accent else Color.WHITE)
-            setStroke(dp(2), if (primary) accent else Color.rgb(0xDD, 0xE0, 0xF0))
+            setStroke(dp(2), if (primary) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
         }
         setOnClickListener { click() }
         layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) }
@@ -102,7 +102,7 @@ class SettingsActivity : Activity() {
         inputType = if (secret) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         else InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
         setPadding(dp(12), dp(10), dp(12), dp(10))
-        background = GradientDrawable().apply { setColor(Color.rgb(0xFF, 0xFB, 0xF5)); cornerRadius = dp(12).toFloat(); setStroke(dp(1), Color.rgb(0xDD, 0xE0, 0xF0)) }
+        background = GradientDrawable().apply { setColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xFB, 0xF5)); cornerRadius = dp(12).toFloat(); setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0)) }
         layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) }
     }
 
@@ -270,7 +270,7 @@ class SettingsActivity : Activity() {
                     return@post
                 }
                 if (ids.isEmpty()) {
-                    onlineResult.text = "\u274C " + (res.exceptionOrNull()?.message ?: "No chat models found for this key."); onlineResult.setTextColor(Color.rgb(0xC6, 0x28, 0x28)); return@post
+                    onlineResult.text = "\u274C " + (res.exceptionOrNull()?.message ?: "No chat models found for this key."); onlineResult.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xC6, 0x28, 0x28)); return@post
                 }
                 val best = com.combo.monkeycompanion.ai.ModelList.pickDefault(ids)
                 val labels = ids.map { if (it == best) "$it  ⭐ recommended" else it }.toTypedArray()
@@ -287,8 +287,8 @@ class SettingsActivity : Activity() {
         out.setTextColor(soft)
         val b = ChatHub.brain()
         ChatHub.test(b) { r ->
-            r.onSuccess { out.text = "\u2705 ${b.label} says: $it"; out.setTextColor(Color.rgb(0x2E, 0x7D, 0x32)) }
-            r.onFailure { out.text = "\u274C ${it.message}"; out.setTextColor(Color.rgb(0xC6, 0x28, 0x28)) }
+            r.onSuccess { out.text = "\u2705 ${b.label} says: $it"; out.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0x2E, 0x7D, 0x32)) }
+            r.onFailure { out.text = "\u274C ${it.message}"; out.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xC6, 0x28, 0x28)) }
         }
     }
 
@@ -869,10 +869,10 @@ object GiveBrainDialog {
         val s = ChatHub.settings
         val d = act.resources.displayMetrics.density
         fun dp(v: Int) = (v * d).toInt()
-        val brown = Color.rgb(0x1E, 0x22, 0x40)
-        val soft = Color.rgb(0x64, 0x6A, 0x8C)
-        val accent = Color.rgb(0x6C, 0x5C, 0xE7)
-        val purple = Color.rgb(0x09, 0x84, 0xE3)
+        val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
+        val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
+        val accent = com.combo.monkeycompanion.theme.Th.rgb(0x6C, 0x5C, 0xE7)
+        val purple = com.combo.monkeycompanion.theme.Th.rgb(0x09, 0x84, 0xE3)
 
         val root = LinearLayout(act).apply {
             orientation = LinearLayout.VERTICAL
@@ -883,7 +883,7 @@ object GiveBrainDialog {
             text = ChatHub.giveBrainStatusLine()
             textSize = 13.2f
             setTypeface(typeface, Typeface.BOLD)
-            setTextColor(if (ChatHub.isBrainEnabled()) Color.rgb(0x1B, 0x5E, 0x20) else brown)
+            setTextColor(if (ChatHub.isBrainEnabled()) com.combo.monkeycompanion.theme.Th.rgb(0x1B, 0x5E, 0x20) else brown)
             setPadding(0, 0, 0, dp(8))
         }
         root.addView(statusTv)
@@ -897,16 +897,16 @@ object GiveBrainDialog {
         fun styleToggle() {
             val enabled = ChatHub.isBrainEnabled()
             statusTv.text = ChatHub.giveBrainStatusLine()
-            statusTv.setTextColor(if (enabled) Color.rgb(0x1B, 0x5E, 0x20) else brown)
+            statusTv.setTextColor(if (enabled) com.combo.monkeycompanion.theme.Th.rgb(0x1B, 0x5E, 0x20) else brown)
             onBtn.setTextColor(if (enabled) Color.WHITE else brown)
             onBtn.background = GradientDrawable().apply {
                 cornerRadius = dp(18).toFloat()
-                setColor(if (enabled) Color.rgb(0x2E, 0x7D, 0x32) else Color.rgb(0xF5, 0xE6, 0xD0))
+                setColor(if (enabled) com.combo.monkeycompanion.theme.Th.rgb(0x2E, 0x7D, 0x32) else com.combo.monkeycompanion.theme.Th.rgb(0xF5, 0xE6, 0xD0))
             }
             offBtn.setTextColor(if (!enabled) Color.WHITE else brown)
             offBtn.background = GradientDrawable().apply {
                 cornerRadius = dp(18).toFloat()
-                setColor(if (!enabled) Color.rgb(0xC6, 0x28, 0x28) else Color.rgb(0xF5, 0xE6, 0xD0))
+                setColor(if (!enabled) com.combo.monkeycompanion.theme.Th.rgb(0xC6, 0x28, 0x28) else com.combo.monkeycompanion.theme.Th.rgb(0xF5, 0xE6, 0xD0))
             }
         }
         onBtn = Button(act).apply {
@@ -996,10 +996,10 @@ object GiveBrainDialog {
                 ChatHub.test(b) { res ->
                     res.onSuccess {
                         testResultTv.text = "✅ Connected! ${b.label}: $it"
-                        testResultTv.setTextColor(Color.rgb(0x1B, 0x5E, 0x20))
+                        testResultTv.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0x1B, 0x5E, 0x20))
                     }.onFailure {
                         testResultTv.text = "❌ ${it.message}"
-                        testResultTv.setTextColor(Color.rgb(0xC6, 0x28, 0x28))
+                        testResultTv.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xC6, 0x28, 0x28))
                     }
                 }
             }

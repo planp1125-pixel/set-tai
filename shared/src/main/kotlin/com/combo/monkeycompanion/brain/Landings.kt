@@ -64,6 +64,10 @@ object Landings {
                     listOf(Style.ROCKET_ARC to 4, Style.NINJA_FLIP to 3, Style.CAPE_FLOAT to 2, Style.JETS to 2, Style.PARACHUTE to 2)
             }
         }
+        // v10.17 Kutti Satan: magic floaty landings; boot jets only if the user switched a jet power on for him
+        characterId == "devil" -> listOf(Style.SNORE_FLOAT to 3, Style.NINJA_FLIP to 3, Style.CANNONBALL to 1) +
+            (if (com.combo.monkeycompanion.character.CharacterRegistry.byId("devil")?.let { d -> PowerPrefs.enabled(d) }.orEmpty().any { it.id == "jets" || it.id == "rocket" || it.id == "boost" || it.id == "swoop" })
+                listOf(Style.JETS to 2, Style.ROCKET_ARC to 3) else emptyList())
         characterId == "mask" -> listOf((if (umbrella) Style.PARACHUTE else Style.CHICKEN_FLAP) to 4, Style.CROW_CARRY to 3, Style.NINJA_FLIP to 2,
             Style.SNORE_FLOAT to 1, Style.CANNONBALL to 1)
 
