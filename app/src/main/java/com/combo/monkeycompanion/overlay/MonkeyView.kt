@@ -2711,6 +2711,7 @@ class MonkeyView(
         if (host == null) return
         if (stepChaseShow()) return
         syncImeDodge()
+        if (rotEase != 0f) { rotEase *= exp(-dt * 9f); if (abs(rotEase) < 0.3f) rotEase = 0f }
         if (rocketFlyOn) { if (dragging) { rocketFlyOn = false; rocketFly.cancel(); arcRot = 0f } else { stepRocketFly(dt); return } }
         if (isEdgeCrashLanding) {
             stepEdgeCrashLanding(dt)
@@ -3685,6 +3686,8 @@ class MonkeyView(
     private var arcPhase = 0          // 0 fly, 1 hover (Anna), 2 drop (Anna), 3 touchdown pose
     private var arcPhaseT = 0f
     private var arcRot = 0f
+    /** v10.14 leftover tilt after a rocket flight, decaying to upright (visual only). */
+    private var rotEase = 0f
     private var lastArcPath: LandingFlight.Path? = null
     private var landPicked: Landings.Style? = null
     private var landWhy = ""
@@ -3784,7 +3787,8 @@ class MonkeyView(
         mx = rocketFly.x - boxW / 2f; my = rocketFly.y - boxH / 2f
         // v10.14 no jitter: turn only on a clear, sustained sideways move (hysteresis + 0.15 s hold), never per frame
         val wantFace = if (rocketFly.vx > 140f * d) 1f else if (rocketFly.vx < -140f * d) -1f else controller.facing
-        if (wantFace != controller.facing) { rocketFaceHold += dt; if (rocketFaceHold > 0.15f) { controller.face(wantFace); rocketFaceHold = 0f } } else rocketFaceHold = 0f
+        var flipped = false
+        if (wantFace != controller.facing) { rocketFaceHold += dt; if (rocketFaceHold > 0.15f) { controller.face(wantFace); rocketFaceHold = 0f; flipped = true } } else rocketFaceHold = 0f
         // the rocket's nose follows the velocity: rotate the whole rider so the tilted rocket lines up with it
         val tilt = com.combo.monkeycompanion.rig.RocketGeom.TILT + ROCKET_FLY_LEAN
         val base = if (controller.facing >= 0f) tilt else 180f - tilt
@@ -3795,12 +3799,14 @@ class MonkeyView(
         r += arcRot
         // (clamped so a steep dive never turns her upside down; within it the rocket's nose is along the velocity)
         val want = r.coerceIn(-80f, 80f)
-        arcRot += (want - arcRot) * min(1f, dt * 14f)
+        // v10.14: eased and rate-limited (no per-frame snaps); on a facing flip the mirrored rider takes the new angle at once
+        arcRot = if (flipped) want else arcRot + ((want - arcRot) * min(1f, dt * 14f)).coerceIn(-ROT_STEP_MAX * dt * 60f, ROT_STEP_MAX * dt * 60f)
         if (!rocketFly.active) endRocketFly()
     }
 
     private fun endRocketFly() {
         rocketFlyOn = false; rocketFly.cancel()
+        rotEase = arcRot   // v10.14: the tilt eases back upright after landing instead of snapping
         arcRot = 0f; falling = false; vy = 0f; landStyle = Landings.Style.SIMPLE
         surf = freeSurf(my.coerceIn(hoverMinY(), ground())); clampToSurf()
         controller.idleNow(2f)
@@ -4131,7 +4137,7 @@ class MonkeyView(
             s == Landings.Style.JETS || (s == Landings.Style.SCREAM_JETS && ground() - my < Landings.SAVE_DP * d)
         val streaks = falling && ((s == Landings.Style.ROCKET_ARC && arc != null && ph == 0 && character.usesCapeFlight) || s == Landings.Style.SPEED_DIVE || s == Landings.Style.CAPE_FLOAT)
         val cx = ox + boxW / 2f; val cy = oy + boxH / 2f
-        if (arcRot != 0f) c.rotate(arcRot, cx, cy)      // the body is drawn in the same rotated frame (restored by drawMonkey)
+        if (arcRot + rotEase != 0f) c.rotate(arcRot + rotEase, cx, cy)      // the body is drawn in the same rotated frame (restored by drawMonkey)
         if (!jets && !streaks) return
         if (jets && profile.ridesProp) return   // v10.10 Rocket Girl: no boot jets / blast cones; her rocket's spark fountain is the exhaust
         if (!hoverJets) landFlames++ else hoverFlames++
@@ -6909,7 +6915,7 @@ class MonkeyView(
     fun debugMaskHang() = startMaskHang()
     fun debugMaskClimb(side: Int) = startMaskClimb(side)
     val debugHoverFlames get() = hoverFlames
-    val debugArcRot get() = arcRot
+    val debugArcRot get() = arcRot + rotEase
     val debugArcPhase get() = arcPhase
     val debugLandFlames get() = landFlames
     val debugFalling get() = falling
@@ -6928,6 +6934,8 @@ class MonkeyView(
     companion object {
         /** v10.14 a held bubble waits this long after landing, and is dropped after this long (chat replies never). */
         const val SETTLE_SECS = 0.45f
+        /** v10.14 max rider tilt change per 60 Hz frame (degrees). */
+        const val ROT_STEP_MAX = 9f
         const val HELD_STALE_SECS = 4f
 
         /** v10.8: a press this long (but shorter than the long-press menu) is a HOLD touch. */

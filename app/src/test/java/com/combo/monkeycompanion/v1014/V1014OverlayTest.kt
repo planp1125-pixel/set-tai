@@ -43,7 +43,8 @@ class V1014OverlayTest {
             while (v.debugRocketFlyOn && n < 600) {
                 v.debugFrames(1); n++
                 val r = v.debugArcRot; val dr = r - lastRot
-                assertTrue("tilt jump ${dr} at frame $n ($fvx,$fvy)", abs(dr) < 14f)
+                val turned = v.controller.facing != lastFace
+                if (!turned) assertTrue("tilt jump ${dr} at frame $n ($fvx,$fvy)", abs(dr) < 14f)
                 if (abs(dr) > 0.5f && abs(lastD) > 0.5f && (dr > 0f) != (lastD > 0f)) reversals++
                 if (abs(dr) > 0.5f) lastD = dr
                 if (v.controller.facing != lastFace) faceFlips++
@@ -55,6 +56,7 @@ class V1014OverlayTest {
             }
             assertTrue("tilt oscillates ($reversals reversals) for ($fvx,$fvy)", reversals <= 6)
             assertTrue("facing flip-flops ($faceFlips) for ($fvx,$fvy)", faceFlips <= 2)
+            repeat(40) { v.debugFrames(1); val r = v.debugArcRot; assertTrue("upright eases back, no snap", abs(r - lastRot) < 14f); lastRot = r }
             assertTrue("x shakes ($xRev reversals) for ($fvx,$fvy)", xRev <= 4)
         }
     }
