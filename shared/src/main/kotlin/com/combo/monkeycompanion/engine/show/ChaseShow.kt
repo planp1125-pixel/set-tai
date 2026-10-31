@@ -169,6 +169,7 @@ class ChaseShow private constructor(val beats: List<BeatKind>, val ending: EndKi
     /** Where [role] is at show time [t]; keeps the two at least [MIN_SEP] apart except when they touch on purpose. */
     fun frame(role: Role, t: Float, out: Frame): Frame {
         rawFrame(role, t, out)
+        if (!SEPARATE) return out   // v10.13.1: the on-screen chase is ChaseRun; this beat model stays as authored
         val s = segmentAt(t.coerceAtMost(total - 0.001f))
         // Only the (small, quick) mouse steps aside, faded in/out at beat edges so nothing ever jumps.
         if (role != Role.RAT || s.kind == BeatKind.TAIL_BITE || s.end == EndKind.FRIENDS || !out.visible) return out
@@ -305,6 +306,7 @@ class ChaseShow private constructor(val beats: List<BeatKind>, val ending: EndKi
         const val MIN_LEN = 12.5f
         const val MAX_LEN = 14.5f
         const val MIN_SEP = 0.12f
+        const val SEPARATE = false
         val middleBeats = BeatKind.entries.filter { it != BeatKind.INTRO }
 
         /** A new show; never the same signature or the same first beat as [last]. */

@@ -5734,8 +5734,9 @@ class MonkeyView(
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
         when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN -> fingerDown = true
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { fingerDown = false; attendUntil = t + ATTEND_GRACE }
+            MotionEvent.ACTION_DOWN -> { fingerDown = true; fingerDownT = t; gestureDragged = false; attDownX = e.rawX; attDownY = e.rawY }
+            MotionEvent.ACTION_MOVE -> if (hypot(e.rawX - attDownX, e.rawY - attDownY) > 10 * d) gestureDragged = true
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { fingerDown = false; if (!gestureDragged && !dragging) attendUntil = t + ATTEND_GRACE }
         }
         if (exiting) return true   // leaving: hands off
         if (powerOn && !wp) {
@@ -6110,9 +6111,13 @@ class MonkeyView(
     private var fingerDown = false
     private var attendUntil = 0f
     private var attWas = false
+    private var fingerDownT = 0f
+    private var gestureDragged = false
+    private var attDownX = 0f; private var attDownY = 0f
     /** v10.13: the user is interacting with me (finger down, short grace after a tap, popup / chat / chips open). */
-    fun attending(): Boolean = host != null && !wp && !dragging && !showOn &&
-        (fingerDown || t < attendUntil || (bubbleOn && (arcOn || typing || bubbleChips.isNotEmpty())))
+    fun attending(): Boolean { if (dragging) gestureDragged = true; return attendingNow() }
+    private fun attendingNow(): Boolean = host != null && !wp && !dragging && !showOn &&
+        ((fingerDown && t - fingerDownT > 0.25f && !gestureDragged) || t < attendUntil || (bubbleOn && (arcOn || typing || bubbleChips.isNotEmpty())))
     private var fabLX = 0f; private var fabLY = 0f
     private var fabSitAt = -1L
     private var fabQuiet = false
