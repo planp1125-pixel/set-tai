@@ -4137,7 +4137,7 @@ class MonkeyView(
             s == Landings.Style.JETS || (s == Landings.Style.SCREAM_JETS && ground() - my < Landings.SAVE_DP * d)
         val streaks = falling && ((s == Landings.Style.ROCKET_ARC && arc != null && ph == 0 && character.usesCapeFlight) || s == Landings.Style.SPEED_DIVE || s == Landings.Style.CAPE_FLOAT)
         val cx = ox + boxW / 2f; val cy = oy + boxH / 2f
-        if (arcRot + rotEase != 0f) c.rotate(arcRot + rotEase, cx, cy)      // the body is drawn in the same rotated frame (restored by drawMonkey)
+        if (arcRot + rotEase + shockSpin != 0f) c.rotate(arcRot + rotEase + shockSpin, cx, cy)      // the body is drawn in the same rotated frame (restored by drawMonkey)
         if (!jets && !streaks) return
         if (jets && profile.ridesProp) return   // v10.10 Rocket Girl: no boot jets / blast cones; her rocket's spark fountain is the exhaust
         if (!hoverJets) landFlames++ else hoverFlames++
@@ -4489,10 +4489,11 @@ class MonkeyView(
     private fun playMoment(m: PhoneMoments.Moment) {
         val now = System.currentTimeMillis()
         momentLast[m] = now
-        val charge = m == PhoneMoments.Moment.CHARGE
+        val shock = m == PhoneMoments.Moment.CHARGE && PhoneMoments.chargeStyle(character.id) == PhoneMoments.ChargeStyle.SHOCK
+        val charge = m == PhoneMoments.Moment.CHARGE && !shock
         moment = m; momentT = 0f
-        momentLen = if (charge) PhoneMoments.CHARGE_TRIP_SECS else PhoneMoments.duration(m, saver)
-        momentFx = charge || PhoneMoments.effects(saver)
+        momentLen = if (charge) PhoneMoments.CHARGE_TRIP_SECS else if (shock) SHOCK_SECS else PhoneMoments.duration(m, saver)
+        momentFx = !shock && (charge || PhoneMoments.effects(saver))
         momentStyle = PhoneMoments.chargeStyle(character.id)
         val rtl = layoutDirection == View.LAYOUT_DIRECTION_RTL
         momentTarget = PhoneMoments.batteryTarget(sw(), (host?.topInset() ?: 0).toFloat(), rtl, d)
@@ -4500,11 +4501,36 @@ class MonkeyView(
         controller.idleNow(momentLen + 0.6f)
         aiReply = null; pages.clear(); beats.clear()
         val line = PhoneMoments.line(m, character.id)
-        if (m == PhoneMoments.Moment.CHARGE && momentFx) ui.postDelayed({ if (moment == m) say(line, 3800L) }, (momentLen * 450).toLong())
+        if (shock) ui.postDelayed({ say(line, 3600L) }, (momentLen * 1000).toLong() + 300L)   // v10.14: speech after the shock settles
+        else if (m == PhoneMoments.Moment.CHARGE && momentFx) ui.postDelayed({ if (moment == m) say(line, 3800L) }, (momentLen * 450).toLong())
         else say(line, (momentLen * 1000).toLong() + 2200L)
         if (m == PhoneMoments.Moment.CHARGE || m == PhoneMoments.Moment.FULL) performHapticFeedback(HapticFeedbackConstants.CONFIRM)
         if (charge) startChargeTrip()
         if (!running) start()
+    }
+
+    /** v10.14 Billa & Chittu plug-in shock: a jolt (eased in/out, no snaps), Billa's fur spikes, Chittu spins twice. */
+    private var shockSpin = 0f
+    val debugShockSpin get() = shockSpin
+    val debugDrawPose get() = drawPose
+    val debugMomentStyle get() = momentStyle
+    fun debugPlayMoment(m: PhoneMoments.Moment) = playMoment(m)
+    private fun shockPose(k: Float) {
+        val p = drawPose
+        val e = (k / 0.12f).coerceIn(0f, 1f).let { it * it * (3f - 2f * it) } * (1f - ((k - 0.8f) / 0.2f).coerceIn(0f, 1f).let { it * it * (3f - 2f * it) })
+        p.frizz = maxOf(p.frizz, e)
+        p.eyeOpen = 1f + 0.45f * e; p.mouthOpen = maxOf(p.mouthOpen, 0.7f * e); p.browAngle = -10f * e
+        p.armLRaise = maxOf(p.armLRaise, 120f * e); p.armRRaise = maxOf(p.armRRaise, 120f * e)
+        p.bodyY -= 10f * e                                       // a hop of fright
+        p.tailRot += 30f * e
+        if (character.id == "chittu") {
+            val u = ((k - 0.1f) / 0.7f).coerceIn(0f, 1f); shockSpin = 720f * u * u * (3f - 2f * u)   // two eased turns, ends upright
+            if (shockSpin >= 719.9f) shockSpin = 0f
+        } else shockSpin = 0f
+        if (!saver && Random.nextFloat() < 0.35f * e) {
+            val ang = Random.nextFloat() * 6.283f; val sp = (120f + Random.nextFloat() * 160f) * d
+            particles.spawn(com.combo.monkeycompanion.rig.Particles.SPARK, winX + ox + boxW / 2f, winY + oy + boxH * 0.4f, kotlin.math.cos(ang) * sp, kotlin.math.sin(ang) * sp, 0.3f, 5f * d)
+        }
     }
 
     private fun stepMoment(dt: Float) {
@@ -4513,13 +4539,14 @@ class MonkeyView(
         momentT += dt
         val k = momentT / momentLen
         if (k >= 1f || powerOn || dragging || exiting) {
-            moment = null
+            moment = null; shockSpin = 0f
             val interrupted = dragging || powerOn || exiting
             if (interrupted && chargeTrip) { chargeTrip = false; chargeHomeSurf = null; if (!dragging) surf = freeSurf(my.coerceIn(topY(), ground())) }
             else if (!chargeBack) endChargeTrip(true)
             chargeBack = false; return
         }
         if (chargeTrip && !chargeBack && k >= 0.86f) { chargeBack = true; endChargeTrip(true) }
+        if (m == PhoneMoments.Moment.CHARGE && momentStyle == PhoneMoments.ChargeStyle.SHOCK) { shockPose(k); return }
         if (m == PhoneMoments.Moment.CHARGE) controller.face(PhoneMoments.facingToward(mx + boxW / 2f, momentTarget[0]).toFloat())
         MomentPoses.apply(drawPose, m, k, momentT)
         if (momentFxOn() && !saver && MomentFx.sparking(k)) {
@@ -6934,6 +6961,8 @@ class MonkeyView(
     companion object {
         /** v10.14 a held bubble waits this long after landing, and is dropped after this long (chat replies never). */
         const val SETTLE_SECS = 0.45f
+        /** v10.14 the Billa & Chittu plug-in shock length. */
+        const val SHOCK_SECS = 2.4f
         /** v10.14 max rider tilt change per 60 Hz frame (degrees). */
         const val ROT_STEP_MAX = 9f
         const val HELD_STALE_SECS = 4f

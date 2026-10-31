@@ -26,12 +26,13 @@ object PhoneMoments {
     const val CHARGE_TRIP_SECS = 3.6f
 
     /** How each character charges the phone. */
-    enum class ChargeStyle { ZAP, HEAT_BEAM, CABLE, GIANT_PLUG }
+    enum class ChargeStyle { ZAP, HEAT_BEAM, CABLE, GIANT_PLUG, /** v10.14 Billa & Chittu: the plug-in current shocks THEM (fur spikes / zapped spin). */ SHOCK }
 
     fun chargeStyle(characterId: String) = when (characterId) {
         "superboy" -> ChargeStyle.HEAT_BEAM
         "armour" -> ChargeStyle.CABLE
         "mask" -> ChargeStyle.GIANT_PLUG
+        "billa", "chittu" -> ChargeStyle.SHOCK
         else -> ChargeStyle.ZAP
     }
 
@@ -78,10 +79,27 @@ object PhoneMoments {
             ChargeStyle.HEAT_BEAM -> listOf("Heat-beam charging! Full power coming ⚡", "A little heat vision for the battery 🔥⚡")
             ChargeStyle.CABLE -> listOf("Core cable connected. Charging machan ⚡", "Plugged into my arc core! Power sharing ⚡")
             ChargeStyle.GIANT_PLUG -> listOf("Giant plug, engage! Charging machan ⚡", "Ta-daa! The biggest plug in town 🔌⚡")
+            ChargeStyle.SHOCK -> if (characterId == "billa") listOf("MEOWWW! 🙀⚡ …my fur! Who plugged in the current?!", "Aiyo! Static fur mode ⚡🙀 Charging, I guess")
+                else listOf("Eek! Zzzapped! 🐭⚡ …I'm spinning!", "Current-u! Tail is tingling ⚡🐭")
         }.random(rnd)
-        Moment.UNPLUG -> listOf("Bye current 😢👋", "Nooo, the current left us 😢👋").random(rnd)
-        Moment.FULL -> listOf("100%! Look at these muscles 💪", "Full charge! Feeling strong machan 💪🔋").random(rnd)
-        Moment.LOW -> listOf("Battery… so… low… charge me… 🪫", "15%… tell my bananas I loved them… 🪫").random(rnd)
+        Moment.UNPLUG -> when (characterId) {
+            "billa" -> listOf("Bye current… I'll nap on the warm phone 🐱👋", "Current gone? Purr… bye bye 😿👋")
+            "chittu" -> listOf("Bye current! *waves tail* 🐭👋", "Nooo, the tingle left 😢🐭")
+            "hollowman" -> listOf("*tips hat to the cable* Bye current 🎩👋", "Current left… even I can see that 😢")
+            "surfer" -> listOf("Bye current, see you next wave 🌊👋", "Unplugged! Paddling on my own now 🏄‍♀️")
+            else -> listOf("Bye current 😢👋", "Nooo, the current left us 😢👋")
+        }.random(rnd)
+        Moment.FULL -> when (characterId) {
+            "hollowman" -> listOf("100%! Invisible muscles, fully charged 💪🎩", "Full power! Moonwalk battery ready 🕺🔋")
+            "surfer" -> listOf("100%! Ready for the biggest wave 💪🌊", "Full charge! Surf's up all day 🏄‍♀️🔋")
+            else -> listOf("100%! Look at these muscles 💪", "Full charge! Feeling strong machan 💪🔋")
+        }.random(rnd)
+        Moment.LOW -> when (characterId) {
+            "hollowman" -> listOf("Battery low… I'm getting MORE invisible… 🪫👻", "15%… my hat is tired… 🪫🎩")
+            "surfer" -> listOf("Battery low… the waves are going flat… 🪫🌊", "15%… paddle… so… slow… 🪫")
+            "billa", "chittu" -> listOf("Battery… so low… even the cheese can't save us… 🪫", "15%… *dramatic flop* charge us… 🪫")
+            else -> listOf("Battery… so… low… charge me… 🪫", "15%… tell my bananas I loved them… 🪫")
+        }.random(rnd)
         Moment.WIFI -> listOf("Caught the Wi-Fi! Full bars 📶", "Wi-Fi! Signal caught, machan 📶").random(rnd)
         Moment.HEADPHONES -> listOf("Headphones! Play something good 🎧", "Ooh music time 🎧💃").random(rnd)
         Moment.SCREENSHOT -> listOf("Cheese! 📸 Did you get my good side?", "Screenshot? Wait, let me pose! 📸").random(rnd)
