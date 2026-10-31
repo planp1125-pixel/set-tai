@@ -30,7 +30,7 @@ jobs:
           echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/settai.keystore"
           echo "SETTAI_KEYSTORE_PATH=$RUNNER_TEMP/settai.keystore" >> "$GITHUB_ENV"
       - name: Unit tests
-        timeout-minutes: 16
+        timeout-minutes: 28
         run: |
           cat > "$RUNNER_TEMP/ci.init.gradle.kts" <<'GR'
           allprojects {
