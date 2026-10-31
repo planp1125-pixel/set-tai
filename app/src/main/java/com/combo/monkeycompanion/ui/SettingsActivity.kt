@@ -147,6 +147,10 @@ class SettingsActivity : Activity() {
             if (s.brainType == BrainType.OFFLINE) ChatHub.preloadOffline()
         }
         col.addView(card("Settai's brain", group))
+        brainGroup = group
+        pickerBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(card("🧠 Active brain (tap to switch)", text("Every downloaded model and every API you've set up. Tap one to use it; switch any time.", 12f, color = soft), pickerBox))
+        refreshPicker()
         mainCol = col
         col.addView(buildCharacter())
 
@@ -239,6 +243,43 @@ class SettingsActivity : Activity() {
 
     // ---------------- offline ----------------
 
+    private var brainGroup: RadioGroup? = null
+    private var pickerBox: LinearLayout? = null
+
+    /** v10.13.1 brain picker: local models + configured API providers; the active one is marked. */
+    private fun refreshPicker() {
+        val box = pickerBox ?: return
+        box.removeAllViews()
+        fun row(label: String, active: Boolean, onUse: () -> Unit, onDelete: (() -> Unit)? = null) {
+            val r = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            r.addView(text((if (active) "✅ " else "⚪ ") + label, 14f, active).apply { setOnClickListener { onUse() } }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            if (!active) r.addView(Button(this).apply { text = "Use"; isAllCaps = false; setOnClickListener { onUse() } })
+            if (onDelete != null) r.addView(Button(this).apply { text = "Delete"; isAllCaps = false; setOnClickListener { onDelete() } })
+            box.addView(r)
+        }
+        fun activate(bt: BrainType) {
+            s.brainType = bt
+            ChatHub.setBrainEnabled(true)
+            brainGroup?.check(100 + listOf(BrainType.NONE, BrainType.OFFLINE, BrainType.ONLINE).indexOf(bt))
+            updateCards(); refreshPicker(); refreshOffline()
+            if (bt == BrainType.OFFLINE) ChatHub.preloadOffline()
+        }
+        val on = s.aiBrainEnabled
+        row("No AI (canned lines)", !on || s.brainType == BrainType.NONE, { s.brainType = BrainType.NONE; ChatHub.setBrainEnabled(false); brainGroup?.check(100); updateCards(); refreshPicker() })
+        for (f in ModelStore.installed(this)) {
+            val title = ModelStore.CATALOG.firstOrNull { it.file == f.name }?.title?.substringBefore(" (") ?: f.name
+            row("📱 $title  ·  ${mb(f.length())}", on && s.brainType == BrainType.OFFLINE && s.offlineModelPath == f.path,
+                { s.offlineModelPath = f.path; activate(BrainType.OFFLINE) },
+                { if (s.offlineModelPath == f.path) s.offlineModelPath = ""; f.delete(); ChatHub.setBrainEnabled(s.aiBrainEnabled); refreshPicker(); refreshOffline() })
+        }
+        for (pr in Provider.values()) {
+            val ok = if (pr == Provider.CUSTOM) s.customBaseUrl.isNotBlank() else s.apiKeyFor(pr).isNotBlank()
+            if (!ok) continue
+            row("☁️ ${pr.label} (${s.modelFor(pr)})", on && s.brainType == BrainType.ONLINE && s.provider == pr, { s.provider = pr; activate(BrainType.ONLINE) })
+        }
+        if (box.childCount == 1) box.addView(text("No models or API keys yet. Download a model or add a key below.", 12f, color = soft))
+    }
+
     private fun buildOffline(): View {
         offlineStatus = text("", 14f)
         val catGroup = RadioGroup(this)
@@ -295,6 +336,7 @@ class SettingsActivity : Activity() {
     }
 
     private fun refreshOffline() {
+        refreshPicker()
         if (!::offlineStatus.isInitialized) return
         val path = s.offlineModelPath
         val f = File(path)
@@ -366,6 +408,8 @@ class SettingsActivity : Activity() {
                 dlBar.visibility = View.GONE; dlCancel.visibility = View.GONE
                 dlText.text = "\u2705 Download complete!"
                 ModelStore.clearDownloadRecord(this)
+                // v10.13.1: a freshly downloaded model becomes the active brain (switch back any time in the picker)
+                s.brainType = BrainType.OFFLINE; ChatHub.setBrainEnabled(true); brainGroup?.check(101); updateCards()
                 refreshOffline()
                 ChatHub.preloadOffline()
                 return
