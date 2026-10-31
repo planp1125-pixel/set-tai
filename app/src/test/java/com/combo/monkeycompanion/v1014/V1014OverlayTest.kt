@@ -87,12 +87,11 @@ class V1014OverlayTest {
 
     /** Charger moments for the combo + new characters: Billa's fur spikes, Chittu spins twice (eased, ends upright), line after. */
     @Test fun chargerShockForBillaAndChittuAndMomentsForNewCharacters() {
-        val P = com.combo.monkeycompanion.brain.PhoneMoments
-        assertEquals(P.ChargeStyle.SHOCK, P.chargeStyle("billa")); assertEquals(P.ChargeStyle.SHOCK, P.chargeStyle("chittu"))
+        assertEquals(com.combo.monkeycompanion.brain.PhoneMoments.ChargeStyle.SHOCK, com.combo.monkeycompanion.brain.PhoneMoments.chargeStyle("billa")); assertEquals(com.combo.monkeycompanion.brain.PhoneMoments.ChargeStyle.SHOCK, com.combo.monkeycompanion.brain.PhoneMoments.chargeStyle("chittu"))
         for (id in listOf("billa", "chittu")) {
             val v = view(id)
-            v.debugPlayMoment(P.Moment.CHARGE)
-            assertEquals(P.ChargeStyle.SHOCK, v.debugMomentStyle)
+            v.debugPlayMoment(com.combo.monkeycompanion.brain.PhoneMoments.Moment.CHARGE)
+            assertEquals(com.combo.monkeycompanion.brain.PhoneMoments.ChargeStyle.SHOCK, v.debugMomentStyle)
             var maxFrizz = 0f; var maxSpin = 0f; var last = 0f; var n = 0
             while (v.debugMoment != null && n < 400) {
                 v.debugFrames(1); n++
@@ -105,8 +104,8 @@ class V1014OverlayTest {
             if (id == "chittu") assertTrue("chittu spins ($maxSpin)", maxSpin > 600f) else assertEquals(0f, maxSpin, 0f)
             assertEquals("upright at the end", 0f, v.debugShockSpin, 0f)
         }
-        for (id in listOf("hollowman", "surfer")) for (m in listOf(P.Moment.CHARGE, P.Moment.UNPLUG, P.Moment.FULL, P.Moment.LOW)) {
-            assertTrue(P.line(m, id).isNotBlank())
+        for (id in listOf("hollowman", "surfer")) for (m in listOf(com.combo.monkeycompanion.brain.PhoneMoments.Moment.CHARGE, com.combo.monkeycompanion.brain.PhoneMoments.Moment.UNPLUG, com.combo.monkeycompanion.brain.PhoneMoments.Moment.FULL, com.combo.monkeycompanion.brain.PhoneMoments.Moment.LOW)) {
+            assertTrue(com.combo.monkeycompanion.brain.PhoneMoments.line(m, id).isNotBlank())
             val v = view(id); v.debugPlayMoment(m)
             var n = 0; while (v.debugMoment != null && n < 600) { v.debugFrames(1); n++ }
             assertTrue("$id ${m.id} finishes", n < 600)
