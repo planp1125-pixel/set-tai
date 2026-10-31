@@ -77,7 +77,6 @@ class V1014OverlayTest {
 
     @Test fun staleHeldLinesAreDropped() {
         val v = view("monkey")
-        v.debugRocketLaunch(0f, 0f)   // no-op for the monkey; just use a fall
         v.debugQuiet = false
         // nothing moving: a line goes straight out
         v.say("Hello", 1200L)
