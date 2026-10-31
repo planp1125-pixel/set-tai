@@ -1125,6 +1125,20 @@ class MonkeyView(
     }
 
     /** One ring button: icon, label, greyed. */
+    /** v10.13.1: Access items show their live permission state (re-checked every time the popup opens). */
+    fun accessGranted(id: String): Boolean? = when (id) {
+        "missed" -> com.combo.monkeycompanion.powers.SettaiNotificationListener.isAccessGranted(context)
+        "talk" -> context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        "screen" -> runCatching { com.combo.monkeycompanion.agent.SettaiAccessibilityService.enabled(context) }.getOrDefault(false)
+        "chat" -> true
+        else -> null
+    }
+
+    private fun accessLabel(id: String, lb: String): String {
+        if (ringKind != RingKind.GROUP || ringGroup != "g_access") return lb
+        return when (accessGranted(id)) { true -> "$lb ✅"; false -> "$lb 🔑"; null -> lb }
+    }
+
     private fun ringEntry(id: String): Triple<String, String, Boolean> {
         // v10.9: no power cooldown for the user: powers are always ready (no greyed buttons, no countdown)
         val cool = LongPressMenu.PowerState.Ready
@@ -1134,7 +1148,7 @@ class MonkeyView(
             val pw = Superpowers.byId(pid)
             return Triple(LongPressMenu.powerIcon(pid), LongPressMenu.powerLabel(LongPressMenu.shortName(pid, pw?.title ?: pid), cool), cooling)
         }
-        LongPressMenu.groupedEntry(id)?.let { (ic, lb) -> return Triple(ic, lb, false) }
+        LongPressMenu.groupedEntry(id)?.let { (ic, lb) -> return Triple(ic, accessLabel(id, lb), false) }
         return when (id) {
             LongPressMenu.MORE -> Triple("⋯", "More", false)
             LongPressMenu.BACK -> Triple("↩️", "Back", false)
@@ -1206,7 +1220,9 @@ class MonkeyView(
             else -> when (id) {
                 "chat" -> openBubbleChat()
                 "talk" -> if (com.combo.monkeycompanion.agent.Voice.enabled(context)) startListen(hold = false)
-                    else say("Switch on the Voice power (Settings › Phone powers) and I'll listen 🎤", 4000L)
+                    else if (accessGranted("talk") == true) {   // v10.13.1: mic already allowed → just switch Voice on, no re-prompt
+                        com.combo.monkeycompanion.ai.AppSettings(context).setGroupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE, true); startListen(hold = false)
+                    } else say("Switch on the Voice power (Settings › Phone powers) and I'll listen 🎤", 4000L)
                 "missed" -> openNotifSummaryCard(useDemoIfEmpty = false)
                 "screen" -> ChatHub.quick(Q.SCREEN)
                 "powers" -> showRing(RingKind.POWERS, 0)
