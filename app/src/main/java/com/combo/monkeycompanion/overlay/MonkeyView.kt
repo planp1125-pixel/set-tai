@@ -740,8 +740,31 @@ class MonkeyView(
     /** v4: the AI reply on screen (for ⚑ Report); null for canned lines. */
     private var aiReply: String? = null
 
+    // ---- v10.14 speech only when settled: lines (and chat replies) that arrive mid-flight wait for the landing ----
+    private class HeldLine(val text: String, val ms: Long, val at: Float)
+    private val heldLines = ArrayDeque<HeldLine>()
+    private var heldReply: String? = null; private var heldReplyDone = false
+    private var settledFor = 0f
+    /** Moving right now (flung, flying, falling, dragged, dashing, a moving power): bubbles wait. */
+    private val movingNow: Boolean get() = rocketFlyOn || falling || dragging || arc != null || controller.state == MonkeyState.FALLING ||
+        controller.state == MonkeyState.DRAGGED || (powerOn && flight.active && flight.phase != com.combo.monkeycompanion.brain.PowerPhase.POSE)
+    val debugHeldLines get() = heldLines.size
+    val debugHeldReply get() = heldReply
+    private fun stepHeldSpeech(dt: Float) {
+        if (movingNow) { settledFor = 0f; return }
+        settledFor += dt
+        if (settledFor < SETTLE_SECS) return
+        heldReply?.let { r -> heldReply = null; onReply(r, heldReplyDone); return }
+        while (heldLines.isNotEmpty() && t - heldLines.first().at > HELD_STALE_SECS) heldLines.removeFirst()   // stale: drop
+        heldLines.removeFirstOrNull()?.let { h -> heldLines.clear(); say(h.text, h.ms) }
+    }
+
     override fun say(text: String, durationMs: Long) {
         if (debugQuiet) return
+        if (movingNow || (settledFor < SETTLE_SECS && (heldLines.isNotEmpty() || heldReply != null))) {
+            if (heldLines.size >= 4) heldLines.removeFirst()
+            heldLines.addLast(HeldLine(text, durationMs, t)); return
+        }
         aiReply = null
         if (hiddenTab || controller.state == MonkeyState.HIDDEN) return  // nobody to see the bubble
         if (pendingShown || thinkingBubble) return  // don't cover a question or the thinking cloud
@@ -876,6 +899,7 @@ class MonkeyView(
 
     override fun onReply(text: String, done: Boolean) {
         if (hiddenTab) return
+        if (movingNow && text.isNotBlank()) { heldReply = text; heldReplyDone = done; settledFor = 0f; return }   // v10.14: show it once settled
         if (text.isBlank() && !done) return
         if (replyStartT < 0f) replyStartT = t
         thinkingBubble = false
@@ -2523,6 +2547,7 @@ class MonkeyView(
             else if (bubbleAge > bubbleLife + FADE) { bubbleOn = false; pendingShown = false; quitAsk = false }
         }
         stepBeats()
+        stepHeldSpeech(dt)
         if (thinkingBubble) {
             thinkDots += dt
             if (thinkDots > 0.35f) {
@@ -3733,6 +3758,7 @@ class MonkeyView(
     // ---------------- v10.9 Rocket Girl's swipe launch (brain/RocketFlight) ----------------
     private val rocketFly = com.combo.monkeycompanion.brain.RocketFlight(System.nanoTime() xor 0x5EED_0A9L)
     private var rocketFlyOn = false
+    private var rocketFaceHold = 0f
     val debugRocketFly get() = rocketFly
     val debugRocketFlyOn get() = rocketFlyOn
 
@@ -3756,13 +3782,17 @@ class MonkeyView(
     private fun stepRocketFly(dt: Float) {
         rocketFly.step(dt)
         mx = rocketFly.x - boxW / 2f; my = rocketFly.y - boxH / 2f
-        if (abs(rocketFly.vx) > 60f * d) controller.face(if (rocketFly.vx > 0f) 1f else -1f)
+        // v10.14 no jitter: turn only on a clear, sustained sideways move (hysteresis + 0.15 s hold), never per frame
+        val wantFace = if (rocketFly.vx > 140f * d) 1f else if (rocketFly.vx < -140f * d) -1f else controller.facing
+        if (wantFace != controller.facing) { rocketFaceHold += dt; if (rocketFaceHold > 0.15f) { controller.face(wantFace); rocketFaceHold = 0f } } else rocketFaceHold = 0f
         // the rocket's nose follows the velocity: rotate the whole rider so the tilted rocket lines up with it
         val tilt = com.combo.monkeycompanion.rig.RocketGeom.TILT + ROCKET_FLY_LEAN
         val base = if (controller.facing >= 0f) tilt else 180f - tilt
-        var r = rocketFly.noseDeg - base
+        // v10.14: unwrap relative to the CURRENT tilt (straight-up flight sat on the +-180 seam and flipped -80 <-> +80 every frame)
+        var r = rocketFly.noseDeg - base - arcRot
         while (r > 180f) r -= 360f
         while (r < -180f) r += 360f
+        r += arcRot
         // (clamped so a steep dive never turns her upside down; within it the rocket's nose is along the velocity)
         val want = r.coerceIn(-80f, 80f)
         arcRot += (want - arcRot) * min(1f, dt * 14f)
@@ -6896,6 +6926,10 @@ class MonkeyView(
     }
 
     companion object {
+        /** v10.14 a held bubble waits this long after landing, and is dropped after this long (chat replies never). */
+        const val SETTLE_SECS = 0.45f
+        const val HELD_STALE_SECS = 4f
+
         /** v10.8: a press this long (but shorter than the long-press menu) is a HOLD touch. */
         const val HOLD_SEC = 0.28f
         /** Opacity of effects (= Android 12+'s max for an untouchable overlay, so the FX window and in-window trails match). */
