@@ -205,7 +205,8 @@ class SettingsActivity : Activity() {
             text("API key (stored encrypted on this phone)", 13f, color = soft), keyField, keyHint,
             text("Model", 13f, color = soft), modelField,
             urlRow,
-            button("Save & test", primary = true) { saveOnline(); runTest(onlineResult) },
+            button("📋 Pick model from my account") { saveOnline(); pickModel(auto = false) },
+            button("Save & test", primary = true) { saveOnline(); pickModel(auto = true) },
             onlineResult,
         )
     }
@@ -229,6 +230,56 @@ class SettingsActivity : Activity() {
         if (k.isNotEmpty()) { s.setApiKeyFor(pr, k); keyField.setText(""); keyField.hint = "Saved ••••${k.takeLast(4)} (type to replace)" }
         s.setModelFor(pr, modelField.text.toString())
         if (pr == Provider.CUSTOM) s.customBaseUrl = urlField.text.toString()
+    }
+
+    /** v10.13.2: the provider's live model list (only chat models; Gemini: those supporting generateContent). Blocking. */
+    private fun fetchModels(pr: Provider): List<String> {
+        val key = s.apiKeyFor(pr)
+        val b = okhttp3.Request.Builder()
+        when (pr) {
+            Provider.GEMINI -> b.url("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000").header("x-goog-api-key", key)
+            Provider.ANTHROPIC -> b.url("https://api.anthropic.com/v1/models?limit=100").header("x-api-key", key).header("anthropic-version", "2023-06-01")
+            else -> {
+                val base = (if (pr == Provider.CUSTOM) s.customBaseUrl else pr.baseUrl).trimEnd('/')
+                b.url("$base/models"); if (key.isNotBlank()) b.header("Authorization", "Bearer $key")
+            }
+        }
+        com.combo.monkeycompanion.ai.Http.client.newCall(b.build()).execute().use { r ->
+            if (!r.isSuccessful) throw com.combo.monkeycompanion.ai.Http.fail(r)
+            val body = r.body?.string().orEmpty()
+            val ids = if (pr == Provider.GEMINI) com.combo.monkeycompanion.ai.ModelList.parseGemini(body) else com.combo.monkeycompanion.ai.ModelList.parseOpenAi(body)
+            return com.combo.monkeycompanion.ai.ModelList.sortForChat(ids)
+        }
+    }
+
+    /** Fetch the list; [auto] = keep a valid model or switch to the newest flash, then test. Otherwise let the user pick. */
+    private fun pickModel(auto: Boolean) {
+        val pr = shownProvider
+        if (pr != Provider.CUSTOM && s.apiKeyFor(pr).isBlank()) { onlineResult.text = "Paste your API key first."; return }
+        onlineResult.text = "Checking which models your key can use…"; onlineResult.setTextColor(soft)
+        Thread {
+            val res = runCatching { fetchModels(pr) }
+            ui.post {
+                val ids = res.getOrNull().orEmpty()
+                if (auto) {
+                    val cur = s.modelFor(pr)
+                    if (ids.isNotEmpty() && cur !in ids) {
+                        com.combo.monkeycompanion.ai.ModelList.pickDefault(ids)?.let { s.setModelFor(pr, it); modelField.setText(it) }
+                    }
+                    runTest(onlineResult)
+                    return@post
+                }
+                if (ids.isEmpty()) {
+                    onlineResult.text = "\u274C " + (res.exceptionOrNull()?.message ?: "No chat models found for this key."); onlineResult.setTextColor(Color.rgb(0xC6, 0x28, 0x28)); return@post
+                }
+                val best = com.combo.monkeycompanion.ai.ModelList.pickDefault(ids)
+                val labels = ids.map { if (it == best) "$it  ⭐ recommended" else it }.toTypedArray()
+                android.app.AlertDialog.Builder(this).setTitle("Models for ${pr.label}")
+                    .setItems(labels) { _, i -> s.setModelFor(pr, ids[i]); modelField.setText(ids[i]); onlineResult.text = "Model set: ${ids[i]}" }
+                    .setNegativeButton("Cancel", null).show()
+                onlineResult.text = "${ids.size} models available."
+            }
+        }.start()
     }
 
     private fun runTest(out: TextView) {

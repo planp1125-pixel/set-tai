@@ -23,8 +23,8 @@ object Http {
                 ?: o.optString("error")
         }.getOrNull().orEmpty().ifBlank { body.take(200) }
         val hint = when (r.code) {
-            401, 403 -> "Key rejected (HTTP ${r.code})"
-            404 -> "Model or URL not found (HTTP 404)"
+            401, 403 -> "Key invalid or the wrong type of key (HTTP ${r.code}). Gemini keys come from aistudio.google.com (usually start with AIza)"
+            404 -> "Model name not found (HTTP 404). Tap 'Pick model from my account' and choose one from the list"
             429 -> "Rate limit or quota reached (HTTP 429)"
             else -> "HTTP ${r.code}"
         }

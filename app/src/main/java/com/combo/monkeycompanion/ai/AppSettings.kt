@@ -11,8 +11,8 @@ enum class Provider(
     val baseUrl: String,
     val keyHint: String,
 ) {
-    GEMINI("Google Gemini", "gemini-2.5-flash", "https://generativelanguage.googleapis.com/v1beta/openai", "aistudio.google.com → Get API key"),
-    OPENROUTER("OpenRouter", "google/gemini-2.5-flash", "https://openrouter.ai/api/v1", "openrouter.ai → Keys"),
+    GEMINI("Google Gemini", "gemini-3.8-flash", "https://generativelanguage.googleapis.com/v1beta/openai", "aistudio.google.com → Get API key"),
+    OPENROUTER("OpenRouter", "openrouter/auto", "https://openrouter.ai/api/v1", "openrouter.ai → Keys"),
     GROQ("Groq Cloud", "llama-3.3-70b-versatile", "https://api.groq.com/openai/v1", "console.groq.com → API Keys"),
     OPENAI("OpenAI", "gpt-5.4-mini", "https://api.openai.com/v1", "platform.openai.com → API keys"),
     XAI("xAI Grok", "grok-4.3", "https://api.x.ai/v1", "console.x.ai → API keys"),
@@ -66,7 +66,9 @@ class AppSettings(ctx: Context) {
         get() = runCatching { Provider.valueOf(p.getString("provider", "OPENAI")!!) }.getOrDefault(Provider.OPENAI)
         set(v) = p.edit().putString("provider", v.name).apply()
 
-    fun modelFor(pr: Provider): String = p.getString("model_${pr.name}", null)?.takeIf { it.isNotBlank() } ?: pr.defaultModel
+    /** v10.13.2: old built-in defaults that new accounts can't use any more (404) fall back to the current default. */
+    private val staleDefaults = setOf("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "google/gemini-2.5-flash")
+    fun modelFor(pr: Provider): String = p.getString("model_${pr.name}", null)?.takeIf { it.isNotBlank() && it !in staleDefaults } ?: pr.defaultModel
     fun setModelFor(pr: Provider, m: String) = p.edit().putString("model_${pr.name}", m.trim()).apply()
 
     var customBaseUrl: String
