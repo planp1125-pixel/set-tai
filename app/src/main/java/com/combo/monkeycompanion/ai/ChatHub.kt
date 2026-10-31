@@ -271,8 +271,10 @@ object ChatHub {
                 spoke(final)
                 main.post { busy = false; fire { it.onReply(final, true) }; fire { it.onHistoryChanged() } }
             } catch (t: Throwable) {
-                val m = t.message ?: t.javaClass.simpleName
-                val shown = if (last.isNotBlank()) "$last …" else "Oops, my brain slipped on a banana peel: $m"
+                // v10.13.1: never show raw runtime errors (token ids, stack text) to the user
+                android.util.Log.w("ChatHub", "reply failed", t)
+                val m = if (t is BrainException && t.message?.let { com.combo.monkeycompanion.brain.PromptBudget.isTooLong(it) || it.length > 160 } != true) t.message ?: "" else com.combo.monkeycompanion.brain.PromptBudget.FRIENDLY
+                val shown = if (last.isNotBlank()) "$last …" else m.ifBlank { "Oops, my brain slipped on a banana peel 🍌 Try again?" }
                 memory.updateLast(shown); memory.commit()
                 com.combo.monkeycompanion.agent.ScreenAgent.end()
                 main.post { busy = false; fire { it.onError(m) }; fire { it.onReply(shown, true) }; fire { it.onHistoryChanged() } }

@@ -28,7 +28,7 @@ class OfflineBrain(
     private val cacheDir: String,
     private val allowTools: Boolean,
 ) : Brain {
-    override val label = "On-device: " + File(modelPath).name
+    override val label = "On-device: " + (ModelStore.CATALOG.firstOrNull { it.file == File(modelPath).name }?.title?.substringBefore(" (") ?: File(modelPath).name)
     override val supportsTools get() = allowTools
 
     private var engine: Engine? = null
@@ -59,8 +59,7 @@ class OfflineBrain(
      * otherwise 4096, so the system prompt + a few turns + the reply (with its action tag) fit.
      */
     private fun contextTokens(): Int {
-        val built = Regex("ekv(\\d{3,5})").find(File(modelPath).name.lowercase())?.groupValues?.get(1)?.toIntOrNull()
-        return (built ?: 4096).coerceIn(1024, 4096)
+        return com.combo.monkeycompanion.brain.PromptBudget.contextFromName(File(modelPath).name).coerceIn(512, 4096)
     }
 
     /** Warm up in the background so the first reply is quicker. */
@@ -69,6 +68,27 @@ class OfflineBrain(
     override fun cancel() { runCatching { active?.cancelProcess() } }
 
     override fun chat(system: String, history: List<ChatMsg>, user: String, tools: ToolHost?, onText: (String) -> Unit): String {
+        // v10.13.1: fit the prompt into this model's context (e.g. 1280 for Qwen3 0.6B); retry minimal on overflow;
+        // never show the raw runtime error.
+        val B = com.combo.monkeycompanion.brain.PromptBudget
+        val ctx = contextTokens()
+        val turns = history.map { B.Turn(it.fromUser, it.text) }
+        for (minimal in listOf(false, true)) {
+            val f = B.fit(system, turns, user, ctx, minimal)
+            try {
+                return chatRaw(f.system, f.history.map { ChatMsg(it.fromUser, it.text) }, f.user, tools, onText)
+            } catch (t: Throwable) {
+                if (t is BrainException && t.message?.startsWith("Model file") == true) throw t
+                if (minimal || !B.isTooLong(t.message)) {
+                    android.util.Log.w("OfflineBrain", "chat failed", t)
+                    throw BrainException(if (B.isTooLong(t.message)) B.FRIENDLY else "My on-device brain hiccuped 🙈 Try again?")
+                }
+            }
+        }
+        throw BrainException(B.FRIENDLY)
+    }
+
+    private fun chatRaw(system: String, history: List<ChatMsg>, user: String, tools: ToolHost?, onText: (String) -> Unit): String {
         val e = engine()
         val initial = history.map { if (it.fromUser) Message.user(it.text) else Message.model(it.text) }
         val providers: List<ToolProvider> =

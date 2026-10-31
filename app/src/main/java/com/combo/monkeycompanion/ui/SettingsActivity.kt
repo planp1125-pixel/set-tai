@@ -243,10 +243,20 @@ class SettingsActivity : Activity() {
         offlineStatus = text("", 14f)
         val catGroup = RadioGroup(this)
         ModelStore.CATALOG.forEachIndexed { i, m ->
-            catGroup.addView(RadioButton(this).apply { id = 200 + i; text = m.title; textSize = 15f; setTextColor(brown); isChecked = i == 0 })
+            val inUse = File(s.offlineModelPath).name == m.file
+            if (inUse) catalogPick = i
+            catGroup.addView(RadioButton(this).apply { id = 200 + i; text = m.title + if (inUse) "  ✅ in use" else ""; textSize = 15f; setTextColor(brown); isChecked = if (s.offlineModelPath.isBlank()) i == 0 else inUse })
             catGroup.addView(text(m.blurb, 12f, color = soft).apply { setPadding(dp(32), 0, 0, dp(4)) })
         }
-        catGroup.setOnCheckedChangeListener { _, id -> catalogPick = id - 200 }
+        catGroup.setOnCheckedChangeListener { _, id ->
+            catalogPick = id - 200
+            // v10.13.1: picking a model that is already on the phone USES it (it used to only pick what to download,
+            // so the chat kept running the old model, e.g. Qwen, while Gemma looked selected).
+            val m = ModelStore.CATALOG.getOrNull(catalogPick) ?: return@setOnCheckedChangeListener
+            val f = ModelStore.installed(this).firstOrNull { it.name == m.file }
+            if (f != null && f.path != s.offlineModelPath && !ModelStore.isDownloading(this)) { s.offlineModelPath = f.path; refreshOffline(); ChatHub.preloadOffline() }
+            else if (f == null && ::offlineStatus.isInitialized) offlineStatus.text = "${m.title} isn't on this phone yet — tap Download. Still using: ${File(s.offlineModelPath).name.ifBlank { "none" }}"
+        }
         tokenField = field("Hugging Face token (only for gated models)", secret = true)
         val tk = s.hfToken
         if (tk.isNotEmpty()) tokenField.hint = "Saved ••••${tk.takeLast(4)} (type to replace)"
