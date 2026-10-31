@@ -42,7 +42,7 @@ class ChaseShow private constructor(val beats: List<BeatKind>, val ending: EndKi
     init {
         val raw = listOf(BeatKind.INTRO) + beats
         var sum = raw.sumOf { baseDur(it).toDouble() }.toFloat() + 2.8f
-        val k = if (sum * scale0 > 19.5f) 19.5f / sum else scale0
+        val k = (sum * scale0).coerceIn(MIN_LEN, MAX_LEN) / sum   // v10.13.1: tighter 12-15 s shows
         var t = 0f; var c = 0.12f; var r = 0.62f
         for (b in raw) {
             val d = baseDur(b) * k
@@ -165,7 +165,25 @@ class ChaseShow private constructor(val beats: List<BeatKind>, val ending: EndKi
     fun done(t: Float) = t >= total
 
     /** Where [role] is at show time [t] (seconds). */
+    private val other = Frame()
+    /** Where [role] is at show time [t]; keeps the two at least [MIN_SEP] apart except when they touch on purpose. */
     fun frame(role: Role, t: Float, out: Frame): Frame {
+        rawFrame(role, t, out)
+        val s = segmentAt(t.coerceAtMost(total - 0.001f))
+        // Only the (small, quick) mouse steps aside, faded in/out at beat edges so nothing ever jumps.
+        if (role != Role.RAT || s.kind == BeatKind.TAIL_BITE || s.end == EndKind.FRIENDS || !out.visible) return out
+        val w = (minOf(t - s.t0, s.t0 + s.dur - t) / 0.35f).coerceIn(0f, 1f)
+        if (w <= 0f) return out
+        rawFrame(Role.CAT, t, other)
+        if (!other.visible) return out
+        val wl = w * (1f - abs(out.lift - other.lift) / 0.15f).coerceIn(0f, 1f)
+        // keep the side the mouse had when the beat began; continuous (the cat "shoves" him ahead, never a jump)
+        val dir = if (s.r0 >= s.c0) 1f else -1f
+        out.x += dir * wl * kotlin.math.max(0f, MIN_SEP - dir * (out.x - other.x))
+        return out
+    }
+
+    private fun rawFrame(role: Role, t: Float, out: Frame): Frame {
         val s = segmentAt(t.coerceAtMost(total - 0.001f))
         val u = ((t - s.t0) / s.dur).coerceIn(0f, 1f)
         val cat = role == Role.CAT
@@ -257,9 +275,10 @@ class ChaseShow private constructor(val beats: List<BeatKind>, val ending: EndKi
             BeatKind.TIPTOE -> {
                 val f = s.side
                 if (cat) {
-                    if (u < 0.6f) out.set(lerp(s.c0, s.c1, seg(u, 0f, 0.6f)), 0f, W, f, 1.06f, 0.88f + 0.04f * sin(t * 8f))
-                    else if (u < 0.7f) out.set(s.c1, 0f, MonkeyState.STARTLED, f, 0.9f, 1.15f)
-                    else out.set(lerp(s.c1, s.c1 + 0.15f * f, seg(u, 0.7f, 1f)), 0f, D, f, runBob(t), 1f / runBob(t))
+                    val mid = s.c0 + (s.c1 - s.c0) * 0.6f
+                    if (u < 0.6f) out.set(lerp(s.c0, mid, seg(u, 0f, 0.6f)), 0f, W, f, 1.06f, 0.88f + 0.04f * sin(t * 8f))
+                    else if (u < 0.7f) out.set(mid, 0f, MonkeyState.STARTLED, f, 0.9f, 1.15f)
+                    else out.set(lerp(mid, s.c1, seg(u, 0.7f, 1f)), 0f, D, f, runBob(t), 1f / runBob(t))
                 } else {
                     if (u < 0.6f) out.set(s.r0, 0f, MonkeyState.IDLE, f)
                     else if (u < 0.7f) out.set(s.r0, 0.03f, MonkeyState.STARTLED, -f, 0.9f, 1.2f)
@@ -283,6 +302,9 @@ class ChaseShow private constructor(val beats: List<BeatKind>, val ending: EndKi
     }
 
     companion object {
+        const val MIN_LEN = 12.5f
+        const val MAX_LEN = 14.5f
+        const val MIN_SEP = 0.12f
         val middleBeats = BeatKind.entries.filter { it != BeatKind.INTRO }
 
         /** A new show; never the same signature or the same first beat as [last]. */

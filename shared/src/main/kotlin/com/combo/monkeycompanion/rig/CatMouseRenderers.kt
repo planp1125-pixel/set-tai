@@ -80,6 +80,13 @@ class BillaRenderer : MonkeyRenderer() {
     }
 
     override fun drawTail(c: Canvas, rig: MonkeyRig) {
+        // v10.13.1 fix: tail points are hip-local — without this the tail was drawn at the window's top-left corner
+        c.save(); c.concat(rig.hips)
+        drawTailLocal(c, rig)
+        c.restore()
+    }
+
+    private fun drawTailLocal(c: Canvas, rig: MonkeyRig) {
         tmp.reset()
         tmp.moveTo(rig.tailPts[0], rig.tailPts[1])
         for (i in 1..TAIL_SEGS) {
@@ -290,6 +297,13 @@ class ChittuRenderer : MonkeyRenderer() {
     }
 
     override fun drawTail(c: Canvas, rig: MonkeyRig) {
+        // v10.13.1 fix: tail points are hip-local — without this the tail was drawn at the window's top-left corner
+        c.save(); c.concat(rig.hips)
+        drawTailLocal(c, rig)
+        c.restore()
+    }
+
+    private fun drawTailLocal(c: Canvas, rig: MonkeyRig) {
         tmp.reset()
         tmp.moveTo(rig.tailPts[0], rig.tailPts[1])
         for (i in 1..TAIL_SEGS) {

@@ -1801,19 +1801,11 @@ class MonkeyView(
         if (showRef !== sh) { showRef = sh; showLineIdx = 0; showLastState = null }
         val t = ChaseShowHub.t()
         showT = t
-        if (sh.done(t)) { ChaseShowHub.finish(context); endShowLocal(); return false }
-        showOn = true
-        sh.frame(role, t, showFrame)
-        val sw = sw(); val shH = (host?.screenHeight() ?: height).toFloat()
-        mx = showFrame.x * (sw - boxW)
-        my = ground() - showFrame.lift * shH
+        if (ChaseShowHub.done(t)) { ChaseShowHub.finish(context); endShowLocal(); return false }
+        // v10.13.1: the chase plays on one full-screen stage window; this window stays still and draws nothing
+        // (the old per-frame window moves + state restarts were what made Billa shake).
+        if (!showOn) { showOn = true; if (!ShowStageView.open(context, effectiveRigScale())) { ChaseShowHub.finish(context); showOn = false; return false } }
         vy = 0f
-        if (showFrame.state != showLastState) { showLastState = showFrame.state; controller.play(showFrame.state, 4f) }
-        while (showLineIdx < sh.lines.size && sh.lines[showLineIdx].at <= t) {
-            val l = sh.lines[showLineIdx++]
-            if (l.role == role) say(l.text, (l.dur * 1000).toLong().coerceAtLeast(1000L))
-        }
-        updateGeometry()
         return true
     }
 
@@ -2489,9 +2481,15 @@ class MonkeyView(
         }
 
         syncCharacter()
+        // v10.13: attention — while the user touches me, or my popup/chat is open, I stop and stay put.
+        val att = attending() && !falling
+        if (att && !attWas && (controller.state == MonkeyState.WALK || controller.state == MonkeyState.DASH)) controller.idleNow(ATTEND_GRACE + 1f)
+        attWas = att
+        val keepX = mx; val keepY = my
         controller.update(dt)
+        if (att) { mx = keepX; my = keepY }
         if (stepExit()) return
-        if (!stepPower(dt)) stepPhysics(dt)
+        if (!stepPower(dt) && !att) stepPhysics(dt)
         stepHide(dt)
         stepEntrance(dt)
         stepHints(dt)
@@ -4792,9 +4790,14 @@ class MonkeyView(
         if (ln && isBehindWidget) {
             drawWidgetGripPaws(canvas)
         } else if (showOn) {
+            // v10.13.1: drawn by ShowStageView
+        } else if (false) {
             if (showFrame.visible) {
                 val px = ox + boxW / 2f; val py = oy + boxH - groundPad
-                canvas.save(); canvas.rotate(showFrame.rot, px, py - boxH * 0.3f); canvas.scale(showFrame.sx, showFrame.sy, px, py)
+                // v10.13.1: gentler squash (readable, never pancaked) and a smaller cartoon mouse next to the cat
+                val small = if (showRole() == com.combo.monkeycompanion.engine.show.Role.RAT) SHOW_RAT_SCALE else 1f
+                canvas.save(); canvas.rotate(showFrame.rot, px, py - boxH * 0.3f)
+                canvas.scale(showFrame.sx.coerceIn(0.8f, 1.25f) * small, showFrame.sy.coerceIn(0.8f, 1.25f) * small, px, py)
                 drawMonkey(canvas); canvas.restore()
             }
             drawShowFx(canvas)
@@ -5123,7 +5126,7 @@ class MonkeyView(
             val fireX = if (neighbourOverlayVisible()) fx + (if (putRight) 1 else -1) * boxW * 0.34f else fx + 34f * rigScale
             com.combo.monkeycompanion.rig.HeartFx.drawCampfire(canvas, fireX, fy, rigScale, t)
         }
-        if (forcedCharacterId == null) {
+        if (forcedCharacterId == null && SHOW_UTILITY_PILL) {
             com.combo.monkeycompanion.agent.DailyUtilityEngine.drawOverlayPill(
                 canvas,
                 fx,
@@ -5730,6 +5733,10 @@ class MonkeyView(
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> fingerDown = true
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { fingerDown = false; attendUntil = t + ATTEND_GRACE }
+        }
         if (exiting) return true   // leaving: hands off
         if (powerOn && !wp) {
             // flying: the (small, opaque) window ignores touches until landing, except v10.9's double-tap = the next power
@@ -6100,6 +6107,12 @@ class MonkeyView(
     /** v10.11: finger target radius (21 dp = a 42 dp touch target, bigger than the 30 dp button). */
     private val chatFabTouchR get() = chatFabR + 6f * d
     private var chatFabOn = false
+    private var fingerDown = false
+    private var attendUntil = 0f
+    private var attWas = false
+    /** v10.13: the user is interacting with me (finger down, short grace after a tap, popup / chat / chips open). */
+    fun attending(): Boolean = host != null && !wp && !dragging && !showOn &&
+        (fingerDown || t < attendUntil || (bubbleOn && (arcOn || typing || bubbleChips.isNotEmpty())))
     private var fabLX = 0f; private var fabLY = 0f
     private var fabSitAt = -1L
     private var fabQuiet = false
@@ -6816,6 +6829,10 @@ class MonkeyView(
 
     /** Tests / contact sheets: no speech bubbles. */
     var debugQuiet = false
+    private val ATTEND_GRACE = 2.5f
+    /** v10.13: the delivery/utility test pill is hidden from the UI (code kept). It sat on top of the lead character. */
+    private val SHOW_UTILITY_PILL = false
+    private val SHOW_RAT_SCALE = 0.72f
     val debugState get() = controller.state
     val debugLandStyle get() = landStyle
     val debugArc get() = arc

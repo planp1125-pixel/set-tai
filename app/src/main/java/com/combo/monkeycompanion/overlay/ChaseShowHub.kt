@@ -11,7 +11,12 @@ object ChaseShowHub {
     private val rnd = Random(System.nanoTime())
     @Volatile private var cur: ChaseShow? = null
     /** The running show (null once it is over, even if no window finished it). */
-    val show: ChaseShow? get() { val s = cur ?: return null; if (t() > s.total + 3f) { cur = null; guestSet = emptySet() }; return cur }
+    val show: ChaseShow? get() { cur ?: return null; if (t() > total() + 3f) { cur = null; curRun = null; guestSet = emptySet() }; return cur }
+    /** v10.13.1: the full-screen chase actually played (route + ending + lines). */
+    @Volatile private var curRun: com.combo.monkeycompanion.engine.show.ChaseRun? = null
+    val run get() = if (show == null) null else curRun
+    fun total() = curRun?.total ?: cur?.total ?: 0f
+    fun done(t: Float = t()) = t >= total()
     private var startMs = 0L
     private var last: ChaseShow? = null
     /** Characters spawned only for the show (removed again afterwards). */
@@ -26,16 +31,20 @@ object ChaseShowHub {
     fun start(ctx: Context?, onScreen: List<String>): ChaseShow {
         val s = ChaseShow.random(rnd, last)
         last = s; cur = s
-        guestSet = setOf("billa", "chittu") - onScreen.toSet()
-        startMs = SystemClock.uptimeMillis() + if (guestSet.isEmpty()) 150L else 700L
-        if (guestSet.isNotEmpty() && ctx != null) runCatching { MonkeyOverlayService.syncCrew(ctx) }
+        val dm = ctx?.resources?.displayMetrics
+        val aspect = if (dm != null && dm.widthPixels > 0) dm.heightPixels.toFloat() / dm.widthPixels else 2.1f
+        curRun = com.combo.monkeycompanion.engine.show.ChaseRun.random(rnd, s.ending, aspect.coerceIn(1.2f, 2.6f))
+        // v10.13.1: both characters are drawn on one stage window, so no guest companion window is spawned
+        guestSet = emptySet()
+        startMs = SystemClock.uptimeMillis() + 150L
         for (w in wakers.values.toList()) runCatching { w() }
         return s
     }
 
     fun finish(ctx: Context?) {
         if (cur == null) return
-        cur = null
+        cur = null; curRun = null
+        ShowStageView.close(ctx)
         val had = guestSet.isNotEmpty(); guestSet = emptySet()
         if (had && ctx != null) runCatching { MonkeyOverlayService.syncCrew(ctx) }
     }
