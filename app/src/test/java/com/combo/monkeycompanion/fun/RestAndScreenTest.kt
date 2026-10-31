@@ -67,7 +67,7 @@ class RestAndScreenTest {
         assertFalse("not hidden before the rest timeout", v.debugHidden)
         var waited = 28
         while (!v.debugHidden && waited < 150) { looper.idleFor(Duration.ofSeconds(1)); waited++ }
-        assertTrue("hid after rest timeout (waited $waited s)", v.debugHidden)
+        assertTrue("hid after rest timeout (waited $waited s) ${v.debugRestBlock}", v.debugHidden)
         assertTrue(v.debugResting)
         v.debugFrames(5)
         assertFalse("loop stopped while resting", v.debugLoopRunning)

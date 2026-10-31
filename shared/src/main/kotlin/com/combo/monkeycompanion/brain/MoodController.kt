@@ -222,7 +222,10 @@ class MoodController(private val speech: Speech, private val body: MonkeyBody?) 
                 if (stateTime >= stateDuration) toIdle()
             }
             MonkeyState.DRAGGED, MonkeyState.FALLING, MonkeyState.SLEEP,
-            MonkeyState.ENTRANCE, MonkeyState.PEEK, MonkeyState.HIDDEN, MonkeyState.DASH -> Unit
+            MonkeyState.ENTRANCE, MonkeyState.HIDDEN, MonkeyState.DASH -> Unit
+            // v10.17: a timed peek (look-around, notification peek) ends by itself; before, it could stay stuck in PEEK
+            // forever, which blocked auto-rest (the old "flaky" RestAndScreenTest) and froze the character
+            MonkeyState.PEEK -> if (stateDuration > 0f && stateTime >= stateDuration) toIdle()
             MonkeyState.WAKE -> {
                 if (stateTime in 3.4f..4.7f) {
                     spinFlip -= dt

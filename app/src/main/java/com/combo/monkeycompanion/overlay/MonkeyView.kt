@@ -7031,6 +7031,7 @@ class MonkeyView(
     fun debugBellySpray() = startTrunkSpray()
     val debugSpraying get() = sprayT >= 0f
     val debugHidden get() = hiddenTab
+    val debugRestBlock get() = "drag=$dragging track=$tracking fall=$falling tween=$tweenT hide=$hideAnim ent=$entKind typing=$typing pend=$pendingShown think=$thinkingBubble busy=${ChatHub.busy} convo=$convoActive hubPend=${ChatHub.pending} st=${controller.state} power=$powerOn exiting=$exiting quit=$quitAsk restGo=$restGoIn nap=$restNap asleep=${controller.isAsleep}"
     val debugResting get() = resting
     val debugLoopRunning get() = running
     fun debugTabPeek() { tabPeekT = 0f; start() }
