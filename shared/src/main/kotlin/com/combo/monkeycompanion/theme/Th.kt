@@ -23,7 +23,7 @@ object Th {
 
     fun rgb(r: Int, g: Int, b: Int): Int = map(0xFF, r, g, b)
     fun argb(a: Int, r: Int, g: Int, b: Int): Int = map(a, r, g, b)
-    fun parse(s: String): Int { val c = Color.parseColor(s); return map(c ushr 24, (c shr 16) and 0xFF, (c shr 8) and 0xFF, c and 0xFF) }
+    fun parse(s: String): Int { val h = s.removePrefix("#"); val c = (if (h.length == 6) 0xFF000000L or h.toLong(16) else h.toLong(16)).toInt(); return map(c ushr 24, (c shr 16) and 0xFF, (c shr 8) and 0xFF, c and 0xFF) }
 
     /** The themed colour for an old (a, r, g, b). Pure function. */
     fun map(a: Int, r: Int, g: Int, b: Int): Int {
