@@ -139,9 +139,9 @@ class DevilRenderer : HumanRenderer() {
         // horns first (behind the head outline), slightly curved, pointing up and out
         for (s in intArrayOf(-1, 1)) {
             tmp.reset()
-            tmp.moveTo(s * 15f, -63f)
-            tmp.cubicTo(s * 16f, -71f, s * 20f, -77f, s * 28f, -80f)   // inner edge sweeps up and out to a soft point
-            tmp.cubicTo(s * 25f, -74f, s * 25f, -67f, s * 26f, -60f)   // outer edge back down: a narrow little horn
+            tmp.moveTo(s * 28f, -59f)
+            tmp.cubicTo(s * 31f, -68f, s * 27f, -77f, s * 18f, -80f)   // outer edge rises and the tip hooks INWARD (like the icon)
+            tmp.cubicTo(s * 20f, -75f, s * 17f, -69f, s * 15f, -64f)   // inner edge back down: a small horn
             tmp.close()
             fill.shader = null; fill.color = WHITE; c.drawPath(tmp, fill); c.drawPath(tmp, soft)
         }
@@ -286,7 +286,7 @@ class DevilRenderer : HumanRenderer() {
         c.drawPath(tmp, fill)
         c.restore()
         c.save(); c.concat(rig.head)
-        for (s in intArrayOf(-1, 1)) { tmp.reset(); tmp.moveTo(s * 15f, -63f); tmp.cubicTo(s * 16f, -71f, s * 20f, -77f, s * 28f, -80f); tmp.cubicTo(s * 25f, -74f, s * 25f, -67f, s * 26f, -60f); tmp.close(); c.drawPath(tmp, fill) }
+        for (s in intArrayOf(-1, 1)) { tmp.reset(); tmp.moveTo(s * 28f, -59f); tmp.cubicTo(s * 31f, -68f, s * 27f, -77f, s * 18f, -80f); tmp.cubicTo(s * 20f, -75f, s * 17f, -69f, s * 15f, -64f); tmp.close(); c.drawPath(tmp, fill) }
         oval.set(-38f, -68f, 38f, 0f); c.drawRoundRect(oval, 34f, 32f, fill)
         fill.color = Color.WHITE; fill.alpha = alpha
         val shut = com.combo.monkeycompanion.character.DevilBlink.closed(t)
