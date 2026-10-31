@@ -727,7 +727,7 @@ class SettingsActivity : Activity() {
             tos.indexOf(s.chatTimeoutSecs).let { if (it < 0) 2 else it }) { s.chatTimeoutSecs = tos[it] }
         val menuBtn = button("Long-press menu: choose & order items…") {
             startActivity(android.content.Intent(this, MenuSettingsActivity::class.java))
-        }
+        }.apply { visibility = android.view.View.GONE }   // v10.13.1: the popup is 8 fixed groups now; arranging items no longer applies
         val moments = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             for (m in com.combo.monkeycompanion.brain.PhoneMoments.Moment.entries) addView(CheckBox(this@SettingsActivity).apply {
