@@ -871,7 +871,7 @@ class MonkeyView(
         thinkingBubble = true
         replyStartT = -1f
         controller.startThinking()
-        showBubble("Hmm", 600f, talk = false, reply = false)
+        showBubble("Hmm… thinking", 600f, talk = false, reply = false, chips = listOf(com.combo.monkeycompanion.agent.QuickChip("menu", "✕ Stop", "think_stop")))
     }
 
     override fun onReply(text: String, done: Boolean) {
@@ -1111,7 +1111,9 @@ class MonkeyView(
     /** Long-press: the main ring pops up (haptic tick); Settai gestures at it. Stays ~8 s or until a tap. */
     private fun openMenu() {
         if (onbGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.HOLD)) { ui.postDelayed({ openMenu() }, 1600L); return }
-        if (pendingShown || thinkingBubble || typing) return
+        // v10.13.1: the popup works while a reply is loading (the thinking cloud steps aside; the reply still arrives)
+        if (pendingShown || typing) return
+        if (thinkingBubble) { thinkingBubble = false; bubbleOn = false }
         if (listenTap) cancelListen(null)
         pages.clear(); beats.clear(); aiReply = null
         showRing(RingKind.MAIN, 0)
@@ -1200,6 +1202,7 @@ class MonkeyView(
     private fun onMenuItem(id: String) {
         ui.removeCallbacks(ringTick)
         if (id == "onb_skip") { endOnboarding(); return }
+        if (id == "think_stop") { ChatHub.cancel(); thinkingBubble = false; say("Okay, stopped 🤐", 1500L); return }
         run { val u = prefs.getStringSet("usedItems", emptySet()) ?: emptySet(); if (id !in u) prefs.edit().putStringSet("usedItems", u + id).apply() }
         val Q = com.combo.monkeycompanion.agent.QuickChip
         when {
@@ -1343,7 +1346,8 @@ class MonkeyView(
     fun openBubbleChat() {
         if (replyField == null) { host?.openChat() ?: onChatRequest?.invoke(); return }
         if (hiddenTab) unhide()
-        if (thinkingBubble || pendingShown) return
+        if (pendingShown) return
+        thinkingBubble = false
         pages.clear()
         lastLine = null
         touchConvo()
@@ -4854,6 +4858,9 @@ class MonkeyView(
     private var promptNotifsAfterUnhide = false
     var debugTabBadgeCount = 0; private set
     val debugBubbleChipIds: List<String> get() = bubbleChips.map { it.id }
+    fun debugOpenMenu() = openMenu()
+    val debugThinking get() = thinkingBubble
+    val debugAttending get() = attendingNow()
 
     /** Prompts the user with a "[Yes, show me 📬] [Later]" bubble when unhiding with unread notifications. */
     fun promptUnreadNotifications(): Boolean {

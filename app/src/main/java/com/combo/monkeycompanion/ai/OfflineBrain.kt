@@ -122,7 +122,9 @@ class OfflineBrain(
     }
 
     override fun close() {
-        synchronized(lock) { runCatching { engine?.close() }; engine = null }
+        // v10.13.1: never block the caller (often the UI thread) while a reply is still being generated
+        cancel()
+        Thread({ synchronized(lock) { runCatching { engine?.close() }; engine = null } }, "offline-brain-close").start()
     }
 
     /** Bridges our ToolSpec to LiteRT-LM's OpenAPI-style tool interface. */
