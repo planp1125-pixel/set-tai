@@ -85,7 +85,7 @@ object MomentFx {
         val ex = fx + (tx - fx) * grow; val ey = fy + (ty - fy) * grow
         val al = (255 * a).toInt()
         when (style) {
-            ChargeStyle.ZAP -> {
+            ChargeStyle.ZAP, ChargeStyle.SHOCK -> {
                 path.reset(); path.moveTo(fx, fy)
                 val n = 9; val len = hypot(ex - fx, ey - fy); val nx = -(ey - fy) / (len + 0.01f); val ny = (ex - fx) / (len + 0.01f)
                 for (i in 1 until n) {
@@ -132,7 +132,7 @@ object MomentFx {
         if (a <= 0f) return
         val ex = fx + (tx - fx) * grow; val ey = fy + (ty - fy) * grow
         val (cr, cg, cb) = when (style) {
-            ChargeStyle.ZAP -> Triple(0xFF, 0xE0, 0x30)
+            ChargeStyle.ZAP, ChargeStyle.SHOCK -> Triple(0xFF, 0xE0, 0x30)
             ChargeStyle.HEAT_BEAM -> Triple(0xFF, 0x7A, 0x20)
             ChargeStyle.CABLE -> Triple(0x50, 0xC8, 0xFF)
             ChargeStyle.GIANT_PLUG -> Triple(0xC0, 0x70, 0xFF)
