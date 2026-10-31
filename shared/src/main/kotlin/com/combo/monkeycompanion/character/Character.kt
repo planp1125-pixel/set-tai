@@ -154,7 +154,7 @@ abstract class Character(val id: String) {
 object CharacterRegistry {
     val all: List<Character> by lazy { listOf(KuttiSatan, MonkeyCharacter, Superboy, ArmourAnna, MaskMan, Billa, Chittu, Gajju, RocketGirl, HollowMan, SurferGirl) }
     val allWithCustom: List<Character> get() = all + CustomCompanionRegistry.allCharacters()
-    @Volatile var current: Character = KuttiSatan; private set   // v10.16: the little devil is the default main character
+    @Volatile var current: Character = MonkeyCharacter; private set   // engine fallback; the app picks AppSettings.characterId (v10.16: Kutti Satan on new installs)
     private val wears = HashMap<String, Wear>()
 
     fun byId(id: String?): Character? {

@@ -26,7 +26,7 @@ class AppSettings(ctx: Context) {
     private val p: SharedPreferences = ctx.getSharedPreferences("monkey_settings", Context.MODE_PRIVATE)
     /** v10.16: true on a fresh install (never updated from an older version). */
     private val freshInstall: Boolean by lazy {
-        runCatching { val pi = ctx.packageManager.getPackageInfo(ctx.packageName, 0); pi.firstInstallTime == pi.lastUpdateTime }.getOrDefault(true)
+        runCatching { val pi = ctx.packageManager.getPackageInfo(ctx.packageName, 0); pi.firstInstallTime > 0L && pi.firstInstallTime == pi.lastUpdateTime }.getOrDefault(false)
     }
 
     /**
@@ -190,7 +190,7 @@ class AppSettings(ctx: Context) {
      * the monkey it has always shown (it already has other settings saved); the choice is saved once so it never flips.
      */
     private fun defaultCharacter(): String {
-        val id = if (freshInstall || p.all.isEmpty()) "devil" else "monkey"
+        val id = if (freshInstall) "devil" else "monkey"
         p.edit().putString("character", id).apply()
         return id
     }
