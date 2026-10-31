@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.17 (versionCode 45)**, 31 Oct 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.17.1 (versionCode 46)**, 31 Oct 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## 1. What the app is
 Set-Tai (Settai, "mischievous" in Tamil) is a **floating overlay companion app** for Android. It is not a launcher and not a full-screen app.
@@ -28,6 +28,7 @@ Key files:
 - `shared/.../ai/BodyVoice.kt`: rate-limited spontaneous AI lines when Brain is on.
 - `app/.../ai/ChatHub.kt`, `app/.../ai/AppSettings.kt`: AI routing and all preferences (`defaultCharacter()` sets devil on detected fresh installs; `enabledPowers` per character).
 - `shared/.../character/Character.kt`: `CharacterRegistry` and `CharacterNames`. `V1016Devil.kt` is Kutti Satan; `CustomCompanion.kt` plus `app/.../ui/CompanionStudioActivity.kt` are the user-created characters, which have their own multi-select powers.
+- `app/.../theme/ThemeSkin.kt` (v10.17.1): restyles every activity's view tree after layout (hooked in `App.onActivityCreated`): grey buttons in light mode, and the System/Light/Dark mode (pref `theme_mode`, set in Settings → Appearance). Never used by the overlay.
 - `shared/.../theme/Th.kt`: red / black / white palette and the colour-mapping helpers used across the UI.
 - `shared/.../rig/*Renderer.kt`: all drawing (procedural `Canvas` only).
 
@@ -62,7 +63,7 @@ If the unit-test step times out, just re-run the job. It is usually load, not a 
 
 ## 6. Owner preferences
 - Explain things **simply**, in short, plain words.
-- Look: a **red / black / white** theme (#E0101A, #0D0D0D, white) matching the icon.
+- Look: a **red / black / white** theme (#E0101A, #0D0D0D, white) matching the icon. Buttons are soft grey, not glaring white. Dark mode is optional (System / Light / Dark).
 - **Kutti Satan is the main character** and has **all powers**: vanish & portal (main, always first), teleport hops, float a buddy, spell sparks, shadow clones, levitate, flight swoop, fireball, juggling, heat-vision (laser) eyes, spin dance and the rocket (Diwali) boost. The user picks which are on from his long-press **Powers** ring → **☑️ Choose** (`PowerChoiceActivity`), and the choice is saved.
 - **Built-in characters keep their fixed powers**, with no picker. **Created (Studio) characters** have settable powers in the Studio.
 - **Body Sense**: the AI should "feel" the body (position, motion, mood, time, battery, energy, touch, pain/comfort, needs, surroundings). Speech comes from the AI when Brain is on.
