@@ -69,7 +69,7 @@ If the unit-test step times out, just re-run the job. It is usually load, not a 
 - The icon is a red background with a white peeking devil and black oval eyes, traced from the owner's reference. Don't redesign it without asking.
 
 ## 7. Known issues and risks
-- Flaky or slow Robolectric tests. `RestAndScreenTest.autoRestHidesAndStopsTheFrameLoop` now waits in 1 s steps (bounded), but the whole suite is close to the 28 min CI limit.
+- Flaky auto-rest test, root cause found and fixed in v10.17: a timed `PEEK` state never ended in `MoodController`, so the character could stay stuck peeking forever and never rest. Timed peeks now end by themselves. The test also prints a `debugRestBlock` diagnostic if it ever fails again. The whole suite is still close to the 28 min CI limit; re-run once if it times out.
 - Float-a-buddy: the lifted partner can clip at the top edge on small windows.
 - Shadow clones can be cut off at the window edges.
 - Fresh-install detection (`firstInstallTime == lastUpdateTime`) decides whether the devil is the default. Reinstalls and restores may behave unexpectedly.

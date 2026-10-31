@@ -49,4 +49,5 @@ The devil's horns curve inward like the icon.
 - **Kutti Satan gets all powers:** his own magic plus flight, a new fireball throw, juggling, laser eyes, a spin dance and a rocket ride. Choose them from his long-press Powers ring → ☑️ Choose (saved). Double-tap = a random enabled power, vanish first.
 - **Why he used to fire Iron Man jets:** his landings came from the shared default landing list, which includes jet landings. He now has his own landings, with jets only when a rocket or flying power is on.
 - Built-in characters keep their fixed powers; Studio characters keep their own picker.
-- The flaky `RestAndScreenTest` now waits in bounded 1 s steps.
+- Fixed a real bug behind the flaky `RestAndScreenTest`: a timed peek never ended, so the character could get stuck peeking and never rest. Timed peeks now end by themselves.
+- The desktop build works with the new theme (`Th.parse` no longer uses Android's `Color.parseColor`).
