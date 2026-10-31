@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.17.2 (versionCode 47)**, 31 Oct 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.18 (versionCode 48)**, 31 Oct 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## 1. What the app is
 Set-Tai (Settai, "mischievous" in Tamil) is a **floating overlay companion app** for Android. It is not a launcher and not a full-screen app.
@@ -26,6 +26,7 @@ Key files:
 - `shared/.../brain/Landings.kt`: landing-style pools per character. Devil: floaty landings, with jets only if boost/swoop/jets are enabled.
 - `shared/.../ai/BodySense.kt`: what the AI "feels": position, state, mood, battery, time, energy, quiet time, keyboard, app, plus a fading feelings log.
 - `shared/.../ai/BodyVoice.kt`: rate-limited spontaneous AI lines when Brain is on.
+- `shared/.../ai/react/*` + `app/.../ai/ReactionHub.kt` (v10.18): the "Feel the touch" reaction engine. Every touch gets an AI-written line (instant from a prepared bank, plus fresh thoughts for big moments), with per-character anti-repeat memory saved in `files/reactions/`. Hooks are in `MonkeyView.feelTouch` / `stepReactionRefill`. Read `docs/REACTION_ENGINE.md` first.
 - `app/.../ai/ChatHub.kt`, `app/.../ai/AppSettings.kt`: AI routing and all preferences (`defaultCharacter()` sets devil on detected fresh installs; `enabledPowers` per character).
 - `shared/.../character/Character.kt`: `CharacterRegistry` and `CharacterNames`. `V1016Devil.kt` is Kutti Satan; `CustomCompanion.kt` plus `app/.../ui/CompanionStudioActivity.kt` are the user-created characters, which have their own multi-select powers.
 - `app/.../theme/ThemeSkin.kt` (v10.17.1): restyles every activity's view tree after layout (hooked in `App.onActivityCreated`): grey buttons in light mode, and the System/Light/Dark mode (pref `theme_mode`, set in Settings → Appearance). Never used by the overlay.

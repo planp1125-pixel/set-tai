@@ -39,6 +39,12 @@ class BodyVoice(val eventGap: Float = 20f, val idleMin: Float = 45f, val idleMax
         return ok
     }
 
+    /**
+     * v10.18: a touch reaction just spoke (the reaction engine has its own voice). Counts as a line for the spacing,
+     * and drops any generic in-flight line so it can't talk over the touch reaction.
+     */
+    fun note(now: Float) { lastAt = now; if (inFlight) { inFlight = false; token++ } }
+
     /** Give up on a request that is taking too long (its late answer will be dropped). */
     fun expire(now: Float) { if (inFlight && now - startedAt > timeoutSec) { inFlight = false; token++ } }
 

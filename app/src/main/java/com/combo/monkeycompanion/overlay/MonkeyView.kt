@@ -792,6 +792,8 @@ class MonkeyView(
     private fun nowSec() = android.os.SystemClock.uptimeMillis() / 1000f
     /** A scripted line would have played here: something happened. Ask the AI (rate-limited) instead. */
     private fun bodyMoment(kind: String) {
+        // v10.18: touches are voiced by the reaction engine (feelTouch); don't also ask for a generic line about them
+        if (TOUCH_EVENTS.any { kind.startsWith(it) }) return
         val now = nowSec()
         if (!bodyVoice.wantEvent(now)) return
         askBodyVoice(com.combo.monkeycompanion.ai.BodyVoice.eventText(kind), now)
@@ -800,11 +802,69 @@ class MonkeyView(
     private fun stepBodyVoice() {
         if (debugQuiet || hiddenTab || bubbleOn || pendingShown || thinkingBubble || typing) return
         if (controller.state != MonkeyState.IDLE) return
+        stepReactionRefill()   // v10.18
         val now = nowSec()
         bodyVoice.expire(now)
         if (!bodyVoice.wantIdle(now) || !aiVoiceOn()) return
         askBodyVoice(com.combo.monkeycompanion.ai.BodyVoice.IDLE_EVENT, now)
     }
+    // ---- v10.18 "Feel the touch": every touch gets an AI-written line (Brain ON only; see docs/REACTION_ENGINE.md) ----
+    private var feelLastKind: com.combo.monkeycompanion.ai.react.ReactKind? = null
+    private var feelLastAt = 0L
+    private var feelStreak = 0
+    private var friendLevelCache = 1
+    private var friendLevelAt = -1L
+    private var refillCheckAt = 0L
+
+    /** Coarse mood for the reaction bank (no Random: the frame-loop random stream stays untouched). */
+    private fun reactMoodKey(): com.combo.monkeycompanion.ai.react.MoodKey {
+        val nowE = SystemClock.elapsedRealtime()
+        if (friendLevelAt < 0L || nowE - friendLevelAt > 30_000L) {
+            friendLevelAt = nowE
+            friendLevelCache = runCatching { com.combo.monkeycompanion.v5.Friendship.level(com.combo.monkeycompanion.fun5.Fun5Store.friendship(context).xp) }.getOrDefault(1)
+        }
+        val energy = runCatching { com.combo.monkeycompanion.mind.MindHub.world.state.energy }.getOrDefault(-1f)
+        return com.combo.monkeycompanion.ai.react.MoodKey.of(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
+            controller.grumpyLevel, controller.isAsleep, energy, friendLevelCache)
+    }
+
+    /** What he was doing when touched, in plain words. */
+    private fun feelDoing(): String = when {
+        controller.isAsleep -> "sleeping"
+        powerOn -> "using a superpower"
+        rocketFlyOn || arc != null -> "flying"
+        falling -> "falling"
+        controller.state == MonkeyState.DANCE -> "dancing"
+        bubbleOn -> "talking"
+        else -> ""
+    }
+
+    /** One touch -> the reaction engine: instant line from the bank, a fresh AI thought for big moments / streaks. */
+    private fun feelTouch(kind: com.combo.monkeycompanion.ai.react.ReactKind, zone: String = "", force: Float = 0.5f, extra: String = "", doing: String? = null) {
+        if (!live || debugQuiet || !aiVoiceOn()) return
+        val nowE = SystemClock.elapsedRealtime()
+        feelStreak = if (kind == feelLastKind && nowE - feelLastAt < 3_000L) feelStreak + 1 else 1
+        feelLastKind = kind; feelLastAt = nowE
+        bodyVoice.note(nowSec())   // the touch has its own voice: no generic "something happened" line on top
+        val feel = com.combo.monkeycompanion.ai.react.TouchFeel(kind, com.combo.monkeycompanion.ai.react.TouchFeel.partWords(zone),
+            com.combo.monkeycompanion.ai.react.Strength.of(force), feelStreak, doing ?: feelDoing(), extra)
+        val id = character.id
+        com.combo.monkeycompanion.ai.ReactionHub.onTouch(context, id, feel, reactMoodKey()) { line ->
+            if (!live || character.id != id || !aiVoiceOn()) return@onTouch
+            bodyVoice.note(nowSec())
+            speak(line, com.combo.monkeycompanion.speech.Speech.defaultDuration(line).coerceIn(2000L, 4500L), Voice.AI)
+        }
+    }
+
+    /** Quiet moments: let the AI prepare reaction lines (checked every 5 s; the engine spaces real requests out). */
+    private fun stepReactionRefill() {
+        val nowE = SystemClock.elapsedRealtime()
+        if (nowE - refillCheckAt < 5_000L) return
+        refillCheckAt = nowE
+        if (!aiVoiceOn() || bodyVoice.inFlight || ChatHub.busy) return
+        com.combo.monkeycompanion.ai.ReactionHub.maybeRefill(context, character.id, reactMoodKey())
+    }
+
     private fun askBodyVoice(event: String, now: Float) {
         if (ChatHub.busy) return
         val tok = bodyVoice.begin(now)
@@ -3950,6 +4010,8 @@ class MonkeyView(
         }
         edgeThrustFailurePhase = 1
         BSN.record("I bumped into the screen edge", BSN.Feeling.OUCH)   // v10.17 small ouch
+        feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.BUMP, force = 0.8f,
+            extra = if (mx + boxW / 2f < sw() / 2f) "hit the left edge" else "hit the right edge", doing = "flying")   // v10.18
         edgeThrustFailureTimer = 0.42f
         edgeThrustMultiplier = 0.18f
         edgeCrashRot = if (mx + boxW / 2f < sw() / 2f) -22f else 22f
@@ -6129,7 +6191,13 @@ class MonkeyView(
                     if (e.rawX != lastMoveRawX || e.rawY != lastMoveRawY) gPush(e.eventTime, e.rawX, e.rawY)
                     upSwipeDown = swipeDownNow(e.eventTime, if (fresh) vx else 0f, if (fresh) vyDrag else 0f)
                     if (fresh) flingBalls(vx, vyDrag)
-                    if (fresh && hypot(vx, vyDrag) / d > 600f) com.combo.monkeycompanion.ai.BodySense.record("you flung me ${com.combo.monkeycompanion.ai.BodySense.direction(vx, vyDrag)}", com.combo.monkeycompanion.ai.BodySense.Feeling.DIZZY)
+                    if (fresh && hypot(vx, vyDrag) / d > 600f) {
+                        val dir = com.combo.monkeycompanion.ai.BodySense.direction(vx, vyDrag)
+                        com.combo.monkeycompanion.ai.BodySense.record("you flung me $dir", com.combo.monkeycompanion.ai.BodySense.Feeling.DIZZY)
+                        val spdDp = hypot(vx, vyDrag) / d
+                        feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.THROW, force = (spdDp / 2500f).coerceIn(0f, 1f),
+                            extra = "flung $dir" + if (spdDp > 1800f) " really fast" else "")   // v10.18
+                    }
                     else com.combo.monkeycompanion.ai.BodySense.record("you dragged me to a new spot")
                     dragTravel = hypot(e.rawX - downRawX, e.rawY - downRawY)
                     val fall = settleAfterDrag(if (fresh) vx else 0f, if (fresh) vyDrag else 0f)
@@ -6200,6 +6268,7 @@ class MonkeyView(
     }
 
     private fun beginDrag() {
+        val doingBefore = feelDoing()   // v10.18: what he was doing when you grabbed him
         ui.removeCallbacks(longPress)
         if (longPressed) closeMenu()   // long-press then drag: the menu goes, the drag wins
         pendingTap?.let { ui.removeCallbacks(it) }; pendingTap = null
@@ -6214,6 +6283,7 @@ class MonkeyView(
         chatBtnUntil = 0f
         if (!longPressed) performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         controller.onDragStart()
+        feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.PICKUP, doing = doingBefore)   // v10.18
     }
 
     private fun handleTap(e: MotionEvent) {
@@ -6246,6 +6316,16 @@ class MonkeyView(
         val r = Runnable {
             pendingTap = null
             if (closeMenu()) return@Runnable   // tap Settai while the menu is up: just close it
+            // v10.18 Feel the touch (Brain ON): an AI-written line for exactly this touch, before the body reacts.
+            // Many phones report pressure as a constant 1.0, so a quick jab (short press) counts more than pressure.
+            run {
+                val pr = if (pressure > 0.01f && pressure < 0.98f) pressure else 0.4f
+                val jab = when { holdSec < 0.08f -> 1f; holdSec < 0.2f -> 0.5f; else -> 0.2f }
+                val force = (0.6f * pr + 0.4f * jab).coerceIn(0f, 1f)
+                val asleep = controller.isAsleep
+                feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.classify(zone.name, force, kind == com.combo.monkeycompanion.engine.touch.TouchKind.HOLD, asleep),
+                    zone.name, force, doing = if (asleep) "sleeping" else null)
+            }
             if (controller.isAsleep && host != null && !wp) com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.WOKE)
             if (profile.bellySpray && zone == TouchZone.BELLY && host != null && !wp && !controller.isAsleep && sprayT < 0f) {
                 startTrunkSpray(); return@Runnable   // v10.2 Gajju: belly poke = water spray, then off in a huff
@@ -6284,6 +6364,7 @@ class MonkeyView(
         if ((character.id == "billa" || character.id == "chittu") && host != null && !wp) { startChaseShow(); return }
         val pw = powerShortcut.pick(com.combo.monkeycompanion.brain.PowerPrefs.enabled(character), character.signaturePower, signatureSeen()) ?: return
         markSignatureSeen()
+        feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.POWER, extra = "about to use ${pw.title}")   // v10.18
         debugLastShortcut = pw
         reactionLayer.clear()
         if (smoothAnim && profile.anim.enabled) living.anticipate(com.combo.monkeycompanion.engine.anim.Antic.CROUCH, 0f)
@@ -7069,6 +7150,8 @@ class MonkeyView(
     }
 
     companion object {
+        /** v10.18 Body Sense event texts that come from touches (voiced by the reaction engine instead). */
+        private val TOUCH_EVENTS = listOf("you poked me", "you tapped me", "you're holding me", "you flung me", "you dragged me", "I bumped into the screen edge")
         /** v10.14 a held bubble waits this long after landing, and is dropped after this long (chat replies never). */
         const val SETTLE_SECS = 0.45f
         /** v10.14 the Billa & Chittu plug-in shock length. */

@@ -532,6 +532,30 @@ object ChatHub {
         }
     }
 
+    /**
+     * v10.18 reaction engine request (same system prompt as [spontaneous]: persona + live body note).
+     * [thought] = a line to show now: body action tags fire and it may be spoken aloud.
+     * Otherwise it's a hidden bank refill: the raw text comes back, nothing fires, nothing is spoken.
+     */
+    fun reactRequest(request: String, thought: Boolean, cb: (String?) -> Unit) {
+        if (busy) return cb(null)
+        worker.execute {
+            val r = runCatching {
+                val b = brain()
+                if (!b.isReal) null
+                else {
+                    val raw = cleanReply(b.chat(Persona.systemPrompt(false, bodyNow(), compact = settings.brainType == BrainType.OFFLINE),
+                        emptyList(), request, null) {})
+                    if (thought) com.combo.monkeycompanion.powers.PowerTags.visible(ActionParser.visible(act(raw, null))).trim()
+                        .takeIf { it.isNotBlank() && it.length < 180 }
+                    else raw.takeIf { it.isNotBlank() }
+                }
+            }.getOrNull()
+            if (thought) r?.let { spoke(it) }
+            main.post { cb(r) }
+        }
+    }
+
     /** Ask a brain a quick test question (used by Settings). */
     fun test(b: Brain, cb: (Result<String>) -> Unit) {
         worker.execute {

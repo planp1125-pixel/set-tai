@@ -61,3 +61,10 @@ The devil's horns curve inward like the icon.
 - If a phone's GPU still can't run the model, the app quietly falls back to the CPU instead of failing.
 - Loading errors show their real reason instead of "hiccuped".
 - "Test on-device brain" now shows how long the reply took and whether it ran on GPU or CPU.
+
+## v10.18 (code 48)
+- **Feel the touch (Brain on):** every touch now gets words written by the AI from what the body felt: tickle, head pat, poke, tail grab, hold, pick-up, throw, wall bump, bad touch, being woken up, and the double-tap power. The words depend on mood, time, energy, friendship and how many times in a row.
+- **Instant:** in quiet moments the AI prepares a few lines in advance for each kind of touch, so the reaction appears straight away with the animation. Big moments (throws, wall bumps, a 3rd poke in a row, waking him up) also get a fresh AI line a second later, which can include a body action.
+- **Never repeats:** each character remembers his last 300 lines and rejects repeats and near-repeats; the AI is told to vary the style (jokes, drama, questions back, Tanglish, playful revenge…).
+- Works for every character and every brain. Animations and powers are unchanged, double-tap is still a power, and Brain off keeps the scripted lines.
+- How it works, with a flowchart: [docs/REACTION_ENGINE.md](docs/REACTION_ENGINE.md).
