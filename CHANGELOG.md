@@ -55,3 +55,9 @@ The devil's horns curve inward like the icon.
 ## v10.17.1 (code 46)
 - Buttons are no longer glaring white: soft light grey (#ECECEC) with a subtle border and dark text; red buttons stay red.
 - New **Dark mode**: Settings → 🌗 Appearance → Follow phone (System) / Light / Dark (saved). Dark has a near-black background (#0D0D0D), dark cards (#1A1A1A), dark grey buttons (#2A2A2A), light text and red accents. It applies to every app screen; the overlay character is never affected.
+
+## v10.17.2 (code 47)
+- **GPU for the on-device brain works now.** The app never asked Android for the phone's GPU driver (OpenCL), so "Use GPU" always failed and showed only "My on-device brain hiccuped". The manifest now requests it.
+- If a phone's GPU still can't run the model, the app quietly falls back to the CPU instead of failing.
+- Loading errors show their real reason instead of "hiccuped".
+- "Test on-device brain" now shows how long the reply took and whether it ran on GPU or CPU.

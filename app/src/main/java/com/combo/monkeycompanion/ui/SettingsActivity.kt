@@ -287,8 +287,18 @@ class SettingsActivity : Activity() {
         out.text = "Testing… (an on-device model can take 10-60 s to load the first time)"
         out.setTextColor(soft)
         val b = ChatHub.brain()
+        val t0 = android.os.SystemClock.elapsedRealtime()
         ChatHub.test(b) { r ->
-            r.onSuccess { out.text = "\u2705 ${b.label} says: $it"; out.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0x2E, 0x7D, 0x32)) }
+            r.onSuccess {
+                // v10.17.2: show where it ran and how long it took, and say so if the GPU fell back to CPU.
+                val secs = (android.os.SystemClock.elapsedRealtime() - t0) / 1000f
+                val ob = b as? com.combo.monkeycompanion.ai.OfflineBrain
+                val where = ob?.loadedOn?.let { " \u00b7 ran on $it" } ?: ""
+                val fell = if (ob != null && s.offlineUseGpu && ob.loadedOn == "CPU")
+                    "\n(GPU didn't work on this phone, so it used the CPU: ${ob.gpuError ?: "unknown reason"})" else ""
+                out.text = "\u2705 ${b.label} says: $it\n(${"%.1f".format(secs)} s$where)$fell"
+                out.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0x2E, 0x7D, 0x32))
+            }
             r.onFailure { out.text = "\u274C ${it.message}"; out.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xC6, 0x28, 0x28)) }
         }
     }

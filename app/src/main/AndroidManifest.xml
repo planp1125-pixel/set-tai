@@ -63,6 +63,12 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:supportsRtl="true">
 
+        <!-- v10.17.2: the on-device brain's GPU backend (LiteRT-LM) needs the phone's OpenCL driver.
+             Android 12+ hides vendor libraries unless the app asks for them here. Not required:
+             phones without them still install and fall back to CPU. -->
+        <uses-native-library android:name="libvndksupport.so" android:required="false" />
+        <uses-native-library android:name="libOpenCL.so" android:required="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
