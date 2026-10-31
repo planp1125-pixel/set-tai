@@ -31,7 +31,7 @@ object Population {
         }
     }
 
-    val allIds = listOf("monkey", "armour", "superboy", "mask", "billa", "chittu", "gajju", "rocketgirl")
+    val allIds = listOf("monkey", "armour", "superboy", "mask", "billa", "chittu", "gajju", "rocketgirl", "hollowman", "surfer")
 
     fun displayName(id: String): String = when (id) {
         "superboy" -> "Superboy"
@@ -41,6 +41,8 @@ object Population {
         "chittu" -> "Chittu"
         "gajju" -> "Gajju"
         "rocketgirl" -> "Rocket Girl"
+        "hollowman" -> "Hollow Man"
+        "surfer" -> "Surfing Girl"
         "monkey" -> "Settai"
         else -> com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(id)?.name ?: "Settai"
     }

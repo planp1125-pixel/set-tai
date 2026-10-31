@@ -130,7 +130,7 @@ class AnimEngine {
         var sy = SquashStretch.preserveY(p.squashX, p.squashY, tn.squashMax, tn.stretchMax)
         sy *= 1f + land
         if (airborne) sy *= SquashStretch.motionY(vx, vy, SquashStretch.velocityStretch(speed, tn.velocityStretch.coerceAtMost(0.12f)))
-        sy = sy.coerceIn(tn.squashMax, tn.stretchMax)
+        sy = sy.coerceIn(maxOf(tn.squashMax, SQ_MIN), minOf(tn.stretchMax, SQ_MAX))   // v10.14: never rubbery (0.85..1.2)
         squashScaleY = sy; squashScaleX = 1f / sy
         squashPivot = if (airborne) PIVOT_CENTRE else 0f
         p.squashX = squashScaleX; p.squashY = squashScaleY
@@ -150,5 +150,8 @@ class AnimEngine {
         const val MOTION_SLOTS = 17
         /** About half the 165-unit rig height. */
         const val PIVOT_CENTRE = 80f
+        /** v10.14 engine-wide squash/stretch window: characters stay on-model (no jelly, no pancake). */
+        const val SQ_MIN = 0.85f
+        const val SQ_MAX = 1.2f
     }
 }

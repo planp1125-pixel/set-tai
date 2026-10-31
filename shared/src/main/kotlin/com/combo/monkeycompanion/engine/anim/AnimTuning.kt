@@ -109,5 +109,15 @@ data class AnimTuning(
             tail = AppendageTuning(stiffness = 120f, damping = 0.33f, lag = 0.05f, gain = 1.1f, maxDeg = 30f),
             hair = AppendageTuning(stiffness = 150f, damping = 0.36f, lag = 0.03f, gain = 1.1f, maxDeg = 24f),
             cape = AppendageTuning(stiffness = 110f, damping = 0.34f, lag = 0.05f, gain = 1.3f, maxDeg = 34f))
+        /** v10.14 Hollow Man: smooth, silky (long slow-in/out), a floppy fedora that trails his moves; squash kept small. */
+        val HOLLOW = AnimTuning(squashMax = 0.88f, stretchMax = 1.15f, landingSquash = 0.12f, velocityStretch = 0.06f, squashDamping = 0.45f,
+            easeStyle = EaseStyle.SMOOTHSTEP, overshoot = 1.5f, poseFrequency = 24f, tempo = 1.0f, expressiveness = 1.1f, anticipationSec = 0.13f,
+            earTwitchEvery = 0f, tailFlickEvery = 0f, lookAroundEvery = 7f, leanDeg = 8f,
+            hair = AppendageTuning(stiffness = 120f, damping = 0.34f, lag = 0.05f, gain = 1.2f, maxDeg = 22f))
+        /** v10.14 Surfing Girl: bouncy and quick, a whippy ponytail, leans hard into carves. */
+        val SURF = AnimTuning(squashMax = 0.86f, stretchMax = 1.18f, landingSquash = 0.16f, velocityStretch = 0.1f, squashStiffness = 300f, squashDamping = 0.34f,
+            easeStyle = EaseStyle.SMOOTHSTEP, overshoot = 1.8f, poseFrequency = 32f, tempo = 1.2f, expressiveness = 1.15f, anticipationSec = 0.1f,
+            earTwitchEvery = 0f, tailFlickEvery = 0f, lookAroundEvery = 6f, leanDeg = 12f,
+            hair = AppendageTuning(stiffness = 130f, damping = 0.32f, lag = 0.04f, gain = 1.4f, maxDeg = 30f))
     }
 }

@@ -30,6 +30,8 @@ object CharacterNames {
     const val CHITTU = "Chittu"
     const val GAJJU = "Gajju"
     const val ROCKETGIRL = "Rocket Girl"
+    const val HOLLOWMAN = "Hollow Man"
+    const val SURFER = "Surfing Girl"
 }
 
 /** One toggleable part. [options] = styles to pick from (first = default). */
@@ -148,7 +150,7 @@ abstract class Character(val id: String) {
 }
 
 object CharacterRegistry {
-    val all: List<Character> by lazy { listOf(MonkeyCharacter, Superboy, ArmourAnna, MaskMan, Billa, Chittu, Gajju, RocketGirl) }
+    val all: List<Character> by lazy { listOf(MonkeyCharacter, Superboy, ArmourAnna, MaskMan, Billa, Chittu, Gajju, RocketGirl, HollowMan, SurferGirl) }
     val allWithCustom: List<Character> get() = all + CustomCompanionRegistry.allCharacters()
     @Volatile var current: Character = MonkeyCharacter; private set
     private val wears = HashMap<String, Wear>()
@@ -158,6 +160,8 @@ object CharacterRegistry {
             "chottu", "mouse", "eli" -> "chittu"
             "cat" -> "billa"
             "rocket", "rocket girl", "rocketgirl", "rocketboy", "rocket boy", "rocket_boy", "broomboy", "broom boy" -> "rocketgirl"
+            "hollow", "hollow man", "hollowman", "invisible", "invisible man", "dancer" -> "hollowman"
+            "surfer", "surf", "surfing girl", "surfgirl", "surfer girl" -> "surfer"
             else -> id
         }
         return all.firstOrNull { it.id.equals(norm, ignoreCase = true) } ?: CustomCompanionRegistry.byId(norm)

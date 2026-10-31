@@ -66,8 +66,25 @@ class LivingLayer(seed: Long = 1L) {
 
     private var clock = 0f
 
+    // v10.14 livelier behaviour (all on this layer's own RNG; visual only)
+    /** Seconds calm in a row (boredom builds up). */
+    var calmFor = 0f; private set
+    /** The idle-variety bit playing now (-1 = none) and its clock. */
+    var idleBit = -1; private set
+    private var idleT = 0f; private var idleIn = Float.NaN
+    /** Finger watching: screen direction of the user's finger (-1..1, -1..1) and how strongly (0..1). */
+    private var fingerX = 0f; private var fingerY = 0f; private var fingerOn = false; private var fingerK = 0f
+    /** Partner reaction: a quick "huh?!" pop when someone else grabs the stage. */
+    private var wasStaged = false; private var noticeT = -1f
+    /** Number of partner "huh?!" pops so far (tests). */
+    var notices = 0; private set
+
+    /** v10.14: eyes (then head) follow the user's finger while it is down; [dx],[dy] = finger direction from the face, -1..1. */
+    fun watchFinger(dx: Float, dy: Float) { fingerX = dx.coerceIn(-1f, 1f); fingerY = dy.coerceIn(-1f, 1f); fingerOn = true }
+    fun fingerUp() { fingerOn = false }
+
     /** True while a wind-up, look or squint is running (the view keeps drawing at full rate). */
-    val busy: Boolean get() = anticT >= 0f || lookLeft > 0f || squintLeft > 0f || turnT >= 0f || blinkT >= 0f || abs(lean.value) > 0.3f
+    val busy: Boolean get() = anticT >= 0f || idleBit >= 0 || noticeT >= 0f || fingerK > 0.05f || lookLeft > 0f || squintLeft > 0f || turnT >= 0f || blinkT >= 0f || abs(lean.value) > 0.3f
 
     /** In an anticipation wind-up right now (the overlay renders at full rate). */
     val anticipating: Boolean get() = anticT >= 0f
@@ -75,6 +92,7 @@ class LivingLayer(seed: Long = 1L) {
     fun reset() {
         earIn = Float.NaN; tailIn = Float.NaN; lookIn = Float.NaN; lookLeft = 0f; eyeLook = 0f; headLook = 0f
         anticT = -1f; squintLeft = 0f; squintK = 0f; lean.reset(); lastFacing = 0f; turnT = -1f; blinkT = -1f
+        calmFor = 0f; idleBit = -1; idleIn = Float.NaN; fingerOn = false; fingerK = 0f; wasStaged = false; noticeT = -1f
     }
 
     /** Start a wind-up of [kind]; [dir] = -1/+1 screen direction of the coming move (0 = straight up / unknown). */
@@ -124,9 +142,33 @@ class LivingLayer(seed: Long = 1L) {
         }
         // ---- staging: glance at whoever has the stage ----
         if (stageDir != 0f && lookLeft <= 0.05f) glance(stageDir, 0.5f)
+        // v10.14 react to a partner: the moment someone else takes the stage, a quick "huh?!" (eyes pop, little hop)
+        val staged = stageDir != 0f
+        if (staged && !wasStaged && noticeT < 0f) { noticeT = 0f; notices++ }
+        wasStaged = staged
+
+        // ---- v10.14 boredom: idle variety after a while calm (stretch, foot tap, yawn, look at the user) ----
+        if (calm && !hold && !fingerOn) calmFor += dt else { calmFor = 0f; idleBit = -1 }
+        if (idleIn.isNaN()) idleIn = BORED_AFTER * (0.7f + 0.6f * rnd.nextFloat())
+        if (idleBit < 0 && calmFor > idleIn) { idleBit = rnd.nextInt(IDLE_BITS); idleT = 0f; idleIn = calmFor + BORED_AFTER * (0.6f + 0.8f * rnd.nextFloat()) }
+        if (idleBit >= 0) {
+            idleT += dt * tempo
+            val u = idleT / IDLE_SECS
+            if (u >= 1f) idleBit = -1 else {
+                val e = Easing.smoothstep((u / 0.25f).coerceIn(0f, 1f)) * (1f - Easing.smoothstep(((u - 0.75f) / 0.25f).coerceIn(0f, 1f)))
+                when (idleBit) {
+                    0 -> { p.armLRaise += 120f * e; p.armRRaise += 120f * e; squash(p, 1f + 0.08f * e); p.eyeOpen *= 1f - 0.6f * e }   // big stretch
+                    1 -> { p.legRLift += 6f * e * abs(sin(idleT * 9f)); p.headRot += 3f * e * sin(idleT * 4.5f) }                       // foot tap
+                    2 -> { p.mouthOpen = maxOf(p.mouthOpen, 0.9f * e); p.eyeOpen *= 1f - 0.8f * e; p.headRot -= 6f * e }              // yawn
+                    else -> { p.lookX += 0f; p.lookY += 2.5f * e; p.mouthSmile = maxOf(p.mouthSmile, 0.7f * e); p.headRot += 4f * e * sin(idleT * 2f) }   // looks out at you
+                }
+            }
+        }
 
         // eyes lead (fast), head follows (slower): "eyes first" anticipation for looks
-        val tgt = if (lookLeft > 0f) lookTarget else 0f
+        fingerK += ((if (fingerOn) 1f else 0f) - fingerK) * (1f - exp(-dt * 14f))
+        val tgt = if (fingerK > 0.05f) fingerX * fingerK + (if (lookLeft > 0f) lookTarget else 0f) * (1f - fingerK) else if (lookLeft > 0f) lookTarget else 0f
+        p.lookY += 3f * fingerY * fingerK
         if (lookLeft > 0f) lookLeft -= dt
         eyeLook += (tgt - eyeLook) * (1f - exp(-dt * 22f * tempo))
         headLook += (eyeLook - headLook) * (1f - exp(-dt * 7f * tempo))
@@ -153,6 +195,7 @@ class LivingLayer(seed: Long = 1L) {
                 p.lookX += 2.5f * e                 // pupils already in the new direction (3/4 hint)
                 p.headRot += 5f * e
                 p.bodyRot -= 2.5f * e               // the body lags behind the head
+                p.bodyY += 1.6f * e                 // v10.14 arcs: a turn dips down and comes back up, never a flat swivel
             }
         }
 
@@ -184,6 +227,16 @@ class LivingLayer(seed: Long = 1L) {
             }
         }
 
+        // ---- v10.14 partner notice pop ("huh?!"): eyes wide, a small hop on an arc, settles ----
+        if (noticeT >= 0f) {
+            noticeT += dt * tempo
+            val u = noticeT / 0.45f
+            if (u >= 1f) noticeT = -1f else {
+                val e = sin(PI.toFloat() * u)
+                p.eyeOpen *= 1f + 0.25f * e; p.bodyY -= 6f * e; squash(p, 1f + 0.06f * e)
+            }
+        }
+
         // ---- appeal: happy squint + blush when petted; a soft catch-light twinkle ----
         if (squintLeft > 0f) squintLeft -= dt
         squintK += ((if (squintLeft > 0f) 1f else 0f) - squintK) * (1f - exp(-dt * 12f))
@@ -196,9 +249,16 @@ class LivingLayer(seed: Long = 1L) {
         p.glint = 0.5f + 0.5f * sin(clock * 1.7f)
     }
 
+    companion object {
+        /** Seconds of calm before the first idle-variety bit (randomised 0.7-1.3x). */
+        const val BORED_AFTER = 18f
+        const val IDLE_BITS = 4
+        const val IDLE_SECS = 1.8f
+    }
+
     /** Volume-preserving squash multiply on whatever the pose already has. */
     private fun squash(p: Pose, sy: Float) {
-        val y = sy.coerceIn(tuning.squashMax, tuning.stretchMax)
+        val y = sy.coerceIn(maxOf(tuning.squashMax, AnimEngine.SQ_MIN), minOf(tuning.stretchMax, AnimEngine.SQ_MAX))
         p.squashY *= y; p.squashX /= y
     }
 }

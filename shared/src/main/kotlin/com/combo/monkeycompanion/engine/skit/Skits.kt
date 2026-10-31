@@ -82,6 +82,25 @@ object SkitLibrary {
                 Ending(0.6f, listOf(Beat(1, MonkeyState.STARTLED, "WAAAAH! I'm flyyyying! 🚀😱", 2.0f, "🚀", Move.HOP), Beat(1, MonkeyState.ANGRY, "*lands in a pile* …{0}!! 😤💫", 1.8f, "💫"))),
                 Ending(0.4f, listOf(Beat(1, MonkeyState.GIGGLE, "*turns the rocket around* Your turn! 😏", 1.6f, "🚀"), Beat(0, MonkeyState.STARTLED, "Nooo, not me! 🎆😵", 2.0f, "🎆", Move.AWAY))),
             )),
+        Skit("dance_battle", "Dance Battle", listOf(r("hollowman"), ANY),
+            listOf(
+                Beat(0, MonkeyState.DANCE, "*glides backwards* Can you do THIS, {1}? 🕺✨", 2.0f, "🎶"),
+                Beat(1, MonkeyState.DANCE, "Watch my kuthu steps! 💃", 1.8f, "🎶", Move.TOWARD),
+                Beat(0, MonkeyState.GIGGLE, "*tips hat… nobody under it* Hee-hee! 🎩", 1.6f, "🎩"),
+            ),
+            listOf(
+                Ending(0.6f, listOf(Beat(1, MonkeyState.STARTLED, "Where's your HEAD?! 😱", 1.8f, "❗"), Beat(0, MonkeyState.WAVE, "Left it at home. Too heavy 😎", 1.6f))),
+                Ending(0.4f, listOf(Beat(1, MonkeyState.DANCE, "Okay okay, teach me the slide! 🕺", 1.6f, null, Move.TOWARD), Beat(0, MonkeyState.HAPPY_PAT, "Lesson one: be smooth ✨", 1.6f))),
+            )),
+        Skit("surf_splash", "Surf Splash", listOf(r("surfer"), ANY),
+            listOf(
+                Beat(0, MonkeyState.WALK, "Wave incoming! Hold on, {1}! 🌊🏄‍♀️", 1.8f, "🌊", Move.TOWARD),
+                Beat(1, MonkeyState.STARTLED, "Wait, I can't swim in a phone!! 😰", 1.6f, "💦"),
+            ),
+            listOf(
+                Ending(0.6f, listOf(Beat(0, MonkeyState.GIGGLE, "*SPLASH* Oops… you're soaked! 🤣💦", 2.0f, "💦"), Beat(1, MonkeyState.ANGRY, "My hair!! Fully wet!! 😤💧", 1.6f, "💧"))),
+                Ending(0.4f, listOf(Beat(0, MonkeyState.STARTLED, "*wipeout* Glug glug… I'm okay! 😵🌊", 2.0f, "🌊"), Beat(1, MonkeyState.GIGGLE, "Ha! The wave won 😂", 1.6f))),
+            )),
         Skit("hero_showdown", "Hero Showdown", listOf(r("superboy", "mask"), ANY),
             listOf(
                 Beat(1, MonkeyState.DANCE, "Look at me! I'm the star today ✨", 1.8f, "✨"),

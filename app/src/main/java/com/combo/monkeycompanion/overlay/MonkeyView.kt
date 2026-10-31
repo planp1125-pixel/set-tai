@@ -5761,6 +5761,15 @@ class MonkeyView(
             MotionEvent.ACTION_MOVE -> if (hypot(e.rawX - attDownX, e.rawY - attDownY) > 10 * d) gestureDragged = true
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { fingerDown = false; if (!gestureDragged && !dragging) attendUntil = t + ATTEND_GRACE }
         }
+        // v10.14 eyes follow the user's finger while it is down (visual only, the LivingLayer's own state)
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> if (livingOn && smoothAnim) runCatching {
+                faceRectView(fingerFace)
+                val r = 120f * d
+                living.watchFinger((e.x - fingerFace.centerX()) / r, (e.y - fingerFace.centerY()) / r)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> living.fingerUp()
+        }
         if (exiting) return true   // leaving: hands off
         if (powerOn && !wp) {
             // flying: the (small, opaque) window ignores touches until landing, except v10.9's double-tap = the next power
@@ -6183,6 +6192,7 @@ class MonkeyView(
 
     /** v10.11: the character's head box in this view, through the same transform drawMonkey draws with. */
     private val bubFace = RectF()
+    private val fingerFace = RectF()
     /**
      * v10.13: how far the bubble may dip into the top of the box: never past the top of the face/head
      * (the same head box the 💬 button keeps clear of), so a speech bubble never covers the face.

@@ -64,10 +64,13 @@ class MaskManJuggleTest {
         assertEquals("picked up fresh balls", 3, v.debugBalls.heldCount)
 
         // A fast fling to the right: every ball flies off that way.
+        // v10.14 de-flaked: a ball may already have hit the right wall and bounced (vx < 0) by the time we look,
+        // so "flew right" = moving right OR already further right than where it was held.
+        val x0 = FloatArray(3) { v.debugBalls.x[it] }
         gesture(v, (1..3).map { i -> 160f * i to -20f * i }, stepMs = 16, holdMs = 5)
         assertEquals("all balls flung", 0, v.debugBalls.heldCount)
         val b = v.debugBalls
-        assertTrue("flying right", (0 until 3).all { b.state[it] != JuggleBalls.State.LOOSE || b.vx[it] > 0f })
+        assertTrue("flying right", (0 until 3).all { b.state[it] != JuggleBalls.State.LOOSE || b.vx[it] > 0f || b.x[it] > x0[it] + 1f })
         repeat(60) { v.debugFrames(1) }
         assertTrue("still bouncing around after the fling (loop kept running while hidden)", b.looseActive || b.allGone)
         repeat(60 * 15) { v.debugFrames(1) }

@@ -68,6 +68,10 @@ object CharacterProfiles {
     /** v10.8 Rocket Girl: rides a Diwali rocket; hovers, patrols in arcs, dances in the air now and then. */
     val ROCKETGIRL = CharacterProfile("rocketgirl", edgeCrashOnFlight = false, airPatrolChance = 0.5f, airDanceChance = 0.2f, hoverJetPadRig = 30f,
         anim = AnimTuning.ROCKET, body = BodyFeatures(prop = true), reactions = ReactionLibrary.ROCKET_GIRL, ridesProp = true)
+    /** v10.14 Hollow Man: walks the floor, dances; the fedora is the follow-through piece. */
+    val HOLLOWMAN = CharacterProfile("hollowman", anim = AnimTuning.HOLLOW)
+    /** v10.14 Surfing Girl: hovers on her wave, patrols around the screen a lot, dances on the board now and then. */
+    val SURFER = CharacterProfile("surfer", edgeCrashOnFlight = false, airPatrolChance = 0.6f, airDanceChance = 0.15f, hoverJetPadRig = 44f, anim = AnimTuning.SURF)
     /** Custom photo look-alikes and anything new. */
     val DEFAULT = CharacterProfile("default", anim = AnimTuning.CHIBI)
 
@@ -81,6 +85,8 @@ object CharacterProfiles {
         "armour" -> ARMOUR
         "gajju" -> GAJJU
         "rocketgirl" -> ROCKETGIRL
+        "hollowman" -> HOLLOWMAN
+        "surfer" -> SURFER
         else -> DEFAULT
     }
 }

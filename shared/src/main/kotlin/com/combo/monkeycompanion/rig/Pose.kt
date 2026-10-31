@@ -152,6 +152,14 @@ class Pose {
     // v10.9 Rocket Girl
     var rbThrust by slot(0f)       // 0..1 the rocket's tail flame burst (swipe launch / boost)
     var rgReach by slot(0f)        // 0..1 her right hand reaches down to light the bottle's fuse
+    // v10.14 Hollow Man + Surfing Girl (visual only; never motion slots)
+    var hmMoon by slot(0f)         // 0..1 moonwalk: the body faces AWAY from the way it glides
+    var hmHatTip by slot(0f)       // 0..1 hat lifted off the (invisible) head by the right glove
+    var spinX by slot(1f)          // cos of a spin about the vertical axis (1 = front, -1 = back), x scale
+    var flipS by slot(0f)          // sin / cos of an aerial flip (blend-safe: no 360 -> 0 snap)
+    var flipC by slot(1f)
+    var surf by slot(0f)           // 0..1 standing on the surfboard over a wave
+    var surfSpray by slot(0f)      // 0..1 extra splash (big wave ride, landing, wipeout)
 
     fun reset() { System.arraycopy(defaults, 0, v, 0, count) }
     fun set(o: Pose) { System.arraycopy(o.v, 0, v, 0, count) }
