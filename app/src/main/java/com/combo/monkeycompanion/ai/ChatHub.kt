@@ -100,7 +100,7 @@ object ChatHub {
     }
 
     private fun bodyNow(): String = runCatching {
-        listOf(bodyState(), com.combo.monkeycompanion.mind.MindHub.promptNote()).filter { it.isNotBlank() }.joinToString(" ")
+        listOf(bodyState(), com.combo.monkeycompanion.mind.MindHub.promptNote()).filter { it.isNotBlank() }.joinToString("\n")
     }.getOrDefault("")
 
     /** Strip tags, fire actions, fallback to the user's request. Returns the text to show. */
@@ -116,7 +116,10 @@ object ChatHub {
         }
         val raw = if (extra.isNotEmpty()) pt.text + " " + extra else pt.text
         val p = ActionParser.parse(raw)
-        val acts = p.actions.take(2).toMutableList()
+        // v10.15 Body Sense: AI tags only from this character's safe allow-list, rate-limited; unknown ones are dropped.
+        val who = com.combo.monkeycompanion.character.CharacterRegistry.current
+        val allowed = runCatching { BodySense.allowList(who, com.combo.monkeycompanion.character.CharacterRegistry.wear(who)) }.getOrDefault(BodySense.SAFE)
+        val acts = BodySense.gate(p.actions, allowed).filter { BodySense.limiter.allow() }.toMutableList()
         if (acts.isEmpty() && !toolActed && userText != null) ActionParser.requestedByUser(userText)?.let { acts.add(it) }
         if (BodyAction.FLY in acts && userText != null && com.combo.monkeycompanion.brain.Superpowers.requested == null)
             com.combo.monkeycompanion.brain.Superpowers.requested = com.combo.monkeycompanion.brain.Superpowers.named(userText)

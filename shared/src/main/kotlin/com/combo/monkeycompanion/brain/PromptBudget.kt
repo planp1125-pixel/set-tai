@@ -32,8 +32,13 @@ object PromptBudget {
 
     /** A short system prompt: the first lines of the full one (who I am, how to talk), capped to [maxTokens]. */
     fun compactSystem(system: String, maxTokens: Int): String {
-        val head = system.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.take(6).joinToString("\n")
-        return cut(head + "\nReply in 1-2 short, friendly sentences.", maxTokens)
+        val lines = system.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
+        // v10.15 Body Sense has priority: the live body line + its rule always survive compaction.
+        val body = lines.filter { it.startsWith(com.combo.monkeycompanion.ai.BodySense.MARKER) || it == com.combo.monkeycompanion.ai.BodySense.RULES }
+        val head = lines.filter { it !in body }.take(6).joinToString("\n")
+        val tail = (if (body.isEmpty()) "" else "\n" + body.joinToString("\n")) + "\nReply in 1-2 short, friendly sentences."
+        val room = maxTokens - estimate(tail)
+        return if (room >= 24) cut(head, room) + tail else cut(body.joinToString("\n"), maxTokens)
     }
 
     fun fit(system: String, history: List<Turn>, user: String, contextTokens: Int, minimal: Boolean = false): Fit {

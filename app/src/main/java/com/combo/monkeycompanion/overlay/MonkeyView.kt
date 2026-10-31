@@ -745,6 +745,7 @@ class MonkeyView(
     private val heldLines = ArrayDeque<HeldLine>()
     private var heldReply: String? = null; private var heldReplyDone = false
     private var settledFor = 0f
+    private var heldAction: BodyAction? = null
     /** Moving right now (flung, flying, falling, dragged, dashing, a moving power): bubbles wait. */
     private val movingNow: Boolean get() = rocketFlyOn || falling || dragging || arc != null || controller.state == MonkeyState.FALLING ||
         controller.state == MonkeyState.DRAGGED || (powerOn && flight.active && flight.phase != com.combo.monkeycompanion.brain.PowerPhase.POSE)
@@ -754,6 +755,7 @@ class MonkeyView(
         if (movingNow) { settledFor = 0f; return }
         settledFor += dt
         if (settledFor < SETTLE_SECS) return
+        heldAction?.let { a -> heldAction = null; onAction(a) }   // v10.15: body actions also wait until settled
         heldReply?.let { r -> heldReply = null; onReply(r, heldReplyDone); return }
         while (heldLines.isNotEmpty() && t - heldLines.first().at > HELD_STALE_SECS) heldLines.removeFirst()   // stale: drop
         heldLines.removeFirstOrNull()?.let { h -> heldLines.clear(); say(h.text, h.ms) }
@@ -1831,6 +1833,7 @@ class MonkeyView(
 
     fun startChaseShow() {
         if (ChaseShowHub.show != null) return
+        com.combo.monkeycompanion.ai.BodySense.record("I ran in the chase show with my friends", com.combo.monkeycompanion.ai.BodySense.Feeling.PUFFED)
         com.combo.monkeycompanion.mind.MindHub.skitRun = null
         ChaseShowHub.start(context, com.combo.monkeycompanion.mind.MindHub.activeCreatures())
         if (!running && live && !paused) start()
@@ -4490,6 +4493,11 @@ class MonkeyView(
         val now = System.currentTimeMillis()
         momentLast[m] = now
         val shock = m == PhoneMoments.Moment.CHARGE && PhoneMoments.chargeStyle(character.id) == PhoneMoments.ChargeStyle.SHOCK
+        when {
+            shock -> com.combo.monkeycompanion.ai.BodySense.record("the charger was plugged in and it zapped me", com.combo.monkeycompanion.ai.BodySense.Feeling.ZAPPED)
+            m == PhoneMoments.Moment.CHARGE -> com.combo.monkeycompanion.ai.BodySense.record("the charger was plugged in and I ran to the battery", com.combo.monkeycompanion.ai.BodySense.Feeling.ENERGISED)
+            else -> com.combo.monkeycompanion.ai.BodySense.record("phone moment: " + m.name.lowercase())
+        }
         val charge = m == PhoneMoments.Moment.CHARGE && !shock
         moment = m; momentT = 0f
         momentLen = if (charge) PhoneMoments.CHARGE_TRIP_SECS else if (shock) SHOCK_SECS else PhoneMoments.duration(m, saver)
@@ -5052,6 +5060,8 @@ class MonkeyView(
         if (hiddenTab && host != null && !wp) unhide()
         comfortKind = kind
         comfortT = 0f
+        if (kind == com.combo.monkeycompanion.heart.ComfortKind.GLASS_KNOCK_HUG) com.combo.monkeycompanion.ai.BodySense.record("we hugged through the glass", com.combo.monkeycompanion.ai.BodySense.Feeling.WARM)
+        else com.combo.monkeycompanion.ai.BodySense.record("I comforted you")
         comfortSignText = signText
         controller.play(if (kind == com.combo.monkeycompanion.heart.ComfortKind.OFFER_COFFEE) MonkeyState.SIT else MonkeyState.HAPPY_PAT, kind.secs)
         val Q = com.combo.monkeycompanion.agent.QuickChip
@@ -5696,6 +5706,7 @@ class MonkeyView(
     private fun beginPower(pw: Superpower) {
         if (powerOn || exiting || host == null) return
         val crash = Random.nextFloat() < pw.crashChance
+        com.combo.monkeycompanion.ai.BodySense.record("I used my power " + pw.title, com.combo.monkeycompanion.ai.BodySense.Feeling.PUFFED)
         val x0 = fracX(mx); val y0 = fracY(my)
         flight.begin(pw, pw.plan(x0, y0, crash, Random), crash, x0, y0)
         powerOn = true; powerLineAt = -1; crashSaid = false; landSaid = false
@@ -5759,7 +5770,7 @@ class MonkeyView(
         if (ph == PowerPhase.CRASH && flight.crashed && !crashSaid) {
             crashSaid = true
             performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            say(Lines.pick(pw.crashLines), 2400L)
+            say(Lines.pick(pw.crashLines), 2400L); com.combo.monkeycompanion.ai.BodySense.record("I crashed / wiped out during " + pw.title, com.combo.monkeycompanion.ai.BodySense.Feeling.SORE)
         }
         if (ph == PowerPhase.LAND && k >= 0.5f && !landSaid) {
             landSaid = true
@@ -6039,6 +6050,8 @@ class MonkeyView(
                     if (e.rawX != lastMoveRawX || e.rawY != lastMoveRawY) gPush(e.eventTime, e.rawX, e.rawY)
                     upSwipeDown = swipeDownNow(e.eventTime, if (fresh) vx else 0f, if (fresh) vyDrag else 0f)
                     if (fresh) flingBalls(vx, vyDrag)
+                    if (fresh && hypot(vx, vyDrag) / d > 600f) com.combo.monkeycompanion.ai.BodySense.record("you flung me ${com.combo.monkeycompanion.ai.BodySense.direction(vx, vyDrag)}", com.combo.monkeycompanion.ai.BodySense.Feeling.DIZZY)
+                    else com.combo.monkeycompanion.ai.BodySense.record("you dragged me to a new spot")
                     dragTravel = hypot(e.rawX - downRawX, e.rawY - downRawY)
                     val fall = settleAfterDrag(if (fresh) vx else 0f, if (fresh) vyDrag else 0f)
                     upSwipeDown = -1f
@@ -6432,6 +6445,7 @@ class MonkeyView(
         if (controller.isAsleep && action != BodyAction.SLEEP) { controller.wakeUp(Lines.pick(Lines.POKED_AWAKE)); return }
         if (hiddenTab) { if (action != BodyAction.HIDE && action != BodyAction.SLEEP) unhide(); return }
         if (controller.state == MonkeyState.ENTRANCE || dragging) return
+        if (action != BodyAction.FLY && (movingNow || settledFor < SETTLE_SECS)) { heldAction = action; return }   // v10.15: act once settled
         if (action == BodyAction.FLY) { usePower(explicit = true); return }
         val onFloor = surf.kind == SK.FLOOR && !falling
         fun onGround(f: () -> Unit) {
@@ -6870,13 +6884,23 @@ class MonkeyView(
         val lvl = bi?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
         val temp = (bi?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0) / 10f
         val plugged = (bi?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0
+        val state = when {
+            dragging || controller.state == MonkeyState.DRAGGED -> "being dragged by your finger"
+            falling || controller.state == MonkeyState.FALLING -> "falling"
+            powerOn && flight.active -> "flying mid-power"
+            rocketFlyOn || arc != null -> "flying through the air"
+            controller.isAsleep -> "sleeping"
+            controller.state == MonkeyState.DANCE -> "dancing"
+            else -> "resting, idle"
+        }
+        val fr = runCatching { com.combo.monkeycompanion.v5.Friendship.title(com.combo.monkeycompanion.v5.Friendship.level(com.combo.monkeycompanion.fun5.Fun5Store.friendship(context).xp)) }.getOrDefault("")
+        val snap = com.combo.monkeycompanion.ai.BodySense.Snapshot(name = character.name, position = where, state = state,
+            power = if (powerOn) flight.power?.title else null, battery = lvl, charging = plugged,
+            hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY), mood = mood, friendship = fr, asleep = controller.isAsleep)
         return buildString {
             append("you live in the ").append(if (wp) "live wallpaper (behind the home-screen icons)" else "floating overlay on top of apps")
-            append("; position: ").append(where)
-            append("; mood: ").append(mood)
-            append("; ").append(if (controller.isAsleep) "asleep" else "awake")
-            if (lvl >= 0) append("; phone battery ").append(lvl).append('%').append(if (plugged) " (charging)" else "")
             if (temp >= 40f) append("; phone feels hot (").append(temp).append("°C)")
+            append("\n").append(com.combo.monkeycompanion.ai.BodySense.build(snap))
         }
     }
 

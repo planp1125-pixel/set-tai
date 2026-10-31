@@ -32,7 +32,14 @@ Current date and time: $now.
             append("\n\n").append((if (compact) COMEDY_SHORT else COMEDY).trim())
             append("\n\n").append(who.body(wear, compact).trim())
             wear.describe().takeIf { it.isNotBlank() }?.let { append("\n").append(it) }
-            if (body.isNotBlank()) append("\nRight now: ").append(body.trim()).append('.')
+            if (body.isNotBlank()) {
+                // v10.15 Body Sense: the live body line (own line, kept by PromptBudget) + its rule, same for every brain.
+                val lines = body.trim().lines().map { it.trim() }.filter { it.isNotEmpty() }
+                val sense = lines.filter { it.startsWith(BodySense.MARKER) }
+                val other = lines.filter { !it.startsWith(BodySense.MARKER) }
+                if (other.isNotEmpty()) append("\nRight now: ").append(other.joinToString(" ")).append('.')
+                if (sense.isNotEmpty()) append("\n").append(sense.joinToString(" ")).append("\n").append(BodySense.RULES)
+            }
             if (actionTool) append("\nYou also have a do_action tool that moves your body; you may call it or just write the [tag].")
             if (toolsAvailable) {
                 append(
