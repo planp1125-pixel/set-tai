@@ -72,7 +72,7 @@ class OfflineBrain(
         // never show the raw runtime error.
         val B = com.combo.monkeycompanion.brain.PromptBudget
         val ctx = contextTokens()
-        val turns = history.map { B.Turn(it.fromUser, it.text) }
+        val turns = history.map { com.combo.monkeycompanion.brain.PromptBudget.Turn(it.fromUser, it.text) }
         for (minimal in listOf(false, true)) {
             val f = B.fit(system, turns, user, ctx, minimal)
             try {

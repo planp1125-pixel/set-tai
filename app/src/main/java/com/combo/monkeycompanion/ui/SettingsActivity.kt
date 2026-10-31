@@ -149,7 +149,7 @@ class SettingsActivity : Activity() {
         col.addView(card("Settai's brain", group))
         brainGroup = group
         pickerBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        col.addView(card("🧠 Active brain (tap to switch)", text("Every downloaded model and every API you've set up. Tap one to use it; switch any time.", 12f, color = soft), pickerBox))
+        col.addView(card("🧠 Active brain (tap to switch)", text("Every downloaded model and every API you've set up. Tap one to use it; switch any time.", 12f, color = soft), pickerBox!!))
         refreshPicker()
         mainCol = col
         col.addView(buildCharacter())
