@@ -158,6 +158,7 @@ class SettingsActivity : Activity() {
         col.addView(buildOffline().also { offlineCard = it })
         col.addView(buildPersonality())
         col.addView(buildBuddy())
+        col.addView(buildAppearance())
         col.addView(buildRest())
         col.addView(buildSuperpowers().also { powersCard = it })
         col.addView(buildPowers())
@@ -559,6 +560,16 @@ class SettingsActivity : Activity() {
             "\nMind CPU: " + com.combo.monkeycompanion.mind.MindHub.cpuSummary() +
             "\n(Estimate: ~200 mA per fully busy CPU core; screen and GPU compositing not included. The window includes this Settings screen.)"
         ui.postDelayed({ refreshEnergy() }, 2000L)
+    }
+
+    /** v10.17.1: System / Light / Dark app theme (the overlay character is never affected). */
+    private fun buildAppearance(): View {
+        val T = com.combo.monkeycompanion.theme.ThemeSkin
+        val modes = listOf(T.SYSTEM, T.LIGHT, T.DARK)
+        val sp = spinner(listOf("Follow phone (System)", "Light", "Dark"), modes.indexOf(T.mode(this)).coerceAtLeast(0)) {
+            if (modes[it] != T.mode(this)) { T.setMode(this, modes[it]); recreate() }
+        }
+        return card("🌗 Appearance (app screens)", sp)
     }
 
     private fun buildRest(): View {

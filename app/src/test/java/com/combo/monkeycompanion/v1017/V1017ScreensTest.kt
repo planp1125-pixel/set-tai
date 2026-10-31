@@ -23,9 +23,23 @@ class V1017ScreensTest {
         val w = 1233; val h = 2673
         v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
         v.layout(0, 0, w, h)
+        com.combo.monkeycompanion.theme.ThemeSkin.skin(v, com.combo.monkeycompanion.theme.ThemeSkin.isDark(a))
+        v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+        v.layout(0, 0, w, h)
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         v.draw(Canvas(bmp))
         TestPaths.out(name).outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    @Test fun lightAndDark() {
+        val ctx = org.robolectric.RuntimeEnvironment.getApplication()
+        com.combo.monkeycompanion.theme.ThemeSkin.setMode(ctx, com.combo.monkeycompanion.theme.ThemeSkin.LIGHT)
+        shot(com.combo.monkeycompanion.MainActivity::class.java, "v10171-light.png")
+        shot(com.combo.monkeycompanion.ui.SettingsActivity::class.java, "v10171-light-settings.png")
+        com.combo.monkeycompanion.theme.ThemeSkin.setMode(ctx, com.combo.monkeycompanion.theme.ThemeSkin.DARK)
+        shot(com.combo.monkeycompanion.MainActivity::class.java, "v10171-dark.png")
+        shot(com.combo.monkeycompanion.ui.SettingsActivity::class.java, "v10171-dark-settings.png")
+        com.combo.monkeycompanion.theme.ThemeSkin.setMode(ctx, com.combo.monkeycompanion.theme.ThemeSkin.SYSTEM)
     }
 
     @Test fun screens() {

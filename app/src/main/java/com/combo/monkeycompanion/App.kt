@@ -20,6 +20,7 @@ class App : Application() {
             override fun onActivityResumed(a: Activity) { LaunchGate.foregroundActivities++ }
             override fun onActivityPaused(a: Activity) { LaunchGate.foregroundActivities = maxOf(0, LaunchGate.foregroundActivities - 1) }
             override fun onActivityCreated(a: Activity, b: Bundle?) {
+                runCatching { com.combo.monkeycompanion.theme.ThemeSkin.attach(a) }   // v10.17.1 grey buttons + dark mode
                 // v10.17 red / black / white theme: near-black status + navigation bars with light icons on every screen
                 runCatching {
                     @Suppress("DEPRECATION")
