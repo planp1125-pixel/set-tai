@@ -48,7 +48,7 @@ object ChatHub {
 
     /** v5 "score enna?": one fetch of the public Cricinfo live-score RSS (no key, no polling), then react. */
     private fun cricket(typed: String) {
-        busy = true
+        busy = true; yieldToHuman()
         memory.add(ChatMsg(true, typed)); fire { it.onHistoryChanged() }; fire { it.onThinking() }
         worker.execute {
             val C = com.combo.monkeycompanion.v5.Cricket
@@ -137,6 +137,23 @@ object ChatHub {
     private val listeners = CopyOnWriteArrayList<Listener>()
 
     @Volatile var busy = false; private set
+
+    // ---- v10.18.1: background AI (quips, Body Sense lines, preparing touch reactions) always yields to the human ----
+    @Volatile private var bgRunning = false
+
+    /** Runs a background brain job on the worker, unless a chat started meanwhile (then [cb] gets null at once). */
+    private fun background(cb: (String?) -> Unit, job: () -> Unit) {
+        worker.execute {
+            if (busy) { main.post { cb(null) }; return@execute }
+            bgRunning = true
+            try { job() } finally { bgRunning = false }
+        }
+    }
+
+    /** The human just asked for something: stop the background thinking now so their reply starts straight away. */
+    private fun yieldToHuman() {
+        if (bgRunning) runCatching { brain?.cancel() }
+    }
     @Volatile var pending: PendingAction? = null; private set
 
     private var brain: Brain? = null
@@ -238,7 +255,7 @@ object ChatHub {
         // v4.2: "what's on my screen", "summarise this chat", "reply for me", "roast this screen"...: a digest + an in-character answer.
         com.combo.monkeycompanion.agent.ScreenTalk.parse(typed)?.let { screenTalk(it, typed); return }
         if (handlePhoneCommand(typed, replyingTo)) return
-        busy = true
+        busy = true; yieldToHuman()
         val offline = settings.brainType == BrainType.OFFLINE
         // Small on-device models have a short context: keep only the last few turns so nothing gets truncated.
         val history = memory.recent(if (offline) minOf(settings.memoryTurns, 4) else settings.memoryTurns)
@@ -356,7 +373,7 @@ object ChatHub {
         val grp = com.combo.monkeycompanion.powers.CapGroup.SCREEN
         if (!settings.groupEnabled(grp)) return quick("Reading your screen is one of my agent powers: switch on “${grp.label}” in Phone powers first (it's off until you say so). 🔑")
         val sv = com.combo.monkeycompanion.agent.SettaiAccessibilityService.instance ?: return quick(NO_SVC)
-        busy = true
+        busy = true; yieldToHuman()
         memory.add(ChatMsg(true, said)); memory.add(ChatMsg(false, ""))
         fire { it.onHistoryChanged() }; fire { it.onThinking() }
         worker.execute {
@@ -500,7 +517,7 @@ object ChatHub {
     /** One-off unprompted remark (not stored in memory). [cb] gets null on failure. */
     fun quip(context: String, cb: (String?) -> Unit) {
         if (busy) return cb(null)
-        worker.execute {
+        background(cb) {
             val r = runCatching {
                 val b = brain()
                 if (!b.isReal) null
@@ -518,7 +535,7 @@ object ChatHub {
      */
     fun spontaneous(event: String, cb: (String?) -> Unit) {
         if (busy) return cb(null)
-        worker.execute {
+        background(cb) {
             val r = runCatching {
                 val b = brain()
                 if (!b.isReal) null
@@ -539,7 +556,7 @@ object ChatHub {
      */
     fun reactRequest(request: String, thought: Boolean, cb: (String?) -> Unit) {
         if (busy) return cb(null)
-        worker.execute {
+        background(cb) {
             val r = runCatching {
                 val b = brain()
                 if (!b.isReal) null

@@ -42,11 +42,14 @@ object ReactionHub {
         }
     }
 
-    /** Quiet moment: let the AI prepare lines for the coming touches (spaced out inside the engine). */
-    fun maybeRefill(c: Context, id: String, key: MoodKey) {
+    /**
+     * Quiet moment: let the AI prepare lines for the coming touches. [gapMs] = minimum time between refills,
+     * [maxKinds] = touch kinds per batch (v10.18.1 Background AI: gentle = rare and small, fast = more often).
+     */
+    fun maybeRefill(c: Context, id: String, key: MoodKey, gapMs: Long, maxKinds: Int) {
         val app = c.applicationContext
         val e = engine(app, id)
-        val req = e.refillRequest(key, System.currentTimeMillis()) ?: return
+        val req = e.refillRequest(key, System.currentTimeMillis(), gapMs, maxKinds) ?: return
         ChatHub.reactRequest(req, thought = false) { ans ->
             val kept = e.acceptRefill(ans, System.currentTimeMillis())
             if (kept > 0) save(app, id)

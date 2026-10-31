@@ -806,6 +806,8 @@ class MonkeyView(
         val now = nowSec()
         bodyVoice.expire(now)
         if (!bodyVoice.wantIdle(now) || !aiVoiceOn()) return
+        if (!idleLineAllowed()) return   // v10.18.1
+        idleAskAt = SystemClock.elapsedRealtime()
         askBodyVoice(com.combo.monkeycompanion.ai.BodyVoice.IDLE_EVENT, now)
     }
     // ---- v10.18 "Feel the touch": every touch gets an AI-written line (Brain ON only; see docs/REACTION_ENGINE.md) ----
@@ -856,13 +858,47 @@ class MonkeyView(
         }
     }
 
+    /** v10.18.1 Background AI setting: "off" / "gentle" / "fast" (re-read every few seconds). */
+    private var bgMode = "gentle"
+    private var bgModeAt = -1L
+    private fun bgAiMode(): String {
+        val nowE = SystemClock.elapsedRealtime()
+        if (bgModeAt < 0L || nowE - bgModeAt > 5_000L) { bgModeAt = nowE; bgMode = runCatching { com.combo.monkeycompanion.ai.AppSettings(context).backgroundAi }.getOrDefault("gentle") }
+        return bgMode
+    }
+
+    /**
+     * v10.18.1 "is the phone resting?": nobody touched or chatted for 30 s, no keyboard, no call/fullscreen app,
+     * and the battery is above 30 % (or charging). Gentle background AI only runs then, so the phone stays smooth.
+     */
+    private fun phoneResting(): Boolean {
+        if (typing || keyboardDodge || ChatHub.busy) return false
+        if (SystemClock.elapsedRealtime() - lastInteract < 30_000L) return false
+        val bi = runCatching { context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) }.getOrNull() ?: return true
+        val lvl = bi.getIntExtra(BatteryManager.EXTRA_LEVEL, -1); val scale = bi.getIntExtra(BatteryManager.EXTRA_SCALE, 100).coerceAtLeast(1)
+        val plugged = bi.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
+        return plugged || lvl < 0 || lvl * 100 / scale >= 30
+    }
+
     /** Quiet moments: let the AI prepare reaction lines (checked every 5 s; the engine spaces real requests out). */
     private fun stepReactionRefill() {
         val nowE = SystemClock.elapsedRealtime()
         if (nowE - refillCheckAt < 5_000L) return
         refillCheckAt = nowE
         if (!aiVoiceOn() || bodyVoice.inFlight || ChatHub.busy) return
-        com.combo.monkeycompanion.ai.ReactionHub.maybeRefill(context, character.id, reactMoodKey())
+        when (bgAiMode()) {
+            "off" -> return
+            "fast" -> com.combo.monkeycompanion.ai.ReactionHub.maybeRefill(context, character.id, reactMoodKey(), 45_000L, 4)
+            else -> if (phoneResting()) com.combo.monkeycompanion.ai.ReactionHub.maybeRefill(context, character.id, reactMoodKey(), 10 * 60_000L, 3)
+        }
+    }
+
+    /** v10.18.1: idle Body Sense lines follow the Background AI setting too (off: none; gentle: rare and only at rest). */
+    private var idleAskAt = 0L
+    private fun idleLineAllowed(): Boolean = when (bgAiMode()) {
+        "off" -> false
+        "fast" -> true
+        else -> phoneResting() && SystemClock.elapsedRealtime() - idleAskAt >= 5 * 60_000L
     }
 
     private fun askBodyVoice(event: String, now: Float) {

@@ -127,6 +127,22 @@ class ReactionEngineTest {
         assertNotNull(e.refillRequest(key, t0 + 60_000))
     }
 
+    @Test fun gentleModeIsRareAndSmallAndMoodFlipsDontRefill() {
+        val e = ReactionEngine()
+        val t0 = 40_000_000L
+        val gentleGap = 10 * 60_000L
+        val r = e.refillRequest(key, t0, gentleGap, 3)!!
+        assertEquals("3 kinds per batch", 3, Regex("(?m)^- [A-Z]+ =").findAll(r).count())
+        e.acceptRefill("TICKLE | Hehe, my belly is closed for repairs!\nTICKLE | Tickle tax: one banana, please 🍌\n" +
+            "PAT | Pat accepted, ego boosted 😌\nPAT | Ooh, that's the good spot\nPOKE | I'm not a lift button, da!\nPOKE | Poke me once more, I dare you 😈", t0 + 1_000)
+        assertNull("gentle: not again for 10 minutes", e.refillRequest(key, t0 + 5 * 60_000L, gentleGap, 3))
+        // a quick mood flip (same time of day + friendship) still has usable lines: no new batch for those kinds
+        val grumpy = MoodKey.of(hour = 21, grumpy = 0.7f, sleepy = false, energy = 0.2f, friendLevel = 3)
+        val next = e.refillRequest(grumpy, t0 + 11 * 60_000L, gentleGap, 3)!!
+        assertFalse("tickle is still covered: $next", next.contains("- TICKLE"))
+        assertFalse("pat is still covered: $next", next.contains("- PAT"))
+    }
+
     @Test fun savesAndLoads() {
         val e = ReactionEngine()
         val t0 = 30_000_000L

@@ -42,7 +42,13 @@ It only runs when **Give Brain** is on. With Brain off, the scripted lines play 
 3. **Reflex.** The touch takes a ready line from the bank for that kind and mood. If there isn't one for the exact mood, it uses one written for the same time of day and friendship. It shows instantly, with no waiting for the AI.
 4. **Think.** For big moments (throw, wall bump, bad touch, wake-up), a streak of 3+, or when the bank is empty, the AI is asked for a fresh line. Only one at a time, at least 8 s apart; answers later than 10 s are dropped. The line may carry one action tag ([angry], [hide]…), which the body plays.
 5. **Remember.** Every shown line goes into the character's `LineHistory` (last 300). Any new line that is the same, starts with the same three words, or uses mostly the same words is rejected, even if the AI writes it again weeks later.
-6. **Prepare.** When he is idle, the engine asks the AI (at most every 45 s) to write 2 lines each for the 4 most-used touch kinds that are running low, with rotating styles and a "don't repeat these" list. Lines older than 6 hours are thrown away.
+6. **Prepare.** When he is idle, the engine asks the AI to write 2 lines each for the most-used touch kinds that are running low, with rotating styles and a "don't repeat these" list. Lines older than 6 hours are thrown away. How often depends on **Settings → Background AI** (v10.18.1):
+   - **Off:** never in the background (touches still get fresh thoughts).
+   - **Gentle (default):** only while the phone rests (no touch or chat for 30 s, no keyboard, battery ≥ 30 % or charging), at most every 10 minutes, 3 kinds per batch. Idle Body Sense lines at most every 5 minutes, also only at rest.
+   - **Fast:** every 45 s, 4 kinds per batch (the v10.18 behaviour).
+   A quick mood change doesn't trigger a new batch: lines written for the same time of day and friendship still count.
+
+**Chat always goes first (v10.18.1):** background brain jobs (idle lines, preparing reactions, quips) are skipped if you're chatting, and a running one is stopped the moment you send a message.
 
 ## Where the code is
 

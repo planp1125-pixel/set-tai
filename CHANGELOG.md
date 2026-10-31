@@ -68,3 +68,10 @@ The devil's horns curve inward like the icon.
 - **Never repeats:** each character remembers his last 300 lines and rejects repeats and near-repeats; the AI is told to vary the style (jokes, drama, questions back, Tanglish, playful revenge…).
 - Works for every character and every brain. Animations and powers are unchanged, double-tap is still a power, and Brain off keeps the scripted lines.
 - How it works, with a flowchart: [docs/REACTION_ENGINE.md](docs/REACTION_ENGINE.md).
+
+## v10.18.1 (code 49)
+- **Your chat goes first:** if the brain is busy with background work (preparing touch reactions, idle lines, quips) when you send a message, that work stops at once and your reply starts straight away.
+- **New Settings → Background AI: Off / Gentle / Fast.** Gentle (default) only prepares reactions while the phone is resting (no touch or chat for 30 s, no keyboard, battery ≥ 30 % or charging), at most every 10 minutes, in small batches; idle AI lines at most every 5 minutes. This fixes the phone lagging with a big model in v10.18.
+- A quick mood change no longer triggers a whole new batch of lines.
+- **Faster on-device replies:** the prompt sent to a local model is capped (about half the old size), so the CPU has much less to read before answering.
+- The GPU switch now warns that a big model can make the whole phone lag.

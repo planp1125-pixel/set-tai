@@ -371,7 +371,7 @@ class SettingsActivity : Activity() {
         installedBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         offlineResult = text("", 13f, color = soft)
         val gpu = CheckBox(this).apply {
-            text = "Use GPU (faster on many phones; turn off if loading fails)"; setTextColor(brown); isChecked = s.offlineUseGpu
+            text = "Use GPU (faster replies, but a big model can make the whole phone lag: turn off if it does)"; setTextColor(brown); isChecked = s.offlineUseGpu
             setOnCheckedChangeListener { _, c -> s.offlineUseGpu = c }
         }
         val tools = CheckBox(this).apply {
@@ -733,6 +733,10 @@ class SettingsActivity : Activity() {
         }
         val mins = listOf(5, 10, 15, 30, 60)
         val quipSp = spinner(mins.map { "About every $it minutes" }, mins.indexOf(s.quipMinutes).coerceAtLeast(2)) { s.quipMinutes = mins[it] }
+        // v10.18.1: how much the brain may run in the background (idle lines + preparing touch reactions)
+        val bgModes = listOf("off", "gentle", "fast")
+        val bgSp = spinner(listOf("Background AI: Off (only when you talk or touch)", "Background AI: Gentle (when the phone rests)", "Background AI: Fast (more often, uses more battery)"),
+            bgModes.indexOf(s.backgroundAi).coerceAtLeast(0)) { s.backgroundAi = bgModes[it] }
         val turns = listOf(0, 4, 8, 15)
         val memSp = spinner(turns.map { if (it == 0) "Remember nothing" else "Remember last $it exchanges" }, turns.indexOf(s.memoryTurns).coerceAtLeast(2)) { s.memoryTurns = turns[it] }
         val cleared = text("", 12f, color = soft)
@@ -749,6 +753,8 @@ class SettingsActivity : Activity() {
             text("Off: Settai only walks along the edge it's on and stays where you drop it (it still grabs an edge if you drop it near one).", 12f, color = soft),
             quips, quipSp,
             text("Quips only happen when a real brain is set up (they use a little data/battery).", 12f, color = soft),
+            bgSp,
+            text("With Give Brain on, Settai prepares touch reactions and says little things on his own in the background. Gentle keeps the phone smooth; your chat always goes first.", 12f, color = soft),
             text("Conversation memory", 13f, color = soft), memSp,
             button("Clear chat history") { ChatHub.clearMemory(); cleared.text = "Forgotten! 🍌" }, cleared,
         )

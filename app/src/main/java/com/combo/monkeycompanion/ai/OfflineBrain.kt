@@ -109,7 +109,9 @@ class OfflineBrain(
         // v10.13.1: fit the prompt into this model's context (e.g. 1280 for Qwen3 0.6B); retry minimal on overflow;
         // never show the raw runtime error.
         val B = com.combo.monkeycompanion.brain.PromptBudget
-        val ctx = contextTokens()
+        // v10.18.1: fit the prompt into at most PROMPT_CTX tokens (not the whole 4096): on a phone CPU every prompt
+        // token is read before the first word comes out, so a shorter setup = a faster reply.
+        val ctx = minOf(contextTokens(), PROMPT_CTX)
         val turns = history.map { com.combo.monkeycompanion.brain.PromptBudget.Turn(it.fromUser, it.text) }
         for (minimal in listOf(false, true)) {
             val f = B.fit(system, turns, user, ctx, minimal)
@@ -168,6 +170,8 @@ class OfflineBrain(
 
     companion object {
         const val LOAD_FAIL = "Couldn't load the on-device model"
+        /** v10.18.1 prompt budget for on-device replies (system + history + message), in context tokens. */
+        const val PROMPT_CTX = 2048
     }
 
     /** Bridges our ToolSpec to LiteRT-LM's OpenAPI-style tool interface. */

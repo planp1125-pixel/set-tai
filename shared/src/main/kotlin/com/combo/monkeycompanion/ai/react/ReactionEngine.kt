@@ -68,14 +68,25 @@ class ReactionEngine(
         return line
     }
 
-    /** PREPARE: a refill request when the bank is low for this mood, or null (spaced out, one at a time). */
-    @Synchronized fun refillRequest(key: MoodKey, now: Long): String? {
+    /**
+     * Lines usable for [key]: the exact mood, or written for the same time of day and friendship (what [take] falls
+     * back to). v10.18.1: counting these means a quick mood flip doesn't trigger a whole new refill.
+     */
+    fun usable(kind: ReactKind, key: MoodKey): Int = bank[kind]?.count { b ->
+        b.key == key.toString() || MoodKey.parse(b.key)?.let { it.time == key.time && it.bond == key.bond } == true
+    } ?: 0
+
+    /**
+     * PREPARE: a refill request when the bank is low for this mood, or null (spaced out, one at a time).
+     * [gapMs] / [maxKinds] let the caller be gentler (v10.18.1 Background AI setting).
+     */
+    @Synchronized fun refillRequest(key: MoodKey, now: Long, gapMs: Long = refillGapMs, maxKinds: Int = maxKindsPerRefill): String? {
         if (refillInFlight && now - refillAt < refillTimeoutMs) return null
-        if (now - refillAt < refillGapMs) return null
+        if (now - refillAt < gapMs) return null
         prune(now)
-        val needing = ReactKind.values().filter { count(it, key) < perKind }
+        val needing = ReactKind.values().filter { usable(it, key) < perKind }
             .sortedWith(compareByDescending<ReactKind> { used[it.ordinal] }.thenBy { it.ordinal })
-            .take(maxKindsPerRefill)
+            .take(maxKinds)
         if (needing.isEmpty()) return null
         refillInFlight = true; refillAt = now; refillKey = key.toString()
         val req = ReactionPrompts.refill(needing, perKind, key, history.recent(15), styleN)

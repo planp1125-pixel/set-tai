@@ -117,6 +117,14 @@ class AppSettings(ctx: Context) {
         get() = p.getBoolean("roam", true)
         set(v) = p.edit().putBoolean("roam", v).apply()
 
+    /**
+     * v10.18.1 how much the brain may run when nobody is talking to it (idle Body Sense lines + preparing touch
+     * reactions): "off", "gentle" (default: only while the phone rests, a few times an hour) or "fast".
+     */
+    var backgroundAi: String
+        get() = p.getString("bg_ai", "gentle") ?: "gentle"
+        set(v) = p.edit().putString("bg_ai", v).apply()
+
     var quipsEnabled: Boolean
         get() = p.getBoolean("quips", true)
         set(v) = p.edit().putBoolean("quips", v).apply()
