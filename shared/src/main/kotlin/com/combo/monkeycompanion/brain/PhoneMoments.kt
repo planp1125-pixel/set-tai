@@ -75,7 +75,7 @@ object PhoneMoments {
 
     fun line(m: Moment, characterId: String, rnd: Random = Random): String = when (m) {
         Moment.CHARGE -> when (chargeStyle(characterId)) {
-            ChargeStyle.ZAP -> listOf("Charging machan! Full power coming ⚡", "Zap! Current is flowing, machan ⚡")
+            ChargeStyle.ZAP -> if (characterId == "devil") listOf("Ooh, tingly! ⚡😈 Devil battery charging…", "*tail sparks* Zzzap! That tickles ⚡😆") else listOf("Charging machan! Full power coming ⚡", "Zap! Current is flowing, machan ⚡")
             ChargeStyle.HEAT_BEAM -> listOf("Heat-beam charging! Full power coming ⚡", "A little heat vision for the battery 🔥⚡")
             ChargeStyle.CABLE -> listOf("Core cable connected. Charging machan ⚡", "Plugged into my arc core! Power sharing ⚡")
             ChargeStyle.GIANT_PLUG -> listOf("Giant plug, engage! Charging machan ⚡", "Ta-daa! The biggest plug in town 🔌⚡")
@@ -86,16 +86,19 @@ object PhoneMoments {
             "billa" -> listOf("Bye current… I'll nap on the warm phone 🐱👋", "Current gone? Purr… bye bye 😿👋")
             "chittu" -> listOf("Bye current! *waves tail* 🐭👋", "Nooo, the tingle left 😢🐭")
             "hollowman" -> listOf("*tips hat to the cable* Bye current 🎩👋", "Current left… even I can see that 😢")
+            "devil" -> listOf("*poof* Where did the current go? 😈👋", "Unplugged! Fine, I'll run on mischief 😏")
             "surfer" -> listOf("Bye current, see you next wave 🌊👋", "Unplugged! Paddling on my own now 🏄‍♀️")
             else -> listOf("Bye current 😢👋", "Nooo, the current left us 😢👋")
         }.random(rnd)
         Moment.FULL -> when (characterId) {
             "hollowman" -> listOf("100%! Invisible muscles, fully charged 💪🎩", "Full power! Moonwalk battery ready 🕺🔋")
+            "devil" -> listOf("100%! Full black-magic power 😈💪", "Fully charged! Time for tricks ✨😈")
             "surfer" -> listOf("100%! Ready for the biggest wave 💪🌊", "Full charge! Surf's up all day 🏄‍♀️🔋")
             else -> listOf("100%! Look at these muscles 💪", "Full charge! Feeling strong machan 💪🔋")
         }.random(rnd)
         Moment.LOW -> when (characterId) {
             "hollowman" -> listOf("Battery low… I'm getting MORE invisible… 🪫👻", "15%… my hat is tired… 🪫🎩")
+            "devil" -> listOf("Battery low… my magic is fizzling… 🪫😵", "15%… even my tail is drooping… 🪫")
             "surfer" -> listOf("Battery low… the waves are going flat… 🪫🌊", "15%… paddle… so… slow… 🪫")
             "billa", "chittu" -> listOf("Battery… so low… even the cheese can't save us… 🪫", "15%… *dramatic flop* charge us… 🪫")
             else -> listOf("Battery… so… low… charge me… 🪫", "15%… tell my bananas I loved them… 🪫")

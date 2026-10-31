@@ -268,7 +268,7 @@ class PowerEmitter(val parts: Particles) {
             PowerPhase.STRIKE -> if (!dusted && k > 0.05f) { dusted = true; hand(rig, false, a)
                 for (i in 0 until 10) { val ang = rnd.nextFloat() * 6.283f; val sp = (200f + rnd.nextFloat() * 200f) * s
                     parts.spawn(Particles.SPARK, a[0], a[1], kotlin.math.cos(ang) * sp, kotlin.math.sin(ang) * sp, 0.35f, 7f * s) } }
-            PowerPhase.TELEPORT -> {
+            PowerPhase.TELEPORT -> if (power.id != "vanish" && power.id != "devilhop") {   // v10.16: the devil draws his own red smoke
                 // Smoke bombs: one burst as he vanishes, one as he reappears.
                 val burst = if (!dusted && k >= 0.3f) 0 else if (dusted && k >= 0.5f && ringAcc > 0f) 1 else -1
                 if (burst >= 0) {

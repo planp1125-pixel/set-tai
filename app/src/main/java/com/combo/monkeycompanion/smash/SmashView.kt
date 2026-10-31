@@ -125,6 +125,7 @@ class SmashView(ctx: Context, private val shot: Bitmap, private val who: Charact
         "billa" -> "Tawa attack, machan! 🍳"
         "chittu" -> "Cheese missiles armed! 🧀"
         "rocketgirl" -> "Firework rockets, light the fuse! 🚀🎆"
+        "devil" -> "Black magic smash! Poof, poof, POOF! 😈✨"
         "surfer" -> "Tsunami smash! Surf the tiles! 🌊🏄‍♀️"
         "hollowman" -> "Invisible kicks! You won't see them coming 🕺"
         else -> "Stone time! Let's smash it! 🪨"

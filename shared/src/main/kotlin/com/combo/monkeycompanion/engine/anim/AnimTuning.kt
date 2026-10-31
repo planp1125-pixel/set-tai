@@ -114,6 +114,11 @@ data class AnimTuning(
             easeStyle = EaseStyle.SMOOTHSTEP, overshoot = 1.5f, poseFrequency = 24f, tempo = 1.0f, expressiveness = 1.1f, anticipationSec = 0.13f,
             earTwitchEvery = 0f, tailFlickEvery = 0f, lookAroundEvery = 7f, leanDeg = 8f,
             hair = AppendageTuning(stiffness = 120f, damping = 0.34f, lag = 0.05f, gain = 1.2f, maxDeg = 22f))
+        /** v10.16 Kutti Satan: soft and floaty (long slow-in/out), a light squash, a whippy tail with follow-through. */
+        val DEVIL = AnimTuning(squashMax = 0.88f, stretchMax = 1.14f, landingSquash = 0.12f, velocityStretch = 0.08f, squashDamping = 0.4f,
+            easeStyle = EaseStyle.SMOOTHSTEP, overshoot = 1.6f, poseFrequency = 26f, tempo = 1.0f, expressiveness = 1.15f, anticipationSec = 0.12f,
+            earTwitchEvery = 0f, tailFlickEvery = 0f, lookAroundEvery = 6f, leanDeg = 8f,
+            tail = AppendageTuning(stiffness = 110f, damping = 0.3f, lag = 0.06f, gain = 1.3f, maxDeg = 36f))
         /** v10.14 Surfing Girl: bouncy and quick, a whippy ponytail, leans hard into carves. */
         val SURF = AnimTuning(squashMax = 0.86f, stretchMax = 1.18f, landingSquash = 0.16f, velocityStretch = 0.1f, squashStiffness = 300f, squashDamping = 0.34f,
             easeStyle = EaseStyle.SMOOTHSTEP, overshoot = 1.8f, poseFrequency = 32f, tempo = 1.2f, expressiveness = 1.15f, anticipationSec = 0.1f,

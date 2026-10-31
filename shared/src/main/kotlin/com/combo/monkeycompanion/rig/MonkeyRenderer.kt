@@ -486,7 +486,7 @@ open class MonkeyRenderer {
     }
 
     /** The vanishing puff of smoke with a few sparkles (view space, centred on the body). */
-    private fun drawPuff(c: Canvas, rig: MonkeyRig, p: Pose) {
+    protected open fun drawPuff(c: Canvas, rig: MonkeyRig, p: Pose) {
         pts[0] = 0f; pts[1] = -75f; rig.root.mapPoints(pts)
         val cx = pts[0]; val cy = pts[1]; val s = rig.scale
         val k = p.puff.coerceIn(0f, 1f)

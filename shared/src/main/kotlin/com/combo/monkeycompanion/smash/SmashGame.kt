@@ -22,6 +22,7 @@ enum class Attack(val travelSecs: Float, val arc: Boolean) {
             "chittu" -> CHEESE
             "rocketgirl" -> ROCKET
             "surfer" -> WATER
+            "devil" -> STONE
             "hollowman" -> BALL
             else -> STONE
         }

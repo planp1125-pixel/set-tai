@@ -5384,9 +5384,26 @@ class MonkeyView(
     }
 
     /** Settai only (no bubble), e.g. for the wallpaper preview. */
+    /** v10.16: lifted by a friend's magic (Kutti Satan's float-a-buddy); expires by itself if the caster stops. */
+    private var levAmt = 0f
+    private var levAt = 0L
+    private val levPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    fun levitateBy(a: Float) { levAmt = a.coerceIn(0f, 1f); levAt = android.os.SystemClock.uptimeMillis(); postInvalidateOnAnimation() }
+
     fun drawMonkey(canvas: Canvas, clipSink: Boolean = true) {
         if (hiddenTab || (controller.state == MonkeyState.HIDDEN && clipSink)) return
         canvas.save()
+        val lev = if (android.os.SystemClock.uptimeMillis() - levAt < 400L) levAmt else 0f
+        if (lev > 0.01f) {
+            canvas.translate(0f, -lev * (12f * d + 3f * d * sin(t * 3f)))
+            val cx = ox + boxW / 2f; val cy = oy + boxH * 0.62f
+            for (i in 0 until 7) {
+                val ang = t * 1.8f + i * 0.9f
+                levPaint.color = if (i % 3 == 0) Color.WHITE else Color.rgb(0xE5, 0x1C, 0x2A)
+                levPaint.alpha = (220 * lev).toInt()
+                canvas.drawCircle(cx + kotlin.math.cos(ang) * boxW * 0.32f, cy + sin(ang) * 8f * d + boxH * 0.18f * sin(t * 1.3f + i) * 0.5f, (2f + 1.2f * sin(t * 7f + i)) * d, levPaint)
+            }
+        }
         if (clipSink && !sinkClipY.isNaN() && sinkY > 0f) canvas.clipRect(-10000f, -10000f, 100000f, sinkClipY)
         // Armour Anna's heavy footsteps: a tiny jolt on each footfall.
         heavyShake = if (character.heavy && controller.state == MonkeyState.WALK && !climber.active && !hoverOn) {
@@ -5745,6 +5762,8 @@ class MonkeyView(
         val a = controller.anim
         val ph = flight.phase; val k = flight.k
         a.powerPhase = ph; a.powerK = k; a.crashed = flight.crashed
+        // v10.16 Kutti Satan's "float a buddy": the nearest crew buddy rises on red sparkles (visual only, self-expiring)
+        if (pw.id == "floatbuddy") partnerViews.firstOrNull()?.levitateBy(min(1f, k / 0.15f) * min(1f, (1f - k) / 0.15f))
         a.sinceRing = emitter.sinceRing; a.ringLeft = emitter.leftHand
         val sp = hypot(powerVx, powerVy)
         a.speed = (sp / (900f * d)).coerceIn(0f, 1f)

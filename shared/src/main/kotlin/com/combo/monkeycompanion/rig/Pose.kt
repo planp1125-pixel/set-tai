@@ -160,6 +160,12 @@ class Pose {
     var flipC by slot(1f)
     var surf by slot(0f)           // 0..1 standing on the surfboard over a wave
     var surfSpray by slot(0f)      // 0..1 extra splash (big wave ride, landing, wipeout)
+    // v10.16 Kutti Satan, the little devil (visual only; never motion slots)
+    var dvPortal by slot(0f)       // 0..1 the red swirl portal he pops out of (reappear half of the vanish)
+    var dvSmoke by slot(0f)        // 0..1 the red smoke puff + sparkles he vanishes into
+    var dvSpell by slot(0f)        // 0..1 red spell sparks crackling between his fingers
+    var dvAura by slot(0f)         // 0..1 red levitation sparkles around him (float tricks)
+    var dvClone by slot(0f)        // 0..1 shadow clones beside him
 
     fun reset() { System.arraycopy(defaults, 0, v, 0, count) }
     fun set(o: Pose) { System.arraycopy(o.v, 0, v, 0, count) }

@@ -24,6 +24,10 @@ enum class Provider(
 /** All user settings. Secrets are stored encrypted via [SecureStore]. */
 class AppSettings(ctx: Context) {
     private val p: SharedPreferences = ctx.getSharedPreferences("monkey_settings", Context.MODE_PRIVATE)
+    /** v10.16: true on a fresh install (never updated from an older version). */
+    private val freshInstall: Boolean by lazy {
+        runCatching { val pi = ctx.packageManager.getPackageInfo(ctx.packageName, 0); pi.firstInstallTime == pi.lastUpdateTime }.getOrDefault(true)
+    }
 
     /**
      * v9.5 Strict Opt-In Gate for "Give Brain":
@@ -178,8 +182,18 @@ class AppSettings(ctx: Context) {
 
     /** v4.1: which body ([com.combo.monkeycompanion.character.CharacterRegistry] id). */
     var characterId: String
-        get() = (p.getString("character", "monkey") ?: "monkey").let { if (it == "rocketboy") "rocketgirl" else it }   // v10.9 rename
+        get() = (p.getString("character", null) ?: defaultCharacter()).let { if (it == "rocketboy") "rocketgirl" else it }   // v10.9 rename
         set(v) = p.edit().putString("character", v).apply()
+
+    /**
+     * v10.16: new installs start with Kutti Satan (the little devil). An older install that never picked a body keeps
+     * the monkey it has always shown (it already has other settings saved); the choice is saved once so it never flips.
+     */
+    private fun defaultCharacter(): String {
+        val id = if (freshInstall || p.all.isEmpty()) "devil" else "monkey"
+        p.edit().putString("character", id).apply()
+        return id
+    }
 
     /** v4.1: a character's wardrobe ([com.combo.monkeycompanion.character.Wear.encode]); null = defaults. */
     fun wardrobeFor(id: String): String? = p.getString("wear_$id", null)

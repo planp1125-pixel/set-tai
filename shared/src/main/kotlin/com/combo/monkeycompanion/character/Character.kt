@@ -32,6 +32,8 @@ object CharacterNames {
     const val ROCKETGIRL = "Rocket Girl"
     const val HOLLOWMAN = "Hollow Man"
     const val SURFER = "Surfing Girl"
+    /** v10.16 the app's own little devil mascot ("Settai" was already the monkey's name). */
+    const val DEVIL = "Kutti Satan"
 }
 
 /** One toggleable part. [options] = styles to pick from (first = default). */
@@ -150,9 +152,9 @@ abstract class Character(val id: String) {
 }
 
 object CharacterRegistry {
-    val all: List<Character> by lazy { listOf(MonkeyCharacter, Superboy, ArmourAnna, MaskMan, Billa, Chittu, Gajju, RocketGirl, HollowMan, SurferGirl) }
+    val all: List<Character> by lazy { listOf(KuttiSatan, MonkeyCharacter, Superboy, ArmourAnna, MaskMan, Billa, Chittu, Gajju, RocketGirl, HollowMan, SurferGirl) }
     val allWithCustom: List<Character> get() = all + CustomCompanionRegistry.allCharacters()
-    @Volatile var current: Character = MonkeyCharacter; private set
+    @Volatile var current: Character = KuttiSatan; private set   // v10.16: the little devil is the default main character
     private val wears = HashMap<String, Wear>()
 
     fun byId(id: String?): Character? {
@@ -161,6 +163,7 @@ object CharacterRegistry {
             "cat" -> "billa"
             "rocket", "rocket girl", "rocketgirl", "rocketboy", "rocket boy", "rocket_boy", "broomboy", "broom boy" -> "rocketgirl"
             "hollow", "hollow man", "hollowman", "invisible", "invisible man", "dancer" -> "hollowman"
+            "devil", "satan", "kutti satan", "kuttisatan", "kutti", "little devil", "imp" -> "devil"
             "surfer", "surf", "surfing girl", "surfgirl", "surfer girl" -> "surfer"
             else -> id
         }

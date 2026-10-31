@@ -92,6 +92,16 @@ object SkitLibrary {
                 Ending(0.6f, listOf(Beat(1, MonkeyState.STARTLED, "Where's your HEAD?! 😱", 1.8f, "❗"), Beat(0, MonkeyState.WAVE, "Left it at home. Too heavy 😎", 1.6f))),
                 Ending(0.4f, listOf(Beat(1, MonkeyState.DANCE, "Okay okay, teach me the slide! 🕺", 1.6f, null, Move.TOWARD), Beat(0, MonkeyState.HAPPY_PAT, "Lesson one: be smooth ✨", 1.6f))),
             )),
+        Skit("devil_vanish", "Now You See Me", listOf(r("devil"), ANY),
+            listOf(
+                Beat(0, MonkeyState.GIGGLE, "Psst, {1}! Want to see a magic trick? 😈", 1.8f, "✨"),
+                Beat(1, MonkeyState.HAPPY_PAT, "Ooh yes! Show me! 🤩", 1.6f, null, Move.TOWARD),
+                Beat(0, MonkeyState.DANCE, "*snap* Abra-ka-DEVIL! 😈✨", 1.6f, "✨"),
+            ),
+            listOf(
+                Ending(0.6f, listOf(Beat(1, MonkeyState.STARTLED, "Where did he GO?! 😱", 1.8f, "❗"), Beat(0, MonkeyState.WAVE, "Behind you! Hee-hee 😈👋", 1.6f))),
+                Ending(0.4f, listOf(Beat(1, MonkeyState.GIGGLE, "Your tail is still showing 😂", 1.6f, "😂"), Beat(0, MonkeyState.ANGRY, "Hmph! Magic needs practice 😤", 1.6f))),
+            )),
         Skit("surf_splash", "Surf Splash", listOf(r("surfer"), ANY),
             listOf(
                 Beat(0, MonkeyState.WALK, "Wave incoming! Hold on, {1}! 🌊🏄‍♀️", 1.8f, "🌊", Move.TOWARD),

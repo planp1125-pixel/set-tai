@@ -72,6 +72,8 @@ object CharacterProfiles {
     val HOLLOWMAN = CharacterProfile("hollowman", anim = AnimTuning.HOLLOW)
     /** v10.14 Surfing Girl: hovers on her wave, patrols around the screen a lot, dances on the board now and then. */
     val SURFER = CharacterProfile("surfer", edgeCrashOnFlight = false, airPatrolChance = 0.6f, airDanceChance = 0.15f, hoverJetPadRig = 44f, anim = AnimTuning.SURF)
+    /** v10.16 Kutti Satan: floats and bobs, patrols the air now and then, a whippy tail (TAIL spring). */
+    val DEVIL = CharacterProfile("devil", airPatrolChance = 0.35f, airDanceChance = 0.12f, anim = AnimTuning.DEVIL, body = BodyFeatures(tail = true))
     /** Custom photo look-alikes and anything new. */
     val DEFAULT = CharacterProfile("default", anim = AnimTuning.CHIBI)
 
@@ -87,6 +89,7 @@ object CharacterProfiles {
         "rocketgirl" -> ROCKETGIRL
         "hollowman" -> HOLLOWMAN
         "surfer" -> SURFER
+        "devil" -> DEVIL
         else -> DEFAULT
     }
 }
