@@ -217,6 +217,16 @@ class MonkeyView(
         override fun leaveBy(side: Int) { hideToEdge(if (side < 0) -1 else 1); ui.postDelayed({ if (hiddenTab) unhide() }, 13_000L) }
         override fun comeBack() { if (hiddenTab) unhide() }
         override fun log(what: String, result: String) { runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, what, result) } }
+        /** v10.19 daily moments: Brain ON = the AI writes the line (no canned fallback); Brain OFF = the scripted line. */
+        override fun sayAi(request: String, fallback: String, ms: Long) {
+            if (!aiVoiceOn()) { this@MonkeyView.say(fallback, ms); return }
+            bodyVoice.note(nowSec())
+            ChatHub.reactRequest(request, thought = true) { line ->
+                if (line.isNullOrBlank() || !live || !aiVoiceOn()) return@reactRequest
+                bodyVoice.note(nowSec())
+                speak(line, com.combo.monkeycompanion.speech.Speech.defaultDuration(line).coerceIn(2500L, 5000L), Voice.AI)
+            }
+        }
     }
     private val stage by lazy { com.combo.monkeycompanion.fun5.Stage(stageHost) }
     private val v5On get() = host != null && !wp
@@ -2829,6 +2839,7 @@ class MonkeyView(
         } else { renderer.anim = null; rig.squashPivot = 0f }
         stepLiving(dt)
         stepChatFab(dt)
+        stepFriendHeart(dt)   // v10.19
         positionReplyField()
         if (typing && !bubbleOn) endTyping()
         layoutRig()
@@ -5058,6 +5069,7 @@ class MonkeyView(
         if (v5On && stage.active) { canvas.save(); canvas.translate(-winX.toFloat(), -winY.toFloat()); stage.draw(canvas, front = true); canvas.restore() }
         if ((chatBtnUntil > 0f || hintUntil > 0f) && !chatFabOn) drawChatBtn(canvas)
         drawChatFab(canvas)
+        drawFriendHeart(canvas)   // v10.19
         if (notifCardOpen) {
             notifCard.draw(canvas, notifCardLeft, notifCardTop)
         }
@@ -6549,6 +6561,89 @@ class MonkeyView(
         val speak = fabSpeakMode()
         canvas.drawText(if (speak) "\uD83C\uDFA4" else "\uD83D\uDCAC", lx, ly - (btnText.descent() + btnText.ascent()) / 2, btnText)
         btnText.alpha = 255; btnText.textSize = 17 * d; btnPaint.alpha = 255
+    }
+
+    // ---- v10.19 friendship heart: faint like the chat button, fills red with the level, glows on a level-up ----
+    private var heartOn = false
+    private var heartXp = -1
+    private var heartLevel = 1
+    private var heartFill = 0f
+    private var heartPulse = 0f
+    private var heartFlash = 0f
+    private var heartPollIn = 0f
+    private var heartFeatureOn = true
+    private var heartLX = 0f; private var heartLY = 0f
+    private val heartPath = Path()
+    private val heartPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val heartText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; isFakeBoldText = true }
+    val debugHeartLevel get() = heartLevel
+    val debugHeartOn get() = heartOn
+
+    /** No Random here: reads the saved friendship every 2 s (cheap) and animates the pulse / glow. */
+    private fun stepFriendHeart(dt: Float) {
+        if (heartPulse > 0f) heartPulse = max(0f, heartPulse - dt)
+        if (heartFlash > 0f) heartFlash = max(0f, heartFlash - dt)
+        heartPollIn -= dt
+        if (heartPollIn <= 0f) {
+            heartPollIn = 2f
+            heartFeatureOn = runCatching { com.combo.monkeycompanion.fun5.Fun5Store.on(context, com.combo.monkeycompanion.fun5.Fun5Store.Feature.HEART) }.getOrDefault(true)
+            val xp = runCatching { com.combo.monkeycompanion.fun5.Fun5Store.friendship(context).xp }.getOrDefault(0)
+            val lvl = com.combo.monkeycompanion.v5.Friendship.level(xp)
+            if (heartXp >= 0 && xp > heartXp) heartPulse = 1.2f
+            if (heartXp >= 0 && lvl > heartLevel) heartFlash = 4f
+            heartXp = xp; heartLevel = lvl
+            heartFill = if (lvl >= 10) 1f else com.combo.monkeycompanion.v5.Friendship.progress(xp)
+        }
+        heartOn = heartFeatureOn && host != null && !wp && !hiddenTab && !exiting && !powerOn && !typing && !chatOpen && !quitAsk &&
+            !notifCardOpen && hideAnim < 0f && !climber.active && controller.state != MonkeyState.ENTRANCE && controller.state != MonkeyState.HIDDEN &&
+            (chatFabOn || !fabQuiet)
+    }
+
+    private fun heartShape(cx: Float, cy: Float, r: Float) {
+        heartPath.reset()
+        heartPath.moveTo(cx, cy + r * 0.95f)
+        heartPath.cubicTo(cx - r * 1.7f, cy - r * 0.15f, cx - r * 0.75f, cy - r * 1.35f, cx, cy - r * 0.45f)
+        heartPath.cubicTo(cx + r * 0.75f, cy - r * 1.35f, cx + r * 1.7f, cy - r * 0.15f, cx, cy + r * 0.95f)
+        heartPath.close()
+    }
+
+    private fun drawFriendHeart(canvas: Canvas) {
+        if (!heartOn) return
+        val glow = if (heartFlash > 0f) min(1f, heartFlash) else 0f
+        val pulse = if (heartPulse > 0f) sin(heartPulse / 1.2f * Math.PI.toFloat()) else 0f
+        val r = 9.5f * d * (1f + 0.25f * pulse + 0.35f * glow * (0.5f + 0.5f * sin(t * 9f)))
+        // place it just below the chat button, or at the top corner of the box when the button is hidden
+        var cx: Float; var cy: Float
+        if (chatFabOn && !chatFab.x.isNaN()) { cx = fabLX; cy = fabLY + chatFabR + r + 7f * d }
+        else { cx = ox + boxW - r - 6f * d; cy = oy + r + 10f * d }
+        val maxW = (if (wp) sw() else winW.toFloat()); val maxH = (if (wp) (host?.screenHeight() ?: height).toFloat() else winH.toFloat())
+        cx = cx.coerceIn(r * 1.8f, max(r * 1.8f, maxW - r * 1.8f)); cy = cy.coerceIn(r * 1.6f, max(r * 1.6f, maxH - r * 1.6f))
+        heartLX = cx; heartLY = cy
+        // faint like the chat button; darker and solid while it pulses / glows
+        val strong = max(pulse, glow)
+        val a = ((0.42f + 0.58f * strong) * 255).toInt()
+        heartShape(cx, cy, r)
+        heartPaint.style = Paint.Style.FILL; heartPaint.color = Color.WHITE; heartPaint.alpha = (a * 0.55f).toInt()
+        canvas.drawPath(heartPath, heartPaint)
+        // the red level bar fills the heart from the bottom
+        val top = cy - r * 1.05f; val bottom = cy + r * 0.95f
+        val fillTop = bottom - (bottom - top) * heartFill.coerceIn(0.06f, 1f)
+        canvas.save(); canvas.clipRect(cx - r * 2f, fillTop, cx + r * 2f, bottom + 1f)
+        val red = if (strong > 0.3f) com.combo.monkeycompanion.theme.Th.rgb(0xA8, 0x00, 0x0C) else com.combo.monkeycompanion.theme.Th.rgb(0xE0, 0x10, 0x1A)
+        heartPaint.color = red; heartPaint.alpha = a
+        canvas.drawPath(heartPath, heartPaint)
+        canvas.restore()
+        heartPaint.style = Paint.Style.STROKE; heartPaint.strokeWidth = 1.4f * d; heartPaint.color = Color.WHITE; heartPaint.alpha = a
+        canvas.drawPath(heartPath, heartPaint)
+        heartText.color = Color.WHITE; heartText.alpha = a; heartText.textSize = 8.5f * d * (r / (9.5f * d))
+        canvas.drawText(heartLevel.toString(), cx, cy + heartText.textSize * 0.15f, heartText)
+        if (glow > 0f) {   // "Level up!" label floats above the heart while it glows
+            heartText.textSize = 11f * d; heartText.alpha = (255 * min(1f, heartFlash / 1.2f)).toInt()
+            heartText.color = com.combo.monkeycompanion.theme.Th.rgb(0xE0, 0x10, 0x1A)
+            val ly = cy - r * 1.6f - (4f - heartFlash) * 4f * d
+            canvas.drawText("Friendship Lv $heartLevel!", cx.coerceIn(48f * d, max(48f * d, maxW - 48f * d)), max(12f * d, ly), heartText)
+        }
+        heartPaint.alpha = 255; heartText.alpha = 255
     }
 
     private fun chatFabHit(x: Float, y: Float) = chatFabOn && !chatFab.x.isNaN() && hypot(x - fabLX, y - fabLY) <= chatFabTouchR

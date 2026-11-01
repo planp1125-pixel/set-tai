@@ -99,8 +99,21 @@ object ChatHub {
         }
     }
 
-    private fun bodyNow(): String = runCatching {
-        listOf(bodyState(), com.combo.monkeycompanion.mind.MindHub.promptNote()).filter { it.isNotBlank() }.joinToString("\n")
+    private fun bodyNow(facts: Boolean = true): String = runCatching {
+        listOf(bodyState(), com.combo.monkeycompanion.mind.MindHub.promptNote(), bondNote(facts)).filter { it.isNotBlank() }.joinToString("\n")
+    }.getOrDefault("")
+
+    /**
+     * v10.19: friendship level, today's feeling, the streak, a sulk, plus a few things he remembers about you
+     * ([facts] = false when the chat prompt already lists the memories). Its own short line, so it never pushes
+     * the Body Sense note out.
+     */
+    private fun bondNote(facts: Boolean): String = runCatching {
+        val f = com.combo.monkeycompanion.fun5.Fun5Store.friendship(app)
+        val b = com.combo.monkeycompanion.fun5.Fun5Store.bond(app)
+        val known = if (facts && settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.MEMORY))
+            com.combo.monkeycompanion.powers.ExtraCaps.memory(app).relevant("", 4).map { it.text } else emptyList()
+        com.combo.monkeycompanion.v5.Bond.promptLine(f.xp, b.warmth, f.streak, b.sulking, known)
     }.getOrDefault("")
 
     /** Strip tags, fire actions, fallback to the user's request. Returns the text to show. */
@@ -273,7 +286,7 @@ object ChatHub {
                 val th = if (b.supportsTools) tools else null
                 toolActed = false
                 val usePowers = powers.specs.isNotEmpty() && (!offline || settings.offlineTools)
-                val sys = Persona.systemPrompt(th != null && usePowers, bodyNow(), compact = offline, actionTool = th != null,
+                val sys = Persona.systemPrompt(th != null && usePowers, bodyNow(facts = !usePowers), compact = offline, actionTool = th != null,
                     powerTags = if (usePowers && (th == null || offline)) powers.tagHelp() else "",
                     phoneState = if (usePowers) powers.state() else "",
                     extra = if (usePowers) AgentPrompt.build(settings, th != null && !offline, typed) else "")

@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.18.1 (versionCode 49)**, 31 Oct 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.19 (versionCode 50)**, 31 Oct 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## 1. What the app is
 Set-Tai (Settai, "mischievous" in Tamil) is a **floating overlay companion app** for Android. It is not a launcher and not a full-screen app.
@@ -26,6 +26,7 @@ Key files:
 - `shared/.../brain/Landings.kt`: landing-style pools per character. Devil: floaty landings, with jets only if boost/swoop/jets are enabled.
 - `shared/.../ai/BodySense.kt`: what the AI "feels": position, state, mood, battery, time, energy, quiet time, keyboard, app, plus a fading feelings log.
 - `shared/.../ai/BodyVoice.kt`: rate-limited spontaneous AI lines when Brain is on.
+- `shared/.../v5/Bond.kt` + `app/.../fun5/Fun5Store.kt` (`bond`, `checkIn`, `takeMoment`, `patBond`) + `app/.../fun5/Stage.kt` (daily moments) (v10.19): the Bond. Friendship level/XP/streak stay in `Friendship`; Bond adds warmth (cools per missed day, level never drops), the daily check-in (hello / grace = 1 free missed day per week / playful sulk until a pat / welcome back after 5+ days), goodnight after 10 PM, and the AI's `YOUR BOND` prompt line (ChatHub.bondNote). The friendship heart is drawn in `MonkeyView.drawFriendHeart`. Switches: Settings › 💛 Engagement (Fun5Store.Feature with engagement = true). No Random anywhere (lines picked by date).
 - `shared/.../ai/react/*` + `app/.../ai/ReactionHub.kt` (v10.18): the "Feel the touch" reaction engine. Every touch gets an AI-written line (instant from a prepared bank, plus fresh thoughts for big moments), with per-character anti-repeat memory saved in `files/reactions/`. Hooks are in `MonkeyView.feelTouch` / `stepReactionRefill`. Read `docs/REACTION_ENGINE.md` first.
 - `app/.../ai/ChatHub.kt`, `app/.../ai/AppSettings.kt`: AI routing and all preferences (`defaultCharacter()` sets devil on detected fresh installs; `enabledPowers` per character).
 - `shared/.../character/Character.kt`: `CharacterRegistry` and `CharacterNames`. `V1016Devil.kt` is Kutti Satan; `CustomCompanion.kt` plus `app/.../ui/CompanionStudioActivity.kt` are the user-created characters, which have their own multi-select powers.

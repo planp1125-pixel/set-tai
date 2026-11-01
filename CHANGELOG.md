@@ -75,3 +75,12 @@ The devil's horns curve inward like the icon.
 - A quick mood change no longer triggers a whole new batch of lines.
 - **Faster on-device replies:** the prompt sent to a local model is capped (about half the old size), so the CPU has much less to read before answering.
 - The GPU switch now warns that a big model can make the whole phone lag.
+
+## v10.19 (code 50)
+- **Friendship heart:** a small, faint heart next to the character (just under the chat button) fills up red as your friendship grows, with the level number inside. It pulses when you earn points and glows darker with "Friendship Lv N!" when you level up. Friendship comes from patting, chatting, games and coming back each day; the level never goes down.
+- **Warmth:** besides the level, he has a feeling for today. It cools a little for each day you stay away and warms up when you spend time together. The AI gets it in a short "your bond" line, together with a few things he remembers about you (name, exams, likes), so he can bring them up naturally.
+- **Daily hello:** the first time you open your phone each day he waves and says something that fits the time (AI-written with Brain on). It replaces the buddy's separate "good morning", so you don't get two.
+- **Streak with a heart:** miss one day and he uses his one free pass a week to save your streak. Miss more and he sulks a little (arms folded, turned away) until you pat him, then forgives you. After 5+ days away he's just happy you're back. Sulks also fade by themselves after a few hours.
+- **Goodnight:** once a night after 10 PM he yawns, says goodnight and curls up to sleep.
+- **Settings › 💛 Engagement:** your friendship numbers plus switches for the heart, daily hello, streak sulking and goodnight (all on by default).
+- No new permissions; everything stays on the phone. No Random used (lines are picked by date), so the GoldenTrace frame stream is untouched. New `BondTest` (12 tests).

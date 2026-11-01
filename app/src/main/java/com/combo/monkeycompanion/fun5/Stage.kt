@@ -21,6 +21,7 @@ import com.combo.monkeycompanion.rig.MonkeyRig
 import com.combo.monkeycompanion.rig.Particles
 import com.combo.monkeycompanion.rig.Pose
 import com.combo.monkeycompanion.v5.BananaCatch
+import com.combo.monkeycompanion.v5.Bond
 import com.combo.monkeycompanion.v5.CoffeeBreak
 import com.combo.monkeycompanion.v5.Festivals
 import com.combo.monkeycompanion.v5.Friendship
@@ -33,6 +34,7 @@ import com.combo.monkeycompanion.v5.SleepNag
 import com.combo.monkeycompanion.v5.StaringContest
 import com.combo.monkeycompanion.v5.WeatherMood
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import kotlin.random.Random
 
@@ -70,6 +72,11 @@ interface StageHost {
     fun leaveBy(side: Int)
     fun comeBack()
     fun log(what: String, result: String)
+    /**
+     * v10.19: a daily moment line. Brain ON: the AI writes it from [request] (nothing shows if it fails);
+     * Brain OFF: the scripted [fallback] is said.
+     */
+    fun sayAi(request: String, fallback: String, ms: Long) = say(fallback, ms)
 }
 
 /**
@@ -170,6 +177,9 @@ class Stage(private val h: StageHost) : PairHub.Listener {
         scheduleCoffee()
         ui.postDelayed({ festivalCheck(); weatherCheck() }, 4000L)
         resumeNag()
+        sulking = Fun5Store.bond(c).sulking   // v10.19
+        ui.postDelayed(dailyRetry, 9000L)
+        scheduleNight()
     }
     fun stop() {
         if (!live) return
@@ -189,7 +199,7 @@ class Stage(private val h: StageHost) : PairHub.Listener {
     val sensorOn get() = motion.active
 
     /** Phone unlocked (the overlay forwards it). */
-    fun onUnlock() { festivalCheck(); weatherCheck() }
+    fun onUnlock() { festivalCheck(); weatherCheck(); dailyCheck(); goodnight() }
     val staring get() = stare != null
 
     // ======================= frame =======================
@@ -199,6 +209,7 @@ class Stage(private val h: StageHost) : PairHub.Listener {
         stepMunch(dt)
         stepGames(dt)
         visitor?.let { v -> if (!v.step(dt)) visitor = null }
+        if (sulking && t >= sulkPoseAt) stepSulk()
     }
 
     /** [front] = drawn over the body (masks, props); else behind (banners, bananas, the visitor). Screen space. */
@@ -496,6 +507,96 @@ class Stage(private val h: StageHost) : PairHub.Listener {
         return true
     }
 
+    // ======================= v10.19 daily moments (hello, grace, sulk, welcome back, goodnight) =======================
+    private var sulking = false
+    private var sulkPoseAt = 0f
+    private var pendingMoment: Pair<Bond.Moment, Int>? = null
+    private val dailyRetry = Runnable { dailyCheck() }
+
+    /** First visit of the day: judged once (Fun5Store.checkIn), played when he's free and it's not a quiet time. */
+    private fun dailyCheck() {
+        if (!live) return
+        Fun5Store.checkIn(c)
+        val m = pendingMoment ?: Fun5Store.takeMoment(c)?.also { pendingMoment = it } ?: return
+        if (!h.free() || h.quiet() || playing) { ui.removeCallbacks(dailyRetry); ui.postDelayed(dailyRetry, 60_000L); return }
+        pendingMoment = null
+        playMoment(m.first, m.second)
+    }
+
+    private fun userName(): String? = runCatching {
+        if (com.combo.monkeycompanion.ai.ChatHub.settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.MEMORY))
+            com.combo.monkeycompanion.powers.ExtraCaps.memory(c).name() else null
+    }.getOrNull()
+
+    private fun playMoment(m: Bond.Moment, gap: Int) {
+        val now = LocalDateTime.now(); val seed = now.dayOfYear; val hour = now.hour
+        val streak = Fun5Store.friendship(c).streak
+        val req = Bond.aiRequest(m, hour, gap, streak)
+        when (m) {
+            Bond.Moment.NONE, Bond.Moment.FIRST -> return   // the very first day is the onboarding's job
+            Bond.Moment.HELLO -> {
+                if (!Fun5Store.on(c, Fun5Store.Feature.HELLO)) return
+                h.play(MonkeyState.WAVE, 1.6f)
+                h.sayAi(req, Bond.hello(hour, userName(), seed), 4500L)
+                if (hour in 5..10) skipProactive("greet_morning", now.dayOfYear)   // no second "good morning" from the buddy
+            }
+            Bond.Moment.GRACE -> {
+                if (!Fun5Store.on(c, Fun5Store.Feature.HELLO) && !Fun5Store.on(c, Fun5Store.Feature.SULK)) return
+                h.play(MonkeyState.HAPPY_PAT, 1.6f)
+                h.sayAi(req, Bond.graceLine(streak + 1), 4500L)
+            }
+            Bond.Moment.SULK -> {
+                if (!Fun5Store.on(c, Fun5Store.Feature.SULK)) { Fun5Store.patBond(c); playMoment(Bond.Moment.HELLO, gap); return }
+                sulking = true; sulkPoseAt = t
+                stepSulk()
+                h.sayAi(req, Bond.sulkLine(seed), 4500L)
+            }
+            Bond.Moment.WELCOME_BACK -> {
+                if (!Fun5Store.on(c, Fun5Store.Feature.HELLO)) return
+                h.dance(); burst(Particles.CONFETTI, 16)
+                h.sayAi(req, Bond.welcomeBackLine(gap, seed), 4500L)
+            }
+        }
+        h.log("Daily moment", m.name.lowercase() + if (gap > 1) " (away $gap days)" else "")
+    }
+
+    /** Sulking: arms folded and turned away now and then, until a pat (or it fades after a few hours). */
+    private fun stepSulk() {
+        sulkPoseAt = t + 8f
+        val b = Fun5Store.bond(c)
+        val faded = Bond.fade(b, System.currentTimeMillis())
+        if (!faded.sulking || !Fun5Store.on(c, Fun5Store.Feature.SULK)) { if (b.sulking) Fun5Store.saveBond(c, faded.copy(sulking = false)); sulking = false; return }
+        if (h.free() && !playing) h.play(MonkeyState.SAD, 7f)
+    }
+
+    private fun skipProactive(key: String, day: Int) {
+        runCatching { c.getSharedPreferences("settai_proactive", Context.MODE_PRIVATE).edit().putInt(key, day).apply() }
+    }
+
+    private val nightCheck = Runnable { goodnight() }
+    /** Next goodnight check: at 10 PM (or in a minute if it's already night). */
+    private fun scheduleNight() {
+        ui.removeCallbacks(nightCheck)
+        val n = LocalTime.now()
+        val ms = if (n.hour >= Bond.NIGHT_FROM || n.hour < 2) 60_000L
+            else ((Bond.NIGHT_FROM * 60 - (n.hour * 60 + n.minute)) * 60_000L).coerceAtLeast(60_000L)
+        ui.postDelayed(nightCheck, ms)
+    }
+    private fun goodnight() {
+        if (!live) return
+        val now = LocalDateTime.now()
+        val b = Fun5Store.bond(c)
+        if (!Fun5Store.on(c, Fun5Store.Feature.GOODNIGHT) || !Bond.goodnightDue(b, now)) { scheduleNight(); return }
+        if (!h.free() || h.quiet() || playing || !h.visible()) { ui.removeCallbacks(nightCheck); ui.postDelayed(nightCheck, 5 * 60_000L); return }
+        Fun5Store.saveBond(c, b.copy(nightDay = Bond.nightKey(now) ?: ""))
+        skipProactive("greet_night", if (now.hour < 2) now.dayOfYear - 1 else now.dayOfYear)   // no second goodnight from the buddy
+        h.play(MonkeyState.SLEEP, 2.5f)
+        h.sayAi(Bond.AI_GOODNIGHT, Bond.goodnightLine(userName(), now.dayOfYear), 4000L)
+        ui.postDelayed({ if (live && h.free()) h.sleepNow(true) }, 4200L)
+        h.log("Daily moment", "goodnight")
+        scheduleNight()
+    }
+
     // ======================= 5. friendship =======================
     fun xp(src: Friendship.Source) { Fun5Store.addXp(c, src) }   // a level-up comes back through Fun5Store.onLevelUp
     fun celebrate(level: Int) {
@@ -507,6 +608,12 @@ class Stage(private val h: StageHost) : PairHub.Listener {
     }
     /** Pets: XP, and with the crown unlocked the character sometimes puts it on. */
     fun onPet() {
+        if (sulking && Fun5Store.patBond(c)) {   // v10.19: a pat ends the sulk
+            sulking = false
+            h.play(MonkeyState.HAPPY_PAT, 2f)
+            h.sayAi(Bond.AI_MAKE_UP, Bond.makeUpLine(LocalDate.now().dayOfYear), 3500L)
+            h.log("Daily moment", "sulk ended by a pat")
+        }
         xp(Friendship.Source.PET)
         val xp = Fun5Store.friendship(c).xp
         if (prop == PropKind.NONE && Random.nextFloat() < 0.12f) {

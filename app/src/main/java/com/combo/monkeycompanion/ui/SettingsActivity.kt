@@ -163,6 +163,7 @@ class SettingsActivity : Activity() {
         col.addView(buildSuperpowers().also { powersCard = it })
         col.addView(buildPowers())
         col.addView(buildFun5())
+        col.addView(buildEngagement())   // v10.19
         updateCards()
 
         val scroll = ScrollView(this).apply { setBackgroundColor(cream); addView(col) }
@@ -833,12 +834,31 @@ class SettingsActivity : Activity() {
         )
     }
 
+    /** v10.19: daily habits with your character (friendship heart, daily hello, streak sulking, goodnight). */
+    private fun buildEngagement(): View {
+        val S = com.combo.monkeycompanion.fun5.Fun5Store
+        val views = ArrayList<View>()
+        val f = com.combo.monkeycompanion.v5.Friendship
+        val st = S.friendship(this); val b = S.bond(this)
+        views += text("Friendship ${com.combo.monkeycompanion.v5.Bond.points(st.xp)}/100 · level ${f.level(st.xp)} (${f.title(f.level(st.xp))}) · " +
+            "${st.streak}-day streak · feeling ${com.combo.monkeycompanion.v5.Bond.warmthWord(b.warmth)}", 13f)
+        views += text("Friendship grows when you pat him, chat, play games and come back each day. The level never goes down; if you stay away he just misses you a bit.", 12f, color = soft)
+        for (ft in S.Feature.entries.filter { it.engagement }) {
+            views += CheckBox(this).apply {
+                text = ft.title; setTextColor(brown); isChecked = S.on(this@SettingsActivity, ft)
+                setOnCheckedChangeListener { _, c -> S.set(this@SettingsActivity, ft, c) }
+            }
+            views += text(ft.help, 11.5f, color = soft)
+        }
+        return card("💛 Engagement", *views.toTypedArray())
+    }
+
     /** v5: one on/off per big feature; the characters decide the rest. */
     private fun buildFun5(): View {
         val S = com.combo.monkeycompanion.fun5.Fun5Store
         val views = ArrayList<View>()
         views += text("Games, clips, two phones and the friendship level are always there (long-press › More, or the app home). These switches cover the things Settai does by itself.", 12f, color = soft)
-        for (f in com.combo.monkeycompanion.fun5.Fun5Store.Feature.entries) {
+        for (f in com.combo.monkeycompanion.fun5.Fun5Store.Feature.entries.filter { !it.engagement }) {
             views += CheckBox(this).apply {
                 text = f.title; setTextColor(brown); isChecked = S.on(this@SettingsActivity, f)
                 setOnCheckedChangeListener { _, c -> S.set(this@SettingsActivity, f, c) }
