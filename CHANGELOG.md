@@ -117,3 +117,10 @@ Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real ca
 - **New sounds** (made in code, no samples): pizzicato tiptoes, zip, boing, splat, thud, pan clang and bonk, slide whistle, pop, a sad "wah-wah", a little "ta-da". They follow Settings › Sound effects and stay silent on silent/vibrate. Short buzzes on the big hits (none on silent).
 - Drag a character during the show to stop it.
 - No new permissions. No frame-loop Random (GoldenTraceTest safe). New test: ShowEpisodeTest (5): no teleports, no overlaps, readable lines, a heart in every story.
+
+## v10.21.1 (code 55): the notification question stops nagging
+- "You have N notifications, want a quick summary?" is asked **once**, by one character, not by every character every few minutes.
+- It asks again only when **new** notifications arrive (at most every 30 minutes), or, after you tap **Later**, once you've **unlocked the phone again** (and 30 minutes have passed).
+- Once you've opened the summary, those notifications are never offered again.
+- The summary greeting no longer says "Manik" to people whose name it doesn't know.
+- New test: NotifPromptGateTest (4).

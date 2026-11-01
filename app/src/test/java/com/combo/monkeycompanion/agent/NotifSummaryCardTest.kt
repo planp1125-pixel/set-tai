@@ -125,6 +125,7 @@ class NotifSummaryCardTest {
         assertEquals(4, v.debugTabBadgeCount)
 
         // 2. Unhide from edge tab -> prompts with [Yes, show me 📬] ("notif_card") chip
+        NotifPromptGate.reset()
         v.unhide()
         v.debugFrames(180)
         assertFalse(v.debugHidden)

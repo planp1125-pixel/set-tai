@@ -3256,7 +3256,8 @@ class MonkeyView(
     fun unhide() {
         if (!hiddenTab || host == null) return
         hiddenTab = false
-        val hasUnread = com.combo.monkeycompanion.agent.NotifStore.all().isNotEmpty()
+        // v10.21.1: ask about notifications only once (one character, new ones, or after "Later" + an unlock)
+        val hasUnread = com.combo.monkeycompanion.agent.NotifPromptGate.shouldAsk(newestNotif(), System.currentTimeMillis())
         if (hasUnread && !chatAfterEntrance) promptNotifsAfterUnhide = true
         if (resting) Lines.note(Lines.Event.RESTED)
         resting = false
@@ -5182,6 +5183,9 @@ class MonkeyView(
     fun promptUnreadNotifications(): Boolean {
         val items = com.combo.monkeycompanion.agent.NotifStore.all()
         if (items.isEmpty()) return false
+        val now = System.currentTimeMillis(); val newest = newestNotif()
+        if (!com.combo.monkeycompanion.agent.NotifPromptGate.shouldAsk(newest, now)) return false
+        com.combo.monkeycompanion.agent.NotifPromptGate.asked(newest, now)
         val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
         val line = com.combo.monkeycompanion.agent.NotifSummary.edgePrompt(items, hour)
         val Q = com.combo.monkeycompanion.agent.QuickChip
@@ -5190,8 +5194,12 @@ class MonkeyView(
         return true
     }
 
+    /** Time of the newest notification we hold (at least 1 when there is any, 0 when none). */
+    private fun newestNotif(): Long = com.combo.monkeycompanion.agent.NotifStore.all().maxOfOrNull { it.time.coerceAtLeast(1L) } ?: 0L
+
     /** Opens the compact Motorola-style "What You Missed" dark summary card right above Settai. */
     fun openNotifSummaryCard(useDemoIfEmpty: Boolean = false): Boolean {
+        com.combo.monkeycompanion.agent.NotifPromptGate.opened(newestNotif())
         if (hiddenTab && host != null && !wp) unhide()
         com.combo.monkeycompanion.powers.SettaiNotificationListener.instance?.current()
         val liveItems = com.combo.monkeycompanion.agent.NotifStore.all()
@@ -5220,7 +5228,7 @@ class MonkeyView(
             if (ChatHub.settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.MEMORY))
                 com.combo.monkeycompanion.powers.ExtraCaps.memory(context).name()
             else null
-        }.getOrNull() ?: "Manik"
+        }.getOrNull()
         val greet = com.combo.monkeycompanion.agent.NotifSummary.greeting(hour, userName)
         val maxW = ((host?.screenWidth() ?: width.takeIf { it > 0 } ?: 1080) - (24 * d).toInt()).coerceAtLeast((260 * d).toInt())
         notifCard.setData(groups, greet, "Here's what you missed...", maxW)

@@ -104,7 +104,7 @@ class MonkeyOverlayService : Service(), OverlayHost {
             when (i.action) {
                 Intent.ACTION_SCREEN_OFF -> { closeChat(); view?.goToSleep(); secondarySlots.forEach { it.slotView?.goToSleep() }; LaunchGate.overlayVisible = false; sleepyNotification(true) }
                 Intent.ACTION_SCREEN_ON -> { view?.onScreenOn(); secondarySlots.forEach { it.slotView?.onScreenOn() } }
-                Intent.ACTION_USER_PRESENT -> { view?.onUserPresent(); secondarySlots.forEach { it.slotView?.onUserPresent() }; LaunchGate.overlayVisible = true; sleepyNotification(false) }
+                Intent.ACTION_USER_PRESENT -> { com.combo.monkeycompanion.agent.NotifPromptGate.unlocked(); view?.onUserPresent(); secondarySlots.forEach { it.slotView?.onUserPresent() }; LaunchGate.overlayVisible = true; sleepyNotification(false) }
             }
         }
     }
