@@ -108,20 +108,20 @@ object NotifSummary {
     }
 
     fun greeting(hourOfDay: Int, userName: String? = null): String {
-        val who = userName?.trim()?.takeIf { it.isNotEmpty() } ?: "Manik"
+        val who = userName?.trim()?.takeIf { it.isNotEmpty() }
         val tod = when (hourOfDay) {
             in 5..11 -> "Good morning"
             in 12..16 -> "Good afternoon"
             in 17..21 -> "Good evening"
             else -> "Hey there"
         }
-        return "$tod, $who!"
+        return if (who != null) "$tod, $who!" else "$tod!"
     }
 
     fun edgePrompt(items: List<NotifItem>, hourOfDay: Int): String {
         val n = items.size
         val apps = items.map { it.app }.distinct().take(2).joinToString(" & ")
-        val greet = when (hourOfDay) { in 5..11 -> "Good morning machan!"; in 12..16 -> "Hey machan!"; else -> "Evening machan!" }
+        val greet = when (hourOfDay) { in 5..11 -> "Good morning!"; in 12..16 -> "Hey!"; else -> "Good evening!" }
         return "$greet You have $n notification${if (n == 1) "" else "s"} from $apps — want a quick summary?"
     }
 

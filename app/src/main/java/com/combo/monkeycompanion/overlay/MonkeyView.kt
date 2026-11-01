@@ -787,6 +787,21 @@ class MonkeyView(
     /** Reminders, permissions, errors, instructions: always shown as written. */
     fun sayInfo(text: String, durationMs: Long = 3500L) = speak(text, durationMs, Voice.INFO)
 
+    // v10.21 the name you told us ("my name is …"), read from Memory at most every 20 s
+    private var knownNameAt = -1L
+    private var knownNameCache: String? = null
+    private fun knownName(): String? {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (knownNameAt < 0L || now - knownNameAt > 20_000L) {
+            knownNameAt = now
+            knownNameCache = runCatching {
+                if (ChatHub.settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.MEMORY))
+                    com.combo.monkeycompanion.powers.ExtraCaps.memory(context).name() else null
+            }.getOrNull()
+        }
+        return knownNameCache
+    }
+
     // ---- v10.17 AI speech from Body Sense (Give Brain ON): no canned lines; short spontaneous lines at real moments ----
     private val bodyVoice = com.combo.monkeycompanion.ai.BodyVoice()
     private var lastRestAt = 0L
@@ -963,8 +978,10 @@ class MonkeyView(
      * [reply]: show the reply field. By default only while a conversation is going (double-tap /
      * long-press 💬, or within ~60 s of the last message); plain lines (quips, warnings, reactions) are text only.
      */
-    private fun showBubble(text: String, life: Float, buttons: List<String> = emptyList(), talk: Boolean = true, reply: Boolean? = null,
+    private fun showBubble(raw: String, life: Float, buttons: List<String> = emptyList(), talk: Boolean = true, reply: Boolean? = null,
                            chips: List<com.combo.monkeycompanion.agent.QuickChip> = emptyList()) {
+        // v10.21: friends call you by your name (or nothing), never a default "machan"
+        val text = com.combo.monkeycompanion.speech.Address.personalize(raw, knownName())
         val withReply = (reply ?: convoActive) && replyField != null && buttons.isEmpty() && chips.isEmpty()
         bubbleChips = chips; arcOn = false; lastShown = text
         if (chips.isNotEmpty()) bubble.setText(text, (230 * d).toInt(), chips.map { it.label }, false, chips = true)
@@ -5220,7 +5237,7 @@ class MonkeyView(
             if (ChatHub.settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.MEMORY))
                 com.combo.monkeycompanion.powers.ExtraCaps.memory(context).name()
             else null
-        }.getOrNull() ?: "Manik"
+        }.getOrNull()
         val greet = com.combo.monkeycompanion.agent.NotifSummary.greeting(hour, userName)
         val maxW = ((host?.screenWidth() ?: width.takeIf { it > 0 } ?: 1080) - (24 * d).toInt()).coerceAtLeast((260 * d).toInt())
         notifCard.setData(groups, greet, "Here's what you missed...", maxW)
@@ -5307,7 +5324,7 @@ class MonkeyView(
         comfortT = 0f
         if (kind == com.combo.monkeycompanion.heart.ComfortKind.GLASS_KNOCK_HUG) com.combo.monkeycompanion.ai.BodySense.record("we hugged through the glass", com.combo.monkeycompanion.ai.BodySense.Feeling.WARM)
         else com.combo.monkeycompanion.ai.BodySense.record("I comforted you")
-        comfortSignText = signText
+        comfortSignText = com.combo.monkeycompanion.speech.Address.personalize(signText, knownName())
         controller.play(if (kind == com.combo.monkeycompanion.heart.ComfortKind.OFFER_COFFEE) MonkeyState.SIT else MonkeyState.HAPPY_PAT, kind.secs)
         val Q = com.combo.monkeycompanion.agent.QuickChip
         val chips = listOf(Q.HUG, Q.SIGN, Q.BREATHE, Q.COFFEE, Q.OK)
