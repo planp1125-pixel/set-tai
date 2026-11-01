@@ -548,13 +548,15 @@ class EpisodeRenderer(private val catR: MonkeyRenderer, private val ratR: Monkey
         text.textSize = 28f * d
         val big = ep.title
         val bw = max(sw, text.measureText(big)) + 44f * d
-        bubbleBox.set(w / 2f - bw / 2f, cy, w / 2f + bw / 2f, cy + 78f * d)
+        bubbleBox.set(w / 2f - bw / 2f, cy, w / 2f + bw / 2f, cy + 96f * d)
         fill.color = argb((235 * a).toInt(), 13, 13, 13); c.drawRoundRect(bubbleBox, 18f * d, 18f * d, fill)
         line.color = argb((255 * a).toInt(), 224, 16, 26); line.strokeWidth = 3f * d; c.drawRoundRect(bubbleBox, 18f * d, 18f * d, line)
         text.textSize = 15f * d; text.color = argb((255 * a).toInt(), 240, 120, 120)
         c.drawText(small, w / 2f, cy + 24f * d, text)
         text.textSize = 28f * d; text.color = argb((255 * a).toInt(), 255, 255, 255)
         c.drawText(big, w / 2f, cy + 60f * d, text)
+        text.textSize = 12f * d; text.color = argb((200 * a).toInt(), 170, 170, 175)
+        c.drawText("tap anywhere to stop", w / 2f, cy + 84f * d, text)
     }
 
     private fun drawIris(c: Canvas, ep: Episode) {

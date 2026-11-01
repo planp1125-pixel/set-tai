@@ -124,3 +124,7 @@ Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real ca
 - Once you've opened the summary, those notifications are never offered again.
 - The summary greeting no longer says "Manik" to people whose name it doesn't know.
 - New test: NotifPromptGateTest (4).
+
+## v10.21.2 (code 56): hidden means hidden; solid show
+- **Strict rule: a character you hid stays hidden.** If you swipe a character to the edge (or pick "hide"), nothing brings it out by itself any more: not its mind, skits, the charger trip, comfort moments, the YouTube/eye-break watchdog, cricket scores or AI actions. Only your tap or drag on its tab (or something you ask for: the chat, a reminder you set, a power you choose) brings it back. When a character goes to rest by itself, it may still come back as before.
+- **The show is no longer see-through.** Android 12+ makes touch-through overlays 80 % transparent, so the show stage now takes touches instead: **tap anywhere to stop the show** (shown on the title card).

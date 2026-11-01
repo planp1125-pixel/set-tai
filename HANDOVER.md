@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.21.1 (versionCode 55)**, 1 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.21.2 (versionCode 56)**, 1 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## 1. What the app is
 Set-Tai (Settai, "mischievous" in Tamil) is a **floating overlay companion app** for Android. It is not a launcher and not a full-screen app.
@@ -63,6 +63,7 @@ If the unit-test step times out, just re-run the job. It is usually load, not a 
 - **Timers persist through interruptions**: reminders and focus timers survive restarts.
 - **Never force-push and never move or delete tags.** Make a new tag instead, e.g. `v10.13.1-r2`.
 - The repo is **private, with no licence file**. **Never commit API keys** or keystores.
+- **A character the user hid stays hidden (v10.21.2, strict).** Only the user's tap/drag on its tab, or something the user asks for (chat, reminders they set, an explicit power), brings it out. Automatic things (mind, skits, charger trip, comfort, utility/watchdog alerts, cricket, AI actions) must call `autoUnhide()`, which refuses for a user hide (`userHidden` = hidden and not resting). Rest hides (idle rest, screen-off) may come back as before.
 - The user's message to every character is universal: features should work for all characters unless they are specific on purpose.
 
 ## 6. Owner preferences

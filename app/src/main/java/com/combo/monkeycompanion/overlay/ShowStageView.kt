@@ -55,6 +55,13 @@ class ShowStageView(context: Context, private val scale: Float) : View(context),
         }
     }
 
+    /** v10.21.1: any tap stops the show and gives the screen back. */
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(e: android.view.MotionEvent): Boolean {
+        if (e.actionMasked == android.view.MotionEvent.ACTION_UP) ChaseShowHub.finish(context)
+        return true
+    }
+
     override fun onAttachedToWindow() { super.onAttachedToWindow(); on = true; Choreographer.getInstance().postFrameCallback(this) }
     override fun onDetachedFromWindow() { on = false; Choreographer.getInstance().removeFrameCallback(this); super.onDetachedFromWindow() }
 
@@ -74,7 +81,9 @@ class ShowStageView(context: Context, private val scale: Float) : View(context),
             val lp = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
                 if (Build.VERSION.SDK_INT >= 26) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                // v10.21.1: TOUCHABLE on purpose. Android 12+ forces a touch-through (NOT_TOUCHABLE) overlay to 80 %
+                // opacity, which made Billa and Chittu look see-through. The show now catches touches: tap = stop.
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
                 PixelFormat.TRANSLUCENT,
             ).apply { gravity = Gravity.TOP or Gravity.START; title = "SettaiShowStage" }

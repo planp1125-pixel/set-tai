@@ -215,8 +215,8 @@ class MonkeyView(
             say(listOf("Wheee— slidiiing! 🛝", "Hold on, it's tilting! 😵").random(), 1800L)
         }
         override fun sleepNow(on: Boolean) { if (on) { endTyping(); controller.sleep() } else controller.wakeUp(Lines.pick(Lines.POKED_AWAKE)) }
-        override fun leaveBy(side: Int) { hideToEdge(if (side < 0) -1 else 1); ui.postDelayed({ if (hiddenTab) unhide() }, 13_000L) }
-        override fun comeBack() { if (hiddenTab) unhide() }
+        override fun leaveBy(side: Int) { hideToEdge(if (side < 0) -1 else 1, rest = true); ui.postDelayed({ if (hiddenTab) autoUnhide() }, 13_000L) }
+        override fun comeBack() { if (hiddenTab) autoUnhide() }
         override fun log(what: String, result: String) { runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, what, result) } }
         override fun yawn(secs: Float) { yawnFor = secs; yawnLen = secs; controller.play(MonkeyState.IDLE, secs) }
         /** v10.19 daily moments: Brain ON = the AI writes the line (no canned fallback); Brain OFF = the scripted line. */
@@ -1153,7 +1153,7 @@ class MonkeyView(
     /** v4: 0..1 steering wheel while the screen agent drives; [micT] while push-to-talk listens. */
     private var wheelK = 0f
     private var micK = 0f
-    private val drivingListener: (Boolean) -> Unit = { on -> ui.post { if (on) { sleepFrames = 0; setPaused(false); if (hiddenTab) unhide(); showBubble("🛞 ${character.name} is driving! Tap me to stop.", 4f) } } }
+    private val drivingListener: (Boolean) -> Unit = { on -> ui.post { if (on) { sleepFrames = 0; setPaused(false); if (hiddenTab && !autoUnhide()) return@post; showBubble("🛞 ${character.name} is driving! Tap me to stop.", 4f) } } }
     private var earsT = 0f
     private var yawnT = 0f
     /** 0..1 ramp in/out over [total] seconds for a prop timer [left]. */
@@ -1800,7 +1800,7 @@ class MonkeyView(
         if (wasHidden) {
             wasTuckedBeforeUtilityAlert = true
             preAlertHideSide = if (hideSide == 2) 1 else hideSide
-            unhide()
+            if (!autoUnhide()) { wasTuckedBeforeUtilityAlert = false; return }   // v10.21.1: you hid him, he stays hidden
         }
         autoReTuckTimer = autoReTuckSecs
         entLine = null
@@ -2355,7 +2355,7 @@ class MonkeyView(
     private fun executeMind(dec: com.combo.monkeycompanion.mind.Decision): Boolean {
         if (dec.act == com.combo.monkeycompanion.mind.Act.COME_BACK) {
             if (!hiddenTab || paused || host == null || wp) return false
-            unhide()
+            if (!autoUnhide()) return false
             entLine = dec.line ?: com.combo.monkeycompanion.mind.MindLines.back(character.id)
             return true
         }
@@ -3250,6 +3250,21 @@ class MonkeyView(
 
     private fun saveHidden() {
         prefs.edit().putBoolean("hidden", hiddenTab).putBoolean("resting", hiddenTab && resting).putInt("hideSide", hideSide).putFloat("tabPos", tabPos).apply()
+    }
+
+    /**
+     * v10.21.1 STRICT RULE: a character YOU hid (swipe to the edge, or "hide" in the menu) never comes out by
+     * itself: not for the mind, skits, the charger, comfort moments, utility alerts, cricket or AI actions. Only your
+     * tap / drag on its tab (or something you ask for, like opening the chat) brings it back.
+     * Rest hides (it went to rest by itself, screen-off, night) may still come back as before.
+     */
+    val userHidden get() = hiddenTab && !resting
+
+    /** Come out on our own (not asked by you). Returns false (and stays hidden) if you hid it. */
+    private fun autoUnhide(): Boolean {
+        if (!hiddenTab) return true
+        if (userHidden) return false
+        unhide(); return true
     }
 
     /** Tab tapped / dragged out: peek and climb back onto the screen. */
@@ -4607,7 +4622,8 @@ class MonkeyView(
             if (chargeDeferWhy != wait) { chargeDeferWhy = wait; chargeLog("deferred ($wait), will play when I can") }
             return false
         }
-        if (hiddenTab) { unhide(); chargeDeferWhy = "coming out of hiding"; chargeLog("deferred (coming out of hiding)"); return false }
+        if (hiddenTab && userHidden) { chargeDeferWhy = "hidden by you"; return false }
+        if (hiddenTab) { autoUnhide(); chargeDeferWhy = "coming out of hiding"; chargeLog("deferred (coming out of hiding)"); return false }
         if (typing) endTyping()
         pendingShown = false
         if (controller.isAsleep) controller.idleNow(0.5f)          // plugging in wakes it (it's your action)
@@ -5310,7 +5326,7 @@ class MonkeyView(
 
     /** Plays a warm physical comfort animation on the glass (SIGN_CARD, GLASS_KNOCK_HUG, OFFER_COFFEE). */
     fun playComfort(kind: com.combo.monkeycompanion.heart.ComfortKind, signText: String = "You got this, machan ❤️", line: String? = null) {
-        if (hiddenTab && host != null && !wp) unhide()
+        if (hiddenTab && host != null && !wp && !autoUnhide()) return
         comfortKind = kind
         comfortT = 0f
         if (kind == com.combo.monkeycompanion.heart.ComfortKind.GLASS_KNOCK_HUG) com.combo.monkeycompanion.ai.BodySense.record("we hugged through the glass", com.combo.monkeycompanion.ai.BodySense.Feeling.WARM)
@@ -6142,7 +6158,7 @@ class MonkeyView(
         if (pw == null) { if (explicit) say(Lines.pick(Lines.POWER_OFF), 4000L); return false }
         if (autoPowerGap > 0f && !explicit) return false
         if (host == null) { say(Lines.pick(pw.startLines), 2500L); controller.play(MonkeyState.JUMP, 0.75f); return true }   // in-app preview
-        if (hiddenTab) { unhide(); powerQueued = true; ui.postDelayed({ powerQueued = false; usePower(explicit, pw) }, 1700L); return true }
+        if (hiddenTab) { if (explicit) unhide() else if (!autoUnhide()) return false; powerQueued = true; ui.postDelayed({ powerQueued = false; usePower(explicit, pw) }, 1700L); return true }
         if (controller.isAsleep) {
             if (!explicit) return false
             controller.wakeUp(Lines.pick(Lines.POKED_AWAKE)); powerQueued = true
@@ -7080,7 +7096,7 @@ class MonkeyView(
             return
         }
         if (controller.isAsleep && action != BodyAction.SLEEP) { controller.wakeUp(Lines.pick(Lines.POKED_AWAKE)); return }
-        if (hiddenTab) { if (action != BodyAction.HIDE && action != BodyAction.SLEEP) unhide(); return }
+        if (hiddenTab) { if (action != BodyAction.HIDE && action != BodyAction.SLEEP) autoUnhide(); return }
         if (controller.state == MonkeyState.ENTRANCE || dragging) return
         if (action != BodyAction.FLY && (movingNow || settledFor < SETTLE_SECS)) { heldAction = action; return }   // v10.15: act once settled
         if (action == BodyAction.FLY) { usePower(explicit = true); return }
@@ -7294,8 +7310,8 @@ class MonkeyView(
         if (sprayT >= SPRAY_SECS + 0.35f) {
             sprayT = -1f; gr?.spray = 0f
             // ...and off it goes in a huff, peeking back out a little later.
-            hideToEdge(if (mx + boxW / 2f < sw() / 2f) -1 else 1)
-            ui.postDelayed({ if (hiddenTab) unhide() }, 10_000L)
+            hideToEdge(if (mx + boxW / 2f < sw() / 2f) -1 else 1, rest = true)
+            ui.postDelayed({ if (hiddenTab) autoUnhide() }, 10_000L)
         }
     }
 
@@ -7583,7 +7599,7 @@ class MonkeyView(
         debugFrames(((st - from) * 60f).toInt().coerceAtLeast(1))
     }
 
-    fun debugHide(side: Int) = hideToEdge(side)
+    fun debugHide(side: Int, rest: Boolean = false) = hideToEdge(side, rest)
     fun debugBellySpray() = startTrunkSpray()
     val debugSpraying get() = sprayT >= 0f
     val debugHidden get() = hiddenTab

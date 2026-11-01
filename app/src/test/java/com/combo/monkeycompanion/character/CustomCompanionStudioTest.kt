@@ -643,7 +643,15 @@ class CustomCompanionStudioTest {
 
         // Utility 7: Tucked-Edge YouTube/Reels Screen-Time Watchdog (Auto-Wake from '<' Edge Arrow + Auto-Re-Tuck!)
         v.debugQuiet = false
+        // v10.21.1 strict rule: a character the USER hid never pops out by itself, not even for the watchdog
         v.debugHide(1)
+        v.debugFrames(40)
+        v.simulateEdgeWatchdogSeconds(20 * 60f + 5f, "com.google.android.youtube")
+        v.debugFrames(60)
+        assertTrue("a user-hidden Settai stays hidden", v.debugHidden)
+        v.unhide(); v.debugFrames(240)
+        // ...but when it went to REST by itself, the watchdog may wake it
+        v.debugHide(1, rest = true)
         v.debugFrames(40)
         assertTrue("Settai is tucked beside the screen with '<' arrow", v.debugHidden)
 
