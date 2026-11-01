@@ -59,6 +59,7 @@ import com.combo.monkeycompanion.rig.Animations
 import com.combo.monkeycompanion.rig.Animations.Ent
 import com.combo.monkeycompanion.rig.Climber
 import com.combo.monkeycompanion.rig.MonkeyRenderer
+import com.combo.monkeycompanion.engine.impact.ImpactPlay
 import com.combo.monkeycompanion.rig.MonkeyRig
 import com.combo.monkeycompanion.rig.Pose
 import com.combo.monkeycompanion.speech.CloudBubble
@@ -5671,17 +5672,16 @@ class MonkeyView(
         if (dragging) { impact = null; return }
         val g = com.combo.monkeycompanion.engine.impact.ImpactPlay.GRAVITY_DP * d
         val maxX = max(0f, sw() - boxW)
-        val K = com.combo.monkeycompanion.engine.impact.ImpactPlay.Kind
         when (ip.phase) {
             com.combo.monkeycompanion.engine.impact.ImpactPlay.Phase.FLIGHT -> {
                 ivy += g * dt; mx += ivx * dt; my += ivy * dt
                 when {
-                    mx <= 0f -> { mx = 0f; impactHit(ip, K.SPLAT, -1) }
-                    mx >= maxX -> { mx = maxX; impactHit(ip, K.SPLAT, 1) }
-                    my <= topY() -> { my = topY(); impactHit(ip, K.THWACK, 0) }
+                    mx <= 0f -> { mx = 0f; impactHit(ip, ImpactPlay.Kind.SPLAT, -1) }
+                    mx >= maxX -> { mx = maxX; impactHit(ip, ImpactPlay.Kind.SPLAT, 1) }
+                    my <= topY() -> { my = topY(); impactHit(ip, ImpactPlay.Kind.THWACK, 0) }
                     my >= ground() -> {
                         my = ground()
-                        if (ivy / d >= com.combo.monkeycompanion.engine.impact.ImpactPlay.PANCAKE_SPEED_DP) impactHit(ip, K.PANCAKE, 0)
+                        if (ivy / d >= com.combo.monkeycompanion.engine.impact.ImpactPlay.PANCAKE_SPEED_DP) impactHit(ip, ImpactPlay.Kind.PANCAKE, 0)
                         else { softImpactLanding(); return }
                     }
                     ip.total > 4f -> { softImpactLanding(); return }
@@ -5703,8 +5703,8 @@ class MonkeyView(
         }
         when (ip.step(dt)) {
             com.combo.monkeycompanion.engine.impact.ImpactPlay.Event.START_FALL -> {
-                ivy = if (ip.kind == K.THWACK) 0f else -90f * d
-                ivx = if (ip.kind == K.SPLAT) -ip.side * 110f * d else 0f
+                ivy = if (ip.kind == ImpactPlay.Kind.THWACK) 0f else -90f * d
+                ivx = if (ip.kind == ImpactPlay.Kind.SPLAT) -ip.side * 110f * d else 0f
             }
             com.combo.monkeycompanion.engine.impact.ImpactPlay.Event.DONE -> finishImpact()
             else -> Unit
@@ -5716,21 +5716,20 @@ class MonkeyView(
         ivx = 0f; ivy = 0f
         performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         if (!silent) runCatching { com.combo.monkeycompanion.audio.Sfx.play(context, com.combo.monkeycompanion.audio.Sfx.S.CRACK, 0.35f) }
-        val K = com.combo.monkeycompanion.engine.impact.ImpactPlay.Kind
         // contact point in screen pixels (for the dust) and in view pixels (for the comic word)
         val (vx0, vy0) = when (k) {
-            K.SPLAT -> (if (side < 0) ox else ox + boxW) to oy + boxH * 0.5f
-            K.THWACK -> ox + boxW / 2f to oy
-            K.PANCAKE -> ox + boxW / 2f to oy + boxH - groundPad
+            ImpactPlay.Kind.SPLAT -> (if (side < 0) ox else ox + boxW) to oy + boxH * 0.5f
+            ImpactPlay.Kind.THWACK -> ox + boxW / 2f to oy
+            ImpactPlay.Kind.PANCAKE -> ox + boxW / 2f to oy + boxH - groundPad
         }
-        impactPuff(vx0 + winX, vy0 + winY, if (k == K.SPLAT) -side.toFloat() else 0f, 10)
-        impactWord = when (k) { K.SPLAT -> "SPLAT!"; K.THWACK -> "THWACK!"; K.PANCAKE -> "BONK!" }
-        impactWordX = vx0 + (if (k == K.SPLAT) -side * 60f * d else 0f); impactWordY = vy0 - 40f * d
+        impactPuff(vx0 + winX, vy0 + winY, if (k == ImpactPlay.Kind.SPLAT) -side.toFloat() else 0f, 10)
+        impactWord = when (k) { ImpactPlay.Kind.SPLAT -> "SPLAT!"; ImpactPlay.Kind.THWACK -> "THWACK!"; ImpactPlay.Kind.PANCAKE -> "BONK!" }
+        impactWordX = vx0 + (if (k == ImpactPlay.Kind.SPLAT) -side * 60f * d else 0f); impactWordY = vy0 - 40f * d
         impactLine = com.combo.monkeycompanion.engine.impact.ImpactPlay.line(k, impactN++)
         val what = when (k) {
-            K.SPLAT -> "splatted flat against the ${if (side < 0) "left" else "right"} edge of the screen, now sliding down the glass"
-            K.THWACK -> "smacked head-first into the top edge of the screen"
-            K.PANCAKE -> "slammed into the floor and got squashed flat like a chapati"
+            ImpactPlay.Kind.SPLAT -> "splatted flat against the ${if (side < 0) "left" else "right"} edge of the screen, now sliding down the glass"
+            ImpactPlay.Kind.THWACK -> "smacked head-first into the top edge of the screen"
+            ImpactPlay.Kind.PANCAKE -> "slammed into the floor and got squashed flat like a chapati"
         }
         BSN.record("I $what", BSN.Feeling.OUCH)
         feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.BUMP, force = 1f, extra = what, doing = "flying through the air after you tossed me")
