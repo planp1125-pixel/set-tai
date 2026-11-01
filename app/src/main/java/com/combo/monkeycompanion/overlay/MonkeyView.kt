@@ -4669,10 +4669,12 @@ class MonkeyView(
         val ownShock = m == PhoneMoments.Moment.CHARGE && PhoneMoments.chargeStyle(character.id) == PhoneMoments.ChargeStyle.SHOCK
         // v10.20: the very first plug-in shocks EVERY character (burnt soot face); after that he remembers and is careful
         val shocks = if (m == PhoneMoments.Moment.CHARGE) runCatching { com.combo.monkeycompanion.fun5.Fun5Store.shocks(context, character.id) }.getOrDefault(1) else 1
-        val bigShock = m == PhoneMoments.Moment.CHARGE && !saver && shocks == 0
-        val shock = ownShock || bigShock
+        // the first time he still runs up to the battery icon, and the zap gets HIM (shock + soot mid-trip)
+        val bigShock = m == PhoneMoments.Moment.CHARGE && !saver && shocks == 0 && !ownShock
+        val shock = ownShock
         if (m == PhoneMoments.Moment.CHARGE) runCatching { com.combo.monkeycompanion.fun5.Fun5Store.addShock(context, character.id) }
-        sootShock = shock && !saver
+        sootShock = (shock || bigShock) && !saver
+        bigShockNow = bigShock
         when {
             shock -> com.combo.monkeycompanion.ai.BodySense.record("the charger was plugged in and it zapped me", com.combo.monkeycompanion.ai.BodySense.Feeling.ZAPPED)
             m == PhoneMoments.Moment.CHARGE -> com.combo.monkeycompanion.ai.BodySense.record("the charger was plugged in and I ran to the battery", com.combo.monkeycompanion.ai.BodySense.Feeling.ENERGISED)
@@ -4682,7 +4684,7 @@ class MonkeyView(
         moment = m; momentT = 0f
         momentLen = if (charge) PhoneMoments.CHARGE_TRIP_SECS else if (shock) SHOCK_SECS else PhoneMoments.duration(m, saver)
         momentFx = !shock && (charge || PhoneMoments.effects(saver))
-        momentStyle = if (bigShock) PhoneMoments.ChargeStyle.SHOCK else PhoneMoments.chargeStyle(character.id)
+        momentStyle = PhoneMoments.chargeStyle(character.id)
         val rtl = layoutDirection == View.LAYOUT_DIRECTION_RTL
         momentTarget = PhoneMoments.batteryTarget(sw(), (host?.topInset() ?: 0).toFloat(), rtl, d)
         if (m == PhoneMoments.Moment.CHARGE || m == PhoneMoments.Moment.LOW) controller.face(PhoneMoments.facingToward(mx + boxW / 2f, momentTarget[0]).toFloat())
@@ -4703,6 +4705,8 @@ class MonkeyView(
 
     // ---- v10.20 soot: a burnt face for ANY character (darkens whatever the renderer drew, then white blinking eyes) ----
     private var sootShock = false
+    /** v10.20: the first plug-in ever: he runs to the battery as usual, and mid-zap the current gets him. */
+    private var bigShockNow = false
     private var sootFadeT = 0f
     private var sootSmokeIn = 0f
     private val sootPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_ATOP) }
@@ -4711,7 +4715,7 @@ class MonkeyView(
     val debugSoot get() = sootAmount()
     /** 0..1 how burnt he looks right now. */
     private fun sootAmount(): Float = when {
-        sootShock && moment == PhoneMoments.Moment.CHARGE -> ((momentT / momentLen - 0.3f) / 0.15f).coerceIn(0f, 1f)
+        sootShock && moment == PhoneMoments.Moment.CHARGE -> ((momentT / momentLen - (if (bigShockNow) BIG_SHOCK_FROM + 0.08f else 0.3f)) / 0.15f).coerceIn(0f, 1f)
         sootFadeT > 0f -> min(1f, sootFadeT / (SOOT_FADE_SECS * 0.6f))
         else -> 0f
     }
@@ -4785,6 +4789,7 @@ class MonkeyView(
         val k = momentT / momentLen
         if (k >= 1f || powerOn || dragging || exiting) {
             if (sootShock) { sootShock = false; sootFadeT = SOOT_FADE_SECS }   // v10.20: the soot wears off slowly
+            bigShockNow = false
             moment = null; shockSpin = 0f
             val interrupted = dragging || powerOn || exiting
             if (interrupted && chargeTrip) { chargeTrip = false; chargeHomeSurf = null; if (!dragging) surf = freeSurf(my.coerceIn(topY(), ground())) }
@@ -4795,6 +4800,7 @@ class MonkeyView(
         if (m == PhoneMoments.Moment.CHARGE && momentStyle == PhoneMoments.ChargeStyle.SHOCK) { shockPose(k); return }
         if (m == PhoneMoments.Moment.CHARGE) controller.face(PhoneMoments.facingToward(mx + boxW / 2f, momentTarget[0]).toFloat())
         MomentPoses.apply(drawPose, m, k, momentT)
+        if (bigShockNow && m == PhoneMoments.Moment.CHARGE && k in BIG_SHOCK_FROM..BIG_SHOCK_TO) shockPose((k - BIG_SHOCK_FROM) / (BIG_SHOCK_TO - BIG_SHOCK_FROM))   // v10.20: the zap gets him
         if (momentFxOn() && !saver && MomentFx.sparking(k)) {
             // A few capped sparks at the battery icon (the particle pool holds its cap).
             repeat(2) {
@@ -7621,6 +7627,9 @@ class MonkeyView(
         const val SHOCK_SECS = 2.4f
         /** v10.20 how long the burnt soot face takes to wear off after the shock. */
         const val SOOT_FADE_SECS = 5f
+        /** v10.20 the part of the charge trip (0..1) where the first-ever zap shocks him. */
+        const val BIG_SHOCK_FROM = 0.45f
+        const val BIG_SHOCK_TO = 0.75f
         /** v10.14 max rider tilt change per 60 Hz frame (degrees). */
         const val ROT_STEP_MAX = 9f
         const val HELD_STALE_SECS = 4f
