@@ -56,6 +56,8 @@ class Seg(
     val hop: Float,
     /** Tiptoe bounce height (width units), repeated each step. */
     val bounce: Float,
+    /** v10.22 where the body is: 0 ground, 1 hanging from the top, 2 climbing a wall (the app's own poses). */
+    val edge: Int = 0,
 ) {
     val t1 get() = t0 + dur
     /** Distance run before this segment (for leg phase), filled by the track. */
@@ -72,6 +74,8 @@ class Snap {
     var x = 0f; var y = 0f; var state = MonkeyState.IDLE; var face = 1f
     var sx = 1f; var sy = 1f; var rot = 0f; var pvx = 0f; var pvy = 0f
     var visible = true; var expr: Expr = Expr.NONE
+    /** 0 ground, 1 hanging from the top, 2 on a wall. */
+    var edge = 0
     /** Animation clock for the body (frozen on "takes", stride-locked while running). */
     var anim = 0f
     /** Seconds since this state began (for one-shot animations like startled / jump). */
@@ -92,18 +96,25 @@ class Track(val id: String) {
     private var sx = 1f; private var sy = 1f; private var rot = 0f
     private var pvx = 0f; private var pvy = 0f
     private var vis = true
+    private var edgeNow = 0
+    /** v10.22 the following segments are on the ground (0), hanging from the top (1) or climbing a wall (2). */
+    fun edge(e: Int): Track { edgeNow = e; return this }
 
     /** Where the actor starts (before the first segment). */
-    fun place(x: Float, y: Float = 0f, face: Float = 1f, visible: Boolean = true): Track {
-        this.x = x; this.y = y; this.face = face; vis = visible; return this
+    fun place(x: Float, y: Float = 0f, face: Float = 1f, visible: Boolean = true, rot: Float = 0f): Track {
+        this.x = x; this.y = y; this.face = face; vis = visible; this.rot = rot; return this
     }
+    /** The state of the last segment (what the actor is doing when the pen stops). */
+    val lastState: MonkeyState get() = segs.lastOrNull()?.state ?: MonkeyState.IDLE
+    val visibleNow get() = vis
+    val rotNow get() = rot
 
     private fun add(
         dur: Float, x1: Float, y1: Float, state: MonkeyState, ease: Ease, face: Float, expr: Expr?, freeze: Boolean,
         sx1: Float, sy1: Float, rot1: Float, hop: Float, bounce: Float, visible: Boolean, pvx: Float, pvy: Float,
     ): Track {
         val d = dur.coerceAtLeast(0.001f)
-        segs += Seg(t, d, x, x1, y, y1, ease, state, face, sx, sx1, sy, sy1, rot, rot1, pvx, pvy, visible, expr ?: Expr.NONE, freeze, hop, bounce)
+        segs += Seg(t, d, x, x1, y, y1, ease, state, face, sx, sx1, sy, sy1, rot, rot1, pvx, pvy, visible, expr ?: Expr.NONE, freeze, hop, bounce, edgeNow)
         t += d; x = x1; y = y1; this.face = face; sx = sx1; sy = sy1; vis = visible; this.pvx = pvx; this.pvy = pvy
         // a full turn ends upright: carry on from 0 so the next segment doesn't spin back
         rot = if (abs(rot1 % 360f) < 0.01f) 0f else rot1
@@ -176,14 +187,14 @@ class Track(val id: String) {
         val s = segAt(t)
         if (s == null) {
             out.x = x0(); out.y = y0(); out.visible = startVisible(); out.state = MonkeyState.IDLE; out.face = startFace()
-            out.sx = 1f; out.sy = 1f; out.rot = 0f; out.expr = Expr.NONE; out.anim = t; out.st = t; out.dist = 0f; out.vx = 0f; out.pvx = 0f; out.pvy = 0f
+            out.sx = 1f; out.sy = 1f; out.rot = 0f; out.expr = Expr.NONE; out.anim = t; out.st = t; out.dist = 0f; out.vx = 0f; out.pvx = 0f; out.pvy = 0f; out.edge = segs.firstOrNull()?.edge ?: 0
             return out
         }
         val u = ((t - s.t0) / s.dur).coerceIn(0f, 1f)
         val k = ease(s.ease, u)
         out.x = s.x0 + (s.x1 - s.x0) * k
         out.y = s.y0 + (s.y1 - s.y0) * k + s.hop * sin(PI.toFloat() * u) + s.bounce * abs(sin(t * 9f))
-        out.state = s.state; out.face = s.face; out.visible = s.visible; out.expr = s.expr
+        out.state = s.state; out.face = s.face; out.visible = s.visible; out.expr = s.expr; out.edge = s.edge
         out.sx = s.sx0 + (s.sx1 - s.sx0) * k; out.sy = s.sy0 + (s.sy1 - s.sy0) * k; out.rot = s.rot0 + (s.rot1 - s.rot0) * k
         out.pvx = s.pvx; out.pvy = s.pvy
         out.dist = s.d0 + abs(out.x - s.x0) + abs(out.y - s.y0 - s.hop * sin(PI.toFloat() * u))
@@ -222,9 +233,22 @@ class Cue(val at: Float, val dur: Float, val kind: Fx2, val track: String? = nul
 /** A sound and/or a buzz at [at]. [sfx] = a name the app maps to its sound pool. */
 class Beep(val at: Float, val sfx: String?, val pitch: Float = 1f, val buzzMs: Int = 0, val vol: Float = 1f)
 
+/**
+ * v10.22 where a real character is when the drama starts. [edge]: 0 floor, 1 left wall, 2 right wall, 3 top,
+ * 4 hidden at a screen edge / not on screen. [x] 0..1 across, [lift] height above the floor (screen-width units).
+ */
+class ActorStart(val edge: Int, val x: Float, val lift: Float, val face: Float, val scalePx: Float = 0f) {
+    companion object {
+        const val FLOOR = 0; const val WALL_L = 1; const val WALL_R = 2; const val TOP = 3; const val OFF = 4
+        fun floor(x: Float, face: Float = 1f) = ActorStart(FLOOR, x, 0f, face)
+    }
+}
+
 class Episode(
     val id: String,
     val title: String,
+    /** v10.22: which acts this drama is made of (opening, chase, trap, heart, ending). */
+    val parts: IntArray = IntArray(0),
     val tracks: Map<String, Track>,
     val lines: List<Line>,
     val cues: List<Cue>,
@@ -251,7 +275,7 @@ class Episode(
 }
 
 /** Small authoring helper: collects tracks, lines, cues and beeps for one episode. */
-class EpisodeBuilder(val id: String, val title: String) {
+class EpisodeBuilder(val id: String, val title: String, val parts: IntArray = IntArray(0)) {
     val tracks = LinkedHashMap<String, Track>()
     val lines = ArrayList<Line>()
     val cues = ArrayList<Cue>()
@@ -270,6 +294,6 @@ class EpisodeBuilder(val id: String, val title: String) {
     fun build(irisAt: Float, irisX: Float, irisY: Float): Episode {
         for (t in tracks.values) t.finish()
         lines.sortBy { it.at }; cues.sortBy { it.at }; beeps.sortBy { it.at }
-        return Episode(id, title, tracks, lines, cues, beeps, irisAt, irisX, irisY, touch)
+        return Episode(id, title, parts, tracks, lines, cues, beeps, irisAt, irisX, irisY, touch)
     }
 }

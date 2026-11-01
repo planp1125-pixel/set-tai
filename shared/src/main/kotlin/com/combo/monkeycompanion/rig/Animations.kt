@@ -34,6 +34,11 @@ class AnimContext {
     var speed = 0f
     /** The routine crashed (sooty face / dazed for the rest of it). */
     var crashed = false
+    /** v10.22 surfing: lean from the carve (degrees, + = forward) and water speed 0..1. */
+    var carveLean = 0f
+    var glideSpeed = 0f
+    /** v10.22 the current flight leg is a surfing glide (not a jump / flip). */
+    var gliding = false
     /** Seconds since the last palm ring, and which palm fired it. */
     var sinceRing = 9f
     var ringLeft = false

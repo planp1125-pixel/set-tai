@@ -42,6 +42,8 @@ class AnimEngine {
     /** Measured screen velocity of the character, dp/s (debug / tests). */
     val velocityX get() = vx
     val velocityY get() = vy
+    /** v10.22 where the feet are on the SCREEN (px), e.g. so a renderer can draw water that stays still while she moves. */
+    val screenFeetX get() = if (px.isNaN()) 0f else px
 
     fun setTuning(t: AnimTuning) {
         if (t === tuning) return

@@ -1,6 +1,8 @@
 package com.combo.monkeycompanion.brain
 
 import com.combo.monkeycompanion.speech.Lines
+import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.random.Random
 
@@ -50,7 +52,11 @@ enum class PowerPhase {
  * over the usable width); y 0 = standing on the floor, 1 = the top. NaN = stay where it is.
  * [bend] curves the path sideways (fraction of the segment length), for swoops and loops.
  */
-class PowerStep(val phase: PowerPhase, val secs: Float, val tx: Float = Float.NaN, val ty: Float = Float.NaN, val bend: Float = 0f)
+class PowerStep(val phase: PowerPhase, val secs: Float, val tx: Float = Float.NaN, val ty: Float = Float.NaN, val bend: Float = 0f,
+    /** v10.22 surfing GLIDE (FLY only): number of carves (up and down the wave face) along the way; 0 = a normal flight leg. */
+    val glide: Float = 0f,
+    /** v10.22 how high (screen fraction) the carves climb the wave face. */
+    val swell: Float = 0f)
 
 sealed class Superpower(
     val id: String,
@@ -307,6 +313,10 @@ class PowerFlight {
     val totalSeconds: Float get() = steps.fold(0f) { a, s -> a + s.secs }
     /** Did the routine go through [PowerPhase.CRASH] (sooty face for the rest of it). */
     var crashed = false; private set
+    /** v10.22 surfing: body lean in degrees from the carve (+ = forward, down the face; - = back, climbing it). */
+    var glideLean = 0f; private set
+    /** v10.22 surfing: 0..1 water speed right now (spray, crouch). */
+    var glideSpeed = 0f; private set
 
     /** The step where a crash-less comedy variant goes wrong: the last one before the final POSE. */
     private var lastBigIndex = -1
@@ -314,7 +324,7 @@ class PowerFlight {
     fun begin(p: Superpower, plan: List<PowerStep>, crash: Boolean, x0: Float, y0: Float) {
         power = p; steps = plan; this.crash = crash
         lastBigIndex = if (plan.any { it.phase == PowerPhase.CRASH }) -1 else plan.indexOfLast { it.phase != PowerPhase.POSE && it.phase != PowerPhase.LAND }
-        index = 0; stepT = 0f; time = 0f; crashed = false
+        index = 0; stepT = 0f; time = 0f; crashed = false; glideLean = 0f; glideSpeed = 0f; glideFor = -1
         x = x0; y = y0; sx = x0; sy = y0
     }
 
@@ -340,6 +350,8 @@ class PowerFlight {
     private fun place(s: PowerStep, k: Float) {
         val tx = if (s.tx.isNaN()) sx else s.tx
         val ty = if (s.ty.isNaN()) sy else s.ty
+        if (s.glide > 0f && s.phase == PowerPhase.FLY) { glide(s, k, tx, ty); return }
+        if (s.phase != PowerPhase.FLY) { glideLean *= 0.9f; glideSpeed *= 0.9f }
         when (s.phase) {
             PowerPhase.FIRE, PowerPhase.POSE, PowerPhase.CHARGE, PowerPhase.STRIKE, PowerPhase.CLONES, PowerPhase.SLAM,
             PowerPhase.SHRINK, PowerPhase.PEEK, PowerPhase.DODGE, PowerPhase.MAGIC -> { x = sx; y = sy }
@@ -373,6 +385,40 @@ class PowerFlight {
     }
 
     private fun smooth(k: Float): Float { val c = k.coerceIn(0f, 1f); return c * c * (3f - 2f * c) }
+
+    // ---- v10.22 surfing glide: one continuous ride, no thrust. She pops up, picks up speed down the face, pumps
+    // through [PowerStep.glide] carves (up the face, back down), and glides to a stop as the water slows her. ----
+    private var glideFor = -1
+    private var glideTotal = 1f
+    private fun glideV(u: Float, n: Float): Float {
+        val ramp = smooth(u / 0.18f)                 // paddle + pop-up: picks up speed
+        val fric = smooth((1f - u) / 0.32f)          // the water slows her down: a long, soft glide to a stop
+        val pump = 1f + 0.16f * kotlin.math.sin(2f * PI.toFloat() * n * u - 0.6f)   // faster coming down each carve
+        return (ramp * fric * pump).coerceAtLeast(0f)
+    }
+    private fun glideDist(k: Float, n: Float): Float {
+        val steps = 40; var acc = 0f; val du = k / steps
+        if (k <= 0f) return 0f
+        for (i in 0 until steps) acc += glideV((i + 0.5f) * du, n) * du
+        return acc
+    }
+    private fun glide(s: PowerStep, k: Float, tx: Float, ty: Float) {
+        if (glideFor != index) { glideFor = index; glideTotal = glideDist(1f, s.glide).coerceAtLeast(1e-4f) }
+        val e = (glideDist(k, s.glide) / glideTotal).coerceIn(0f, 1f)
+        fun at(e: Float, out: FloatArray) {
+            val env = smooth(e / 0.15f) * smooth((1f - e) / 0.25f)
+            out[0] = sx + (tx - sx) * e
+            out[1] = sy + (ty - sy) * e + s.swell * env * (0.5f - 0.5f * kotlin.math.cos(2f * PI.toFloat() * s.glide * e))
+        }
+        at(e, gp); x = gp[0]; y = gp[1]
+        at((e + 0.01f).coerceAtMost(1f), gq)
+        val dxs = abs(gq[0] - gp[0]).coerceAtLeast(1e-5f); val dys = gq[1] - gp[1]
+        // climbing the face (dy > 0) = lean back; dropping down it = lean forward and low
+        glideLean = (-Math.toDegrees(kotlin.math.atan2(dys.toDouble(), dxs.toDouble() * 1.6)).toFloat() * 0.55f).coerceIn(-26f, 26f)
+        glideSpeed = (glideV(k, s.glide) / 1.16f).coerceIn(0f, 1f)
+        x = x.coerceIn(0f, 1f); y = y.coerceIn(0f, 1f)
+    }
+    private val gp = FloatArray(2); private val gq = FloatArray(2)
 
     companion object {
         const val CRASH_HIT = 0.16f

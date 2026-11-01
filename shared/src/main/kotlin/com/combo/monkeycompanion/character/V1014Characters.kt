@@ -251,16 +251,16 @@ object SurferGirl : Character("surfer") {
         when (c.power?.id) {
             "bigwave" -> {
                 when (ph) {
-                    PowerPhase.TAKEOFF -> { stance(bell(0f, 1f, k, 0.4f), -6f); p.surfSpray = k }   // anticipation: crouch & paddle
+                    PowerPhase.TAKEOFF -> paddleUp(p, t, k, stance)   // lying on the board paddling, then the pop-up
                     PowerPhase.LAND -> { stance(1f - k * 0.7f, 0f); p.surfSpray = 1f - k }
                     PowerPhase.POSE -> { stance(0.1f, 0f); p.armLRaise = 150f; p.armRRaise = 150f; p.mouthSmile = 1f; p.eyesHappy = 1f }
-                    else -> { stance(0.8f, 14f); p.surfSpray = 1f; p.mouthSmile = 1f }
+                    else -> ride(p, t, c, stance)
                 }
             }
             "aerial" -> {
                 when (ph) {
                     PowerPhase.TAKEOFF -> { stance(bell(0f, 1f, k, 0.4f), -4f); p.surfSpray = 0.6f }
-                    PowerPhase.FLY -> {
+                    PowerPhase.FLY -> if (c.gliding) ride(p, t, c, stance) else {
                         stance(0.9f, 0f)
                         val a = ss(0.1f, 0.85f, k) * 2f * PI.toFloat()              // one full flip, eased in and out
                         p.flipS = sin(a); p.flipC = cos(a)
@@ -272,8 +272,41 @@ object SurferGirl : Character("surfer") {
                     else -> if (c.crashed) wipeout(p, t, 1f) else { stance(0.1f, 0f); p.armRRaise = 160f; p.mouthSmile = 1f }
                 }
             }
-            "carve" -> { stance(0.7f, 18f * sin(k * PI.toFloat() * 2f)); p.surfSpray = if (ph == PowerPhase.FLY) 1f else 0.4f }
+            "carve" -> when (ph) {
+                PowerPhase.TAKEOFF -> paddleUp(p, t, k, stance)
+                PowerPhase.FLY -> ride(p, t, c, stance)
+                else -> { stance(0.4f, 0f); p.surfSpray = 0.3f }
+            }
             else -> stance(0.2f, 0f)
+        }
+    }
+
+    /**
+     * v10.22 riding: weight low, knees bent more at speed, leaning INTO each carve (back while climbing the face,
+     * forward and low dropping down it), arms out for balance swinging with the turn, spray with the speed.
+     */
+    private fun ride(p: Pose, t: Float, c: AnimContext, stance: (Float, Float) -> Unit) {
+        val lean = c.carveLean; val v = c.glideSpeed
+        stance(0.45f + 0.45f * v + 0.2f * abs(lean) / 26f, lean)
+        p.bodyRot -= 4f * sin(t * 1.7f)                 // no extra wobble while carving: the turn IS the motion
+        p.armLRaise = 70f + 1.2f * lean; p.armRRaise = 55f - 1.2f * lean   // arms balance against the lean
+        p.headRot = -0.4f * lean                         // eyes stay level, looking down the line
+        p.surfSpray = (0.25f + 0.75f * v) * (0.5f + 0.5f * abs(lean) / 26f)
+        p.mouthSmile = 1f
+    }
+
+    /** v10.22 the take-off: low on the board paddling (arms windmill), then a quick pop-up to the stance. */
+    private fun paddleUp(p: Pose, t: Float, k: Float, stance: (Float, Float) -> Unit) {
+        if (k < 0.7f) {
+            stance(1f, 10f)
+            p.bodyY += 12f                                    // low on the board, paddling with both arms
+            p.armLRaise = 70f + 60f * sin(t * 9f); p.armRRaise = 70f - 60f * sin(t * 9f)
+            p.surfSpray = 0.25f
+        } else {
+            val u = (k - 0.7f) / 0.3f
+            stance(1f - 0.4f * u, 10f * (1f - u))             // pops up into the riding crouch
+            p.bodyY += 12f * (1f - u)
+            p.surfSpray = 0.4f
         }
     }
 

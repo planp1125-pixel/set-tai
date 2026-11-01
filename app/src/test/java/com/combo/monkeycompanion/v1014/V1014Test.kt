@@ -48,14 +48,14 @@ class V1014Test {
                 if (!s.ty.isNaN()) assertTrue("${p.id} y ${s.ty}", s.ty in 0f..1f)
             }
             val secs = plan.sumOf { it.secs.toDouble() }
-            assertTrue("${p.id} lasts $secs s", secs in 2.0..9.0)
+            assertTrue("${p.id} lasts $secs s", secs in 2.0..(if (p === BigWavePower) 11.5 else 9.0))   // v10.22: a real surf ride takes a bit longer
         }
         // moonwalk crosses the screen
         val mw = MoonwalkPower.plan(0.15f, 0f, false, Random(1)).first { it.phase == PowerPhase.FLY }
         assertTrue(abs(mw.tx - 0.15f) > 0.6f)
-        // big wave visits floor, both walls and the top
+        // v10.22 big wave: a real surf ride on the water (low on the screen), gliding across and back, carving
         val bw = BigWavePower.plan(0.3f, 0f, false, Random(1)).filter { !it.ty.isNaN() }
-        assertTrue(bw.any { it.ty > 0.8f } && bw.any { it.tx > 0.9f } && bw.any { it.tx < 0.1f })
+        assertTrue(bw.all { it.ty <= 0.2f } && bw.any { it.tx > 0.85f } && bw.count { it.glide > 0f } >= 2)
     }
 
     private fun pose(ch: Character, s: MonkeyState, t: Float, pw: Superpower?, ph: PowerPhase, k: Float, crashed: Boolean = false): Pose {
@@ -153,5 +153,22 @@ class V1014Test {
             a.step(pa, 1f / 60f, null, true, false, 0f, 1f, 0f); b.step(pb, 1f / 60f, null, true, false, 0f, 1f, 0f)
             assertArrayEquals(pa.v, pb.v, 0f)
         }
+    }
+
+    /** v10.22 the surf ride glides: one continuous path, carves up and down the face, slows to a soft stop. */
+    @Test fun bigWaveGlidesAndCarves() {
+        val f = PowerFlight()
+        f.begin(BigWavePower, BigWavePower.plan(0.2f, 0.03f, false, Random(2)), false, 0.2f, 0.03f)
+        var lx = f.x; var ly = f.y; var leanPos = false; var leanNeg = false; var maxY = 0f
+        var slowAtEnd = 1f
+        while (f.update(1f / 60f)) {
+            assertTrue("no jumps", abs(f.x - lx) < 0.03f && abs(f.y - ly) < 0.03f)
+            lx = f.x; ly = f.y; maxY = maxOf(maxY, f.y)
+            if (f.phase == PowerPhase.FLY) { if (f.glideLean > 5f) leanPos = true; if (f.glideLean < -5f) leanNeg = true
+                if (f.index == 1 && f.k > 0.98f) slowAtEnd = f.glideSpeed }
+        }
+        assertTrue("carves both ways", leanPos && leanNeg)
+        assertTrue("stays on the water: $maxY", maxY < 0.25f)
+        assertTrue("glides to a soft stop: $slowAtEnd", slowAtEnd < 0.1f)
     }
 }

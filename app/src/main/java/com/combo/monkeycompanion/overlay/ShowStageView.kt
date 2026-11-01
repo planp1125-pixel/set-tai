@@ -25,11 +25,17 @@ class ShowStageView(context: Context, private val scale: Float) : View(context),
     private val d = resources.displayMetrics.density
     private var on = false
     private var lastT = -1f
-    /** Keeps the floor above the navigation bar. */
-    private val floorPad: Float = run {
+    /** Keeps the floor above the navigation bar (v10.22: the very floor line the characters stand on). */
+    private val navPad: Float = run {
         val id = resources.getIdentifier("navigation_bar_height", "dimen", "android")
         val nav = if (id > 0) runCatching { resources.getDimensionPixelSize(id) }.getOrDefault(0) else 0
         nav + 14f * d
+    }
+    private fun floorPad(): Float {
+        val y = ChaseShowHub.floorLineY
+        if (y <= 0f || height <= 0) return navPad
+        val loc = IntArray(2); getLocationOnScreen(loc)
+        return (height - (y - loc[1])).coerceIn(0f, height * 0.4f)
     }
 
     override fun doFrame(frameTimeNanos: Long) {
@@ -67,7 +73,7 @@ class ShowStageView(context: Context, private val scale: Float) : View(context),
 
     override fun onDraw(canvas: Canvas) {
         val ep = ChaseShowHub.episode ?: return
-        stage.draw(canvas, ep, ChaseShowHub.t(), width.toFloat(), height.toFloat(), floorPad, d)
+        stage.draw(canvas, ep, ChaseShowHub.t(), width.toFloat(), height.toFloat(), floorPad(), d, ChaseShowHub.catScale, ChaseShowHub.ratScale)
     }
 
     companion object {

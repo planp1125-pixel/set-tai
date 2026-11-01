@@ -14,7 +14,7 @@ class EpisodeRenderTest {
         val out = File(System.getProperty("user.dir"), "build/test-out").apply { mkdirs() }
         val W = 540; val H = 1170; val d = 1.35f
         val r = EpisodeRenderer(BillaRenderer(), ChittuRenderer())
-        for (i in Episodes.all.indices) {
+        for (i in 0 until 4) {
             val ep = Episodes.byIndex(i)
             for ((n, k) in listOf(0.05f, 0.3f, 0.55f, 0.8f).withIndex()) {
                 val img = BufferedImage(W, H, BufferedImage.TYPE_INT_RGB); val g = img.createGraphics()

@@ -219,6 +219,10 @@ class SurferRenderer : V1014BodyRenderer() {
     override val skinShade = SKIN_SHADE
     override val hair = HAIR
     private val wave = Path()
+    private val swellShader = android.graphics.LinearGradient(-92f, 0f, 92f, 0f,
+        intArrayOf(WATER_DEEP and 0x00FFFFFF, WATER_DEEP, WATER_DEEP, WATER_DEEP and 0x00FFFFFF), floatArrayOf(0f, 0.3f, 0.7f, 1f), android.graphics.Shader.TileMode.CLAMP)
+    private val faceShader = android.graphics.LinearGradient(-74f, 0f, 74f, 0f,
+        intArrayOf(WATER and 0x00FFFFFF, WATER, WATER, WATER and 0x00FFFFFF), floatArrayOf(0f, 0.3f, 0.7f, 1f), android.graphics.Shader.TileMode.CLAMP)
 
     override fun drawJets(c: Canvas, rig: MonkeyRig, p: Pose, t: Float) = Unit
 
@@ -253,28 +257,48 @@ class SurferRenderer : V1014BodyRenderer() {
         val speed = (abs(vx) / 900f).coerceIn(0f, 1f)
         val spray = (p.surfSpray.coerceIn(0f, 1f) * 0.8f + speed).coerceIn(0f, 1f) * (if (on("spray")) 1f else 0.3f)
         val back = if (vx > 30f) -1f else if (vx < -30f) 1f else -1f
+        // v10.22: the water stays still ON THE SCREEN while she slides over it (ripples use screen x, not her x)
+        val wx = (anim?.screenFeetX ?: cx) - cx
         // deep swell (a wide hump of water that she rides on), with a curling lip rising behind her
-        wave.reset(); wave.moveTo(cx - 92f * sc, top + 40f)
+        // v10.22: the water fades out at both ends (open water, not a blob of wave she carries around)
+        c.save(); c.translate(cx, 0f)
+        wave.reset(); wave.moveTo(-92f * sc, top + 30f)
         var x = -92f
-        while (x <= 92f) { wave.lineTo(cx + x * sc, top + 8f + 3.5f * sin(x * 0.08f + t * 3f) + 0.0028f * x * x); x += 6f }
-        wave.lineTo(cx + 92f * sc, top + 40f); wave.close()
-        fill.shader = null; fill.color = WATER_DEEP; fill.alpha = (235 * a).toInt(); c.drawPath(wave, fill)
+        while (x <= 92f) { wave.lineTo(x * sc, top + 8f + 3.5f * sin((x + wx) * 0.08f + t * 0.8f) + 0.0016f * x * x); x += 6f }
+        wave.lineTo(92f * sc, top + 30f); wave.close()
+        fill.color = Color.WHITE; fill.shader = swellShader; c.drawPath(wave, fill); fill.shader = null
+        c.restore()
         // the curl: a lip of water rising up behind the board and tipping over
-        val lip = 0.5f + 0.5f * spray
+        val lip = 0.15f + 0.6f * spray   // a small curl only when she's really moving
         wave.reset(); wave.moveTo(cx + back * 20f, top + 10f)
         wave.cubicTo(cx + back * 55f, top + 6f, cx + back * 70f, top - 22f * lip, cx + back * 58f, top - 34f * lip)
         wave.cubicTo(cx + back * 50f, top - 26f * lip, cx + back * 44f, top - 12f * lip, cx + back * 30f, top - 8f * lip)
         wave.cubicTo(cx + back * 40f, top + 2f, cx + back * 30f, top + 8f, cx + back * 20f, top + 10f); wave.close()
         fill.color = WATER; fill.alpha = (235 * a).toInt(); c.drawPath(wave, fill)
         // bright face of the swell
-        wave.reset(); wave.moveTo(cx - 74f, top + 30f); x = -74f
-        while (x <= 74f) { wave.lineTo(cx + x, top + 3f + 2.5f * sin(x * 0.12f - t * 4f) + 0.003f * x * x); x += 6f }
-        wave.lineTo(cx + 74f, top + 30f); wave.close()
-        c.drawPath(wave, fill)
+        c.save(); c.translate(cx, 0f)
+        wave.reset(); wave.moveTo(-74f, top + 24f); x = -74f
+        while (x <= 74f) { wave.lineTo(x, top + 3f + 2.5f * sin((x + wx) * 0.12f - t * 0.9f) + 0.002f * x * x); x += 6f }
+        wave.lineTo(74f, top + 24f); wave.close()
+        fill.color = Color.WHITE; fill.shader = faceShader; c.drawPath(wave, fill); fill.shader = null
+        c.restore()
+        fill.color = WATER; fill.alpha = (235 * a).toInt()
         // foam crest + the lip's foam
         stroke.shader = null; stroke.color = FOAM; stroke.alpha = (235 * a).toInt(); stroke.strokeWidth = 3.2f
-        x = -68f; var lx = cx + x; var ly = top + 3f + 2.5f * sin(x * 0.12f - t * 4f) + 0.003f * x * x
-        while (x < 68f) { x += 6f; val nx = cx + x; val ny = top + 3f + 2.5f * sin(x * 0.12f - t * 4f) + 0.003f * x * x; c.drawLine(lx, ly, nx, ny, stroke); lx = nx; ly = ny }
+        x = -50f; var lx = cx + x; var ly = top + 3f + 2.5f * sin((x + wx) * 0.12f - t * 0.9f) + 0.003f * x * x
+        while (x < 50f) { x += 6f; val nx = cx + x; val ny = top + 3f + 2.5f * sin((x + wx) * 0.12f - t * 0.9f) + 0.003f * x * x; c.drawLine(lx, ly, nx, ny, stroke); lx = nx; ly = ny }
+        // the wake: foam streaks left on the water behind the board (fixed on the screen, so she visibly glides past them)
+        if (speed > 0.05f) {
+            stroke.alpha = (170 * a * speed).toInt().coerceIn(0, 255); stroke.strokeWidth = 2f
+            var i = 0
+            while (i < 5) {
+                val gx = Math.floorMod(wx.toInt(), 22).toFloat()       // streak spacing locked to the screen
+                val sx0 = cx + back * (24f + i * 22f) - gx * back
+                c.drawLine(sx0, top + 6f + i * 1.5f, sx0 + back * 14f, top + 8f + i * 1.5f, stroke)
+                i++
+            }
+            stroke.strokeWidth = 3.2f
+        }
         fill.color = FOAM; fill.alpha = (235 * a).toInt()
         for (i in 0 until 4) c.drawCircle(cx + back * (58f - i * 6f), top - 34f * lip + i * 5f, 3.2f - i * 0.4f, fill)
         // droplets + spray trail behind the board (deterministic, no allocation)

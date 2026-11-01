@@ -44,22 +44,24 @@ object GravityLeanPower : Superpower("lean", "Impossible lean", "Leans way forwa
     override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random) = listOf(PowerStep(PowerPhase.POSE, 2.9f))
 }
 
-/** Surfing Girl's signature: catches a big wave and rides it all the way around the screen (floor, wall, top, wall). */
-object BigWavePower : Superpower("bigwave", "Big wave ride", "Rides one giant wave all around the screen edges", setOf(PowerKit.SPEED_LINES)) {
+/**
+ * Surfing Girl's signature. v10.22: a REAL surf ride along the bottom of the screen (the water), not a thrust flight:
+ * she paddles, pops up, gathers speed down the wave face, carves up and down it (leaning into each turn), cuts back,
+ * and glides to a soft stop as the water slows her. One continuous glide per leg ([PowerStep.glide]); no speed lines.
+ */
+object BigWavePower : Superpower("bigwave", "Big wave ride", "Paddles in and surfs a long, carving ride across your screen", emptySet()) {
     override val startLines get() = listOf("Surf's UP! 🌊🏄‍♀️", "Here comes a big one! 🌊", "Paddle paddle… GO! 🏄‍♀️")
     override val landLines get() = listOf("Woohoo! Best wave ever! 🌊✨", "Again? Again! 🏄‍♀️", "Hair is wet, mood is set 😎🌊")
     override val crashLines get() = listOf("*SPLOOSH* …wipeout! I'm okay! 😵💦", "Board went left, I went right 🤣🌊")
     override val crashChance get() = 0.15f
     override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random): List<PowerStep> {
-        val ccw = x0 < 0.5f   // go round the near way first
-        val a = if (ccw) 0.93f else 0.07f; val b = 1f - a
+        val right = x0 < 0.5f
+        val far = if (right) 0.92f else 0.08f
+        val back = 0.35f + rnd.nextFloat() * 0.3f   // where the cut-back ride ends
         return listOf(
-            PowerStep(PowerPhase.TAKEOFF, 0.45f, x0, 0.04f),
-            PowerStep(PowerPhase.FLY, 1.0f, a, 0.05f, 0.08f),         // along the floor
-            PowerStep(PowerPhase.FLY, 1.1f, a, 0.85f, 0.10f),         // up the side wall
-            PowerStep(PowerPhase.FLY, 1.2f, b, 0.88f, 0.10f),         // across the top
-            PowerStep(PowerPhase.FLY, 1.1f, b, 0.15f, 0.10f),         // down the other wall
-            PowerStep(PowerPhase.FLY, 0.9f, 0.3f + rnd.nextFloat() * 0.4f, 0.18f, -0.25f),   // across the middle
+            PowerStep(PowerPhase.TAKEOFF, 0.6f, x0 + (if (right) 0.02f else -0.02f), 0.03f),   // paddle + pop up
+            PowerStep(PowerPhase.FLY, 5.0f, far, 0.03f, glide = 3f, swell = 0.13f),           // the ride: three carves
+            PowerStep(PowerPhase.FLY, 3.8f, back, 0.03f, glide = 2f, swell = 0.10f),          // cut back, ride the other way
             PowerStep(PowerPhase.LAND, 0.6f, Float.NaN, 0f),
             PowerStep(PowerPhase.POSE, 1.0f),
         )
@@ -67,7 +69,7 @@ object BigWavePower : Superpower("bigwave", "Big wave ride", "Rides one giant wa
 }
 
 /** Surfing Girl: an aerial off the lip, a full flip, and (sometimes) a splashy wipeout gag. */
-object AerialFlipPower : Superpower("aerial", "Aerial flip", "Launches off a wave lip into a full flip; sometimes a wipeout", setOf(PowerKit.SPEED_LINES)) {
+object AerialFlipPower : Superpower("aerial", "Aerial flip", "Launches off a wave lip into a full flip; sometimes a wipeout", emptySet()) {
     override val startLines get() = listOf("Watch this trick! 🏄‍♀️", "Air time! ✨", "One… two… FLIP! 🤸‍♀️")
     override val landLines get() = listOf("Stuck it! 😎", "Ten out of ten, judges? 🏆", "Semma landing 🌊")
     override val crashLines get() = listOf("WIPEOUT! *glug glug* 😵💦", "I meant to do that… 🤣🌊", "Board 1, me 0 😅")
@@ -75,8 +77,9 @@ object AerialFlipPower : Superpower("aerial", "Aerial flip", "Launches off a wav
     override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random): List<PowerStep> {
         val dx = if (x0 < 0.5f) 0.18f else -0.18f
         return listOf(
-            PowerStep(PowerPhase.TAKEOFF, 0.4f, x0 + dx * 0.3f, 0.18f),
-            PowerStep(PowerPhase.FLY, 0.9f, x0 + dx, 0.42f, 0.25f),   // the flip happens here
+            PowerStep(PowerPhase.TAKEOFF, 0.4f, x0, 0.03f),
+            PowerStep(PowerPhase.FLY, 1.6f, x0 + dx, 0.2f, glide = 0.5f, swell = 0.0f),   // v10.22: glide up the face to the lip
+            PowerStep(PowerPhase.FLY, 0.9f, x0 + dx * 1.5f, 0.42f, 0.25f),   // the flip happens here
             PowerStep(PowerPhase.LAND, 0.6f, Float.NaN, 0f),
             PowerStep(PowerPhase.POSE, 1.1f),
         )
@@ -84,16 +87,15 @@ object AerialFlipPower : Superpower("aerial", "Aerial flip", "Launches off a wav
 }
 
 /** Surfing Girl: carves a quick S across the screen, spraying a wall of water. */
-object SprayCarvePower : Superpower("carve", "Spray carve", "Carves a quick S-turn and throws a wall of spray", setOf(PowerKit.SPEED_LINES)) {
+object SprayCarvePower : Superpower("carve", "Spray carve", "Carves a deep turn on the water and throws a wall of spray", emptySet()) {
     override val startLines get() = listOf("Carve time! 🌊", "Spray for you! 💦", "Hold on to your phone! 🌊😜")
     override val landLines get() = listOf("Did you get wet? Hehe 💦", "Smooth like coconut water 🥥")
     override val crashChance get() = 0.1f
     override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random): List<PowerStep> {
         val far = if (x0 < 0.5f) 0.8f else 0.2f
         return listOf(
-            PowerStep(PowerPhase.TAKEOFF, 0.3f, x0, 0.08f),
-            PowerStep(PowerPhase.FLY, 0.9f, (x0 + far) / 2f, 0.28f, 0.3f),
-            PowerStep(PowerPhase.FLY, 0.9f, far, 0.1f, -0.3f),
+            PowerStep(PowerPhase.TAKEOFF, 0.4f, x0, 0.03f),
+            PowerStep(PowerPhase.FLY, 2.6f, far, 0.03f, glide = 1f, swell = 0.16f),   // v10.22: one deep carve, spray off the rail
             PowerStep(PowerPhase.LAND, 0.5f, Float.NaN, 0f),
             PowerStep(PowerPhase.POSE, 0.9f),
         )

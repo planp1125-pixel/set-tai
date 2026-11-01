@@ -60,20 +60,23 @@ class EpisodeRenderer(private val catR: MonkeyRenderer, private val ratR: Monkey
      * Draw [ep] at time [time]. [floorPad] = px between the stage floor and the bottom of the screen
      * (keeps the feet above the navigation bar). [density] = px per dp.
      */
-    fun draw(c: Canvas, ep: Episode, time: Float, width: Float, height: Float, floorPad: Float, density: Float) {
+    fun draw(c: Canvas, ep: Episode, time: Float, width: Float, height: Float, floorPad: Float, density: Float,
+             catScale: Float = 0f, ratScale: Float = 0f) {
         w = width; h = height; d = density; t = time
         floorY = h - floorPad
-        catS = w * CAT_K; ratS = catS * RAT_K
+        // v10.22: the real characters' own size when known (so the drama is played by them, not by bigger copies)
+        catS = if (catScale > 0f) catScale else w * CAT_K
+        ratS = if (ratScale > 0f) ratScale else catS * RAT_K
         val cat = ep.track(Episode.CAT); val rat = ep.track(Episode.RAT)
         cat?.sample(t, sC); rat?.sample(t, sR)
 
         drawFloor(c, ep)
         // props that live behind the actors
-        for ((id, tr) in ep.tracks) if (id == "hole" || id == "plate") drawProp(c, ep, id, tr)
+        for ((id, tr) in ep.tracks) if (behind(id)) drawProp(c, ep, id, tr)
         shadow(c, sC, catS); shadow(c, sR, ratS)
         if (cat != null) drawActor(c, catR, rigC, sC, catS, headC, feetC)
         if (rat != null) drawActor(c, ratR, rigR, sR, ratS, headR, feetR)
-        for ((id, tr) in ep.tracks) if (id != Episode.CAT && id != Episode.RAT && id != "hole" && id != "plate") drawProp(c, ep, id, tr)
+        for ((id, tr) in ep.tracks) if (id != Episode.CAT && id != Episode.RAT && !behind(id)) drawProp(c, ep, id, tr)
         drawSpeed(c, sC, catS); drawSpeed(c, sR, ratS)
         drawBodyFx(c, sC, headC, catS); drawBodyFx(c, sR, headR, ratS)
         for (q in ep.cues) if (t >= q.at && t <= q.at + q.dur) drawCue(c, q, ((t - q.at) / q.dur).coerceIn(0f, 1f))
@@ -98,7 +101,7 @@ class EpisodeRenderer(private val catR: MonkeyRenderer, private val ratR: Monkey
 
     private fun shadow(c: Canvas, s: Snap, sc: Float) {
         if (!s.visible || s.x < -0.3f || s.x > 1.3f) return
-        if (abs(s.rot) > 60f && abs(s.rot) < 120f && s.y > 0.2f) return   // on the wall
+        if (s.edge != 0 || (abs(s.rot) > 60f && abs(s.rot) < 120f && s.y > 0.2f)) return   // on the wall / hanging
         val lift = s.y.coerceAtLeast(0f)
         val k = (1f - lift / 0.6f).coerceIn(0.25f, 1f)
         fill.color = argb((60 * k).toInt(), 0, 0, 0)
@@ -118,7 +121,9 @@ class EpisodeRenderer(private val catR: MonkeyRenderer, private val ratR: Monkey
         val running = (s.state == MonkeyState.DASH || s.state == MonkeyState.WALK) && s.anim == t
         val anim = if (running) s.dist * w / (STRIDE * sc) * (2f * PI.toFloat() / 22f) * (if (s.state == MonkeyState.WALK) 0.8f else 1f) else s.anim
         val st = if (running) anim else s.st
+        ctx.edge = when (s.edge) { 1 -> AnimContext.TOP; 2 -> AnimContext.WALL; else -> AnimContext.GROUND }
         Animations.fill(pose, s.state, anim, st, ctx)
+        ctx.edge = AnimContext.GROUND
         if (running && s.state == MonkeyState.DASH) { pose.bodyRot = 14f; pose.headRot = 5f }
         applyExpr(pose, s.expr, s.face)
 
@@ -246,12 +251,14 @@ class EpisodeRenderer(private val catR: MonkeyRenderer, private val ratR: Monkey
         return true
     }
 
+    private fun behind(id: String) = id.startsWith("hole") || id == "plate" || id == "trap"
+
     private fun drawProp(c: Canvas, ep: Episode, id: String, tr: Track) {
         if (!propAt(ep, id, tr, sp)) return
         val x = sp.x * w; val y = floorY - sp.y * w
         val u = w * 0.01f
         when {
-            id == "hole" -> {
+            id.startsWith("hole") -> {
                 // a mouse hole in the skirting: dark arch with a wooden rim
                 val hw = 5.2f * u; val hh = 7.6f * u
                 path.reset()
@@ -269,13 +276,76 @@ class EpisodeRenderer(private val catR: MonkeyRenderer, private val ratR: Monkey
                 line.color = argb(255, 60, 60, 70); line.strokeWidth = 1.6f * d; c.drawOval(oval, line)
                 line.color = argb(140, 200, 40, 40); oval.inset(1.2f * u, 0.35f * u); c.drawOval(oval, line)
             }
-            id.startsWith("laddu") -> laddu(c, x, y, 1.9f * u, full = true)
+            id.startsWith("laddu") || id.startsWith("snack") || id == "gift" -> laddu(c, x, y, 1.9f * u, full = true)
+            id.startsWith("cheese") -> cheese(c, x, y, u)
+            id.startsWith("feather") -> feather(c, x, y, sp.rot, u)
+            id == "ball" || id == "bowl" -> ball(c, x, y + (if (id == "bowl") -1.2f * u else 0f), sp.rot, if (id == "bowl") 2.6f * u else 2.2f * u, id == "bowl")
+            id == "trap" -> mousetrap(c, x, y, u)
+            id == "chilli" -> chilli(c, x, y, sp.rot, u)
             id.startsWith("half") -> laddu(c, x, y, 1.9f * u, full = false)
             id == "pan" -> pan(c, x, y, sp.rot, u)
             id == "peel" -> peel(c, x, y, sp.rot, u)
             id == "banana" -> banana(c, x, y, sp.rot, u)
             id == "plaster" -> plaster(c, x, y, sp.rot, u)
         }
+    }
+
+    private fun cheese(c: Canvas, x: Float, y: Float, u: Float) {
+        path.reset()
+        path.moveTo(x - 2.4f * u, y + 0.9f * u); path.lineTo(x + 2.4f * u, y + 0.9f * u); path.lineTo(x + 2.4f * u, y - 0.6f * u)
+        path.lineTo(x - 2.4f * u, y - 1.8f * u); path.close()
+        fill.color = argb(255, 255, 200, 40); c.drawPath(path, fill)
+        line.color = argb(255, 150, 100, 10); line.strokeWidth = 1.2f * d; c.drawPath(path, line)
+        fill.color = argb(255, 220, 160, 20)
+        c.drawCircle(x - 0.6f * u, y - 0.3f * u, 0.45f * u, fill); c.drawCircle(x + 1.2f * u, y + 0.2f * u, 0.35f * u, fill)
+    }
+
+    private fun feather(c: Canvas, x: Float, y: Float, rot: Float, u: Float) {
+        c.save(); c.rotate(rot, x, y)
+        oval.set(x - 0.9f * u, y - 4f * u, x + 0.9f * u, y + 0.6f * u)
+        fill.color = argb(255, 250, 120, 160); c.drawOval(oval, fill)
+        line.color = argb(255, 160, 60, 100); line.strokeWidth = 1f * d
+        c.drawLine(x, y + 1.6f * u, x, y - 3.8f * u, line)
+        c.restore()
+    }
+
+    private fun ball(c: Canvas, x: Float, y: Float, rot: Float, r: Float, bowling: Boolean) {
+        val cy = y - r
+        fill.color = if (bowling) argb(255, 40, 40, 90) else argb(255, 230, 50, 50); c.drawCircle(x, cy, r, fill)
+        c.save(); c.rotate(rot, x, cy)
+        if (bowling) {
+            fill.color = argb(255, 15, 15, 30)
+            c.drawCircle(x - r * 0.3f, cy - r * 0.35f, r * 0.13f, fill); c.drawCircle(x + r * 0.05f, cy - r * 0.45f, r * 0.13f, fill); c.drawCircle(x - r * 0.05f, cy - r * 0.1f, r * 0.13f, fill)
+        } else {
+            line.color = argb(255, 255, 255, 255); line.strokeWidth = r * 0.22f
+            c.drawLine(x - r * 0.9f, cy, x + r * 0.9f, cy, line)
+        }
+        c.restore()
+        fill.color = argb(90, 255, 255, 255); c.drawCircle(x - r * 0.35f, cy - r * 0.4f, r * 0.25f, fill)
+    }
+
+    private fun mousetrap(c: Canvas, x: Float, y: Float, u: Float) {
+        fill.color = argb(255, 205, 150, 90); bubbleBox.set(x - 3.6f * u, y - 1.0f * u, x + 3.6f * u, y + 0.2f * u)
+        c.drawRoundRect(bubbleBox, 0.4f * u, 0.4f * u, fill)
+        line.color = argb(255, 120, 80, 40); line.strokeWidth = 1.2f * d; c.drawRoundRect(bubbleBox, 0.4f * u, 0.4f * u, line)
+        line.color = argb(255, 150, 150, 160); line.strokeWidth = 1.6f * d
+        c.drawLine(x - 2.6f * u, y - 1.1f * u, x + 2.6f * u, y - 1.1f * u, line)
+        c.drawLine(x - 2.6f * u, y - 1.1f * u, x - 2.6f * u, y - 2.4f * u, line)
+        c.drawLine(x + 2.6f * u, y - 1.1f * u, x + 2.6f * u, y - 2.4f * u, line)
+    }
+
+    private fun chilli(c: Canvas, x: Float, y: Float, rot: Float, u: Float) {
+        c.save(); c.rotate(rot, x, y)
+        path.reset()
+        path.moveTo(x - 2.8f * u, y - 0.4f * u)
+        path.quadTo(x, y - 1.6f * u, x + 2.6f * u, y + 0.6f * u)
+        path.quadTo(x, y + 0.2f * u, x - 2.8f * u, y + 0.5f * u)
+        path.close()
+        fill.color = argb(255, 220, 30, 30); c.drawPath(path, fill)
+        line.color = argb(255, 120, 10, 10); line.strokeWidth = 1.1f * d; c.drawPath(path, line)
+        line.color = argb(255, 40, 140, 50); line.strokeWidth = 1.6f * d
+        c.drawLine(x - 2.8f * u, y, x - 3.6f * u, y - 0.8f * u, line)
+        c.restore()
     }
 
     private fun laddu(c: Canvas, x: Float, y: Float, r: Float, full: Boolean) {
@@ -538,6 +608,17 @@ class EpisodeRenderer(private val catR: MonkeyRenderer, private val ratR: Monkey
 
     private fun drawTitle(c: Canvas, ep: Episode) {
         if (t > Episode.TITLE_LEN) return
+        if (ep.title.isBlank()) {   // v10.22: no title card; just a small hint that a tap stops it
+            val a = (min(1f, t / 0.3f) * min(1f, (Episode.TITLE_LEN - t) / 0.4f)).coerceIn(0f, 1f)
+            text.textSize = 12f * d
+            val msg = "tap anywhere to stop"
+            val tw = text.measureText(msg) + 24f * d
+            bubbleBox.set(w / 2f - tw / 2f, 44f * d, w / 2f + tw / 2f, 70f * d)
+            fill.color = argb((170 * a).toInt(), 13, 13, 13); c.drawRoundRect(bubbleBox, 13f * d, 13f * d, fill)
+            text.color = argb((230 * a).toInt(), 235, 235, 240)
+            c.drawText(msg, w / 2f, 61.5f * d, text)
+            return
+        }
         val inK = min(1f, t / 0.35f)
         val slide = Track.ease(Ease.BACK, inK)
         val a = min(1f, (Episode.TITLE_LEN - t) / 0.4f).coerceIn(0f, 1f)

@@ -1955,11 +1955,12 @@ class MonkeyView(
         if (host != null && !wp) {
             skitActorId = forcedCharacterId ?: character.id
             skitActorId?.let { id -> ChaseShowHub.wakers[id] = { ui.post { if (!running && live && !paused) start() } } }
+            skitActorId?.let { id -> ChaseShowHub.where[id] = { showWho() } }
             skitActorId?.let { id -> com.combo.monkeycompanion.engine.skit.SkitBus.register(id) { c -> if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) playSkitCue(c) else ui.post { playSkitCue(c) } } }
         }
     }
     override fun onDetachedFromWindow() {
-        skitActorId?.let { com.combo.monkeycompanion.engine.skit.SkitBus.unregister(it); ChaseShowHub.wakers.remove(it) }; skitActorId = null
+        skitActorId?.let { com.combo.monkeycompanion.engine.skit.SkitBus.unregister(it); ChaseShowHub.wakers.remove(it); ChaseShowHub.where.remove(it) }; skitActorId = null
         goDead(); super.onDetachedFromWindow()
     }
 
@@ -2024,7 +2025,32 @@ class MonkeyView(
 
     private fun endShowLocal() {
         showOn = false; showRef = null; showLastState = null
-        if (host != null) { climber.deactivate(); surf = screenSurf(SK.FLOOR); mx = mx.coerceIn(0f, max(0f, sw() - boxW)); my = ground(); falling = false; controller.play(MonkeyState.IDLE, 0.6f); updateGeometry() }
+        if (host != null) {
+            climber.deactivate(); surf = screenSurf(SK.FLOOR)
+            // v10.22: stand exactly where the drama left this character
+            ChaseShowHub.finalOf(character.id)?.let { (fx, face) -> mx = fx * sw() - boxW / 2f; controller.face(face) }
+            mx = mx.coerceIn(0f, max(0f, sw() - boxW)); my = ground(); falling = false; controller.play(MonkeyState.IDLE, 0.6f); updateGeometry()
+        }
+    }
+
+    /** v10.22 where this real character is right now, so the drama starts from here (floor, wall, top, hiding). */
+    private fun showWho(): ChaseShowHub.Who? {
+        val h = host ?: return null
+        if (wp) return null
+        val w = sw().coerceAtLeast(1f)
+        val floorLine = realGround() + boxH - groundPad
+        val sc = effectiveRigScale()
+        if (hiddenTab) return ChaseShowHub.Who(com.combo.monkeycompanion.engine.show.ActorStart(com.combo.monkeycompanion.engine.show.ActorStart.OFF, if (hideSide < 0) 0f else 1f, 0f, 1f), sc, floorLine)
+        val fp = feetScreen(FloatArray(2))
+        val edge = when (surf.kind) {
+            SK.WALL_L -> com.combo.monkeycompanion.engine.show.ActorStart.WALL_L
+            SK.WALL_R -> com.combo.monkeycompanion.engine.show.ActorStart.WALL_R
+            SK.CEIL -> com.combo.monkeycompanion.engine.show.ActorStart.TOP
+            else -> com.combo.monkeycompanion.engine.show.ActorStart.FLOOR
+        }
+        val lift = ((floorLine - fp[1]) / w).coerceAtLeast(0f)
+        if (h.screenWidth() <= 0) return null
+        return ChaseShowHub.Who(com.combo.monkeycompanion.engine.show.ActorStart(edge, (fp[0] / w).coerceIn(0f, 1f), lift, controller.facing), sc, floorLine)
     }
 
     private fun drawShowFx(canvas: Canvas) {
@@ -5160,9 +5186,11 @@ class MonkeyView(
         drawHeartAndCoPresence(canvas)
         drawLandingFront(canvas)
         if (v5On && stage.active) { canvas.save(); canvas.translate(-winX.toFloat(), -winY.toFloat()); stage.draw(canvas, front = true); canvas.restore() }
-        if ((chatBtnUntil > 0f || hintUntil > 0f) && !chatFabOn) drawChatBtn(canvas)
-        drawChatFab(canvas)
-        drawFriendHeart(canvas)   // v10.19
+        if (!showOn) {   // v10.22: during the drama the heart and chat button go with the character (hidden)
+            if ((chatBtnUntil > 0f || hintUntil > 0f) && !chatFabOn) drawChatBtn(canvas)
+            drawChatFab(canvas)
+            drawFriendHeart(canvas)   // v10.19
+        }
         if (notifCardOpen) {
             notifCard.draw(canvas, notifCardLeft, notifCardTop)
         }
@@ -6218,6 +6246,7 @@ class MonkeyView(
         val a = controller.anim
         val ph = flight.phase; val k = flight.k
         a.powerPhase = ph; a.powerK = k; a.crashed = flight.crashed
+        a.carveLean = flight.glideLean; a.glideSpeed = flight.glideSpeed; a.gliding = (flight.step?.glide ?: 0f) > 0f
         // v10.16 Kutti Satan's "float a buddy": the nearest crew buddy rises on red sparkles (visual only, self-expiring)
         if (pw.id == "floatbuddy") partnerViews.firstOrNull()?.levitateBy(min(1f, k / 0.15f) * min(1f, (1f - k) / 0.15f))
         a.sinceRing = emitter.sinceRing; a.ringLeft = emitter.leftHand
