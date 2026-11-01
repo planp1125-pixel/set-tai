@@ -88,3 +88,6 @@ The devil's horns curve inward like the icon.
 ## v10.19.1 (code 51)
 - The friendship heart now sits just **above his head** instead of under the chat button, so it never hides the 💬 button. It steps aside while a speech bubble is showing.
 - **Tap the heart** to check your friendship: a big dark heart pops up, filled red to your progress, with the level number inside and "Friends · 23/100" under it, then fades away after about 3 seconds.
+
+## v10.19.2 (code 52)
+- The friendship heart moved to the **upper corner beside his head** (top-right or top-left, on the same side as the chat button), with the 💬 button lower down, so the two never overlap. Tapping it still pops up the big level heart.

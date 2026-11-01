@@ -6630,7 +6630,11 @@ class MonkeyView(
         if (climber.active) { climber.headTop(heartHead); heartHead[0] += sinkX - winX; heartHead[1] += sinkY - winY }
         else { rig.headTop(heartHead); heartHead[0] += sinkX }
         val maxW = (if (wp) sw() else winW.toFloat()); val maxH = (if (wp) (host?.screenHeight() ?: height).toFloat() else winH.toFloat())
-        var cx = heartHead[0]; var cy = heartHead[1] - r - 6f * d
+        // v10.19.2: beside the top of the head (upper corner), on the chat button's side; the button stays lower down
+        val side = if (chatFabOn && !chatFab.x.isNaN() && abs(fabLX - heartHead[0]) > 1f) Math.signum(fabLX - heartHead[0]) else 1f
+        var cx = heartHead[0] + side * (MonkeyRig.HEAD_R * rigScale + r * 0.5f)
+        var cy = heartHead[1] + r * 0.6f
+        if (chatFabOn && !chatFab.x.isNaN() && abs(cx - fabLX) < r + chatFabR + 6f * d) cy = min(cy, fabLY - chatFabR - r - 6f * d)
         cx = cx.coerceIn(r * 1.8f, max(r * 1.8f, maxW - r * 1.8f)); cy = cy.coerceIn(r * 1.6f, max(r * 1.6f, maxH - r * 1.6f))
         heartLX = cx; heartLY = cy; heartLR = r
         if (heartShowFor > 0f) { drawHeartPopup(canvas, cx, cy, maxW, maxH); return }
