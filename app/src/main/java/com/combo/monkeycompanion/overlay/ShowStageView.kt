@@ -9,7 +9,7 @@ import android.view.Choreographer
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import com.combo.monkeycompanion.engine.show.StageRenderer
+import com.combo.monkeycompanion.engine.show.EpisodeRenderer
 import com.combo.monkeycompanion.rig.BillaRenderer
 import com.combo.monkeycompanion.rig.ChittuRenderer
 
@@ -17,27 +17,50 @@ import com.combo.monkeycompanion.rig.ChittuRenderer
  * v10.13.1: ONE full-screen, touch-through stage window for the Billa-vs-Chittu chase. The two companion windows
  * stay still (and invisible) during the show; this view draws both characters at the display's frame rate from a
  * pure function of show time, so there is no per-frame window move, no fighting systems and no jitter.
+ * v10.21 Show 2.0: plays a cartoon [com.combo.monkeycompanion.engine.show.Episode] with its sounds and buzzes.
  */
 @SuppressLint("ViewConstructor")
 class ShowStageView(context: Context, private val scale: Float) : View(context), Choreographer.FrameCallback {
-    private val stage = StageRenderer(BillaRenderer(), ChittuRenderer())
+    private val stage = EpisodeRenderer(BillaRenderer(), ChittuRenderer())
     private val d = resources.displayMetrics.density
     private var on = false
+    private var lastT = -1f
+    /** Keeps the floor above the navigation bar. */
+    private val floorPad: Float = run {
+        val id = resources.getIdentifier("navigation_bar_height", "dimen", "android")
+        val nav = if (id > 0) runCatching { resources.getDimensionPixelSize(id) }.getOrDefault(0) else 0
+        nav + 14f * d
+    }
 
     override fun doFrame(frameTimeNanos: Long) {
         if (!on) return
-        val run = ChaseShowHub.run
-        if (run == null || ChaseShowHub.t() > run.total) { ChaseShowHub.finish(context); return }
+        val ep = ChaseShowHub.episode
+        val t = ChaseShowHub.t()
+        if (ep == null || t > ep.total) { ChaseShowHub.finish(context); return }
+        // sounds + buzzes that fell between the last frame and this one
+        if (lastT >= 0f) for (b in ep.beeps) if (b.at > lastT && b.at <= t) beep(b)
+        lastT = t
         invalidate()
         Choreographer.getInstance().postFrameCallback(this)
+    }
+
+    private fun beep(b: com.combo.monkeycompanion.engine.show.Beep) {
+        com.combo.monkeycompanion.audio.Sfx.byName(b.sfx)?.let { runCatching { com.combo.monkeycompanion.audio.Sfx.play(context, it, b.vol, b.pitch) } }
+        if (b.buzzMs > 0) runCatching {
+            val am = context.getSystemService(android.media.AudioManager::class.java)
+            if (am != null && am.ringerMode == android.media.AudioManager.RINGER_MODE_SILENT) return
+            val v = if (Build.VERSION.SDK_INT >= 31) context.getSystemService(android.os.VibratorManager::class.java)?.defaultVibrator
+                else @Suppress("DEPRECATION") context.getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+            v?.vibrate(android.os.VibrationEffect.createOneShot(b.buzzMs.toLong().coerceIn(10L, 120L), 90))
+        }
     }
 
     override fun onAttachedToWindow() { super.onAttachedToWindow(); on = true; Choreographer.getInstance().postFrameCallback(this) }
     override fun onDetachedFromWindow() { on = false; Choreographer.getInstance().removeFrameCallback(this); super.onDetachedFromWindow() }
 
     override fun onDraw(canvas: Canvas) {
-        val run = ChaseShowHub.run ?: return
-        stage.draw(canvas, run, ChaseShowHub.t(), width.toFloat(), scale, d)
+        val ep = ChaseShowHub.episode ?: return
+        stage.draw(canvas, ep, ChaseShowHub.t(), width.toFloat(), height.toFloat(), floorPad, d)
     }
 
     companion object {

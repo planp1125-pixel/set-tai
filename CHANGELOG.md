@@ -104,3 +104,16 @@ The devil's horns curve inward like the icon.
 - **Daily mischief challenge** (Settings › 💛 Engagement): one per day, like "Toss me at the screen edge 3 times", "Catch me in mid-air 2 times", "Make me crash 4 times" or "Give me 10 pats". He tells you in the morning hello; tap the heart to see your progress. Finishing it gives +25 friendship, with a dance and confetti.
 - With Brain on, the AI reacts to every hit (it knows exactly what happened to his body). Brain off uses scripted lines.
 - No new permissions. No Random in the new code (GoldenTraceTest safe). New tests: ImpactPlayTest (9), ChallengeTest (6).
+
+## v10.21 (code 54): the Billa & Chittu Show 2.0
+Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real cartoon short plays along the bottom of your screen, 25–40 seconds, with a title card, sound effects, buzzes on the hits and an iris-out "The End".
+- **Three episodes, played in turn** (each one a full story: a setup, a chase, a crash, a plan that backfires, a turnaround with heart, a warm ending):
+  - **Laddu Thirudan:** Billa naps by a plate of laddus. Chittu tiptoes out of his hole and steals one. One eye opens… a frozen moment… the chase. Billa SPLATs into the wall by the mouse hole. His frying-pan trap boomerangs off the wall into his own face (BONG!). He cries; Chittu stops laughing, hesitates, then shares the laddu. They fall asleep side by side.
+  - **Vazhakka Thol:** Billa sneaks up on Chittu, slips on the banana peel Chittu tossed over his shoulder, leaps for him, Chittu leap-frogs over his head and Billa splats into the wall. Chittu brings a plaster for his head. Friends; Chittu rides off on Billa's head.
+  - **Pidikka Mudiyaadhu:** Billa overshoots and skids; Chittu runs up the wall to tease him… and slips. Billa hesitates one heartbeat, then dives and catches him. An awkward thank-you, a blush ("Chumma dhaan!"), and the chase restarts the other way round: Chittu chasing Billa with a frying pan.
+- **Cartoon timing:** wind-up → zip → dead stop, skids with dust, speed lines, freeze-frame "takes" to you, real pauses before the gag lands.
+- **Clear staging:** they're bigger, stay on the floor or one wall, never teleport and never merge into one blob (except on purpose: a catch, a hug, a ride).
+- **Speech bubbles above whoever is talking** (no more tiny captions in the middle of the screen).
+- **New sounds** (made in code, no samples): pizzicato tiptoes, zip, boing, splat, thud, pan clang and bonk, slide whistle, pop, a sad "wah-wah", a little "ta-da". They follow Settings › Sound effects and stay silent on silent/vibrate. Short buzzes on the big hits (none on silent).
+- Drag a character during the show to stop it.
+- No new permissions. No frame-loop Random (GoldenTraceTest safe). New test: ShowEpisodeTest (5): no teleports, no overlaps, readable lines, a heart in every story.

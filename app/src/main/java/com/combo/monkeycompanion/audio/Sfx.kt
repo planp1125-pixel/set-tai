@@ -17,6 +17,15 @@ object Sfx {
     enum class S(val res: Int) {
         CRACK(R.raw.sfx_crack), SHATTER(R.raw.sfx_shatter), WHOOSH(R.raw.sfx_whoosh), MEGA(R.raw.sfx_mega),
         FW_BOOM(R.raw.sfx_fw_boom), FW_CRACKLE(R.raw.sfx_fw_crackle), WHISTLE(R.raw.sfx_whistle), FIZZ(R.raw.sfx_fizz),
+        // v10.21 the Billa & Chittu show
+        PLUCK(R.raw.sfx_pluck), ZIP(R.raw.sfx_zip), BOING(R.raw.sfx_boing), SPLAT(R.raw.sfx_splat), THUD(R.raw.sfx_thud),
+        CLANG(R.raw.sfx_clang), BONK(R.raw.sfx_bonk), SLIDE(R.raw.sfx_slide), POP(R.raw.sfx_pop), WAHWAH(R.raw.sfx_wahwah), TADA(R.raw.sfx_tada),
+    }
+
+    /** v10.21 a show sound by its name in the episode script ("splat", "zip", …), or null. */
+    fun byName(n: String?): S? = when (n) {
+        "pluck" -> S.PLUCK; "zip" -> S.ZIP; "boing" -> S.BOING; "splat" -> S.SPLAT; "thud" -> S.THUD; "clang" -> S.CLANG
+        "bonk" -> S.BONK; "slide" -> S.SLIDE; "pop" -> S.POP; "wahwah" -> S.WAHWAH; "tada" -> S.TADA; else -> null
     }
     private var pool: SoundPool? = null
     private val ids = IntArray(S.values().size)
@@ -28,7 +37,7 @@ object Sfx {
         pool?.let { return it }
         val ctx = c.applicationContext; app = ctx
         val sp = runCatching {
-            SoundPool.Builder().setMaxStreams(6).setAudioAttributes(
+            SoundPool.Builder().setMaxStreams(8).setAudioAttributes(
                 AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
             ).build()
         }.getOrNull() ?: return null
@@ -56,7 +65,7 @@ object Sfx {
         val i = s.ordinal
         if (!ready[i]) return
         val now = android.os.SystemClock.uptimeMillis()
-        if (now - lastAt[i] < 35L) return
+        if (now - lastAt[i] < 35L && s != S.PLUCK) return
         lastAt[i] = now
         val v = vol.coerceIn(0f, 1f)
         runCatching { sp.play(ids[i], v, v, 1, 0, pitch.coerceIn(0.5f, 2f)) }
