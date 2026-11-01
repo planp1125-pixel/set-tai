@@ -843,7 +843,7 @@ class SettingsActivity : Activity() {
         views += text("Friendship ${com.combo.monkeycompanion.v5.Bond.points(st.xp)}/100 · level ${f.level(st.xp)} (${f.title(f.level(st.xp))}) · " +
             "${st.streak}-day streak · feeling ${com.combo.monkeycompanion.v5.Bond.warmthWord(b.warmth)}", 13f)
         views += text("Friendship grows when you pat him, chat, play games and come back each day. The level never goes down; if you stay away he just misses you a bit.", 12f, color = soft)
-        for (ft in S.Feature.entries.filter { it.engagement }) {
+        for (ft in com.combo.monkeycompanion.fun5.Fun5Store.Feature.entries.filter { it.engagement }) {
             views += CheckBox(this).apply {
                 text = ft.title; setTextColor(brown); isChecked = S.on(this@SettingsActivity, ft)
                 setOnCheckedChangeListener { _, c -> S.set(this@SettingsActivity, ft, c) }
