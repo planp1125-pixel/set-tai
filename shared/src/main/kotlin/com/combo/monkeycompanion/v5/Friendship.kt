@@ -6,7 +6,9 @@ package com.combo.monkeycompanion.v5
  */
 object Friendship {
     enum class Source(val xp: Int, val dailyCap: Int) {
-        PET(2, 60), CHAT(5, 100), GAME(10, 120), GAME_WIN(5, 60), STREAK_DAY(15, 15), CLIP(8, 24), PAIR(10, 30)
+        PET(2, 60), CHAT(5, 100), GAME(10, 120), GAME_WIN(5, 60), STREAK_DAY(15, 15), CLIP(8, 24), PAIR(10, 30),
+        /** v10.20 the daily mischief challenge, once a day. */
+        CHALLENGE(25, 25)
     }
 
     /** Total XP needed to reach level n (1-based): 0, 60, 160, 300, 480, 700, ... (grows gently). */

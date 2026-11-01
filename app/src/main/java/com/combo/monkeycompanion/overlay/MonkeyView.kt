@@ -217,6 +217,7 @@ class MonkeyView(
         override fun leaveBy(side: Int) { hideToEdge(if (side < 0) -1 else 1); ui.postDelayed({ if (hiddenTab) unhide() }, 13_000L) }
         override fun comeBack() { if (hiddenTab) unhide() }
         override fun log(what: String, result: String) { runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, what, result) } }
+        override fun yawn(secs: Float) { yawnFor = secs; yawnLen = secs; controller.play(MonkeyState.IDLE, secs) }
         /** v10.19 daily moments: Brain ON = the AI writes the line (no canned fallback); Brain OFF = the scripted line. */
         override fun sayAi(request: String, fallback: String, ms: Long) {
             if (!aiVoiceOn()) { this@MonkeyView.say(fallback, ms); return }
@@ -351,7 +352,7 @@ class MonkeyView(
     private val hovers get() = host != null && !wp && !isEdgeCrashLanding && character.can(com.combo.monkeycompanion.character.Locomotion.FLOAT) &&
         character.can(com.combo.monkeycompanion.character.Locomotion.FLY) && powerSetting() != Superpowers.OFF
     private val isMask get() = profile.clumsyClimber && host != null && !wp
-    private val hoverOn get() = hovers && !falling && surf.spot == -2 && surf.kind == SK.FLOOR && !dragging
+    private val hoverOn get() = hovers && !falling && surf.spot == -2 && surf.kind == SK.FLOOR && !dragging && impact == null
     private var heavyShake = 0f
     private val climber = Climber(rigScale)
     private val current = Pose()
@@ -1889,7 +1890,7 @@ class MonkeyView(
         if (!live || !running || paused || (hiddenTab && tabPeekT < 0f && !tabTracking)) return -1L
         if (powerOn) return if (saver) 33L else 0L
         if (fireworks.active || skyActive || reactionLayer.busy || living.anticipating) return 0L   // v10.8: smooth reactions / fireworks
-        if (dragging || tracking || falling || coyoteScareTimer > 0f || isEdgeCrashLanding || abs(notifFlingVy) > 5f ||
+        if (dragging || tracking || falling || impact != null || coyoteScareTimer > 0f || isEdgeCrashLanding || abs(notifFlingVy) > 5f ||
             tweenT >= 0f || hideAnim >= 0f || typing || exiting || notifCardOpen || blinkT >= 0f ||
             controller.state == MonkeyState.WALK || controller.state == MonkeyState.DANCE || controller.state == MonkeyState.WAVE ||
             balls.looseActive
@@ -2830,6 +2831,8 @@ class MonkeyView(
         if (mcOn) maskClimbPose(drawPose)
         juggleOn = computeJuggleOn()
         if (juggleOn) jugglePose(drawPose)
+        applyDailyPoses(drawPose, dt)   // v10.20 sulk (arms folded, turned away) and the goodnight yawn
+        impact?.applyPose(drawPose, t)   // v10.20 physical comedy wins over everything else
         syncFx()
         updateGeometry()
         if (smoothAnim && profile.anim.enabled && !climber.active) {
@@ -2881,6 +2884,7 @@ class MonkeyView(
         syncImeDodge()
         if (rotEase != 0f) { rotEase *= exp(-dt * 9f); if (abs(rotEase) < 0.3f) rotEase = 0f }
         if (rocketFlyOn) { if (dragging) { rocketFlyOn = false; rocketFly.cancel(); arcRot = 0f } else { stepRocketFly(dt); return } }
+        if (impact != null) { stepImpact(dt); return }   // v10.20
         if (isEdgeCrashLanding) {
             stepEdgeCrashLanding(dt)
             return
@@ -3639,6 +3643,7 @@ class MonkeyView(
         val fx = mx; val fy = my
         val near = 40 * d
         val fast = 1400 * d
+        if (upSwipeDown <= 0f && tryToss(fvx, fvy)) return true   // v10.20: tossed from high up = it flies and hits things
         if (hovers) {
             val sp = hypot(fvx, fvy)
             if (upSwipeDown > 0f) {          // swipe down = touch down, with a big curved rocket flight (v6 real-device fix)
@@ -4660,7 +4665,13 @@ class MonkeyView(
     private fun playMoment(m: PhoneMoments.Moment) {
         val now = System.currentTimeMillis()
         momentLast[m] = now
-        val shock = m == PhoneMoments.Moment.CHARGE && PhoneMoments.chargeStyle(character.id) == PhoneMoments.ChargeStyle.SHOCK
+        val ownShock = m == PhoneMoments.Moment.CHARGE && PhoneMoments.chargeStyle(character.id) == PhoneMoments.ChargeStyle.SHOCK
+        // v10.20: the very first plug-in shocks EVERY character (burnt soot face); after that he remembers and is careful
+        val shocks = if (m == PhoneMoments.Moment.CHARGE) runCatching { com.combo.monkeycompanion.fun5.Fun5Store.shocks(context, character.id) }.getOrDefault(1) else 1
+        val bigShock = m == PhoneMoments.Moment.CHARGE && !saver && shocks == 0
+        val shock = ownShock || bigShock
+        if (m == PhoneMoments.Moment.CHARGE) runCatching { com.combo.monkeycompanion.fun5.Fun5Store.addShock(context, character.id) }
+        sootShock = shock && !saver
         when {
             shock -> com.combo.monkeycompanion.ai.BodySense.record("the charger was plugged in and it zapped me", com.combo.monkeycompanion.ai.BodySense.Feeling.ZAPPED)
             m == PhoneMoments.Moment.CHARGE -> com.combo.monkeycompanion.ai.BodySense.record("the charger was plugged in and I ran to the battery", com.combo.monkeycompanion.ai.BodySense.Feeling.ENERGISED)
@@ -4670,19 +4681,75 @@ class MonkeyView(
         moment = m; momentT = 0f
         momentLen = if (charge) PhoneMoments.CHARGE_TRIP_SECS else if (shock) SHOCK_SECS else PhoneMoments.duration(m, saver)
         momentFx = !shock && (charge || PhoneMoments.effects(saver))
-        momentStyle = PhoneMoments.chargeStyle(character.id)
+        momentStyle = if (bigShock) PhoneMoments.ChargeStyle.SHOCK else PhoneMoments.chargeStyle(character.id)
         val rtl = layoutDirection == View.LAYOUT_DIRECTION_RTL
         momentTarget = PhoneMoments.batteryTarget(sw(), (host?.topInset() ?: 0).toFloat(), rtl, d)
         if (m == PhoneMoments.Moment.CHARGE || m == PhoneMoments.Moment.LOW) controller.face(PhoneMoments.facingToward(mx + boxW / 2f, momentTarget[0]).toFloat())
         controller.idleNow(momentLen + 0.6f)
         aiReply = null; pages.clear(); beats.clear()
-        val line = PhoneMoments.line(m, character.id)
+        val line = when {
+            bigShock -> com.combo.monkeycompanion.engine.impact.ShockLines.first(character.id)
+            m == PhoneMoments.Moment.CHARGE && shocks == 1 && !ownShock -> com.combo.monkeycompanion.engine.impact.ShockLines.remember(character.id) + " " + PhoneMoments.line(m, character.id)
+            else -> PhoneMoments.line(m, character.id)
+        }
         if (shock) ui.postDelayed({ say(line, 3600L) }, (momentLen * 1000).toLong() + 300L)   // v10.14: speech after the shock settles
         else if (m == PhoneMoments.Moment.CHARGE && momentFx) ui.postDelayed({ if (moment == m) say(line, 3800L) }, (momentLen * 450).toLong())
         else say(line, (momentLen * 1000).toLong() + 2200L)
         if (m == PhoneMoments.Moment.CHARGE || m == PhoneMoments.Moment.FULL) performHapticFeedback(HapticFeedbackConstants.CONFIRM)
         if (charge) startChargeTrip()
         if (!running) start()
+    }
+
+    // ---- v10.20 soot: a burnt face for ANY character (darkens whatever the renderer drew, then white blinking eyes) ----
+    private var sootShock = false
+    private var sootFadeT = 0f
+    private var sootSmokeIn = 0f
+    private val sootPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_ATOP) }
+    private val sootEye = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val sootPt = FloatArray(4)
+    val debugSoot get() = sootAmount()
+    /** 0..1 how burnt he looks right now. */
+    private fun sootAmount(): Float = when {
+        sootShock && moment == PhoneMoments.Moment.CHARGE -> ((momentT / momentLen - 0.3f) / 0.15f).coerceIn(0f, 1f)
+        sootFadeT > 0f -> min(1f, sootFadeT / (SOOT_FADE_SECS * 0.6f))
+        else -> 0f
+    }
+    private fun stepSoot(dt: Float) {
+        if (sootFadeT > 0f) sootFadeT = max(0f, sootFadeT - dt)
+        val a = sootAmount()
+        if (a < 0.5f || saver) return
+        sootSmokeIn -= dt
+        if (sootSmokeIn <= 0f) {   // a puff of smoke from the top of the head now and then (deterministic, no Random)
+            sootSmokeIn = 0.22f
+            rig.headTop(head)
+            val wob = sin(t * 7f) * 10f * d
+            particles.spawn(com.combo.monkeycompanion.rig.Particles.SMOKE, head[0] + winX + sinkX + wob, head[1] + winY, wob * 2f, -60f * d, 1.1f, 9f * d)
+        }
+    }
+    /** Called inside drawMonkey around the renderer: [body] draws the character. */
+    private fun drawWithSoot(canvas: Canvas, body: () -> Unit) {
+        val a = sootAmount()
+        if (a <= 0.01f) { body(); return }
+        val layer = canvas.saveLayer(null, null)
+        body()
+        sootPaint.color = Color.rgb(0x14, 0x12, 0x10); sootPaint.alpha = (a * 0.88f * 255).toInt()
+        canvas.drawRect(-10000f, -10000f, 10000f, 10000f, sootPaint)
+        canvas.restoreToCount(layer)
+        // two white eyes blinking out of the soot (rig head space: eye level is about y = -41)
+        sootPt[0] = -13f; sootPt[1] = -41f; sootPt[2] = 13f; sootPt[3] = -41f
+        rig.head.mapPoints(sootPt)
+        val blink = (t % 2.2f) in 1.0f..1.12f
+        val r = 4.2f * rigScale / 0.66f
+        sootEye.style = Paint.Style.FILL
+        for (i in 0..1) {
+            val ex = sootPt[i * 2]; val ey = sootPt[i * 2 + 1]
+            sootEye.color = Color.WHITE; sootEye.alpha = (a * 255).toInt()
+            if (blink) canvas.drawRect(ex - r, ey - r * 0.15f, ex + r, ey + r * 0.15f, sootEye)
+            else {
+                tmpR.set(ex - r, ey - r * 1.25f, ex + r, ey + r * 1.25f); canvas.drawOval(tmpR, sootEye)
+                sootEye.color = Color.BLACK; sootEye.alpha = (a * 255).toInt(); canvas.drawCircle(ex, ey + r * 0.2f, r * 0.45f, sootEye)
+            }
+        }
     }
 
     /** v10.14 Billa & Chittu plug-in shock: a jolt (eased in/out, no snaps), Billa's fur spikes, Chittu spins twice. */
@@ -4710,11 +4777,13 @@ class MonkeyView(
     }
 
     private fun stepMoment(dt: Float) {
+        stepSoot(dt)   // v10.20
         if (chargePendingAt > 0L) { chargeRetryT += dt; if (chargeRetryT > 0.4f) { chargeRetryT = 0f; tryCharge() } }
         val m = moment ?: return
         momentT += dt
         val k = momentT / momentLen
         if (k >= 1f || powerOn || dragging || exiting) {
+            if (sootShock) { sootShock = false; sootFadeT = SOOT_FADE_SECS }   // v10.20: the soot wears off slowly
             moment = null; shockSpin = 0f
             val interrupted = dragging || powerOn || exiting
             if (interrupted && chargeTrip) { chargeTrip = false; chargeHomeSurf = null; if (!dragging) surf = freeSurf(my.coerceIn(topY(), ground())) }
@@ -5543,8 +5612,181 @@ class MonkeyView(
         }
     }
 
+    // ---------------- v10.20 sulk and yawn poses (every character: they only set shared Pose values) ----------------
+    private var yawnFor = 0f
+    private var yawnLen = 1f
+    val debugYawning get() = yawnFor > 0f
+    val debugSulkPose get() = sulkPoseOn
+    private var sulkPoseOn = false
+    private fun applyDailyPoses(p: com.combo.monkeycompanion.rig.Pose, dt: Float) {
+        if (yawnFor > 0f) {
+            yawnFor = max(0f, yawnFor - dt)
+            val k = 1f - yawnFor / yawnLen                      // 0..1 through the yawn
+            val big = sin(PI.toFloat() * k)                     // opens, holds, closes
+            p.mouthOpen = max(p.mouthOpen, 0.95f * big); p.eyeOpen = 1f - 0.85f * big; p.browAngle = -6f * big
+            p.armLRaise = 14f + 150f * big; p.armRRaise = 14f + 150f * big   // a big stretch, arms up
+            p.armLElbow = -8f - 20f * big; p.armRElbow = -8f - 20f * big
+            p.bodyY -= 5f * big; p.squashY = 1f + 0.06f * big; p.headRot = -6f * big
+            p.zzz = max(p.zzz, 0.4f * k)
+        }
+        sulkPoseOn = v5On && stage.sulkingNow && controller.state == MonkeyState.SAD && !dragging && !falling && impact == null
+        if (sulkPoseOn) {   // arms folded across the chest, head turned away, an annoyed little pout
+            p.armLRaise = 62f; p.armLElbow = 128f; p.armRRaise = 62f; p.armRElbow = 128f
+            p.headRot = -14f * controller.facing; p.lookX = -6f * controller.facing; p.lookY = 1f
+            p.browAngle = 16f; p.mouthSmile = -0.55f; p.mouthOpen = 0f; p.eyeOpen = 0.75f
+            p.bodyRot = -5f * controller.facing
+            if ((t % 4.5f) in 3.6f..4.2f) { p.lookX = 4f * controller.facing; p.headRot = 4f * controller.facing }   // peeks back now and then
+        }
+    }
+
+    // ---------------- v10.20 the core: tossed -> splat on the glass / thwack the top / pancake (engine/impact) ----------------
+    private var impact: com.combo.monkeycompanion.engine.impact.ImpactPlay? = null
+    private var ivx = 0f; private var ivy = 0f
+    private var impactN = 0
+    private var impactLine: String? = null
+    private var impactWord = ""
+    private var impactWordX = 0f; private var impactWordY = 0f
+    private val impactWordPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; isFakeBoldText = true }
+    val debugImpactPhase get() = impact?.phase?.name
+    val debugImpactKind get() = impact?.kind?.name
+
+    /** Released high up and fast (or a flyer thrown very hard): it flies under gravity and hits whatever it reaches. */
+    private fun tryToss(fvx: Float, fvy: Float): Boolean {
+        if (host == null || wp || profile.ridesProp || hiddenTab) return false
+        val spDp = hypot(fvx, fvy) / d
+        val screenH = host?.screenHeight()?.toFloat() ?: return false
+        if (fvy > 0f && abs(fvy) > abs(fvx) * 1.2f) return false   // mostly downward: the old drop / bottom-hide
+        if (!com.combo.monkeycompanion.engine.impact.ImpactPlay.isToss(spDp, ground() - my, screenH, hovers)) return false
+        impact = com.combo.monkeycompanion.engine.impact.ImpactPlay().also { it.spin = (fvx / d * 0.3f).coerceIn(-720f, 720f) }
+        ivx = fvx; ivy = fvy
+        falling = false; vy = 0f; tweenT = -1f; tweenDone = null; arc = null; afterLand = null
+        climber.deactivate(); surf = freeSurf(my)
+        reactionLayer.clear()
+        runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Toss", "${spDp.toInt()} dp/s from ${((ground() - my) / screenH * 100).toInt()}% up") }
+        return true
+    }
+
+    private fun stepImpact(dt: Float) {
+        val ip = impact ?: return
+        if (dragging) { impact = null; return }
+        val g = com.combo.monkeycompanion.engine.impact.ImpactPlay.GRAVITY_DP * d
+        val maxX = max(0f, sw() - boxW)
+        val K = com.combo.monkeycompanion.engine.impact.ImpactPlay.Kind
+        when (ip.phase) {
+            com.combo.monkeycompanion.engine.impact.ImpactPlay.Phase.FLIGHT -> {
+                ivy += g * dt; mx += ivx * dt; my += ivy * dt
+                when {
+                    mx <= 0f -> { mx = 0f; impactHit(ip, K.SPLAT, -1) }
+                    mx >= maxX -> { mx = maxX; impactHit(ip, K.SPLAT, 1) }
+                    my <= topY() -> { my = topY(); impactHit(ip, K.THWACK, 0) }
+                    my >= ground() -> {
+                        my = ground()
+                        if (ivy / d >= com.combo.monkeycompanion.engine.impact.ImpactPlay.PANCAKE_SPEED_DP) impactHit(ip, K.PANCAKE, 0)
+                        else { softImpactLanding(); return }
+                    }
+                    ip.total > 4f -> { softImpactLanding(); return }
+                }
+            }
+            com.combo.monkeycompanion.engine.impact.ImpactPlay.Phase.SLIDE -> {
+                my = min(ground(), my + ip.slideDp * d * dt)
+                if (my >= ground()) ip.slideAtFloor()
+            }
+            com.combo.monkeycompanion.engine.impact.ImpactPlay.Phase.FALL -> {
+                ivy += g * dt; my += ivy * dt; mx = (mx + ivx * dt).coerceIn(0f, maxX)
+                if (my >= ground()) {
+                    my = ground(); ip.landed()
+                    feetScreen(tmpPt); impactPuff(tmpPt[0], tmpPt[1], 0f, 6)
+                    performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                }
+            }
+            else -> Unit
+        }
+        when (ip.step(dt)) {
+            com.combo.monkeycompanion.engine.impact.ImpactPlay.Event.START_FALL -> {
+                ivy = if (ip.kind == K.THWACK) 0f else -90f * d
+                ivx = if (ip.kind == K.SPLAT) -ip.side * 110f * d else 0f
+            }
+            com.combo.monkeycompanion.engine.impact.ImpactPlay.Event.DONE -> finishImpact()
+            else -> Unit
+        }
+    }
+
+    private fun impactHit(ip: com.combo.monkeycompanion.engine.impact.ImpactPlay, k: com.combo.monkeycompanion.engine.impact.ImpactPlay.Kind, side: Int) {
+        if (!ip.hit(k, side)) return
+        ivx = 0f; ivy = 0f
+        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+        if (!silent) runCatching { com.combo.monkeycompanion.audio.Sfx.play(context, com.combo.monkeycompanion.audio.Sfx.S.CRACK, 0.35f) }
+        val K = com.combo.monkeycompanion.engine.impact.ImpactPlay.Kind
+        // contact point in screen pixels (for the dust) and in view pixels (for the comic word)
+        val (vx0, vy0) = when (k) {
+            K.SPLAT -> (if (side < 0) ox else ox + boxW) to oy + boxH * 0.5f
+            K.THWACK -> ox + boxW / 2f to oy
+            K.PANCAKE -> ox + boxW / 2f to oy + boxH - groundPad
+        }
+        impactPuff(vx0 + winX, vy0 + winY, if (k == K.SPLAT) -side.toFloat() else 0f, 10)
+        impactWord = when (k) { K.SPLAT -> "SPLAT!"; K.THWACK -> "THWACK!"; K.PANCAKE -> "BONK!" }
+        impactWordX = vx0 + (if (k == K.SPLAT) -side * 60f * d else 0f); impactWordY = vy0 - 40f * d
+        impactLine = com.combo.monkeycompanion.engine.impact.ImpactPlay.line(k, impactN++)
+        val what = when (k) {
+            K.SPLAT -> "splatted flat against the ${if (side < 0) "left" else "right"} edge of the screen, now sliding down the glass"
+            K.THWACK -> "smacked head-first into the top edge of the screen"
+            K.PANCAKE -> "slammed into the floor and got squashed flat like a chapati"
+        }
+        BSN.record("I $what", BSN.Feeling.OUCH)
+        feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.BUMP, force = 1f, extra = what, doing = "flying through the air after you tossed me")
+        runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Impact", k.name.lowercase()) }
+        runCatching { com.combo.monkeycompanion.fun5.Fun5Store.noteImpact(context, k.name) }   // daily challenge progress
+    }
+
+    /** Dust from the contact point; deterministic offsets (no Random). [dirX] pushes it away from a wall. */
+    private fun impactPuff(sx: Float, sy: Float, dirX: Float, n: Int) {
+        if (saver) return
+        val P = com.combo.monkeycompanion.rig.Particles
+        for (i in 0 until n) {
+            val a = i / n.toFloat()
+            val spreadX = if (dirX != 0f) dirX * (90f + 180f * a) else (if (i % 2 == 0) 1f else -1f) * (100f + 200f * a)
+            val spreadY = if (dirX != 0f) (a - 0.5f) * 360f else -(30f + 80f * a)
+            particles.spawn(P.DUST, sx, sy + (a - 0.5f) * 20f * d, spreadX * d, spreadY * d, 0.5f, (5f + 4f * a) * d)
+        }
+    }
+
+    /** Thrown too gently to hit anything: a normal landing. */
+    private fun softImpactLanding() {
+        impact = null
+        surf = screenSurf(SK.FLOOR); clampToSurf()
+        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        controller.onLanded()
+    }
+
+    private fun finishImpact() {
+        impact = null
+        surf = screenSurf(SK.FLOOR); clampToSurf()
+        controller.idleNow(2.5f)
+        controller.touched()
+        val line = impactLine; impactLine = null
+        if (line != null && !aiVoiceOn()) say(line, 2600L)   // Brain on: the reaction engine already spoke
+    }
+
+    /** The comic word ("SPLAT!") pops at the contact point and fades out. */
+    private fun drawImpactWord(c: Canvas) {
+        val ip = impact ?: return
+        val k = ip.bang
+        if (k <= 0f || impactWord.isEmpty()) return
+        val pop = if (k > 0.85f) 0.6f + (1f - k) / 0.15f * 0.6f else 1.2f - (0.85f - k) * 0.2f
+        val maxW = (if (wp) sw() else winW.toFloat())
+        impactWordPaint.textSize = 26f * d * pop
+        val x = impactWordX.coerceIn(60f * d, max(60f * d, maxW - 60f * d)); val y = max(30f * d, impactWordY)
+        impactWordPaint.style = Paint.Style.STROKE; impactWordPaint.strokeWidth = 5f * d; impactWordPaint.color = Color.rgb(0x2A, 0x16, 0x00)
+        impactWordPaint.alpha = (255 * min(1f, k * 2f)).toInt()
+        c.drawText(impactWord, x, y, impactWordPaint)
+        impactWordPaint.style = Paint.Style.FILL; impactWordPaint.color = Color.rgb(0xFF, 0xD2, 0x3F)
+        impactWordPaint.alpha = (255 * min(1f, k * 2f)).toInt()
+        c.drawText(impactWord, x, y, impactWordPaint)
+    }
+
     /** How the body is turned on a wall / the ceiling / an edge crash (drawMonkey and the chat button share it). */
     private fun bodyEdgeRot(): Float = when {
+        impact != null -> 0f   // v10.20: the impact draws its own spin / tip
         isEdgeCrashLanding && edgeThrustFailurePhase in 1..2 -> edgeCrashRot
         !climber.active && !falling && surf.kind == SK.WALL_L -> 90f
         !climber.active && !falling && surf.kind == SK.WALL_R -> -90f
@@ -5583,11 +5825,24 @@ class MonkeyView(
         if (edgeRot != 0f) {
             canvas.rotate(edgeRot, ox + boxW / 2f, oy + boxH / 2f)
         }
+        impact?.let { ip ->   // v10.20: squash flat against the glass / under the top edge / on the floor
+            if (ip.rot != 0f) canvas.rotate(ip.rot, ox + boxW / 2f, oy + boxH / 2f)
+            if (ip.sx != 1f || ip.sy != 1f) {
+                val (px, py) = when (ip.pivot) {
+                    com.combo.monkeycompanion.engine.impact.ImpactPlay.Pivot.WALL_LEFT -> ox to oy + boxH * 0.55f
+                    com.combo.monkeycompanion.engine.impact.ImpactPlay.Pivot.WALL_RIGHT -> ox + boxW to oy + boxH * 0.55f
+                    com.combo.monkeycompanion.engine.impact.ImpactPlay.Pivot.TOP -> ox + boxW / 2f to oy
+                    com.combo.monkeycompanion.engine.impact.ImpactPlay.Pivot.FEET -> ox + boxW / 2f to oy + boxH - groundPad
+                    com.combo.monkeycompanion.engine.impact.ImpactPlay.Pivot.CENTER -> ox + boxW / 2f to oy + boxH / 2f
+                }
+                canvas.scale(ip.sx, ip.sy, px, py)
+            }
+        }
         if ((falling && landBeat <= 0f && coyoteScareTimer <= 0f || hoverOn) && !climber.active) drawLandingThrust(canvas)
         if (climber.active && character.id == "monkey") {
             canvas.translate(-winX.toFloat(), -winY.toFloat())
-            climber.draw(canvas, drawPose, t, renderer)
-        } else renderer.draw(canvas, rig, drawPose, t)
+            drawWithSoot(canvas) { climber.draw(canvas, drawPose, t, renderer) }
+        } else drawWithSoot(canvas) { renderer.draw(canvas, rig, drawPose, t) }
         drawHeldBalls(canvas)
         if (falling && coyoteScareTimer > 0f) {
             drawCoyoteScareOverlay(canvas)
@@ -5595,7 +5850,9 @@ class MonkeyView(
         if (isEdgeCrashLanding && edgeThrustFailurePhase == 3) {
             drawEdgeCrashStarsOverlay(canvas)
         }
+        if (impact?.stars == true) drawEdgeCrashStarsOverlay(canvas)   // v10.20 dizzy
         canvas.restore()
+        drawImpactWord(canvas)
     }
 
     private fun drawCoyoteScareOverlay(c: Canvas) {
@@ -6140,6 +6397,10 @@ class MonkeyView(
                 if (heartHit(e.x, e.y)) {   // v10.19.1: show the friendship level
                     tracking = false
                     heartShowFor = HEART_POPUP_SECS
+                    challengeLine = runCatching {
+                        if (!com.combo.monkeycompanion.fun5.Fun5Store.on(context, com.combo.monkeycompanion.fun5.Fun5Store.Feature.CHALLENGE)) ""
+                        else com.combo.monkeycompanion.fun5.Fun5Store.challenge(context).let { "🎯 ${it.kind.title.substringBefore(" (")} · ${it.status()}" }
+                    }.getOrDefault("")
                     performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                     if (!running && live && !paused) start()
                     invalidate()
@@ -6261,7 +6522,7 @@ class MonkeyView(
                     if (hideAnim < 0f) controller.onDragEnd(fall)
                     // v10.8: a quick flick (Rocket Girl: loop-de-loop) layered over the normal fling.
                     val spd = hypot(vx, vyDrag) / d
-                    if (livingOn && fresh && hideAnim < 0f && spd > 900f && e.eventTime - downAt < 450L && !rocketFlyOn &&
+                    if (livingOn && fresh && hideAnim < 0f && impact == null && spd > 900f && e.eventTime - downAt < 450L && !rocketFlyOn &&
                         profile.reactionTable.any { com.combo.monkeycompanion.engine.touch.TouchKind.FLICK in it.kinds }) {
                         val inv = 1f / max(1f, hypot(vx, vyDrag))
                         livingTap(downPart, downZone, downSide, com.combo.monkeycompanion.engine.touch.TouchKind.FLICK, spd, vx * inv, vyDrag * inv, downPressure, (e.eventTime - downAt) / 1000f)
@@ -6325,6 +6586,10 @@ class MonkeyView(
 
     private fun beginDrag() {
         val doingBefore = feelDoing()   // v10.18: what he was doing when you grabbed him
+        // v10.20: caught while flying / falling = a mid-air catch (daily challenge); grabbing also ends an impact
+        if (impact?.phase == com.combo.monkeycompanion.engine.impact.ImpactPlay.Phase.FLIGHT || impact?.phase == com.combo.monkeycompanion.engine.impact.ImpactPlay.Phase.FALL ||
+            falling || arc != null || rocketFlyOn) runCatching { com.combo.monkeycompanion.fun5.Fun5Store.noteChallenge(context, com.combo.monkeycompanion.v5.Challenge.Event.CATCH) }
+        impact = null
         ui.removeCallbacks(longPress)
         if (longPressed) closeMenu()   // long-press then drag: the menu goes, the drag wins
         pendingTap?.let { ui.removeCallbacks(it) }; pendingTap = null
@@ -6696,8 +6961,19 @@ class MonkeyView(
         tmpR.set(tx - half, ty - 12f * d, tx + half, ty + 4f * d); canvas.drawRoundRect(tmpR, 8f * d, 8f * d, heartPaint)
         heartText.alpha = a
         canvas.drawText(cap, tx, ty, heartText)
+        // v10.20: today's challenge, one short line
+        if (challengeLine.isNotEmpty()) {
+            heartText.textSize = 10f * d
+            val half2 = heartText.measureText(challengeLine) / 2f + 6f * d
+            val tx2 = cx.coerceIn(half2, max(half2, maxW - half2)); val ty2 = min(ty + 17f * d, maxH - 4f * d)
+            heartPaint.style = Paint.Style.FILL; heartPaint.color = Color.WHITE; heartPaint.alpha = (a * 0.9f).toInt()
+            tmpR.set(tx2 - half2, ty2 - 11f * d, tx2 + half2, ty2 + 4f * d); canvas.drawRoundRect(tmpR, 8f * d, 8f * d, heartPaint)
+            heartText.color = com.combo.monkeycompanion.theme.Th.rgb(0x2A, 0x2A, 0x2A); heartText.alpha = a
+            canvas.drawText(challengeLine, tx2, ty2, heartText)
+        }
         heartPaint.alpha = 255; heartText.alpha = 255
     }
+    private var challengeLine = ""
 
     private fun heartHit(x: Float, y: Float) = heartOn && heartLR > 0f && heartShowFor <= 0f && !(bubbleOn) && hypot(x - heartLX, y - heartLY) <= heartLR + 12f * d
 
@@ -7344,6 +7620,8 @@ class MonkeyView(
         const val SETTLE_SECS = 0.45f
         /** v10.14 the Billa & Chittu plug-in shock length. */
         const val SHOCK_SECS = 2.4f
+        /** v10.20 how long the burnt soot face takes to wear off after the shock. */
+        const val SOOT_FADE_SECS = 5f
         /** v10.14 max rider tilt change per 60 Hz frame (degrees). */
         const val ROT_STEP_MAX = 9f
         const val HELD_STALE_SECS = 4f

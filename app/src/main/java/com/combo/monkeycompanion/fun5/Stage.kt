@@ -77,6 +77,8 @@ interface StageHost {
      * Brain OFF: the scripted [fallback] is said.
      */
     fun sayAi(request: String, fallback: String, ms: Long) = say(fallback, ms)
+    /** v10.20: a big yawn and stretch for [secs] (goodnight). */
+    fun yawn(secs: Float) {}
 }
 
 /**
@@ -174,6 +176,7 @@ class Stage(private val h: StageHost) : PairHub.Listener {
         PairHub.add(this)
         current = this
         Fun5Store.onLevelUp = { celebrate(it) }
+        Fun5Store.onChallengeDone = { challengeDone(it) }   // v10.20
         scheduleCoffee()
         ui.postDelayed({ festivalCheck(); weatherCheck() }, 4000L)
         resumeNag()
@@ -187,6 +190,7 @@ class Stage(private val h: StageHost) : PairHub.Listener {
         PairHub.remove(this)
         if (current === this) current = null
         Fun5Store.onLevelUp = null
+        Fun5Store.onChallengeDone = null
         ui.removeCallbacksAndMessages(null)
         motion.setActive(false)
         endGames(false)
@@ -509,6 +513,8 @@ class Stage(private val h: StageHost) : PairHub.Listener {
 
     // ======================= v10.19 daily moments (hello, grace, sulk, welcome back, goodnight) =======================
     private var sulking = false
+    /** v10.20: the overlay folds his arms and turns him away while this is true. */
+    val sulkingNow get() = sulking
     private var sulkPoseAt = 0f
     private var pendingMoment: Pair<Bond.Moment, Int>? = null
     private val dailyRetry = Runnable { dailyCheck() }
@@ -537,7 +543,10 @@ class Stage(private val h: StageHost) : PairHub.Listener {
             Bond.Moment.HELLO -> {
                 if (!Fun5Store.on(c, Fun5Store.Feature.HELLO)) return
                 h.play(MonkeyState.WAVE, 1.6f)
-                h.sayAi(req, Bond.hello(hour, userName(), seed), 4500L)
+                // v10.20: today's mischief challenge comes with the hello
+                val ch = if (Fun5Store.on(c, Fun5Store.Feature.CHALLENGE)) Fun5Store.challenge(c).kind else null
+                h.sayAi(if (ch != null) "$req Also tell them today's mischief challenge: \"${ch.title}\"." else req,
+                    Bond.hello(hour, userName(), seed) + (if (ch != null) " Today's challenge: ${ch.title} 🎯" else ""), 6000L)
                 if (hour in 5..10) skipProactive("greet_morning", now.dayOfYear)   // no second "good morning" from the buddy
             }
             Bond.Moment.GRACE -> {
@@ -590,11 +599,20 @@ class Stage(private val h: StageHost) : PairHub.Listener {
         if (!h.free() || h.quiet() || playing || !h.visible()) { ui.removeCallbacks(nightCheck); ui.postDelayed(nightCheck, 5 * 60_000L); return }
         Fun5Store.saveBond(c, b.copy(nightDay = Bond.nightKey(now) ?: ""))
         skipProactive("greet_night", if (now.hour < 2) now.dayOfYear - 1 else now.dayOfYear)   // no second goodnight from the buddy
-        h.play(MonkeyState.SLEEP, 2.5f)
+        h.yawn(2.4f)   // v10.20: a big yawn and stretch first
         h.sayAi(Bond.AI_GOODNIGHT, Bond.goodnightLine(userName(), now.dayOfYear), 4000L)
         ui.postDelayed({ if (live && h.free()) h.sleepNow(true) }, 4200L)
         h.log("Daily moment", "goodnight")
         scheduleNight()
+    }
+
+    /** v10.20: today's challenge is done: dance, confetti, a line. */
+    private fun challengeDone(k: com.combo.monkeycompanion.v5.Challenge.Kind) {
+        if (!live) return
+        h.dance(); burst(Particles.CONFETTI, 22)
+        h.sayAi("DAILY MOMENT: you and your human just finished today's mischief challenge (${k.title}). ONE short, proud, cheeky line (max 12 words).",
+            com.combo.monkeycompanion.v5.Challenge.doneLine(k, LocalDate.now().dayOfYear), 4000L)
+        h.log("Daily challenge", "done: ${k.id}")
     }
 
     // ======================= 5. friendship =======================

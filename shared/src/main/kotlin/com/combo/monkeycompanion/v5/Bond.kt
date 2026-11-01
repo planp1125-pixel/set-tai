@@ -87,6 +87,7 @@ object Bond {
             Friendship.Source.CHAT -> 4
             Friendship.Source.GAME, Friendship.Source.GAME_WIN, Friendship.Source.PAIR -> 5
             Friendship.Source.CLIP -> 3
+            Friendship.Source.CHALLENGE -> 8
             Friendship.Source.STREAK_DAY -> 0
         }
         return s.copy(warmth = (s.warmth + add).coerceAtMost(100))

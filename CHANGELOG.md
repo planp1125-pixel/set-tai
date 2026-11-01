@@ -91,3 +91,16 @@ The devil's horns curve inward like the icon.
 
 ## v10.19.2 (code 52)
 - The friendship heart moved to the **upper corner beside his head** (top-right or top-left, on the same side as the chat button), with the 💬 button lower down, so the two never overlap. Tapping it still pops up the big level heart.
+
+## v10.20 (code 53): the core, touchable cartoon comedy
+- **Toss him and he hits things, for every character.** Lift him up high and throw him: he flies across the screen, spinning.
+  - Into the **left or right edge**: SPLAT! He goes flat against the glass like a sticker, wobbles, slides down the glass, peels off top-first, falls, sees stars, and shakes it off ("My face is a dosa now 🫓").
+  - Up into the **top edge**: THWACK! A head-first squash under the edge, then he drops, dizzy.
+  - Down **very hard onto the floor**: BONK! Flat as a chapati, then an accordion spring back up.
+  - A comic word pops at the hit, with dust, a buzz and a little crack sound. Catch him in mid-air to stop it.
+  - Pushing him sideways from near the floor still makes him duck behind the edge, like before. Flying characters (Kutti Satan, Superboy, Anna…) still fly an arc on a normal fling; throw them really hard to splat them too.
+- **The charger shock, for everyone.** The very first time you plug in the charger, any character gets zapped: fur on end, sparks, then a **burnt soot face** with blinking white eyes and smoke puffs that wears off slowly. The next time he remembers: "I remember you, current! Careful this time… 🧤".
+- **New poses:** a real sulk (arms folded, head turned away, peeking back now and then) and a big yawn and stretch before goodnight.
+- **Daily mischief challenge** (Settings › 💛 Engagement): one per day, like "Toss me at the screen edge 3 times", "Catch me in mid-air 2 times", "Make me crash 4 times" or "Give me 10 pats". He tells you in the morning hello; tap the heart to see your progress. Finishing it gives +25 friendship, with a dance and confetti.
+- With Brain on, the AI reacts to every hit (it knows exactly what happened to his body). Brain off uses scripted lines.
+- No new permissions. No Random in the new code (GoldenTraceTest safe). New tests: ImpactPlayTest (9), ChallengeTest (6).
