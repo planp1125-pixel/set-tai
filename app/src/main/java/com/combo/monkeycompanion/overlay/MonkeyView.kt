@@ -6137,6 +6137,14 @@ class MonkeyView(
                     }
                     return true
                 }
+                if (heartHit(e.x, e.y)) {   // v10.19.1: show the friendship level
+                    tracking = false
+                    heartShowFor = HEART_POPUP_SECS
+                    performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                    if (!running && live && !paused) start()
+                    invalidate()
+                    return true
+                }
                 if (chatFabHit(e.x, e.y)) {
                     // v10.10: pressed state on touch-down (opaque + darker); the chat opens on release
                     tracking = false; chatBtnUntil = 0f; fabPressing = true; fabDownAt = SystemClock.uptimeMillis(); fabSpeakBuzzed = false
@@ -6572,7 +6580,11 @@ class MonkeyView(
     private var heartFlash = 0f
     private var heartPollIn = 0f
     private var heartFeatureOn = true
-    private var heartLX = 0f; private var heartLY = 0f
+    private var heartLX = 0f; private var heartLY = 0f; private var heartLR = 0f
+    /** v10.19.1: tapping the heart pops up a big dark heart with the level for a moment. */
+    private var heartShowFor = 0f
+    private val heartHead = FloatArray(2)
+    val debugHeartPopup get() = heartShowFor > 0f
     private val heartPath = Path()
     private val heartPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val heartText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; isFakeBoldText = true }
@@ -6583,6 +6595,7 @@ class MonkeyView(
     private fun stepFriendHeart(dt: Float) {
         if (heartPulse > 0f) heartPulse = max(0f, heartPulse - dt)
         if (heartFlash > 0f) heartFlash = max(0f, heartFlash - dt)
+        if (heartShowFor > 0f) heartShowFor = max(0f, heartShowFor - dt)
         heartPollIn -= dt
         if (heartPollIn <= 0f) {
             heartPollIn = 2f
@@ -6612,13 +6625,15 @@ class MonkeyView(
         val glow = if (heartFlash > 0f) min(1f, heartFlash) else 0f
         val pulse = if (heartPulse > 0f) sin(heartPulse / 1.2f * Math.PI.toFloat()) else 0f
         val r = 9.5f * d * (1f + 0.25f * pulse + 0.35f * glow * (0.5f + 0.5f * sin(t * 9f)))
-        // place it just below the chat button, or at the top corner of the box when the button is hidden
-        var cx: Float; var cy: Float
-        if (chatFabOn && !chatFab.x.isNaN()) { cx = fabLX; cy = fabLY + chatFabR + r + 7f * d }
-        else { cx = ox + boxW - r - 6f * d; cy = oy + r + 10f * d }
+        // v10.19.1: just above his head (the chat button keeps its own spot); the speech bubble takes this place while it's up
+        if (bubbleOn && heartShowFor <= 0f) return
+        if (climber.active) { climber.headTop(heartHead); heartHead[0] += sinkX - winX; heartHead[1] += sinkY - winY }
+        else { rig.headTop(heartHead); heartHead[0] += sinkX }
         val maxW = (if (wp) sw() else winW.toFloat()); val maxH = (if (wp) (host?.screenHeight() ?: height).toFloat() else winH.toFloat())
+        var cx = heartHead[0]; var cy = heartHead[1] - r - 6f * d
         cx = cx.coerceIn(r * 1.8f, max(r * 1.8f, maxW - r * 1.8f)); cy = cy.coerceIn(r * 1.6f, max(r * 1.6f, maxH - r * 1.6f))
-        heartLX = cx; heartLY = cy
+        heartLX = cx; heartLY = cy; heartLR = r
+        if (heartShowFor > 0f) { drawHeartPopup(canvas, cx, cy, maxW, maxH); return }
         // faint like the chat button; darker and solid while it pulses / glows
         val strong = max(pulse, glow)
         val a = ((0.42f + 0.58f * strong) * 255).toInt()
@@ -6645,6 +6660,42 @@ class MonkeyView(
         }
         heartPaint.alpha = 255; heartText.alpha = 255
     }
+
+    /** v10.19.1: the big dark heart with the level number, popped up by a tap, then it fades away. */
+    private fun drawHeartPopup(canvas: Canvas, sx: Float, sy: Float, maxW: Float, maxH: Float) {
+        val life = heartShowFor
+        val inK = min(1f, (HEART_POPUP_SECS - life) / 0.25f)
+        val a = (255 * min(1f, life / 0.5f)).toInt()
+        val r = 24f * d * (0.5f + 0.5f * com.combo.monkeycompanion.engine.anim.Easing.easeOutBack(inK, 1.6f))
+        val cx = sx.coerceIn(r * 1.9f, max(r * 1.9f, maxW - r * 1.9f))
+        val cy = (sy - 18f * d).coerceIn(r * 1.4f, max(r * 1.4f, maxH - r * 1.4f - 18f * d))
+        heartShape(cx, cy, r)
+        heartPaint.style = Paint.Style.FILL; heartPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0x2A, 0x2A, 0x2A); heartPaint.alpha = (a * 0.85f).toInt()
+        canvas.drawPath(heartPath, heartPaint)
+        val top = cy - r * 1.05f; val bottom = cy + r * 0.95f
+        canvas.save(); canvas.clipRect(cx - r * 2f, bottom - (bottom - top) * heartFill.coerceIn(0.06f, 1f), cx + r * 2f, bottom + 1f)
+        heartPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0xB0, 0x00, 0x0E); heartPaint.alpha = a
+        canvas.drawPath(heartPath, heartPaint)
+        canvas.restore()
+        heartPaint.style = Paint.Style.STROKE; heartPaint.strokeWidth = 2.2f * d; heartPaint.color = Color.WHITE; heartPaint.alpha = a
+        canvas.drawPath(heartPath, heartPaint)
+        heartText.color = Color.WHITE; heartText.alpha = a; heartText.textSize = 20f * d * (r / (24f * d))
+        canvas.drawText(heartLevel.toString(), cx, cy + heartText.textSize * 0.2f, heartText)
+        // caption under it: level name and points out of 100
+        val lvlName = com.combo.monkeycompanion.v5.Friendship.title(heartLevel)
+        val pts = com.combo.monkeycompanion.v5.Bond.points(max(0, heartXp))
+        heartText.textSize = 11f * d; heartText.color = com.combo.monkeycompanion.theme.Th.rgb(0xB0, 0x00, 0x0E)
+        val cap = "$lvlName · $pts/100"
+        val half = heartText.measureText(cap) / 2f + 6f * d
+        val tx = cx.coerceIn(half, max(half, maxW - half)); val ty = min(cy + r + 16f * d, maxH - 4f * d)
+        heartPaint.style = Paint.Style.FILL; heartPaint.color = Color.WHITE; heartPaint.alpha = (a * 0.9f).toInt()
+        tmpR.set(tx - half, ty - 12f * d, tx + half, ty + 4f * d); canvas.drawRoundRect(tmpR, 8f * d, 8f * d, heartPaint)
+        heartText.alpha = a
+        canvas.drawText(cap, tx, ty, heartText)
+        heartPaint.alpha = 255; heartText.alpha = 255
+    }
+
+    private fun heartHit(x: Float, y: Float) = heartOn && heartLR > 0f && heartShowFor <= 0f && !(bubbleOn) && hypot(x - heartLX, y - heartLY) <= heartLR + 12f * d
 
     private fun chatFabHit(x: Float, y: Float) = chatFabOn && !chatFab.x.isNaN() && hypot(x - fabLX, y - fabLY) <= chatFabTouchR
 
@@ -7281,6 +7332,8 @@ class MonkeyView(
     }
 
     companion object {
+        /** v10.19.1 how long the tapped friendship heart stays up. */
+        const val HEART_POPUP_SECS = 2.8f
         /** v10.18 Body Sense event texts that come from touches (voiced by the reaction engine instead). */
         private val TOUCH_EVENTS = listOf("you poked me", "you tapped me", "you're holding me", "you flung me", "you dragged me", "I bumped into the screen edge")
         /** v10.14 a held bubble waits this long after landing, and is dropped after this long (chat replies never). */

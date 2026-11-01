@@ -84,3 +84,7 @@ The devil's horns curve inward like the icon.
 - **Goodnight:** once a night after 10 PM he yawns, says goodnight and curls up to sleep.
 - **Settings › 💛 Engagement:** your friendship numbers plus switches for the heart, daily hello, streak sulking and goodnight (all on by default).
 - No new permissions; everything stays on the phone. No Random used (lines are picked by date), so the GoldenTrace frame stream is untouched. New `BondTest` (12 tests).
+
+## v10.19.1 (code 51)
+- The friendship heart now sits just **above his head** instead of under the chat button, so it never hides the 💬 button. It steps aside while a speech bubble is showing.
+- **Tap the heart** to check your friendship: a big dark heart pops up, filled red to your progress, with the level number inside and "Friends · 23/100" under it, then fades away after about 3 seconds.
