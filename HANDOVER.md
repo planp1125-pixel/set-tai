@@ -48,8 +48,8 @@ Key files:
 JDK 21. Screenshots from Robolectric screen tests go to `build/test-out/`. `CompanionStudioActivity` hangs under Robolectric, so don't screenshot it in tests.
 
 ## 4. CI / release flow
-1. Push to `main`. The **Build** workflow runs the unit tests (step limit **28 min**, job 75 min) and builds the full APK, Play APK and Play AAB as artifacts, plus Linux and Windows desktop builds.
-2. For a release, create a **new** tag `vX.Y[.Z]` on the green commit and push it. The same workflow then publishes a GitHub **Release** with the full APK, Play APK and AAB attached.
+1. Push to `main`. The **Build** workflow runs the unit tests (step limit **28 min**, job 75 min), builds the APKs + AAB and publishes the full APK as a **pre-release `ci-<run number>`** (Releases). No Actions artifacts are stored any more (the free plan has only 0.5 GB of Actions storage; the job also deletes old artifacts).
+2. For a release, create a **new** tag `vX.Y[.Z]` on the green commit. The workflow then publishes a GitHub **Release** with the full APK, Play APK, AAB and the Linux/Windows desktop builds (desktop jobs only run for `v*` tags).
 3. Signing uses a keystore from repo secrets (decoded in CI). The Play signing key and the Store listing are not set up yet.
 If the unit-test step times out, just re-run the job. It is usually load, not a real failure.
 
