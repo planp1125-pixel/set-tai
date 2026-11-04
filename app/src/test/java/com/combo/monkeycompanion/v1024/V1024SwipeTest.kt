@@ -62,7 +62,7 @@ class V1024SwipeTest {
         assertEquals(SwipeTravel.Style.SURF, SwipeTravel.styleFor("surfer", false))
         assertEquals(SwipeTravel.Style.SKATE, SwipeTravel.styleFor("skater", false))
         for (id in listOf("armour", "superboy", "rocketgirl")) assertNull(id, SwipeTravel.styleFor(id, false))
-        assertEquals(SwipeTravel.Style.MAGIC_HOPS, SwipeTravel.styleFor("devil", false)); assertEquals(SwipeTravel.Style.MAGIC_HOPS, SwipeTravel.styleFor("angel", false))
+        assertEquals(SwipeTravel.Style.MAGIC_HOPS, SwipeTravel.styleFor("devil", false)); assertEquals(SwipeTravel.Style.WINGS, SwipeTravel.styleFor("angel", false))   // v10.26
         for (id in listOf("surfer", "gajju", "angel", "devil", "skater", "hollowman")) assertTrue(id, Landings.pool(id, false).none { it.first == Landings.Style.JETS || it.first == Landings.Style.SCREAM_JETS || it.first == Landings.Style.ROCKET_ARC })
         assertEquals(SwipeTravel.Style.RUN, SwipeTravel.styleFor("custom_x", true))
         val ids = listOf("monkey", "hollowman", "gajju", "mask", "billa", "chittu", "surfer", "skater").map { SwipeTravel.styleFor(it, false) }
@@ -119,11 +119,11 @@ class V1024SwipeTest {
     }
 
     @Test fun flingRules() {
-        // aimed past the side edge = hide, not splat
-        var v = view("billa"); v.debugPlace(600f, onFloor = true); v.debugRelease(4000f, 0f)
+        // v10.26: a FLICK aimed past the side edge = hide, not splat (a normal swipe there just travels)
+        var v = view("billa"); v.debugPlace(600f, onFloor = true); v.debugRelease(6500f, 0f)
         assertFalse(v.debugImpact); assertNull(v.debugSwipeTrip); v.debugFrames(60); assertTrue("hidden", v.debugHidden)
         // released near the left edge, flung left = hide
-        v = view("hollowman"); v.debugPlace(40f, onFloor = true); v.debugRelease(-2500f, 0f)
+        v = view("hollowman"); v.debugPlace(40f, onFloor = true); v.debugRelease(-6500f, 0f)
         assertFalse(v.debugImpact); v.debugFrames(60); assertTrue(v.debugHidden)
         // aimed above the top = thwack on the top
         v = view("mask"); v.debugPlace(400f, onFloor = true); v.debugRelease(0f, -6000f)
@@ -139,7 +139,7 @@ class V1024SwipeTest {
     }
 
     @Test fun magicHopsAndSwipeDown() {
-        for (id in listOf("devil", "angel")) {
+        for (id in listOf("devil")) {
             val v = view(id); v.debugPlace(40f, onFloor = false, y = 900f); v.debugRelease(2250f, -300f)
             val trip = v.debugSwipeTrip ?: error("$id no hop trip")
             assertEquals(SwipeTravel.Style.MAGIC_HOPS, trip.style); assertTrue(trip.hops in 3..5)
@@ -149,16 +149,54 @@ class V1024SwipeTest {
             assertEquals(trip.x1, v.debugXY[0], 1.5f)
             assertEquals(0, v.debugLandFlames)
         }
-        // swipe DOWN on a hovering non-jet character: drops and lands, never flies up
-        for (id in listOf("surfer", "angel", "devil")) {
+        // v10.26 a normal swipe DOWN on a flyer = a lap of the screen in its own style, landing on the floor; no jets
+        for (id in listOf("surfer", "angel", "devil", "gajju")) {
             val v = view(id); v.debugPlace(300f, onFloor = false, y = 900f)
             v.debugSwipeDown(3000f)
-            var minY = 900f; var n = 0
-            while (n++ < 1200 && v.debugXY[1] < v.debugXY[2] - 2f) { v.debugFrames(1); minY = minOf(minY, v.debugXY[1]) }
-            assertTrue("$id went up to $minY", minY > 900f - 5f)
+            val trip = v.debugSwipeTrip ?: error("$id: no tour")
+            assertEquals(id, SwipeTravel.TOUR_DOWN, trip.tour)
+            var minY = 900f; var minX = 1e9f; var maxX = -1e9f; var n = 0
+            while (n++ < 1200 && v.debugSwipeTrip != null) {
+                v.debugFrames(1); val xy = v.debugXY
+                minY = minOf(minY, xy[1]); minX = minOf(minX, xy[0]); maxX = maxOf(maxX, xy[0])
+                assertTrue("$id stays on screen", xy[0] >= -1f && xy[0] <= xy[3] - xy[4] + 1f && xy[1] <= xy[2] + 1f)
+            }
+            assertTrue("$id toured up and round ($minY)", minY < 900f - 200f)
+            assertTrue("$id toured across (${maxX - minX})", maxX - minX > 300f)
             assertEquals(id, v.debugXY[2], v.debugXY[1], 4f)
             assertEquals(0, v.debugLandFlames)
         }
+        // a normal swipe UP on a flyer = a tour that ends at the spot up high
+        val v = view("angel"); v.debugPlace(300f, onFloor = true); v.debugRelease(400f, -2600f)
+        val up = v.debugSwipeTrip ?: error("angel: no up tour")
+        assertEquals(SwipeTravel.TOUR_UP, up.tour); assertEquals(SwipeTravel.Style.WINGS, up.style)
+        var n = 0; while (v.debugSwipeTrip != null && n++ < 600) v.debugFrames(1)
+        assertEquals(up.x1, v.debugXY[0], 1.5f); assertEquals(up.y1, v.debugXY[1], 1.5f)
+        assertTrue("ends up high", up.y1 < v.debugXY[2] - 300f)
+    }
+
+    /** v10.26: a flick down from high up = PANCAKE; Superboy keeps his swoop. */
+    @Test fun flickDownPancakesAndSuperboyHasNoJets() {
+        val v = view("billa")
+        v.debugPlace(400f, onFloor = false, y = v.debugXY[2] - 1000f)
+        v.debugRelease(0f, 6500f)
+        assertTrue("thrown down", v.debugImpact)
+        // Superboy still flies his big curved swoop when swiped down (cape + speed streaks; no jets are drawn for him)
+        val s = view("superboy"); s.debugPlace(300f, onFloor = false, y = 900f)
+        s.debugSwipeDown(3000f)
+        assertNull(s.debugSwipeTrip)
+        s.debugFrames(2)
+        assertTrue("superboy swoops", s.debugFalling || s.debugArc != null)
+    }
+
+    @Test fun gajjuStrugglesAndAngelSparkles() {
+        val g = SwipeTravel.Trip(SwipeTravel.Style.EAR_FLAP, 100f, 1500f, 800f, 1500f, 3f)
+        val mid = g.also { it.seek(0.52f) }.frame()
+        val before = SwipeTravel.Trip(SwipeTravel.Style.EAR_FLAP, 100f, 1500f, 800f, 1500f, 3f).also { it.seek(0.3f) }.frame()
+        assertTrue("the scary dip: lower half way (${mid.y} vs ${before.y})", mid.y > before.y)
+        assertTrue("wobbles", abs(mid.rot) > 3f)
+        val a = SwipeTravel.Trip(SwipeTravel.Style.WINGS, 100f, 1500f, 800f, 1200f, 3f).also { it.seek(0.5f) }.frame()
+        assertTrue(a.sparkle > 0.3f)
     }
 
     @Test fun noCharacterButTheJetHeroesEverLoopsWhenSwipedFromTheBottom() {

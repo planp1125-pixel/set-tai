@@ -3688,26 +3688,41 @@ class MonkeyView(
         val fx = mx; val fy = my
         val near = 40 * d
         val fast = 1400 * d
-        if (upSwipeDown <= 0f && host != null && !wp && !hiddenTab && !profile.ridesProp && hypot(fvx, fvy) > SWIPE_TRIP_DP * d && dragTravel >= 30 * d) {
-            // v10.25 one clear rule for a fling: aimed at / released near a side edge = HIDE; a long throw from far = SPLAT on
-            // that wall; aimed above the top of the screen = THWACK on the top; otherwise the character's own trip there.
-            val cx = mx + boxW / 2f; val px = cx + fvx * 0.38f; val py = my + fvy * 0.38f
-            val side = if (fvx < 0) -1 else 1
-            val horiz = abs(fvx) >= abs(fvy)
-            if (horiz) {
-                val nearEdge = if (side < 0) cx < sw() * 0.22f else cx > sw() * 0.78f
-                val past = if (side < 0) -px else px - sw()
-                val ownTrip = com.combo.monkeycompanion.engine.swipe.SwipeTravel.styleFor(character.id,
-                    com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null) != null
-                if (nearEdge || (ownTrip && past > 0f)) {   // Anna / Superboy / Rocket Girl / Satan / Angel keep their old fly-off arcs
-                    val far = if (side < 0) cx > sw() * 0.55f else cx < sw() * 0.45f
-                    if (far && past > sw() * 0.5f && tryToss(fvx, fvy, force = true)) return true
-                    hideToEdge(side); return false
+        // v10.26 ONE swipe rule. A NORMAL swipe = the character travels there with its OWN power (a swipe up / down on a
+        // flyer = a tour around the screen in its style; down ends on the floor). A FLICK (faster than FLICK_DP; you feel a
+        // tick while dragging) = thrown: SPLAT / THWACK / PANCAKE, or hidden when flicked at / past a close side edge.
+        val swipeDp = maxOf(hypot(fvx, fvy), upSwipeDown) / d
+        if (host != null && !wp && !hiddenTab && !profile.ridesProp && dragTravel >= 30 * d && swipeDp > SWIPE_TRIP_DP) {
+            val style = com.combo.monkeycompanion.engine.swipe.SwipeTravel.styleFor(character.id,
+                com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null)
+            val cx = mx + boxW / 2f; val px = cx + fvx * 0.38f
+            val down = upSwipeDown > 0f || (fvy > 0f && fvy > abs(fvx) * 1.2f)
+            val up = !down && fvy < 0f && -fvy > abs(fvx) * 1.2f
+            if (swipeDp >= com.combo.monkeycompanion.engine.swipe.SwipeTravel.FLICK_DP) {
+                when {
+                    !down && !up -> {
+                        val side = if (fvx < 0) -1 else 1
+                        val nearEdge = if (side < 0) cx < sw() * 0.22f else cx > sw() * 0.78f
+                        val past = if (side < 0) -px else px - sw()
+                        val far = if (side < 0) cx > sw() * 0.55f else cx < sw() * 0.45f
+                        if (!nearEdge && far && past > sw() * 0.5f && tryToss(fvx, fvy, force = true)) return true   // long throw: SPLAT
+                        if (nearEdge || past > 0f) { hideToEdge(side); return false }                                  // flicked at the edge: hide
+                        if (tryToss(fvx, fvy, force = true)) return true
+                    }
+                    up -> if (tryToss(fvx, fvy, force = true)) return true                                              // THWACK on the top
+                    else -> {   // flicked down from high up: PANCAKE on the floor (near the floor: the old drop / bottom-hide)
+                        val sh = (host?.screenHeight() ?: height).toFloat()
+                        if (ground() - my > sh * 0.25f && tryToss(fvx, maxOf(fvy, upSwipeDown), force = true)) return true
+                    }
                 }
-            } else if (fvy < 0f && py < topY() - boxH * 0.2f) {
-                if (tryToss(fvx, fvy, force = true)) return true
+            } else if (style != null && !(down && !style.hovers)) {   // a floor character swiped down keeps the old drop
+                val tour = when {
+                    down && style.hovers -> com.combo.monkeycompanion.engine.swipe.SwipeTravel.TOUR_DOWN
+                    up && style.hovers -> com.combo.monkeycompanion.engine.swipe.SwipeTravel.TOUR_UP
+                    else -> com.combo.monkeycompanion.engine.swipe.SwipeTravel.TOUR_NONE
+                }
+                if (trySwipeTrip(fvx, fvy, tour)) return true
             }
-            if (fvy <= 0f || abs(fvy) <= abs(fvx) * 1.2f) { if (trySwipeTrip(fvx, fvy)) return true }
         }
         if (hovers) {
             val sp = hypot(fvx, fvy)
@@ -4380,7 +4395,8 @@ class MonkeyView(
      * looked like plain falls because their only visible part lived in the effects window).
      */
     /** v10.25: only bodies with a jet / rocket power ever show jets or thrust (Anna, Superboy's landing kit, Rocket Girl, Kutti Satan if a jet power is on). */
-    private fun hasJetPower(): Boolean = character.id == "armour" || character.id == "superboy" || character.id == "rocketgirl" ||
+    // v10.26: Superboy flies with no thrust at all (just the cape and speed streaks); jets = Armour Anna; Rocket Girl = her rocket
+    private fun hasJetPower(): Boolean = character.id == "armour" || character.id == "rocketgirl" ||
         // v10.25.1: Kutti Satan only while his rocket / jet power is actually firing (Angel never)
         (character.id == "devil" && powerOn && controller.anim.power?.id.let { it == "jets" || it == "rocket" || it == "boost" }) ||
         (com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null && character.usesHoverJets)
@@ -5753,32 +5769,33 @@ class MonkeyView(
     private val swipeFrame = com.combo.monkeycompanion.engine.swipe.SwipeTravel.Frame()
     private val swipeFx = com.combo.monkeycompanion.rig.SwipeFx()
 
-    private fun trySwipeTrip(fvx: Float, fvy: Float): Boolean {
+    /** v10.26: the caller (the swipe rule in [settleAfterDrag]) has already decided this is a normal swipe. */
+    private fun trySwipeTrip(fvx: Float, fvy: Float, tour: Int = com.combo.monkeycompanion.engine.swipe.SwipeTravel.TOUR_NONE): Boolean {
         if (host == null || wp || hiddenTab || profile.ridesProp) return false
         val custom = com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null
         val style = com.combo.monkeycompanion.engine.swipe.SwipeTravel.styleFor(character.id, custom) ?: return false
-        val sp = hypot(fvx, fvy)
-        if (sp < SWIPE_TRIP_DP * d || dragTravel < 30 * d) return false
-        if (fvy > 0f && abs(fvy) > abs(fvx) * 1.2f) return false          // mostly down: the old drop / land / bottom-hide
-        if (abs(fvx) >= abs(fvy) && sp > 1400 * d) {                         // flung hard at a CLOSE edge: edge-hide still works
-            val cx = mx + boxW / 2f
-            if (if (fvx < 0) cx < sw() * 0.22f else cx > sw() * 0.78f) return false
-        }
         val minX = 10 * d; val maxX = max(minX, sw() - boxW - 10 * d)
         val tg = com.combo.monkeycompanion.engine.swipe.SwipeTravel.target(style, mx, my, fvx, fvy, minX, maxX, hoverMinY(), ground())
-        startSwipeTrip(style, tg[0], tg[1])
+        if (tour == com.combo.monkeycompanion.engine.swipe.SwipeTravel.TOUR_DOWN) {
+            // a lap of the screen that lands on the floor, on the far side if the swipe was straight down
+            tg[1] = ground()
+            if (abs(tg[0] - mx) < sw() * 0.25f) tg[0] = (mx + (if (mx + boxW / 2f < sw() / 2f) 1f else -1f) * sw() * 0.45f).coerceIn(minX, maxX)
+        }
+        startSwipeTrip(style, tg[0], tg[1], tour)
         return true
     }
 
-    /** Tests / previews: start [style] to box position ([tx], [ty]). */
-    fun startSwipeTrip(style: com.combo.monkeycompanion.engine.swipe.SwipeTravel.Style, tx: Float, ty: Float) {
+    /** Tests / previews: start [style] to box position ([tx], [ty]) ([tour]: a lap around the screen first). */
+    fun startSwipeTrip(style: com.combo.monkeycompanion.engine.swipe.SwipeTravel.Style, tx: Float, ty: Float,
+                       tour: Int = com.combo.monkeycompanion.engine.swipe.SwipeTravel.TOUR_NONE) {
         falling = false; vy = 0f; tweenT = -1f; tweenDone = null; arc = null; afterLand = null; impact = null
         climber.deactivate()
-        val trip = com.combo.monkeycompanion.engine.swipe.SwipeTravel.Trip(style, mx, my, tx, ty, d)
+        val minX = 10 * d; val maxX = max(minX, sw() - boxW - 10 * d)
+        val trip = com.combo.monkeycompanion.engine.swipe.SwipeTravel.Trip(style, mx, my, tx, ty, d, tour, minX, maxX, hoverMinY(), ground())
         swipeTrip = trip
         controller.face(trip.dir)
         reactionLayer.clear()
-        runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Swipe trip: ${style.label}", "${character.name}, swiped by you") }
+        runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Swipe trip: ${style.label}" + (if (tour != 0) " (tour ${if (tour == 1) "down" else "up"})" else ""), "${character.name}, swiped by you") }
     }
 
     val debugSwipeTrip get() = swipeTrip
@@ -5812,7 +5829,7 @@ class MonkeyView(
         if (!force) return false   // v10.25: only the fling rule in settleAfterDrag decides a splat / thwack
         val spDp = hypot(fvx, fvy) / d
         val screenH = host?.screenHeight()?.toFloat() ?: return false
-        if (fvy > 0f && abs(fvy) > abs(fvx) * 1.2f) return false   // mostly downward: the old drop / bottom-hide
+        if (!force && fvy > 0f && abs(fvy) > abs(fvx) * 1.2f) return false   // mostly downward: the old drop / bottom-hide
         impact = com.combo.monkeycompanion.engine.impact.ImpactPlay().also { it.spin = (fvx / d * 0.3f).coerceIn(-720f, 720f) }
         ivx = fvx; ivy = fvy
         if (fvy < 0f && abs(fvy) > abs(fvx)) {   // v10.25 aimed above the top: make sure it really reaches the top edge
@@ -6150,6 +6167,7 @@ class MonkeyView(
     private var tracking = false
     private var lastMoveRawX = 0f; private var lastMoveRawY = 0f; private var lastMoveTime = 0L
     private var vx = 0f; private var vyDrag = 0f
+    private var flickFelt = false
     /** v6: recent finger samples (time ms, raw x, raw y) for a robust release velocity / swipe distance. */
     private val gHist = LongArray(16); private val gHx = FloatArray(16); private val gHy = FloatArray(16); private var gN = 0
     private fun gPush(tm: Long, x: Float, y: Float) { val i = gN % 16; gHist[i] = tm; gHx[i] = x; gHy[i] = y; gN++ }
@@ -6611,7 +6629,7 @@ class MonkeyView(
                 downAt = e.eventTime; downPressure = e.pressure
                 downPart = if (livingOn) partAt(e.x, e.y, downZone) else com.combo.monkeycompanion.engine.touch.BodyPart.of(downZone)
                 if (livingOn && smoothAnim && !controller.isAsleep) living.glance(if (e.x < ox + boxW / 2f) -1f else 1f, 0.5f)   // eyes first
-                lastMoveRawX = e.rawX; lastMoveRawY = e.rawY; lastMoveTime = e.eventTime; vx = 0f; vyDrag = 0f
+                lastMoveRawX = e.rawX; lastMoveRawY = e.rawY; lastMoveTime = e.eventTime; vx = 0f; vyDrag = 0f; flickFelt = false
                 gN = 0; gPush(e.eventTime, e.rawX, e.rawY)
                 // v4.3 gesture map (see brain/Gestures): long-press = options menu; moving past the slop cancels it.
                 ui.postDelayed(longPress, com.combo.monkeycompanion.brain.Gestures.LONG_PRESS_MS)
@@ -6650,6 +6668,10 @@ class MonkeyView(
                     lastMoveRawX = e.rawX; lastMoveRawY = e.rawY; lastMoveTime = e.eventTime
                     gPush(e.eventTime, e.rawX, e.rawY)
                     controller.onDragMove(vx)
+                    // v10.26: a tick when the swipe is fast enough to THROW (no tick = a normal swipe = travel there)
+                    if (!flickFelt && hypot(vx, vyDrag) / d >= com.combo.monkeycompanion.engine.swipe.SwipeTravel.FLICK_DP) {
+                        flickFelt = true; performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                    }
                 }
             }
             MotionEvent.ACTION_UP -> {
@@ -7829,7 +7851,7 @@ class MonkeyView(
             android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, android.media.AudioDeviceInfo.TYPE_USB_HEADSET, 26 /* BLE_HEADSET */)
         private const val TAB_PEEK_SECS = 3.2f
         /** v10.24: a swipe faster than this (dp/s) sends a character on its own swipe trip. */
-        const val SWIPE_TRIP_DP = 700f
+        const val SWIPE_TRIP_DP = 450f
         /** v10.9: a swipe faster than this (dp/s) launches Rocket Girl's rocket. */
         const val ROCKET_SWIPE_DP = 380f
         /** v10.10: a rocket launch needs a real swipe (at least this far), never a tap. */

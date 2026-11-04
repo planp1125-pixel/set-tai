@@ -172,3 +172,14 @@ Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real ca
 - **No jets on Kutti Satan or Angel.** No jet landings either (only while Kutti Satan's rocket power is actually firing).
 - **No more looping Iron Man arcs.** Only Armour Anna, Superboy and Rocket Girl loop, arc or use jets. Every other character uses its own swipe trip (surf, skate, pounce, bedsheet, dance, ear-flap, smoke hops, run), drops and lands normally, and glides gently on idle patrols. The cause was shared code (the fly-to path, the swipe-down touch-down and the landing picker) that gave every flying body the rocket arc.
 - **Kutti Satan and Angel's own swipe:** they vanish in a puff of smoke (red for Kutti Satan, white-gold for Angel), reappear a hop further along the swipe, and repeat 3–5 times (depending on the distance) until they reach the spot.
+
+## v10.26 (code 62): one simple swipe rule, every character with its own power
+- **Normal swipe = travel there with its own power.** Swipe any character (not too fast) and it goes to the spot you swiped toward, in its own way, and lands there.
+- **Swipe up or down on a flying character = a tour of the screen.** It sweeps up and around the screen in its own style and either lands on the floor (swipe down) or ends at the spot up high (swipe up):
+  - **Kutti Satan:** vanishes and teleports in red-smoke hops all along the curve, then lands.
+  - **Angel:** graceful wing flight with a golden sparkle trail.
+  - **Gajju:** flies like a heavy baby elephant on his first try: frantic flapping, wobbling, a scary dip half way (eyes wide, mouth open), then a happy, relieved landing.
+  - **Surfing Girl:** surfs the whole way round.
+- **Fast flick = throw.** You feel a small **tick** while dragging when your swipe becomes fast enough to throw. Flicked up = **THWACK** on the top; flicked across from far = **SPLAT** on the wall; flicked down from high up = **PANCAKE** on the floor; flicked at a close side edge = **hide** there. No tick = a normal swipe = travel.
+- **Thrust only where it belongs:** jets = **Armour Anna** only. **Superboy** flies with no thrust at all (cape and speed streaks, Superman style). **Rocket Girl** rides her rocket. Nobody else ever shows jets.
+- No new permissions. No frame-loop Random (trips and tours are time-based). Tests updated: tours land on the floor / end at the spot, stay on screen, no jets; flick-down pancake; Gajju's dip and wobble; Angel's sparkles.

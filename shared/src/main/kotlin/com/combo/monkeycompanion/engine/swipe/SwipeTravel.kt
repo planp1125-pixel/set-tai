@@ -16,7 +16,8 @@ object SwipeTravel {
         SURF(4.2f, true, "surf show"),
         DIVE_POP(1.7f, false, "jump into the screen, pop out"),
         MOONWALK(1.9f, false, "moonwalk + spin glide"),
-        EAR_FLAP(2.0f, true, "ear-wing flight"),
+        /** v10.26 Gajju: heavy little elephant, flies with great difficulty (frantic flaps, wobbles, a scary dip, relief). */
+        EAR_FLAP(3.0f, true, "clumsy baby-elephant flight"),
         SHEET_TRICK(2.6f, false, "bedsheet magic trick"),
         POUNCE(1.3f, false, "cat pounce"),
         MOUSE_HOLE(1.9f, false, "mouse-hole dive"),
@@ -24,7 +25,16 @@ object SwipeTravel {
         RUN(1.3f, false, "run"),
         /** v10.25.1 Kutti Satan (red smoke) / Angel (white-gold): vanish, reappear a hop further, 3-5 times, then land. */
         MAGIC_HOPS(3.2f, true, "smoke-puff hops"),
+        /** v10.26 Angel: graceful wing flight with a golden sparkle trail. */
+        WINGS(2.8f, true, "angel wing flight"),
     }
+
+    /** v10.26 a normal swipe up / down on a flyer is a TOUR: a big curve around the screen in its own style. */
+    const val TOUR_NONE = 0
+    const val TOUR_DOWN = 1
+    const val TOUR_UP = 2
+    /** v10.26 faster than this (dp/s) = a flick: thrown (splat / thwack / pancake) or hidden at a close edge. */
+    const val FLICK_DP = 1600f
 
     /** null = this character keeps its old swipe (Anna, Superboy, Rocket Girl, Kutti Satan, Angel). */
     fun styleFor(id: String, custom: Boolean): Style? = when (id) {
@@ -36,7 +46,8 @@ object SwipeTravel {
         "billa" -> Style.POUNCE
         "chittu" -> Style.MOUSE_HOLE
         "skater" -> Style.SKATE
-        "devil", "angel" -> Style.MAGIC_HOPS
+        "devil" -> Style.MAGIC_HOPS
+        "angel" -> Style.WINGS
         "armour", "superboy", "rocketgirl" -> null
         else -> if (custom) Style.RUN else null
     }
@@ -65,20 +76,54 @@ object SwipeTravel {
         var atTarget = false
     }
 
-    class Trip(val style: Style, val x0: Float, val y0: Float, val x1: Float, val y1: Float, val u: Float) {
+    /**
+     * [tour] = [TOUR_NONE] a direct trip; [TOUR_DOWN] / [TOUR_UP] a big curve around the screen (inside the box
+     * bounds [minX]..[maxX], [minY]..[maxY]) that ends at the target.
+     */
+    class Trip(val style: Style, val x0: Float, val y0: Float, val x1: Float, val y1: Float, val u: Float,
+               val tour: Int = TOUR_NONE, minX: Float = Float.NaN, maxX: Float = Float.NaN, minY: Float = Float.NaN, maxY: Float = Float.NaN) {
         var k = 0f; private set
         val done get() = k >= 1f
         val dir get() = if (x1 >= x0) 1f else -1f
-        /** MAGIC_HOPS: 3..5 hops by distance. */
-        val hops: Int get() = (kotlin.math.hypot(x1 - x0, y1 - y0) / (110f * u)).toInt().coerceIn(3, 5)
-        fun step(dt: Float) { k = (k + dt / style.secs).coerceAtMost(1f) }
+        /** v10.26 tours take longer (a real lap of the screen). */
+        val secs: Float get() = if (tour == TOUR_NONE) style.secs else style.secs * 1.6f
+        // the tour curve: a cubic through two control points out toward the far side / the top
+        private val c1x: Float; private val c1y: Float; private val c2x: Float; private val c2y: Float
+        init {
+            val hasB = !minX.isNaN() && !maxX.isNaN() && !minY.isNaN() && !maxY.isNaN()
+            val lx = if (hasB) minX else minOf(x0, x1) - 300f * u; val rx = if (hasB) maxX else maxOf(x0, x1) + 300f * u
+            val ty = if (hasB) minY else minOf(y0, y1) - 500f * u; val by = if (hasB) maxY else maxOf(y0, y1)
+            val w = rx - lx; val h = by - ty
+            val side = if (x0 < (lx + rx) / 2f) 1f else -1f      // sweep out toward the open side first
+            when (tour) {
+                TOUR_DOWN -> {   // up and across the top, round, and down to the floor
+                    c1x = (x0 + side * 0.8f * w).coerceIn(lx, rx); c1y = ty - 0.2f * h
+                    c2x = (x1 - side * 0.6f * w).coerceIn(lx, rx); c2y = ty - 0.05f * h
+                }
+                TOUR_UP -> {     // out to the side and round, up to the spot
+                    c1x = (x0 + side * 0.6f * w).coerceIn(lx, rx); c1y = (y0 - 0.1f * h).coerceIn(ty, by)
+                    c2x = (x1 - side * 0.45f * w).coerceIn(lx, rx); c2y = (y1 + 0.35f * h).coerceIn(ty, by)
+                }
+                else -> { c1x = x0; c1y = y0; c2x = x1; c2y = y1 }
+            }
+        }
+        /** Point on the way at [e] 0..1 (a straight line, or the tour curve). */
+        fun pathX(e: Float): Float = if (tour == TOUR_NONE) x0 + (x1 - x0) * e else bez(x0, c1x, c2x, x1, e)
+        fun pathY(e: Float): Float = if (tour == TOUR_NONE) y0 + (y1 - y0) * e else bez(y0, c1y, c2y, y1, e)
+        private fun bez(a: Float, b: Float, c: Float, d: Float, e: Float): Float {
+            val v = 1f - e
+            return v * v * v * a + 3f * v * v * e * b + 3f * v * e * e * c + e * e * e * d
+        }
+        /** MAGIC_HOPS: 3..5 hops by distance (5..7 on a tour). */
+        val hops: Int get() = if (tour != TOUR_NONE) 6 else (kotlin.math.hypot(x1 - x0, y1 - y0) / (110f * u)).toInt().coerceIn(3, 5)
+        fun step(dt: Float) { k = (k + dt / secs).coerceAtMost(1f) }
         fun seek(k: Float) { this.k = k.coerceIn(0f, 1f) }
 
         fun frame(f: Frame = Frame()): Frame {
             val k = k
             f.scale = 1f; f.alpha = 1f; f.rot = 0f; f.sheet = 0f; f.sheetFall = 0f; f.holeA = 0f; f.holeB = 0f; f.curl = 0f; f.splash = 0f; f.sparkle = 0f; f.sink = 0f; f.puff = 0f
-            fun lerpX(e: Float) = x0 + (x1 - x0) * e
-            fun lerpY(e: Float) = y0 + (y1 - y0) * e
+            fun lerpX(e: Float) = pathX(e)
+            fun lerpY(e: Float) = pathY(e)
             when (style) {
                 Style.SURF -> {
                     val e = ss(0f, 1f, k)
@@ -105,9 +150,25 @@ object SwipeTravel {
                     f.sparkle = bell(0.5f, 0.75f, k)
                 }
                 Style.MOONWALK -> { f.x = lerpX(ss(0f, 1f, k)); f.y = lerpY(ss(0f, 0.4f, k)); f.atTarget = true }
-                Style.EAR_FLAP -> {
+                Style.EAR_FLAP -> {   // v10.26: heavy! a slow start, wobbles, a scary dip half way, then flaps back up
+                    val e = ss(0.12f, 1f, k)
+                    val lift = 60f * u * sin(ss(0.1f, 1f, k) * PI.toFloat())
+                    val wobble = 9f * u * sin(k * 31f) * (1f - ss(0.9f, 1f, k))
+                    val dip = 55f * u * bell(0.42f, 0.62f, k)
+                    f.x = lerpX(e) + 6f * u * sin(k * 17f) * (1f - ss(0.9f, 1f, k))
+                    f.y = lerpY(e) - lift + wobble + dip
+                    if (k >= 1f) { f.x = x1; f.y = y1 }
+                    f.rot = 10f * sin(k * 23f) * (1f - ss(0.88f, 1f, k)) + 18f * bell(0.42f, 0.6f, k)
+                    f.atTarget = true
+                }
+                Style.WINGS -> {      // v10.26: graceful, gentle bobs with each wing beat, golden sparkles behind
                     val e = ss(0f, 1f, k)
-                    f.x = lerpX(e); f.y = lerpY(e) - 60f * u * sin(k * PI.toFloat()); f.atTarget = true
+                    f.x = lerpX(e); f.y = lerpY(e) - 34f * u * sin(k * PI.toFloat()) * (if (tour == TOUR_NONE) 1f else 0.3f) +
+                        7f * u * sin(k * 18f) * (1f - ss(0.85f, 1f, k))
+                    if (k >= 1f) { f.x = x1; f.y = y1 }
+                    f.rot = -dir * 8f * bell(0.05f, 0.95f, k)
+                    f.sparkle = 0.55f * bell(0.05f, 0.95f, k) + 0.45f * bell(0.85f, 1f, k)
+                    f.atTarget = true
                 }
                 Style.SHEET_TRICK -> {
                     f.atTarget = k >= 0.55f
@@ -188,9 +249,19 @@ object SwipeTravel {
                     p.armLRaise = 40f + 20f * sin(t * 11f); p.armRRaise = 40f - 20f * sin(t * 11f)
                     if (k > 0.9f) { p.armRRaise = 150f; p.headRot = -8f }   // freeze pose
                 }
-                Style.EAR_FLAP -> {
-                    p.shadow = 0f; p.dvAura = 1f - ss(0.85f, 1f, k); p.bodyRot = 10f
-                    p.legLSwing = -14f; p.legRSwing = -6f; p.legLLift = 6f; p.legRLift = 3f; p.mouthSmile = 1f
+                Style.EAR_FLAP -> {   // straining: legs kicking, worried eyes, a gasp in the dip, a happy sigh at the end
+                    p.shadow = 0f; p.dvAura = 1f - ss(0.9f, 1f, k); p.bodyRot = 10f
+                    p.legLSwing = -14f + 16f * sin(t * 13f); p.legRSwing = -6f - 16f * sin(t * 13f); p.legLLift = 6f; p.legRLift = 3f
+                    p.armLRaise = 70f + 30f * sin(t * 15f); p.armRRaise = 70f - 30f * sin(t * 15f)
+                    val dip = bell(0.4f, 0.66f, k)
+                    p.eyeOpen = 1.1f + 0.35f * dip; p.mouthOpen = 0.2f + 0.7f * dip
+                    p.browAngle = -14f * (1f - ss(0.85f, 1f, k)); p.mouthSmile = if (k > 0.85f) 1f else -0.2f
+                    if (k > 0.9f) p.eyesHappy = 1f
+                }
+                Style.WINGS -> {
+                    p.shadow = 0f; p.dvFire = 1f - 0.7f * ss(0.85f, 1f, k); p.dvAura = 0.5f * bell(0f, 1f, k)
+                    p.armLRaise = 100f; p.armRRaise = 100f; p.legLSwing = 15f; p.legRSwing = 22f
+                    p.bodyRot = 10f; p.mouthSmile = 1f; if (k > 0.9f) p.eyesHappy = 1f
                 }
                 Style.SHEET_TRICK -> {
                     if (k < 0.3f) { p.armLRaise = 165f * ss(0f, 0.12f, k); p.armRRaise = p.armLRaise; p.armLElbow = -10f; p.armRElbow = -10f }

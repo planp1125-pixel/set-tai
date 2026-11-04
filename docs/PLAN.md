@@ -172,21 +172,20 @@ end: iris
 
 ## 12. Release plan (one at a time, each tested on the phone)
 
-| Release | What | Done when |
-|---|---|---|
-| **v10.23** | ✅ Done instead: new character **Angel** (Kutti Satan's partner) | tested on phone |
-| **v10.24** | ✅ Done: own swipe trip per character (surf show, dive-pop, moonwalk, ear flight, bedsheet trick, pounce, mouse hole, skate tricks, run), sideways swipe never splats, new Skater Girl | tested on phone |
-| **next** | Kutti Satan & Angel black-magic swipes (go where you swipe) | tested on phone |
-| **v10.25** (moved from v10.24) | Action Library part 1 (feelings, laughs, looks, moving, crashes) for all characters + per-character styles + tests | every action × character passes |
-| **v10.25** | Action Library part 2 (chase, magic, props, together) + AI chat tags use the library | |
-| **v10.26** | Drama script player + checker; Billa & Chittu first 3 scripted episodes; double-tap rule (§5) | scripts play from any start position |
-| **v10.27** | Angel character (designs shown first) + Kutti Satan & Angel first episode | owner approves the look |
-| **v10.28** | Remaining pairs' props (Gajju's trunk water vs fireworks, etc.) + one episode per pair | |
-| **v10.29** | Weekly delivery (index, download, "New episode!" badge, settings) | a script pushed to GitHub shows up on the phone |
-| **v10.30** | Drama Studio helper (idea → draft → preview video) | |
-| **later** | Play Store launch, Billing, Episode Pass | when weekly viewers are steady |
+Balance (agreed 3 Nov): about **80% everyday phone moments** (charging, notification roasts, battery, alarms, hello, bedtime) and **20% episodes**. The action library feeds both.
 
-Rough size: each release is about one working session of development plus your phone test.
+| Release | What | State |
+|---|---|---|
+| v10.23 | New character **Angel** (Kutti Satan's partner) | ✅ (Grok) |
+| v10.24–v10.25.1 | Own swipe trip per character, Skater Girl, no jets for non-jet characters | ✅ (Grok) |
+| **v10.26** | **One swipe rule**: normal swipe = travel with own power; up/down on flyers = tour of the screen (Satan teleport hops, Angel wings, Gajju's clumsy Dumbo flight, surfer); fast flick (felt as a tick) = splat / thwack / pancake or hide at a close edge; jets only for Armour Anna, Superboy cape flight, Rocket Girl rocket | ✅ built, to test |
+| v10.27 | Action Library part 1 (feelings, laughs, looks, moving, crashes) for all characters + per-character styles + tests | next |
+| v10.28 | Everyday moments upgraded with the actions (charging, notification roasts, battery, alarms, hello, bedtime) | |
+| v10.29 | Action Library part 2 (chase, magic, props, together) + AI chat tags use the library | |
+| v10.30 | Drama script player + checker; first scripted episodes (Billa & Chittu, Kutti Satan & Angel); double-tap rule (§5) | |
+| v10.31 | Remaining pairs' props + one episode per pair | |
+| v10.32 | Weekly delivery (index, download, "New episode!" badge, settings) | |
+| later | Drama Studio helper; Play Store launch; Billing / Episode Pass | when weekly viewers are steady |
 
 ## 13. Risks and answers
 

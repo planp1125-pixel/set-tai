@@ -127,8 +127,9 @@ class GajjuRenderer : MonkeyRenderer() {
 
     private fun flapDeg(): Float {
         val airborne = pose.shadow < 0.05f
-        val hz = if (airborne) 10f else 3.5f
-        val amp = if (airborne) 20f else 9f
+        val strain = pose.dvAura.coerceIn(0f, 1f)   // v10.26 swipe flight: frantic flapping, he's heavy
+        val hz = if (airborne) 10f + 9f * strain else 3.5f
+        val amp = if (airborne) 20f + 10f * strain else 9f
         return amp * sin(now * hz)
     }
 
