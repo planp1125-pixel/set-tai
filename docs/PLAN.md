@@ -174,7 +174,8 @@ end: iris
 
 | Release | What | Done when |
 |---|---|---|
-| **v10.23** | Swipe fixes: surfer surfs to the swipe (no thrust), Kutti Satan goes where you swipe, sideways swipe hides again (only upward throws splat) | tested on phone |
+| **v10.23** | ✅ Done instead: new character **Angel** (Kutti Satan's partner) | tested on phone |
+| **next** | Swipe fixes: surfer surfs to the swipe (no thrust), Kutti Satan goes where you swipe, sideways swipe hides again (only upward throws splat) | tested on phone |
 | **v10.24** | Action Library part 1 (feelings, laughs, looks, moving, crashes) for all characters + per-character styles + tests | every action × character passes |
 | **v10.25** | Action Library part 2 (chase, magic, props, together) + AI chat tags use the library | |
 | **v10.26** | Drama script player + checker; Billa & Chittu first 3 scripted episodes; double-tap rule (§5) | scripts play from any start position |

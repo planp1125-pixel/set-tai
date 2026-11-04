@@ -19,7 +19,7 @@ import kotlin.math.sin
  * Magic fx (all pure functions of time + pose slots, no RNG): red smoke puff + sparkles (vanish), a red swirl portal
  * (reappear), spell sparks at the fingers, levitation sparkles and two shadow clones.
  */
-class DevilRenderer : HumanRenderer() {
+open class DevilRenderer : HumanRenderer() {
     companion object {
         val WHITE = Color.rgb(0xFF, 0xFF, 0xFF)
         val SHADE = Color.rgb(0xEC, 0xE8, 0xF2)
@@ -39,15 +39,15 @@ class DevilRenderer : HumanRenderer() {
     override val glintEye: FloatArray? = null
     override val faceBox: FloatArray get() = BOX
 
-    private val soft = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = LINE; strokeWidth = LW; strokeJoin = Paint.Join.ROUND; strokeCap = Paint.Cap.ROUND }
-    private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
+    protected val soft = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = LINE; strokeWidth = LW; strokeJoin = Paint.Join.ROUND; strokeCap = Paint.Cap.ROUND }
+    protected val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
     private val headShader = RadialGradient(-12f, -48f, 60f, intArrayOf(WHITE, WHITE, SHADE), floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
     private val bodyShader = RadialGradient(-6f, -36f, 40f, intArrayOf(WHITE, WHITE, SHADE), floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
-    private val hp = FloatArray(2)
+    protected val hp = FloatArray(2)
     private val tailBuf = FloatArray(TAIL_SEGS * 2 + 2)
     private val TAIL_K = 1.32f
     /** Stubby arms: only part of the shared forearm is drawn, the round hand sits there. */
-    private val ARM_K = 0.45f
+    protected val ARM_K = 0.45f
     private fun on(id: String) = wear == null || has(id)
 
     override fun drawJets(c: Canvas, rig: MonkeyRig, p: Pose, t: Float) = Unit
@@ -195,7 +195,7 @@ class DevilRenderer : HumanRenderer() {
 
     // ---------------- magic fx ----------------
 
-    private fun star(c: Canvas, x: Float, y: Float, r: Float, color: Int, alpha: Int) {
+    protected fun star(c: Canvas, x: Float, y: Float, r: Float, color: Int, alpha: Int) {
         fill.shader = null; fill.color = color; fill.alpha = alpha.coerceIn(0, 255)
         tmp.reset()
         tmp.moveTo(x, y - r); tmp.quadTo(x, y, x + r, y); tmp.quadTo(x, y, x, y + r); tmp.quadTo(x, y, x - r, y); tmp.quadTo(x, y, x, y - r); tmp.close()

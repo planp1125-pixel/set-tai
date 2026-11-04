@@ -85,6 +85,7 @@ class Personality(val characterId: String, val seed: Long, val traits: Traits, v
                 "gajju" -> Traits(playfulness = 0.95f, boldness = 0.5f, laziness = 0.35f, curiosity = 0.8f, chattiness = 0.7f, drama = 0.55f)
                 "rocketgirl" -> Traits(playfulness = 0.95f, boldness = 0.85f, laziness = 0.15f, curiosity = 0.8f, chattiness = 0.75f, drama = 0.8f)
                 "hollowman" -> Traits(playfulness = 0.9f, boldness = 0.7f, laziness = 0.3f, curiosity = 0.6f, chattiness = 0.7f, drama = 0.9f)
+                "angel" -> Traits(playfulness = 0.7f, boldness = 0.5f, laziness = 0.25f, curiosity = 0.8f, chattiness = 0.7f, drama = 0.5f)
                 "devil" -> Traits(playfulness = 0.95f, boldness = 0.8f, laziness = 0.3f, curiosity = 0.9f, chattiness = 0.75f, drama = 0.8f)
                 "surfer" -> Traits(playfulness = 0.95f, boldness = 0.9f, laziness = 0.15f, curiosity = 0.85f, chattiness = 0.75f, drama = 0.65f)
                 "chittu" -> Traits(playfulness = 0.95f, boldness = 0.8f, laziness = 0.2f, curiosity = 0.9f, chattiness = 0.75f, drama = 0.75f)
@@ -116,6 +117,7 @@ class Personality(val characterId: String, val seed: Long, val traits: Traits, v
             "gajju" to listOf("sugarcane", "banana", "jaggery peanut balls"),
             "rocketgirl" to listOf("motichoor laddoo", "murukku", "rose milk"),
             "hollowman" to listOf("invisible ice cream", "filter coffee", "kara boondi"),
+            "angel" to listOf("payasam", "vanilla ice cream", "strawberry milk"),
             "devil" to listOf("red chilli bajji", "rose milk", "chocolate cake"),
             "surfer" to listOf("tender coconut", "mango ice cream", "banana chips"),
             "custom_1" to listOf("gulab jamun", "filter coffee", "chocolate ice cream"),

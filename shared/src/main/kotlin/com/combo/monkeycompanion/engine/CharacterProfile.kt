@@ -74,6 +74,8 @@ object CharacterProfiles {
     val SURFER = CharacterProfile("surfer", edgeCrashOnFlight = false, airPatrolChance = 0.6f, airDanceChance = 0.15f, hoverJetPadRig = 44f, anim = AnimTuning.SURF)
     /** v10.16 Kutti Satan: floats and bobs, patrols the air now and then, a whippy tail (TAIL spring). */
     val DEVIL = CharacterProfile("devil", airPatrolChance = 0.35f, airDanceChance = 0.12f, anim = AnimTuning.DEVIL, body = BodyFeatures(tail = true))
+    /** v10.23 Angel: floats like Kutti Satan, patrols the air a little more (she has wings). */
+    val ANGEL = CharacterProfile("angel", airPatrolChance = 0.4f, airDanceChance = 0.15f, anim = AnimTuning.DEVIL)
     /** Custom photo look-alikes and anything new. */
     val DEFAULT = CharacterProfile("default", anim = AnimTuning.CHIBI)
 
@@ -90,6 +92,7 @@ object CharacterProfiles {
         "hollowman" -> HOLLOWMAN
         "surfer" -> SURFER
         "devil" -> DEVIL
+        "angel" -> ANGEL
         else -> DEFAULT
     }
 }

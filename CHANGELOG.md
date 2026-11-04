@@ -135,3 +135,11 @@ Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real ca
 - **No title card, plain English lines** (no Tamil words). Kept: the iris-out ending with "The End". Tap anywhere to stop.
 - **Surfing Girl really surfs.** Her big wave is now a real ride along the bottom of the screen: she paddles, pops up, gathers speed, carves up and down the wave face leaning into each turn (the board tilts on its rail, spray off the edge), cuts back, and glides to a soft stop as the water slows her. No more thrusting around the screen edges. The water under her stays still on the screen while she slides over it (it no longer travels with her), fades out at the ends, and leaves a little wake. The spray carve and the aerial (glide up to the lip, then flip) ride the same way.
 - New tests: every one of the 2,400 shows is checked (no teleports, no merging into one blob, readable English lines, starts exactly where they are); the surf glide (continuous, carves both ways, soft stop).
+
+## v10.23 (code 58): Angel, Kutti Satan's partner
+- **New character: Angel**, a cute little angel girl drawn in the same style as Kutti Satan (round head, big black oval eyes that blink softly), so the two look like a pair. Cream-white body, a gold halo floating above her head, small white feathered wings that flap gently, pink cheeks, a small smile and a little gold trim.
+- **Her powers** (fixed): a **healing sparkle** (golden sparkles rise around her with a soft pulse of light) is her main power and always plays first on double-tap; then a **halo spin**, **wing flight** across the screen (fast flaps) and a **gentle float** in a warm glow. No cooldowns.
+- She's in the character grid right after Kutti Satan, in the long-press menu and the crew picker, so she can be on screen with him. Soft winged landings, never jets. Her own lines, and with Brain on the AI knows who she is.
+- The planned swipe fixes move to the next version.
+- No new permissions. No frame-loop Random (her animation is all time-based). New test: V1023AngelTest.
+
