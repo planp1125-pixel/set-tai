@@ -183,3 +183,9 @@ Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real ca
 - **Fast flick = throw.** You feel a small **tick** while dragging when your swipe becomes fast enough to throw. Flicked up = **THWACK** on the top; flicked across from far = **SPLAT** on the wall; flicked down from high up = **PANCAKE** on the floor; flicked at a close side edge = **hide** there. No tick = a normal swipe = travel.
 - **Thrust only where it belongs:** jets = **Armour Anna** only. **Superboy** flies with no thrust at all (cape and speed streaks, Superman style). **Rocket Girl** rides her rocket. Nobody else ever shows jets.
 - No new permissions. No frame-loop Random (trips and tours are time-based). Tests updated: tours land on the floor / end at the spot, stay on screen, no jets; flick-down pancake; Gajju's dip and wobble; Angel's sparkles.
+
+## v10.26.1 (code 63): brisk power tours; throws switched off for now
+- **Faster, Armour-Anna-style moves.** Swipe trips are quicker, and a swipe up or down on a flyer is now a brisk **loop** like Anna's flights: it goes first to the **top middle** of the screen, round a loop, and then **stays up at the top** (swipe up) or comes down and lands (swipe down).
+  - **Kutti Satan** does it all by teleporting: he vanishes, appears at the top middle, then pops round the loop in red smoke, and stays at the top.
+  - Angel flies the loop with sparkles, Gajju struggles round it, and the surfer surfs it.
+- **Throws are off for now**, so you can try every character's powers. A fast flick is just a faster trip with its power. Flicking at a close side edge still hides the character. Turn throws back on in **Settings › "Throw on fast flick"** (SPLAT, THWACK, PANCAKE). The "fast enough" tick only plays when throws are on.

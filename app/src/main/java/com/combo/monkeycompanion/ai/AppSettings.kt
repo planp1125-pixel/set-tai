@@ -168,6 +168,12 @@ class AppSettings(ctx: Context) {
         get() = p.getBoolean("sound_effects", true)
         set(v) = p.edit().putBoolean("sound_effects", v).apply()
 
+    /** v10.26.1 Settings › "Throw on fast flick": a fast flick throws the character (SPLAT / THWACK / PANCAKE). Off (default for
+     *  now): a fast flick is just a faster trip with its power, so the powers are easy to try. */
+    var flickThrow: Boolean
+        get() = p.getBoolean("flick_throw", false)
+        set(v) = p.edit().putBoolean("flick_throw", v).apply()
+
     /** v10.9 Settings › "Double-tap for power": double-tap a character = one of its powers (random, never the same twice in a row). Off = double-tap opens chat (v10.8). */
     var doubleTapPower: Boolean
         get() = p.getBoolean("double_tap_power", true)

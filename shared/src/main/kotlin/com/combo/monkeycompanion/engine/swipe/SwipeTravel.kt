@@ -13,20 +13,20 @@ import kotlin.math.sin
  */
 object SwipeTravel {
     enum class Style(val secs: Float, val hovers: Boolean, val label: String) {
-        SURF(4.2f, true, "surf show"),
+        SURF(3.4f, true, "surf show"),
         DIVE_POP(1.7f, false, "jump into the screen, pop out"),
         MOONWALK(1.9f, false, "moonwalk + spin glide"),
         /** v10.26 Gajju: heavy little elephant, flies with great difficulty (frantic flaps, wobbles, a scary dip, relief). */
-        EAR_FLAP(3.0f, true, "clumsy baby-elephant flight"),
+        EAR_FLAP(2.4f, true, "clumsy baby-elephant flight"),
         SHEET_TRICK(2.6f, false, "bedsheet magic trick"),
         POUNCE(1.3f, false, "cat pounce"),
         MOUSE_HOLE(1.9f, false, "mouse-hole dive"),
         SKATE(5.4f, false, "skate show"),
         RUN(1.3f, false, "run"),
         /** v10.25.1 Kutti Satan (red smoke) / Angel (white-gold): vanish, reappear a hop further, 3-5 times, then land. */
-        MAGIC_HOPS(3.2f, true, "smoke-puff hops"),
+        MAGIC_HOPS(2.0f, true, "smoke-puff hops"),
         /** v10.26 Angel: graceful wing flight with a golden sparkle trail. */
-        WINGS(2.8f, true, "angel wing flight"),
+        WINGS(1.7f, true, "angel wing flight"),
     }
 
     /** v10.26 a normal swipe up / down on a flyer is a TOUR: a big curve around the screen in its own style. */
@@ -85,37 +85,55 @@ object SwipeTravel {
         var k = 0f; private set
         val done get() = k >= 1f
         val dir get() = if (x1 >= x0) 1f else -1f
-        /** v10.26 tours take longer (a real lap of the screen). */
-        val secs: Float get() = if (tour == TOUR_NONE) style.secs else style.secs * 1.6f
-        // the tour curve: a cubic through two control points out toward the far side / the top
-        private val c1x: Float; private val c1y: Float; private val c2x: Float; private val c2y: Float
+        /** v10.26.1 tours are brisk loops like Armour Anna's flights (a little longer than a direct trip). */
+        val secs: Float get() = if (tour == TOUR_NONE) style.secs else when (style) {
+            Style.MAGIC_HOPS -> 0.42f * (wx.size - 1)          // one teleport per waypoint
+            Style.EAR_FLAP -> 3.4f                               // he's heavy
+            Style.SURF -> 3.6f
+            else -> 2.6f
+        }
+        /**
+         * The tour: a loop through waypoints (Catmull-Rom, smooth). Up = first to the TOP MIDDLE of the screen, then a round
+         * loop like Anna's, and it stays up at the top. Down = up to the top middle, round the loop, then down to land.
+         */
+        private val wx: FloatArray
+        private val wy: FloatArray
         init {
             val hasB = !minX.isNaN() && !maxX.isNaN() && !minY.isNaN() && !maxY.isNaN()
             val lx = if (hasB) minX else minOf(x0, x1) - 300f * u; val rx = if (hasB) maxX else maxOf(x0, x1) + 300f * u
             val ty = if (hasB) minY else minOf(y0, y1) - 500f * u; val by = if (hasB) maxY else maxOf(y0, y1)
             val w = rx - lx; val h = by - ty
-            val side = if (x0 < (lx + rx) / 2f) 1f else -1f      // sweep out toward the open side first
+            val mid = (lx + rx) / 2f; val top = ty + 0.04f * h
+            val r = minOf(0.3f * w, 0.18f * h)
+            val side = if (x0 < mid) 1f else -1f
+            fun cx(v: Float) = v.coerceIn(lx, rx)
+            fun cy(v: Float) = v.coerceIn(ty, by)
             when (tour) {
-                TOUR_DOWN -> {   // up and across the top, round, and down to the floor
-                    c1x = (x0 + side * 0.8f * w).coerceIn(lx, rx); c1y = ty - 0.2f * h
-                    c2x = (x1 - side * 0.6f * w).coerceIn(lx, rx); c2y = ty - 0.05f * h
+                TOUR_UP -> {
+                    wx = floatArrayOf(x0, cx(mid), cx(mid + side * r), cx(mid), cx(mid - side * r), x1)
+                    wy = floatArrayOf(y0, cy(top), cy(top + r), cy(top + 2f * r), cy(top + r), y1)
                 }
-                TOUR_UP -> {     // out to the side and round, up to the spot
-                    c1x = (x0 + side * 0.6f * w).coerceIn(lx, rx); c1y = (y0 - 0.1f * h).coerceIn(ty, by)
-                    c2x = (x1 - side * 0.45f * w).coerceIn(lx, rx); c2y = (y1 + 0.35f * h).coerceIn(ty, by)
+                TOUR_DOWN -> {
+                    wx = floatArrayOf(x0, cx(mid), cx(mid + side * r), cx(mid), cx(mid - side * r), cx((mid + x1) / 2f), x1)
+                    wy = floatArrayOf(y0, cy(top), cy(top + r), cy(top + 2f * r), cy(top + r), cy(top + 0.55f * h), y1)
                 }
-                else -> { c1x = x0; c1y = y0; c2x = x1; c2y = y1 }
+                else -> { wx = floatArrayOf(x0, x1); wy = floatArrayOf(y0, y1) }
             }
         }
-        /** Point on the way at [e] 0..1 (a straight line, or the tour curve). */
-        fun pathX(e: Float): Float = if (tour == TOUR_NONE) x0 + (x1 - x0) * e else bez(x0, c1x, c2x, x1, e)
-        fun pathY(e: Float): Float = if (tour == TOUR_NONE) y0 + (y1 - y0) * e else bez(y0, c1y, c2y, y1, e)
-        private fun bez(a: Float, b: Float, c: Float, d: Float, e: Float): Float {
-            val v = 1f - e
-            return v * v * v * a + 3f * v * v * e * b + 3f * v * e * e * c + e * e * e * d
+        /** Point on the way at [e] 0..1 (a straight line, or the tour loop). */
+        fun pathX(e: Float): Float = if (tour == TOUR_NONE) x0 + (x1 - x0) * e else spline(wx, e)
+        fun pathY(e: Float): Float = if (tour == TOUR_NONE) y0 + (y1 - y0) * e else spline(wy, e)
+        /** MAGIC_HOPS on a tour: the hop points are exactly the waypoints (teleport to the top middle first). */
+        fun waypoint(i: Int, ys: Boolean) = if (ys) wy[i] else wx[i]
+        private fun spline(p: FloatArray, e: Float): Float {
+            val n = p.size - 1
+            val q = (e.coerceIn(0f, 1f) * n).coerceAtMost(n - 1e-4f); val i = q.toInt(); val t = q - i
+            val a = p[maxOf(0, i - 1)]; val b = p[i]; val c = p[i + 1]; val d = p[minOf(n, i + 2)]
+            val t2 = t * t; val t3 = t2 * t
+            return 0.5f * (2f * b + (-a + c) * t + (2f * a - 5f * b + 4f * c - d) * t2 + (-a + 3f * b - 3f * c + d) * t3)
         }
         /** MAGIC_HOPS: 3..5 hops by distance (5..7 on a tour). */
-        val hops: Int get() = if (tour != TOUR_NONE) 6 else (kotlin.math.hypot(x1 - x0, y1 - y0) / (110f * u)).toInt().coerceIn(3, 5)
+        val hops: Int get() = if (tour != TOUR_NONE) wx.size - 1 else (kotlin.math.hypot(x1 - x0, y1 - y0) / (110f * u)).toInt().coerceIn(3, 5)
         fun step(dt: Float) { k = (k + dt / secs).coerceAtMost(1f) }
         fun seek(k: Float) { this.k = k.coerceIn(0f, 1f) }
 
@@ -208,7 +226,9 @@ object SwipeTravel {
                 Style.MAGIC_HOPS -> {   // each hop: fade out in a puff, jump on, fade back in out of a puff
                     val n = hops; val q = (k * n).coerceAtMost(n - 0.0001f); val i = q.toInt(); val h = q - i
                     val at = if (h < 0.45f) i.toFloat() / n else (i + 1f) / n
-                    f.x = lerpX(at); f.y = lerpY(at) - (if (h < 0.45f) 0f else 18f * u * bell(0.45f, 1f, h))
+                    val wi = if (h < 0.45f) i else i + 1
+                    f.x = if (tour != TOUR_NONE) waypoint(wi, false) else lerpX(at)
+                    f.y = (if (tour != TOUR_NONE) waypoint(wi, true) else lerpY(at)) - (if (h < 0.45f) 0f else 18f * u * bell(0.45f, 1f, h))
                     f.alpha = when { h < 0.25f -> 1f; h < 0.45f -> 1f - ss(0.25f, 0.45f, h); h < 0.65f -> ss(0.45f, 0.65f, h); else -> 1f }
                     f.scale = 1f - 0.25f * bell(0.2f, 0.7f, h)
                     f.puff = maxOf(bell(0.2f, 0.55f, h), bell(0.42f, 0.8f, h))

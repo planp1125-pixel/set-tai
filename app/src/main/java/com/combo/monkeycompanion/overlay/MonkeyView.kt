@@ -3699,8 +3699,15 @@ class MonkeyView(
             val heroFlight = style == null && hovers   // Armour Anna / Superboy / Rocket Girl keep their own flight swipes (arcs, swoops, rocket)
             val down = upSwipeDown > 0f || (fvy > 0f && fvy > abs(fvx) * 1.2f)
             val up = !down && fvy < 0f && -fvy > abs(fvx) * 1.2f
+            val throws = runCatching { ChatHub.settings.flickThrow }.getOrDefault(false)
+            val flickAtEdge = !down && !up && swipeDp >= com.combo.monkeycompanion.engine.swipe.SwipeTravel.FLICK_DP && run {
+                val side = if (fvx < 0) -1 else 1
+                val nearEdge = if (side < 0) cx < sw() * 0.22f else cx > sw() * 0.78f
+                nearEdge || (if (side < 0) -px else px - sw()) > sw() * 0.15f
+            }
             if (heroFlight) Unit
-            else if (swipeDp >= com.combo.monkeycompanion.engine.swipe.SwipeTravel.FLICK_DP) {
+            else if (!throws && flickAtEdge) { hideToEdge(if (fvx < 0) -1 else 1); return false }   // throws off: a flick at the edge still hides
+            else if (throws && swipeDp >= com.combo.monkeycompanion.engine.swipe.SwipeTravel.FLICK_DP) {
                 when {
                     !down && !up -> {
                         val side = if (fvx < 0) -1 else 1
@@ -5778,6 +5785,7 @@ class MonkeyView(
         val style = com.combo.monkeycompanion.engine.swipe.SwipeTravel.styleFor(character.id, custom) ?: return false
         val minX = 10 * d; val maxX = max(minX, sw() - boxW - 10 * d)
         val tg = com.combo.monkeycompanion.engine.swipe.SwipeTravel.target(style, mx, my, fvx, fvy, minX, maxX, hoverMinY(), ground())
+        if (tour == com.combo.monkeycompanion.engine.swipe.SwipeTravel.TOUR_UP) tg[1] = hoverMinY() + 0.04f * (ground() - hoverMinY())   // v10.26.1: stays up at the top
         if (tour == com.combo.monkeycompanion.engine.swipe.SwipeTravel.TOUR_DOWN) {
             // a lap of the screen that lands on the floor, on the far side if the swipe was straight down
             tg[1] = ground()
@@ -6671,7 +6679,8 @@ class MonkeyView(
                     gPush(e.eventTime, e.rawX, e.rawY)
                     controller.onDragMove(vx)
                     // v10.26: a tick when the swipe is fast enough to THROW (no tick = a normal swipe = travel there)
-                    if (!flickFelt && hypot(vx, vyDrag) / d >= com.combo.monkeycompanion.engine.swipe.SwipeTravel.FLICK_DP) {
+                    if (!flickFelt && hypot(vx, vyDrag) / d >= com.combo.monkeycompanion.engine.swipe.SwipeTravel.FLICK_DP &&
+                        runCatching { ChatHub.settings.flickThrow }.getOrDefault(false)) {
                         flickFelt = true; performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                     }
                 }

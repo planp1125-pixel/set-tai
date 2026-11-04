@@ -125,9 +125,12 @@ class V1024SwipeTest {
         // released near the left edge, flung left = hide
         v = view("hollowman"); v.debugPlace(40f, onFloor = true); v.debugRelease(-6500f, 0f)
         assertFalse(v.debugImpact); v.debugFrames(60); assertTrue(v.debugHidden)
-        // aimed above the top = thwack on the top
-        v = view("mask"); v.debugPlace(400f, onFloor = true); v.debugRelease(0f, -6000f)
+        // aimed above the top = thwack on the top (v10.26.1: only with Settings › "Throw on fast flick" on)
+        v = view("mask"); v.debugPlace(400f, onFloor = true); ChatHub.settings.flickThrow = false; v.debugRelease(0f, -6000f)
+        assertFalse("throws off: no thwack", v.debugImpact)
+        v = view("mask"); v.debugPlace(400f, onFloor = true); ChatHub.settings.flickThrow = true; v.debugRelease(0f, -6000f)
         assertTrue(v.debugImpact)
+        ChatHub.settings.flickThrow = false
         // Mask Man's sheet trick reappears exactly at a HIGH target, then falls and lands
         v = view("mask"); v.debugPlace(200f, onFloor = true); val g = v.debugXY[2]; v.debugRelease(900f, -2500f)
         val trip = v.debugSwipeTrip ?: error("no mask trip")
@@ -179,7 +182,9 @@ class V1024SwipeTest {
     @Test fun flickDownPancakesAndSuperboyHasNoJets() {
         val v = view("billa")
         v.debugPlace(400f, onFloor = false, y = v.debugXY[2] - 1000f)
+        ChatHub.settings.flickThrow = true
         v.debugRelease(0f, 6500f)
+        ChatHub.settings.flickThrow = false
         assertTrue("thrown down", v.debugImpact)
         // Superboy still flies his big curved swoop when swiped down (cape + speed streaks; no jets are drawn for him)
         val s = view("superboy"); s.debugPlace(300f, onFloor = false, y = 900f)
@@ -217,7 +222,9 @@ class V1024SwipeTest {
     @Test fun upwardThrowStillSplats() {
         val v = view("billa")
         v.debugPlace(400f, onFloor = false, y = v.debugXY[2] - 800f)
+        ChatHub.settings.flickThrow = true
         v.debugRelease(300f, -5200f)
+        ChatHub.settings.flickThrow = false
         assertTrue(v.debugImpact || v.debugSwipeTrip != null)
     }
 
