@@ -253,7 +253,7 @@ class MainActivity : Activity() {
         }
         val titleCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         titleCol.addView(TextView(this).apply {
-            text = "Set-Tai v10.22"
+            text = "Set-Tai v" + (runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: "")   // v10.25.1: never a stale hard-coded number
             textSize = 20f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
         })
         topActiveBadge = TextView(this).apply {

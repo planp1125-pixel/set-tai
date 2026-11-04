@@ -3712,6 +3712,7 @@ class MonkeyView(
         if (hovers) {
             val sp = hypot(fvx, fvy)
             if (upSwipeDown > 0f) {          // swipe down = touch down, with a big curved rocket flight (v6 real-device fix)
+                if (!hasJetPower()) { beginSmartFall(); return true }   // v10.25.1: non-jet bodies just drop and land (never up, never jets)
                 rocketLanding(upSwipeDown); return true
             }
             if (profile.ridesProp && livingOn && sp > ROCKET_SWIPE_DP * d && dragTravel >= ROCKET_SWIPE_MIN_TRAVEL_DP * d) {
@@ -4371,7 +4372,8 @@ class MonkeyView(
      */
     /** v10.25: only bodies with a jet / rocket power ever show jets or thrust (Anna, Superboy's landing kit, Rocket Girl, Kutti Satan if a jet power is on). */
     private fun hasJetPower(): Boolean = character.id == "armour" || character.id == "superboy" || character.id == "rocketgirl" ||
-        com.combo.monkeycompanion.brain.PowerPrefs.enabled(character).any { it.id == "jets" || it.id == "rocket" || it.id == "boost" } ||
+        // v10.25.1: Kutti Satan only while his rocket / jet power is actually firing (Angel never)
+        (character.id == "devil" && powerOn && controller.anim.power?.id.let { it == "jets" || it == "rocket" || it == "boost" }) ||
         (com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null && character.usesHoverJets)
     private fun drawLandingThrust(c: Canvas) {
         if (saver && !hovers) return
@@ -5981,6 +5983,7 @@ class MonkeyView(
         if (trip != null) {   // v10.24 swipe trip: scale / spin / fade about the feet, props behind
             val fr = swipeFrame
             val fx = ox + boxW / 2f; val fy = oy + boxH - groundPad
+            swipeFx.puffRed = character.id != "angel"
             swipeFx.drawBehind(canvas, fr, fx, fy, boxH * 0.7f, d, t)
             if (fr.sink > 0f) { canvas.clipRect(-10000f, -10000f, 100000f, fy + 2f * d); canvas.translate(0f, fr.sink) }
             if (fr.rot != 0f) canvas.rotate(fr.rot, fx, fy - boxH * 0.3f)
@@ -7737,6 +7740,8 @@ class MonkeyView(
     fun debugRelease(fvx: Float, fvy: Float, travel: Float = 200f) { upSwipeDown = -1f; dragTravel = travel; settleAfterDrag(fvx, fvy) }
     val debugXY get() = floatArrayOf(mx, my, ground(), sw(), boxW.toFloat(), boxH.toFloat())
     val debugImpact get() = impact != null
+    /** v10.25.1 tests: the phone's swipe-down release (upSwipeDown set, as onTouchEvent does). */
+    fun debugSwipeDown(v: Float) { upSwipeDown = v; dragTravel = 300f; settleAfterDrag(0f, v); upSwipeDown = -1f }
     fun debugBellySpray() = startTrunkSpray()
     val debugSpraying get() = sprayT >= 0f
     val debugHidden get() = hiddenTab

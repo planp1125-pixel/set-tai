@@ -165,3 +165,9 @@ Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real ca
 - **Mask Man's bedsheet trick** now reappears exactly where you swiped, even up high; then he falls and lands.
 - **Hollow Man** and the other swipe trips now play from a real fling (the old toss check used to grab the fling first).
 - **Skater Girl's swipe is a full skate show:** push off, ollie, kickflip, manual, heelflip, grind with sparks, wall ride, 360 and a landing pose, with the board flipping and wheels spinning.
+
+## v10.25.1 (code 61): version label, swipe-down and magic hops
+- **The app shows its real version** (it read a hard-coded "v10.22"; now it reads the installed version).
+- **Swipe down never sends a character up any more.** A hovering character without jets (Surfing Girl, Gajju, Angel, Kutti Satan…) just drops and lands where you let go. Before, every hovering character flew the big curved jet "touch-down" flight, which climbs first.
+- **No jets on Kutti Satan or Angel.** No jet landings either (only while Kutti Satan's rocket power is actually firing).
+- **Kutti Satan and Angel's own swipe:** they vanish in a puff of smoke (red for Kutti Satan, white-gold for Angel), reappear a hop further along the swipe, and repeat 3–5 times (depending on the distance) until they reach the spot.

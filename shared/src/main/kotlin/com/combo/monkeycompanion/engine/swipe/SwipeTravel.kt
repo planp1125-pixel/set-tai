@@ -22,6 +22,8 @@ object SwipeTravel {
         MOUSE_HOLE(1.9f, false, "mouse-hole dive"),
         SKATE(5.4f, false, "skate show"),
         RUN(1.3f, false, "run"),
+        /** v10.25.1 Kutti Satan (red smoke) / Angel (white-gold): vanish, reappear a hop further, 3-5 times, then land. */
+        MAGIC_HOPS(3.2f, true, "smoke-puff hops"),
     }
 
     /** null = this character keeps its old swipe (Anna, Superboy, Rocket Girl, Kutti Satan, Angel). */
@@ -34,7 +36,8 @@ object SwipeTravel {
         "billa" -> Style.POUNCE
         "chittu" -> Style.MOUSE_HOLE
         "skater" -> Style.SKATE
-        "armour", "superboy", "rocketgirl", "devil", "angel" -> null
+        "devil", "angel" -> Style.MAGIC_HOPS
+        "armour", "superboy", "rocketgirl" -> null
         else -> if (custom) Style.RUN else null
     }
 
@@ -56,6 +59,8 @@ object SwipeTravel {
         var sheet = 0f; var sheetFall = 0f; var holeA = 0f; var holeB = 0f; var curl = 0f; var splash = 0f; var sparkle = 0f
         /** Mouse-hole sink below the floor line (px; the view clips the body at the floor). */
         var sink = 0f
+        /** v10.25.1 smoke puff 0..1 (MAGIC_HOPS). */
+        var puff = 0f
         /** true once the body is at the target side (for fx that stay at the start before the swap). */
         var atTarget = false
     }
@@ -64,12 +69,14 @@ object SwipeTravel {
         var k = 0f; private set
         val done get() = k >= 1f
         val dir get() = if (x1 >= x0) 1f else -1f
+        /** MAGIC_HOPS: 3..5 hops by distance. */
+        val hops: Int get() = (kotlin.math.hypot(x1 - x0, y1 - y0) / (110f * u)).toInt().coerceIn(3, 5)
         fun step(dt: Float) { k = (k + dt / style.secs).coerceAtMost(1f) }
         fun seek(k: Float) { this.k = k.coerceIn(0f, 1f) }
 
         fun frame(f: Frame = Frame()): Frame {
             val k = k
-            f.scale = 1f; f.alpha = 1f; f.rot = 0f; f.sheet = 0f; f.sheetFall = 0f; f.holeA = 0f; f.holeB = 0f; f.curl = 0f; f.splash = 0f; f.sparkle = 0f; f.sink = 0f
+            f.scale = 1f; f.alpha = 1f; f.rot = 0f; f.sheet = 0f; f.sheetFall = 0f; f.holeA = 0f; f.holeB = 0f; f.curl = 0f; f.splash = 0f; f.sparkle = 0f; f.sink = 0f; f.puff = 0f
             fun lerpX(e: Float) = x0 + (x1 - x0) * e
             fun lerpY(e: Float) = y0 + (y1 - y0) * e
             when (style) {
@@ -135,6 +142,16 @@ object SwipeTravel {
                     f.y = lerpY(ss(0f, 0.2f, k)) - hop
                     f.rot = -dir * 18f * bell(0.1f, 0.22f, k) - dir * 14f * bell(0.4f, 0.5f, k) + dir * 65f * bell(0.7f, 0.82f, k)
                     f.splash = bell(0.93f, 1f, k)
+                    f.atTarget = true
+                }
+                Style.MAGIC_HOPS -> {   // each hop: fade out in a puff, jump on, fade back in out of a puff
+                    val n = hops; val q = (k * n).coerceAtMost(n - 0.0001f); val i = q.toInt(); val h = q - i
+                    val at = if (h < 0.45f) i.toFloat() / n else (i + 1f) / n
+                    f.x = lerpX(at); f.y = lerpY(at) - (if (h < 0.45f) 0f else 18f * u * bell(0.45f, 1f, h))
+                    f.alpha = when { h < 0.25f -> 1f; h < 0.45f -> 1f - ss(0.25f, 0.45f, h); h < 0.65f -> ss(0.45f, 0.65f, h); else -> 1f }
+                    f.scale = 1f - 0.25f * bell(0.2f, 0.7f, h)
+                    f.puff = maxOf(bell(0.2f, 0.55f, h), bell(0.42f, 0.8f, h))
+                    if (k >= 1f) { f.x = x1; f.y = y1; f.alpha = 1f; f.scale = 1f; f.puff = 0f }
                     f.atTarget = true
                 }
                 Style.RUN -> { f.x = lerpX(ss(0f, 1f, k)); f.y = lerpY(ss(0f, 0.4f, k)); f.atTarget = true }
@@ -204,6 +221,7 @@ object SwipeTravel {
                     if (k > 0.95f) { p.armLRaise = 160f; p.armRRaise = 160f; p.eyesHappy = 1f }         // landing pose
                     p.mouthSmile = 1f
                 }
+                Style.MAGIC_HOPS -> { p.armLRaise = 120f; p.armRRaise = 120f; p.mouthSmile = 1f }
                 Style.RUN -> {
                     p.legLSwing = 38f * sin(t * 16f); p.legRSwing = -38f * sin(t * 16f)
                     p.armLRaise = 30f - 30f * sin(t * 16f); p.armRRaise = 30f + 30f * sin(t * 16f); p.bodyRot = 8f

@@ -31,6 +31,6 @@ class PowerPickerTest {
         assertEquals(listOf(VanishPortalPower.id, "fireball"), PowerPrefs.enabled(d).map { it.id })
         assertTrue(Landings.pool("devil", false).none { it.first == Landings.Style.JETS || it.first == Landings.Style.ROCKET_ARC })
         PowerPrefs.store = { if (it == "devil") setOf("boost") else null }
-        assertTrue(Landings.pool("devil", false).any { it.first == Landings.Style.JETS })
+        assertTrue(Landings.pool("devil", false).none { it.first == Landings.Style.JETS })   // v10.25.1: no jet landings for Kutti Satan
     }
 }

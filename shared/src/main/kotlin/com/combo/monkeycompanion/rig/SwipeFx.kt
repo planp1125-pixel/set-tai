@@ -37,7 +37,19 @@ class SwipeFx {
     }
 
     /** In front of the body: sheet, curl lip, spray, sparkles, dust. */
+    /** v10.25.1 smoke puff colour for MAGIC_HOPS (red = Kutti Satan, white/gold = Angel). */
+    var puffRed = true
     fun drawFront(c: Canvas, f: SwipeTravel.Frame, cx: Float, fy: Float, bodyH: Float, u: Float, t: Float, dir: Float) {
+        if (f.puff > 0.01f) {
+            val a = f.puff; val cy = fy - bodyH * 0.45f
+            for (i in 0 until 9) {
+                val ang = i * 0.698f + t * 1.5f; val d = (14f + 26f * a) * u
+                fill.color = if (puffRed) (if (i % 3 == 0) Color.rgb(0x9E, 0x0B, 0x18) else Color.rgb(0xE5, 0x1C, 0x2A)) else (if (i % 3 == 0) Color.rgb(0xF5, 0xC2, 0x42) else Color.rgb(0xFF, 0xFC, 0xF4))
+                fill.alpha = (215 * a).toInt(); c.drawCircle(cx + cos(ang) * d, cy + sin(ang) * d * 0.75f, (16f + 6f * sin(i * 1.9f)) * u * (0.6f + 0.4f * a), fill)
+            }
+            fill.alpha = 255
+            for (i in 0 until 5) { val ang = i * 1.257f + t * 2f; star(c, cx + cos(ang) * 46f * u * a, cy + sin(ang) * 36f * u * a, 5f * u * a, if (puffRed) Color.rgb(0xE5, 0x1C, 0x2A) else Color.rgb(0xF5, 0xC2, 0x42)) }
+        }
         if (f.curl > 0.01f) {
             val a = f.curl
             line.color = Color.argb((235 * a).toInt(), 0xF2, 0xFB, 0xFF); line.strokeWidth = 4f * u

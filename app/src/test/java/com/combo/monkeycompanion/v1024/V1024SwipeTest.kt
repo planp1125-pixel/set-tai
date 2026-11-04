@@ -61,7 +61,9 @@ class V1024SwipeTest {
     @Test fun styles() {
         assertEquals(SwipeTravel.Style.SURF, SwipeTravel.styleFor("surfer", false))
         assertEquals(SwipeTravel.Style.SKATE, SwipeTravel.styleFor("skater", false))
-        for (id in listOf("armour", "superboy", "rocketgirl", "devil", "angel")) assertNull(id, SwipeTravel.styleFor(id, false))
+        for (id in listOf("armour", "superboy", "rocketgirl")) assertNull(id, SwipeTravel.styleFor(id, false))
+        assertEquals(SwipeTravel.Style.MAGIC_HOPS, SwipeTravel.styleFor("devil", false)); assertEquals(SwipeTravel.Style.MAGIC_HOPS, SwipeTravel.styleFor("angel", false))
+        for (id in listOf("surfer", "gajju", "angel", "devil", "skater", "hollowman")) assertTrue(id, Landings.pool(id, false).none { it.first == Landings.Style.JETS || it.first == Landings.Style.SCREAM_JETS || it.first == Landings.Style.ROCKET_ARC })
         assertEquals(SwipeTravel.Style.RUN, SwipeTravel.styleFor("custom_x", true))
         val ids = listOf("monkey", "hollowman", "gajju", "mask", "billa", "chittu", "surfer", "skater").map { SwipeTravel.styleFor(it, false) }
         assertEquals(ids.size, ids.toSet().size)   // each one unique
@@ -134,6 +136,29 @@ class V1024SwipeTest {
         assertEquals(trip.x1, v.debugXY[0], 1.5f); assertEquals(trip.y1, v.debugXY[1], 30f)
         n = 0; while (v.debugXY[1] < g - 2f && n++ < 600) v.debugFrames(1)
         assertEquals(g, v.debugXY[1], 3f)
+    }
+
+    @Test fun magicHopsAndSwipeDown() {
+        for (id in listOf("devil", "angel")) {
+            val v = view(id); v.debugPlace(40f, onFloor = false, y = 900f); v.debugRelease(2250f, -300f)
+            val trip = v.debugSwipeTrip ?: error("$id no hop trip")
+            assertEquals(SwipeTravel.Style.MAGIC_HOPS, trip.style); assertTrue(trip.hops in 3..5)
+            var puffs = 0; var n = 0; var was = false
+            while (v.debugSwipeTrip != null && n++ < 400) { v.debugFrames(1); val p = trip.frame().puff > 0.5f; if (p && !was) puffs++; was = p }
+            assertTrue("$id puffs $puffs", puffs >= 3)
+            assertEquals(trip.x1, v.debugXY[0], 1.5f)
+            assertEquals(0, v.debugLandFlames)
+        }
+        // swipe DOWN on a hovering non-jet character: drops and lands, never flies up
+        for (id in listOf("surfer", "angel", "devil")) {
+            val v = view(id); v.debugPlace(300f, onFloor = false, y = 900f)
+            v.debugSwipeDown(3000f)
+            var minY = 900f; var n = 0
+            while (n++ < 1200 && v.debugXY[1] < v.debugXY[2] - 2f) { v.debugFrames(1); minY = minOf(minY, v.debugXY[1]) }
+            assertTrue("$id went up to $minY", minY > 900f - 5f)
+            assertEquals(id, v.debugXY[2], v.debugXY[1], 4f)
+            assertEquals(0, v.debugLandFlames)
+        }
     }
 
     @Test fun upwardThrowStillSplats() {
