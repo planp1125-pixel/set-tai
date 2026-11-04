@@ -51,13 +51,13 @@ class LandingFlightTest {
         assertEquals(Finish.FIST, LandingFlight.finish("superboy"))
         assertEquals(Finish.HOVER_THUD, LandingFlight.finish("armour"))
         assertEquals(Finish.CRASH, LandingFlight.finish("monkey"))
-        for (id in listOf("superboy", "armour", "monkey")) {
+        for (id in listOf("superboy", "armour")) {
             val pool = Landings.allowed(id, false, true, false, true)
             val arc = pool.first { it.first == Landings.Style.ROCKET_ARC }.second
             assertTrue("$id rocket arcs carry real weight", arc * 5 >= pool.sumOf { it.second })
         }
         // the monkey keeps its beloved leg-fire jets (scream-then-jets) with good weight
-        assertTrue(Landings.pool("monkey", false).first { it.first == Landings.Style.SCREAM_JETS }.second >= 3)
+        assertTrue(Landings.pool("monkey", false).none { it.first == Landings.Style.SCREAM_JETS })   // v10.25.1: no jets for Settai
         // power landings ~half or more for the flyers, no repeats in a row
         val rnd = Random(9); var last: Landings.Style? = null
         repeat(300) {

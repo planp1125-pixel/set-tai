@@ -35,7 +35,7 @@ class LandingsTest {
         val seen = HashSet<Style>()
         repeat(800) { last = Landings.pick(opts, last, rnd); seen.add(last!!) }
         assertEquals(opts.map { it.first }.toSet(), seen)
-        assertEquals(10, seen.size)
+        assertEquals(7, seen.size)   // v10.25.1: no jet / rocket-arc landings for Settai
     }
 
     @Test fun perCharacter() {
@@ -84,7 +84,7 @@ class LandingsTest {
 
     /** v4.5 bug: power landings never showed. Now about half of all landings are powered. */
     @Test fun powerLandingsAreFrequent() {
-        for ((id, umb, min) in listOf(Triple("monkey", false, 0.45f), Triple("superboy", false, 0.7f), Triple("armour", false, 0.6f))) {
+        for ((id, umb, min) in listOf(Triple("superboy", false, 0.7f), Triple("armour", false, 0.6f))) {
             val rnd = Random(11); var last: Style? = null; var power = 0
             val n = 3000
             repeat(n) { last = Landings.pick(Landings.allowed(id, umb, true, false, id == "monkey"), last, rnd); if (last!!.power) power++ }
@@ -122,6 +122,7 @@ class LandingsTest {
         val rnd = Random(9); var last: Style? = null
         val seen = HashSet<Style>()
         repeat(400) { last = Landings.decide("monkey", false, true, false, true, 2000f, 3f, last, 2400f, rnd = rnd).style; seen.add(last!!) }
-        assertTrue(seen.containsAll(listOf(Style.CAPE_FLOAT, Style.JETS, Style.NINJA_FLIP, Style.SCREAM_JETS)))
+        assertTrue(seen.containsAll(listOf(Style.CAPE_FLOAT, Style.NINJA_FLIP)))
+        assertTrue(seen.none { it == Style.JETS || it == Style.SCREAM_JETS || it == Style.ROCKET_ARC })   // v10.25.1
     }
 }

@@ -3971,7 +3971,7 @@ class MonkeyView(
      * first, Anna jet-brake + thud). Battery saver only trims particles; the flight and the flames stay.
      */
     private fun rocketLanding(v: Float) {
-        if (character.id !in Landings.ARC_IDS) { beginSmartFall(); return }   // v10.25.1: no looping arc for the others
+        if (character.id !in Landings.ARC_IDS) { beginSmartFall(true, Landings.Style.SIMPLE, "you swiped down"); return }   // v10.25.1: straight drop, no looping arc
         val fx = mx; val fy = my
         beginFall()
         mx = fx; my = fy
