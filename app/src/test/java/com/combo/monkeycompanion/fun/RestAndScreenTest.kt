@@ -159,6 +159,9 @@ class RestAndScreenTest {
 
     @Test fun neverRestMeansNever() {
         val (v, _) = newView(0)
+        // v10.27: real 16 ms frames. Since v10.26.2 auto-powers no longer get stuck, so over 5 idle minutes the character
+        // really flies; at Robolectric's 1 ms "full speed" frame that was ~100k+ frames and timed the CI out.
+        v.debugQuiet = true
         v.debugFrames(2)
         shadowOf(android.os.Looper.getMainLooper()).idleFor(Duration.ofMinutes(5))
         assertFalse(v.debugHidden)
