@@ -173,6 +173,10 @@ class AppSettings(ctx: Context) {
     var flickThrow: Boolean
         get() = p.getBoolean("flick_throw", false)
         set(v) = p.edit().putBoolean("flick_throw", v).apply()
+    /** v10.27 Touch Feel: vibrations when you hold, shake, pet, poke, sling or land a character. */
+    var touchFeel: Boolean
+        get() = p.getBoolean("touch_feel", true)
+        set(v) = p.edit().putBoolean("touch_feel", v).apply()
 
     /** v10.9 Settings › "Double-tap for power": double-tap a character = one of its powers (random, never the same twice in a row). Off = double-tap opens chat (v10.8). */
     var doubleTapPower: Boolean

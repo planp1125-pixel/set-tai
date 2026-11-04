@@ -194,3 +194,14 @@ Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real ca
 - **Fixed: picking a power from the long-press menu did nothing.** After a swipe trip (above all a flyer resting up at the top after a tour), a power was put on hold "until she lands", and the trip or a grab then cancelled that landing. The held power never ran, and it blocked every later power too.
 - Now a power you pick (menu or double-tap) **starts right away from where the character is**: up high, mid-trip, mid-air or on a wall. A held power that loses its landing is dropped, and nothing can block powers for more than 8 seconds.
 - New test: every character's menu power starts mid-trip, after a tour and mid-air.
+
+## v10.27 (code 65): Touch Feel — feel them in your hand
+Every character now feels like a little body in your hand (the phone's vibration). Switch it off in **Settings › Touch feel**.
+- **Weight:** picking one up gives a bump that matches its weight. Gajju is a deep heavy thud, Chittu a tiny tick. While you carry them you feel small ticks (spaced out and deeper for heavy ones).
+- **Slingshot:** long-press (the menu opens), then **pull**. A slingshot fork appears where it stood, the band stretches, and you feel a click for every notch. Let go: a snap, and it flies the other way (SPLAT / THWACK / PANCAKE). Rocket Girl's rocket blasts off. A tiny pull just puts it back. Works even with "Throw on fast flick" off.
+- **Heartbeat:** long-press and **keep holding still** about a second more. The menu goes, a red heart beats on the chest and you feel "ba-dum". It's slow when asleep and fast when you've just scared them (thrown or shaken). Lift your finger to stop.
+- **Purr:** hold and gently stroke back and forth. They stay put, little hearts float up, and the phone purrs (Billa purrs, Chittu squeaks, Kutti Satan pretends he doesn't like it).
+- **Tickle:** quick little rubs make them giggle with fluttery buzzes.
+- **Shake:** shake one hard and the phone rattles. Let go after a good shake and stars spin round their head (dizzy).
+- **Pokes:** belly = soft squish, head / nose = tiny boop, anywhere else = a light tick.
+- **Landings:** every landing is a thump: bigger from higher up and for heavier characters (falls, hero landings, power landings, wall splats).

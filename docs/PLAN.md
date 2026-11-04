@@ -179,12 +179,14 @@ Balance (agreed 3 Nov): about **80% everyday phone moments** (charging, notifica
 | v10.23 | New character **Angel** (Kutti Satan's partner) | ✅ (Grok) |
 | v10.24–v10.25.1 | Own swipe trip per character, Skater Girl, no jets for non-jet characters | ✅ (Grok) |
 | **v10.26** | **One swipe rule**: normal swipe = travel with own power; up/down on flyers = tour of the screen (Satan teleport hops, Angel wings, Gajju's clumsy Dumbo flight, surfer); fast flick (felt as a tick) = splat / thwack / pancake or hide at a close edge; jets only for Armour Anna, Superboy cape flight, Rocket Girl rocket | ✅ built, to test |
-| v10.27 | Action Library part 1 (feelings, laughs, looks, moving, crashes) for all characters + per-character styles + tests | next |
-| v10.28 | Everyday moments upgraded with the actions (charging, notification roasts, battery, alarms, hello, bedtime) | |
-| v10.29 | Action Library part 2 (chase, magic, props, together) + AI chat tags use the library | |
-| v10.30 | Drama script player + checker; first scripted episodes (Billa & Chittu, Kutti Satan & Angel); double-tap rule (§5) | |
-| v10.31 | Remaining pairs' props + one episode per pair | |
-| v10.32 | Weekly delivery (index, download, "New episode!" badge, settings) | |
+| v10.26.2 | Long-press powers always start (a stuck "wait until landed" power blocked every power) | ✅ built, to test |
+| **v10.27** | **Touch Feel**: weight when picked up (Gajju heavy thud, Chittu light tick), drag ticks, slingshot (long-press + pull: clicks, snap, flies), heartbeat (keep holding), purr when petted, tickle giggles, shake rattle + dizzy stars, belly squish / nose boop, landing thumps; setting to switch off | ✅ built, to test |
+| v10.28 | Action Library part 1 (feelings, laughs, looks, moving, crashes) for all characters + per-character styles + tests | next |
+| v10.29 | Everyday moments upgraded with the actions (charging, notification roasts, battery, alarms, hello, bedtime) | |
+| v10.30 | Action Library part 2 (chase, magic, props, together) + AI chat tags use the library | |
+| v10.31 | Drama script player + checker; first scripted episodes (Billa & Chittu, Kutti Satan & Angel); double-tap rule (§5) | |
+| v10.32 | Remaining pairs' props + one episode per pair | |
+| v10.33 | Weekly delivery (index, download, "New episode!" badge, settings) | |
 | later | Drama Studio helper; Play Store launch; Billing / Episode Pass | when weekly viewers are steady |
 
 ## 13. Risks and answers

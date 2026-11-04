@@ -619,6 +619,11 @@ class SettingsActivity : Activity() {
             setTextColor(brown); isChecked = s.flickThrow
             setOnCheckedChangeListener { _, c -> s.flickThrow = c }
         }
+        val touchFeel = CheckBox(this).apply {
+            text = "Touch feel: feel them in your hand. A light or heavy bump when you pick one up, a rattle when you shake, a purr when you pet, a heartbeat when you keep holding, clicks when you pull the slingshot, a thump when they land."
+            setTextColor(brown); isChecked = s.touchFeel
+            setOnCheckedChangeListener { _, c -> s.touchFeel = c }
+        }
         val dtPower = CheckBox(this).apply {
             text = "Double-tap for power: double-tap a character and it fires one of its powers right away (a different one each time). Turn off to make double-tap open the chat like before."
             setTextColor(brown); isChecked = s.doubleTapPower
@@ -638,7 +643,7 @@ class SettingsActivity : Activity() {
         return card(
             "Rest & battery",
             text("Auto-rest: if you don't play with Settai for a while, it hides behind the nearest edge (just a tab). Tap the tab to call it back, double-tap to chat. It also pops out for low battery, overheating and timers.", 12f, color = soft),
-            restSp, unlock, saver, gags, smooth, living, sfx, flickThrow, dtPower, chatBtn, fabMode,
+            restSp, unlock, saver, gags, smooth, living, sfx, touchFeel, flickThrow, dtPower, chatBtn, fabMode,
             text("Energy", 13f, bold = true), energy,
             text("Changes apply within a minute.", 12f, color = soft),
         )

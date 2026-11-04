@@ -60,6 +60,8 @@ import com.combo.monkeycompanion.rig.Animations.Ent
 import com.combo.monkeycompanion.rig.Climber
 import com.combo.monkeycompanion.rig.MonkeyRenderer
 import com.combo.monkeycompanion.engine.impact.ImpactPlay
+import com.combo.monkeycompanion.engine.feel.TouchFeel
+import com.combo.monkeycompanion.engine.feel.RubTracker
 import com.combo.monkeycompanion.rig.MonkeyRig
 import com.combo.monkeycompanion.rig.Pose
 import com.combo.monkeycompanion.speech.CloudBubble
@@ -2955,6 +2957,7 @@ class MonkeyView(
                 if (st0 == Landings.Style.PEEL_SLIDE) { mx = (mx + landDir * 340f * d * dt).coerceIn(0f, max(0f, sw() - boxW)) }
                 landParticles(st0)
             }
+            fallPeakV = max(fallPeakV, vy)
             val ev = pb.fallMove(dt, ground(), st0 == Landings.Style.CANNONBALL && !landBounced, d, physics)
             if (ev == StepEvent.BOUNCED) {
                 // Cannonball: one big squashy bounce first.
@@ -2962,7 +2965,7 @@ class MonkeyView(
                 landPuff(Landings.Style.CANNONBALL); performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
             } else if (ev == StepEvent.LANDED) {
                 surf = screenSurf(SK.FLOOR); clampToSurf()
-                performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                feelThud(fallPeakV / (2400f * d)) { performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY) }; fallPeakV = 0f
                 if (st0 != Landings.Style.SIMPLE) landPuff(st0)
                 if (landPicked != null) logPlayed(null)
                 landStyle = Landings.Style.SIMPLE
@@ -4338,7 +4341,7 @@ class MonkeyView(
         val p = arc ?: return
         my = ground(); vy = 0f; arcRot = 0f
         arcPhase(3)
-        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        feelThud(0.75f) { performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY) }
         if (!saver) {
             val f = feetScreen(tmpPt)
             val P = com.combo.monkeycompanion.rig.Particles
@@ -5042,6 +5045,7 @@ class MonkeyView(
     // ---------------- v4 FX window ----------------
     private var fxHosted = false
     private val fxDraw: (Canvas) -> Unit = { c ->
+        if (slingOn) drawSling(c)
         if (fireworks.active || skyActive) {
             c.save()
             if (!hiddenTab) c.clipOutRect(winX.toFloat(), winY.toFloat(), (winX + winW).toFloat(), (winY + winH).toFloat())
@@ -5171,7 +5175,7 @@ class MonkeyView(
     private fun syncFx() {
         val h = host ?: return
         if (wp) return
-        val need = powerOn || particles.active || fireworks.active || skyActive || balls.looseActive || ScreenFxHook.active() || momentFxOn() || vineOn || (v5On && stage.active)
+        val need = slingOn || powerOn || particles.active || fireworks.active || skyActive || balls.looseActive || ScreenFxHook.active() || momentFxOn() || vineOn || (v5On && stage.active)
         if (need && !fxHosted) fxHosted = h.showFx(fxDraw)
         else if (!need && fxHosted) { h.showFx(null); fxHosted = false }
         if (fxHosted) h.invalidateFx()
@@ -5203,6 +5207,7 @@ class MonkeyView(
     override fun onDraw(canvas: Canvas) {
         val c0 = Debug.threadCpuTimeNanos()
         drawAll(canvas)
+        if (!hiddenTab) drawFeel(canvas)
         EnergyMeter.addDraw(Debug.threadCpuTimeNanos() - c0)
     }
 
@@ -5888,7 +5893,7 @@ class MonkeyView(
                 if (my >= ground()) {
                     my = ground(); ip.landed()
                     feetScreen(tmpPt); impactPuff(tmpPt[0], tmpPt[1], 0f, 6)
-                    performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                    feelThud(0.6f) { performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY) }
                 }
             }
             else -> Unit
@@ -5906,7 +5911,7 @@ class MonkeyView(
     private fun impactHit(ip: com.combo.monkeycompanion.engine.impact.ImpactPlay, k: com.combo.monkeycompanion.engine.impact.ImpactPlay.Kind, side: Int) {
         if (!ip.hit(k, side)) return
         ivx = 0f; ivy = 0f
-        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+        feelThud(1f) { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) }
         if (!silent) runCatching { com.combo.monkeycompanion.audio.Sfx.play(context, com.combo.monkeycompanion.audio.Sfx.S.CRACK, 0.35f) }
         // contact point in screen pixels (for the dust) and in view pixels (for the comic word)
         val (vx0, vy0) = when (k) {
@@ -6226,7 +6231,7 @@ class MonkeyView(
             performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             longPressed = true
             BSN.record("you're holding me", BSN.Feeling.HELD)
-            if (host != null && !wp) openMenu()   // v4.3: long-press = options menu (✕ Quit lives there)
+            if (host != null && !wp) { openMenu(); ui.postDelayed(heartHold, TouchFeel.HEART_HOLD_MS) }   // v4.3: long-press = options menu (✕ Quit lives there); v10.27 keep holding = heartbeat
             else { say(com.combo.monkeycompanion.brain.Gestures.coachLine(false), 3000L); hintUntil = 4f }
         }
     }
@@ -6367,6 +6372,222 @@ class MonkeyView(
     }
 
     private var powerQueuedAt = 0L
+
+    // ---------------- v10.27 Touch Feel: feel them in your hand (see engine/feel/TouchFeel) ----------------
+    private val feelW: Float get() = TouchFeel.weight(character.id, character.heavy)
+    private fun feelOn() = host != null && !wp && Feel.on()
+    private fun buzz(b: com.combo.monkeycompanion.engine.feel.Buzz?) { if (host != null && !wp) Feel.play(context, b) }
+    /** A landing / hit felt by weight; with Touch feel off, the old system haptic. */
+    private fun feelThud(force: Float, fallback: () -> Unit) {
+        if (feelOn()) buzz(TouchFeel.thump(force, feelW)) else fallback()
+    }
+    private val rub = RubTracker()
+    private var dragTickAcc = 0f
+    private var feelLastX = 0f; private var feelLastY = 0f
+    private var petting = false; private var tickling = false
+    private var feelLineN = 0
+    private var slingOn = false; private var slingNotch = 0
+    private var heartBeatOn = false; private var heartBeatAt = 0L; private var heartBpm = 72
+    private var scaredUntil = 0L
+    private var dizzyUntil = 0L
+    private var petHeartsUntil = 0L
+    private var fallPeakV = 0f
+    private val feelPt = FloatArray(2)
+    private val feelText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+    private val slingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
+    private fun pickLine(xs: List<String>): String = xs[(feelLineN++).mod(xs.size)]
+
+    /** Long-press (menu opens), then keep holding still: you feel the heartbeat until you lift your finger. */
+    private val heartHold = Runnable { if (tracking && longPressed && !dragging && host != null && !wp) startHeartbeat() }
+    private val heartTick = object : Runnable {
+        override fun run() {
+            if (!heartBeatOn) return
+            buzz(TouchFeel.heartbeat())
+            heartBeatAt = SystemClock.uptimeMillis(); invalidate()
+            ui.postDelayed(this, 60_000L / heartBpm.coerceAtLeast(30))
+        }
+    }
+
+    private fun startHeartbeat() {
+        closeMenu()
+        heartBeatOn = true
+        val scared = SystemClock.uptimeMillis() < scaredUntil
+        val asleep = controller.isAsleep
+        heartBpm = TouchFeel.bpm(asleep, scared, feelW)
+        say(when {
+            scared -> "💓💓 My heart is racing… you scared me!"
+            asleep -> "💤 (ba… dum… ba… dum…)"
+            else -> pickLine(listOf("💓 Can you feel it? Ba-dum, ba-dum…", "💓 That's my heart. It likes you.", "💓 Shh… listen. Ba-dum."))
+        }, 3000L)
+        BSN.record("you held me close and felt my heartbeat", BSN.Feeling.HELD)
+        ui.removeCallbacks(heartTick); heartTick.run()
+        if (!running && live && !paused) start()
+    }
+
+    private fun stopHeartbeat() {
+        if (!heartBeatOn) return
+        heartBeatOn = false; ui.removeCallbacks(heartTick); invalidate()
+    }
+
+    /** Every finger move while held: drag ticks by weight, slingshot notches, shake rattles, petting purrs, tickles. */
+    private fun feelMove(e: MotionEvent) {
+        if (host == null || wp) return
+        val now = SystemClock.uptimeMillis()
+        val step = hypot(e.rawX - feelLastX, e.rawY - feelLastY); feelLastX = e.rawX; feelLastY = e.rawY
+        if (slingOn) {
+            val pull = hypot(mx - downMx, my - downMy) / d
+            val n = TouchFeel.notch(pull)
+            if (n > slingNotch) buzz(TouchFeel.slingTick(TouchFeel.tension(pull)))
+            slingNotch = n
+            syncFx()
+            return
+        }
+        when (rub.feed(e.rawX / d, e.rawY / d, e.eventTime / 1000f)) {
+            RubTracker.Kind.SHAKE -> {
+                buzz(TouchFeel.rattle(rub.shakeLevel)); scaredUntil = now + 20_000L
+                if (rub.shakes == 3) say(pickLine(listOf("Whoa whoa WHOA!! 😵", "Stop shaking meee!! 🌀", "My brain is rattling!! 🫨")), 1600L)
+            }
+            RubTracker.Kind.STROKE -> if (!tickling) {
+                if (!petting && rub.strokes >= 2) startPetting()
+                if (petting) { buzz(TouchFeel.purr()); petHeartsUntil = now + 1600L; if (controller.state != MonkeyState.HAPPY_PAT) controller.play(MonkeyState.HAPPY_PAT, 1.4f) }
+            }
+            RubTracker.Kind.TICKLE -> if (!petting) {
+                if (!tickling && rub.tickles >= 2) startTickle()
+                if (tickling) { buzz(TouchFeel.tickle()); if (controller.state != MonkeyState.GIGGLE) controller.play(MonkeyState.GIGGLE, 1.4f) }
+            }
+            RubTracker.Kind.NONE -> Unit
+        }
+        if (!petting && !tickling) {
+            dragTickAcc += step / d
+            val st = TouchFeel.dragStepDp(feelW)
+            if (dragTickAcc >= st) { dragTickAcc = 0f; if (rub.shakeLevel < 0.1f) buzz(TouchFeel.dragTick(feelW)) }
+        }
+    }
+
+    private fun startPetting() {
+        petting = true; mx = downMx; my = downMy; clampPosition()
+        say(when (character.id) {
+            "billa" -> "Purrrrr… 😻"
+            "chittu" -> "Hee hee… squeak 🐭💕"
+            "gajju" -> "Mmm… happy trunk wiggle 🐘💕"
+            "devil" -> "Hmph… okay… that's actually nice 😈💕"
+            "armour" -> "Purr… I mean… systems: happy 🤖💕"
+            else -> pickLine(listOf("Ahh… that's nice 🥰", "More, more… 💕", "Mmm, so cosy 🥰"))
+        }, 2200L)
+        BSN.record("you petted me gently", BSN.Feeling.COZY)
+    }
+
+    private fun startTickle() {
+        tickling = true; mx = downMx; my = downMy; clampPosition()
+        say(pickLine(listOf("Hahaha stop!! 🤣", "Hee hee hee, that tickles!! 😆", "No no no, not there!! 🤭")), 1800L)
+        BSN.record("you tickled me", BSN.Feeling.EXCITED)
+    }
+
+    private fun endRub() { petting = false; tickling = false }
+
+    private fun shookDizzy() {
+        dizzyUntil = SystemClock.uptimeMillis() + 2800L
+        say(pickLine(listOf("Whoa… the room is spinning 😵‍💫", "Two of you… three of you… 😵‍💫", "I see stars ⭐😵")), 2400L)
+        BSN.record("you shook me really hard", BSN.Feeling.DIZZY)
+    }
+
+    /** Long-press, then pull: the character becomes the stone of a slingshot. */
+    private fun beginSling() {
+        slingOn = true; slingNotch = 0
+        say(pickLine(listOf("Pull back… and let go! 🎯", "Slingshot?! Okay… aim well 😬", "Not too hard!! 😆")), 1600L)
+        syncFx()
+    }
+
+    private fun releaseSling() {
+        dragging = false; slingOn = false
+        val pdx = mx - downMx; val pdy = my - downMy
+        val pull = hypot(pdx, pdy) / d
+        dragTravel = 0f; upSwipeDown = -1f
+        syncFx()
+        if (pull < TouchFeel.SLING_MIN_DP) {   // hardly pulled: back where it was
+            mx = downMx; my = downMy; clampPosition()
+            if (hideAnim < 0f) controller.onDragEnd(settleAfterDrag(0f, 0f))
+            return
+        }
+        val sp = TouchFeel.launchSpeedDp(pull) * d
+        val inv = 1f / max(1f, hypot(pdx, pdy))
+        val fvx = -pdx * inv * sp; val fvy = -pdy * inv * sp
+        buzz(TouchFeel.slingSnap(TouchFeel.tension(pull)))
+        scaredUntil = SystemClock.uptimeMillis() + 20_000L
+        BSN.record("you shot me from a slingshot", BSN.Feeling.WHOOSH)
+        feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.THROW, force = TouchFeel.tension(pull), extra = "slingshot")
+        val flew = if (profile.ridesProp) { startRocketFly(fvx, fvy, sp); true } else tryToss(fvx, fvy, force = true)
+        if (!flew) { if (hideAnim < 0f) controller.onDragEnd(settleAfterDrag(0f, 0f)); return }
+        controller.onDragEnd(true)
+    }
+
+    /** A tap: belly = soft squish, head / nose = tiny boop, anywhere else = a light tick. */
+    private fun feelPoke(part: com.combo.monkeycompanion.engine.touch.BodyPart) {
+        if (!feelOn()) return
+        buzz(when (part) {
+            com.combo.monkeycompanion.engine.touch.BodyPart.BELLY -> TouchFeel.squish(feelW)
+            com.combo.monkeycompanion.engine.touch.BodyPart.HEAD, com.combo.monkeycompanion.engine.touch.BodyPart.EAR, com.combo.monkeycompanion.engine.touch.BodyPart.TRUNK -> TouchFeel.boop()
+            else -> TouchFeel.tap()
+        })
+    }
+
+    /** Slingshot fork + bands (screen pixels, effects window). */
+    private fun drawSling(c: Canvas) {
+        val ax = downMx + boxW / 2f; val ay = downMy + boxH * 0.62f
+        val cx = mx + boxW / 2f; val cy = my + boxH * 0.6f
+        val tn = TouchFeel.tension(hypot(mx - downMx, my - downMy) / d)
+        slingPaint.color = Color.rgb(0x6B, 0x44, 0x23); slingPaint.strokeWidth = 8f * d
+        c.drawLine(ax, ay + 64f * d, ax, ay + 18f * d, slingPaint)
+        c.drawLine(ax, ay + 18f * d, ax - 26f * d, ay - 10f * d, slingPaint)
+        c.drawLine(ax, ay + 18f * d, ax + 26f * d, ay - 10f * d, slingPaint)
+        slingPaint.color = Color.rgb(0xD0, 0x3A, 0x2A); slingPaint.strokeWidth = (5f - 2.5f * tn) * d
+        c.drawLine(ax - 26f * d, ay - 10f * d, cx, cy, slingPaint)
+        c.drawLine(ax + 26f * d, ay - 10f * d, cx, cy, slingPaint)
+    }
+
+    /** Heartbeat heart on the chest, petting hearts, dizzy stars (view pixels). */
+    private fun drawFeel(c: Canvas) {
+        if (!heartBeatOn && petHeartsUntil == 0L && dizzyUntil == 0L) return
+        val now = SystemClock.uptimeMillis()
+        var again = false
+        if (heartBeatOn) {
+            val k = (1f - (now - heartBeatAt) / 380f).coerceIn(0f, 1f)
+            val r = (13f + 8f * k) * d
+            heartShape(ox + boxW / 2f, oy + boxH * 0.56f, r)
+            heartPaint.style = Paint.Style.FILL; heartPaint.color = Color.rgb(0xE0, 0x10, 0x2A); heartPaint.alpha = (150 + 100 * k).toInt()
+            c.drawPath(heartPath, heartPaint)
+            again = true
+        }
+        if (now < petHeartsUntil || now < dizzyUntil) { rig.headTop(feelPt); feelPt[0] += sinkX }
+        if (now < petHeartsUntil) {
+            for (i in 0 until 3) {
+                val ph = ((now / 1000f) * 0.9f + i / 3f) % 1f
+                val x = feelPt[0] + (i - 1) * 18f * d + sin(ph * 6f + i) * 4f * d
+                val y = feelPt[1] - 8f * d - ph * 46f * d
+                heartShape(x, y, 6f * d)
+                heartPaint.style = Paint.Style.FILL; heartPaint.color = Color.rgb(0xFF, 0x4F, 0x7B); heartPaint.alpha = ((1f - ph) * 230).toInt()
+                c.drawPath(heartPath, heartPaint)
+            }
+            again = true
+        } else petHeartsUntil = 0L
+        if (now < dizzyUntil) {
+            feelText.textSize = 15f * d; feelText.color = Color.rgb(0xFF, 0xD2, 0x3C)
+            for (i in 0 until 3) {
+                val a = now / 1000f * 5f + i * 2.094f
+                c.drawText("★", feelPt[0] + kotlin.math.cos(a) * 24f * d, feelPt[1] - 4f * d + sin(a) * 7f * d, feelText)
+            }
+            again = true
+        } else dizzyUntil = 0L
+        if (again) postInvalidateOnAnimation()
+    }
+
+    // v10.27 test hooks
+    val debugSling get() = slingOn
+    val debugHeartbeat get() = heartBeatOn
+    val debugPetting get() = petting
+    val debugTickling get() = tickling
+    val debugDizzy get() = SystemClock.uptimeMillis() < dizzyUntil
+    val debugImpactOn get() = impact != null || falling || rocketFlyOn
     private fun fracX(px: Float) = (px / max(1f, sw() - boxW)).coerceIn(0f, 1f)
     private fun fracY(py: Float) = ((ground() - py) / max(1f, ground() - topY())).coerceIn(0f, 1f)
     private fun pxX(f: Float) = f * max(0f, sw() - boxW)
@@ -6446,7 +6667,7 @@ class MonkeyView(
         }
         if (ph == PowerPhase.LAND && k >= 0.5f && !landSaid) {
             landSaid = true
-            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)   // thud
+            feelThud(0.55f) { performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY) }   // thud (v10.27: felt by weight)
             if (flight.lastPhase == PowerPhase.LAND && entrancePipe == null) say(Lines.pick(pw.landLines), 2600L)
         }
         return true
@@ -6658,6 +6879,7 @@ class MonkeyView(
                 if (livingOn && smoothAnim && !controller.isAsleep) living.glance(if (e.x < ox + boxW / 2f) -1f else 1f, 0.5f)   // eyes first
                 lastMoveRawX = e.rawX; lastMoveRawY = e.rawY; lastMoveTime = e.eventTime; vx = 0f; vyDrag = 0f; flickFelt = false
                 gN = 0; gPush(e.eventTime, e.rawX, e.rawY)
+                ui.removeCallbacks(heartHold); stopHeartbeat(); slingOn = false
                 // v4.3 gesture map (see brain/Gestures): long-press = options menu; moving past the slop cancels it.
                 ui.postDelayed(longPress, com.combo.monkeycompanion.brain.Gestures.LONG_PRESS_MS)
             }
@@ -6683,12 +6905,21 @@ class MonkeyView(
                 if (v5On && stage.onFinger(e.rawX)) return true   // v5 banana game: drag steers
                 val dx = e.rawX - downRawX; val dy = e.rawY - downRawY
                 if (!dragging && com.combo.monkeycompanion.brain.Gestures.isDrag(hypot(dx, dy), slop.toFloat())) {
-                    ui.removeCallbacks(longPress)
+                    ui.removeCallbacks(longPress); ui.removeCallbacks(heartHold)
+                    if (heartBeatOn) { stopHeartbeat(); tracking = false; return true }   // moving ends the heartbeat (no drag)
+                    val sling = longPressed && host != null && !wp && !hiddenTab   // v10.27: long-press, then pull = slingshot
                     if (host != null && !wp) beginDrag()
+                    if (sling && dragging) beginSling()
                 }
                 if (dragging) {
-                    mx = downMx + dx; my = downMy + dy
+                    if (slingOn) {   // v10.27 slingshot: the band only stretches so far; a click for every notch
+                        val len = hypot(dx, dy); val maxL = TouchFeel.SLING_MAX_DP * d
+                        val k = if (len > maxL) maxL / len else 1f
+                        mx = downMx + dx * k; my = downMy + dy * k
+                    } else if (petting || tickling) { mx = downMx; my = downMy }   // petted / tickled: stays put
+                    else { mx = downMx + dx; my = downMy + dy }
                     clampPosition()
+                    feelMove(e)
                     val dtMs = (e.eventTime - lastMoveTime).coerceAtLeast(1L)
                     vx = vx * 0.5f + 0.5f * ((e.rawX - lastMoveRawX) * 1000f / dtMs)
                     vyDrag = vyDrag * 0.5f + 0.5f * ((e.rawY - lastMoveRawY) * 1000f / dtMs)
@@ -6730,10 +6961,19 @@ class MonkeyView(
                     }
                     return true
                 }
+                ui.removeCallbacks(heartHold)
+                if (heartBeatOn) { stopHeartbeat(); tracking = false; return true }
                 if (!tracking) return true
                 tracking = false
+                if (dragging && slingOn) { releaseSling(); return true }
+                if (dragging && (petting || tickling)) {   // v10.27: let go after petting / tickling: no fling, stays right there
+                    dragging = false; endRub(); dragTravel = 0f; upSwipeDown = -1f
+                    if (hideAnim < 0f) controller.onDragEnd(settleAfterDrag(0f, 0f))
+                    return true
+                }
                 if (dragging) {
                     dragging = false
+                    if (rub.shakes >= 4) shookDizzy()
                     // A stale velocity (finger stopped before lifting) isn't a fling.
                     val fresh = e.eventTime - lastMoveTime < 80L
                     if (e.rawX != lastMoveRawX || e.rawY != lastMoveRawY) gPush(e.eventTime, e.rawX, e.rawY)
@@ -6764,7 +7004,9 @@ class MonkeyView(
                 handleTap(e)
             }
             MotionEvent.ACTION_CANCEL -> {
-                ui.removeCallbacks(longPress)
+                ui.removeCallbacks(longPress); ui.removeCallbacks(heartHold); stopHeartbeat()
+                if (slingOn) { slingOn = false; mx = downMx; my = downMy }
+                petting = false; tickling = false
                 notifTouchActive = false; notifScrolling = false
                 bubbleSwipe = false; bubbleDragX = 0f
                 if (dragging) { dragging = false; controller.onDragEnd(settleAfterDrag(0f, 0f)) }
@@ -6833,12 +7075,15 @@ class MonkeyView(
         if (entKind != EntKind.NONE) endEntrance()
         climber.deactivate()
         chatBtnUntil = 0f
-        if (!longPressed) performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+        if (!longPressed) { if (feelOn()) buzz(TouchFeel.grab(feelW)) else performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) }
+        rub.reset(lastMoveRawX / d, lastMoveRawY / d, SystemClock.uptimeMillis() / 1000f); dragTickAcc = 0f; feelLastX = lastMoveRawX; feelLastY = lastMoveRawY
+        petting = false; tickling = false
         controller.onDragStart()
         feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.PICKUP, doing = doingBefore)   // v10.18
     }
 
     private fun handleTap(e: MotionEvent) {
+        feelPoke(downPart)   // v10.27: squish / boop / tick
         // v10.17 touch strength: a firm press reads as a poke, a light one as a gentle tap
         BSN.record(if (e.pressure > 0.6f || e.size > 0.35f) "you poked me firmly" else "you tapped me gently", BSN.Feeling.POKED)
         onbGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.TAP)
