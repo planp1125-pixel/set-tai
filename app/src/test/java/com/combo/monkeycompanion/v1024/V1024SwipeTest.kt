@@ -178,6 +178,33 @@ class V1024SwipeTest {
         assertTrue("ends up high", up.y1 < v.debugXY[2] - 300f)
     }
 
+    /** v10.26.2: a power picked from the long-press menu always starts: up high after a tour, mid-trip, mid-air, every character. */
+    @Test fun menuPowerAlwaysStartsAfterASwipe() {
+        for (c in CharacterRegistry.all) {
+            val v = view(c.id)
+            val pw = CharacterRegistry.current.powers.firstOrNull() ?: continue
+            // 1) mid swipe trip
+            v.debugPlace(300f, onFloor = true); v.debugRelease(400f, -2600f)
+            v.debugFrames(3)
+            assertTrue("${c.id}: power mid-trip", v.debugPower(pw)); v.debugFrames(2)
+            assertTrue("${c.id}: power on mid-trip", v.debugPowerOn)
+            var n = 0; while (v.debugPowerOn && n++ < 60 * 20) v.debugFrames(1)
+            assertFalse("${c.id}: power ended", v.debugPowerOn)
+            v.debugFrames(90)
+            // 2) after the trip has ended (up high for flyers), the next power still starts
+            v.debugPlace(300f, onFloor = true); v.debugRelease(400f, -2600f)
+            n = 0; while (v.debugSwipeTrip != null && n++ < 900) v.debugFrames(1)
+            v.debugFrames(30)
+            assertTrue("${c.id}: power after trip", v.debugPower(pw)); v.debugFrames(2)
+            assertTrue("${c.id}: power on after trip", v.debugPowerOn)
+            n = 0; while (v.debugPowerOn && n++ < 60 * 20) v.debugFrames(1)
+            // 3) mid-air (just let go high up)
+            v.debugFrames(90); v.debugPlace(500f, onFloor = false, y = 700f)
+            assertTrue("${c.id}: power mid-air", v.debugPower(pw)); v.debugFrames(2)
+            assertTrue("${c.id}: power on mid-air", v.debugPowerOn)
+        }
+    }
+
     /** v10.26: a flick down from high up = PANCAKE; Superboy keeps his swoop. */
     @Test fun flickDownPancakesAndSuperboyHasNoJets() {
         val v = view("billa")

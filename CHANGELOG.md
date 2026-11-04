@@ -189,3 +189,8 @@ Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real ca
   - **Kutti Satan** does it all by teleporting: he vanishes, appears at the top middle, then pops round the loop in red smoke, and stays at the top.
   - Angel flies the loop with sparkles, Gajju struggles round it, and the surfer surfs it.
 - **Throws are off for now**, so you can try every character's powers. A fast flick is just a faster trip with its power. Flicking at a close side edge still hides the character. Turn throws back on in **Settings › "Throw on fast flick"** (SPLAT, THWACK, PANCAKE). The "fast enough" tick only plays when throws are on.
+
+## v10.26.2 (code 64): long-press powers work again
+- **Fixed: picking a power from the long-press menu did nothing.** After a swipe trip (above all a flyer resting up at the top after a tour), a power was put on hold "until she lands", and the trip or a grab then cancelled that landing. The held power never ran, and it blocked every later power too.
+- Now a power you pick (menu or double-tap) **starts right away from where the character is**: up high, mid-trip, mid-air or on a wall. A held power that loses its landing is dropped, and nothing can block powers for more than 8 seconds.
+- New test: every character's menu power starts mid-trip, after a tour and mid-air.

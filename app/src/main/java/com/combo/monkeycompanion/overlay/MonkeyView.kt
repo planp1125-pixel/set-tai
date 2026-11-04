@@ -2976,6 +2976,12 @@ class MonkeyView(
     }
 
     private var afterLand: (() -> Unit)? = null
+        set(v) {
+            // v10.26.2: a power waiting for the landing is dropped with it (a swipe, grab or throw cancelled the landing) so it can't block every later power
+            if (v == null && field != null && landPowerWaiting) { landPowerWaiting = false; powerQueued = false }
+            field = v
+        }
+    private var landPowerWaiting = false
     private val crowSecs = 1.7f
 
     /** Profile climber: anchor follows the box; head turns to the user for reactions / talking. */
@@ -6332,6 +6338,8 @@ class MonkeyView(
             beginPower(pw)
             return true
         }
+        // v10.26.2: a queued power that never got its landing (a swipe trip / throw cleared it) must not block powers forever
+        if (powerQueued && SystemClock.elapsedRealtime() - powerQueuedAt > 8_000L) powerQueued = false
         if (exiting || quitAsk || powerOn || powerQueued) return false
         val pw = force ?: Superpowers.choose(powerSetting())
         if (pw == null) { if (explicit) say(Lines.pick(Lines.POWER_OFF), 4000L); return false }
@@ -6343,13 +6351,22 @@ class MonkeyView(
             controller.wakeUp(Lines.pick(Lines.POKED_AWAKE)); powerQueued = true
             ui.postDelayed({ powerQueued = false; usePower(true, pw) }, 6200L); return true
         }
+        if (explicit && typing) endTyping()
         if (dragging || typing || entKind != EntKind.NONE || hideAnim >= 0f) return false
-        if (surf.kind != SK.FLOOR || climber.active || falling || tweenT >= 0f) { powerQueued = true; afterLandThen { powerQueued = false; beginPower(pw) }; return true }
+        if (explicit && (swipeTrip != null || impact != null || falling || tweenT >= 0f || climber.active || arc != null || surf.kind != SK.FLOOR)) {
+            // v10.26.2: you asked for it (menu / double-tap): start right where it is now (mid-air, on a wall, mid-trip), no waiting
+            swipeTrip = null; impact = null; afterLand = null; arc = null; falling = false; vy = 0f; tweenT = -1f; tweenDone = null
+            climber.deactivate(); surf = freeSurf(my.coerceIn(hoverMinY(), ground())); clampToSurf()
+            if (host != null && !wp) com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.POWER_USED, pw.title)
+            beginPower(pw); return true
+        }
+        if (surf.kind != SK.FLOOR || climber.active || falling || tweenT >= 0f) { powerQueued = true; powerQueuedAt = SystemClock.elapsedRealtime(); afterLandThen { landPowerWaiting = false; powerQueued = false; beginPower(pw) }; landPowerWaiting = true; return true }
         if (host != null && !wp) com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.POWER_USED, pw.title)
         beginPower(pw)
         return true
     }
 
+    private var powerQueuedAt = 0L
     private fun fracX(px: Float) = (px / max(1f, sw() - boxW)).coerceIn(0f, 1f)
     private fun fracY(py: Float) = ((ground() - py) / max(1f, ground() - topY())).coerceIn(0f, 1f)
     private fun pxX(f: Float) = f * max(0f, sw() - boxW)
