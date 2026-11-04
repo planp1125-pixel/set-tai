@@ -3696,9 +3696,11 @@ class MonkeyView(
             val style = com.combo.monkeycompanion.engine.swipe.SwipeTravel.styleFor(character.id,
                 com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null)
             val cx = mx + boxW / 2f; val px = cx + fvx * 0.38f
+            val heroFlight = style == null && hovers   // Armour Anna / Superboy / Rocket Girl keep their own flight swipes (arcs, swoops, rocket)
             val down = upSwipeDown > 0f || (fvy > 0f && fvy > abs(fvx) * 1.2f)
             val up = !down && fvy < 0f && -fvy > abs(fvx) * 1.2f
-            if (swipeDp >= com.combo.monkeycompanion.engine.swipe.SwipeTravel.FLICK_DP) {
+            if (heroFlight) Unit
+            else if (swipeDp >= com.combo.monkeycompanion.engine.swipe.SwipeTravel.FLICK_DP) {
                 when {
                     !down && !up -> {
                         val side = if (fvx < 0) -1 else 1
