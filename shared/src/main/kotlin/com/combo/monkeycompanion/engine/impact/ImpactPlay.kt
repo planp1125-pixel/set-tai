@@ -43,7 +43,7 @@ class ImpactPlay {
     var pivot = Pivot.CENTER; private set
     /** Slide speed down the glass, dp/s (SLIDE only). */
     val slideDp get() = SLIDE_START_DP + SLIDE_ACCEL_DP * pt
-    val stars get() = phase == Phase.DIZZY
+    val stars get() = phase == Phase.DIZZY || (kind == Kind.THWACK && (phase == Phase.HOLD || phase == Phase.FALL))   // v10.25: clear top-hit gag
     /** 0..1 how strongly to show the comic "SPLAT!" word (first 0.9 s after the hit). */
     val bang get() = if (kind != null && total < BANG_SECS) 1f - total / BANG_SECS else 0f
     val done get() = phase == Phase.DONE
@@ -175,7 +175,7 @@ class ImpactPlay {
     companion object {
         const val SQUASH_SECS = 0.1f
         const val SPLAT_HOLD = 0.75f
-        const val THWACK_HOLD = 0.6f
+        const val THWACK_HOLD = 0.95f
         const val PANCAKE_HOLD = 0.7f
         const val SLIDE_MAX_SECS = 1.3f
         const val SLIDE_START_DP = 28f

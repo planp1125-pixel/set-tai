@@ -86,14 +86,14 @@ class V1024SwipeTest {
     }
 
     @Test fun floorCharactersTravelSidewaysAndLandOnTheFloorWithoutSplat() {
-        for (id in listOf("monkey", "hollowman", "mask", "billa", "chittu", "skater")) {
+        for (id in listOf("monkey", "hollowman", "billa", "chittu", "skater")) {
             val v = view(id)
             val xy0 = v.debugXY
-            v.debugPlace(150f, onFloor = false, y = xy0[2] - 700f)   // high up: a sideways fling used to SPLAT on the wall
-            v.debugRelease(2600f, -200f)
+            v.debugPlace(40f, onFloor = false, y = xy0[2] - 700f)   // high up: a sideways fling used to SPLAT on the wall
+            v.debugRelease(2300f, -200f)
             assertFalse("$id splat", v.debugImpact)
             val trip = v.debugSwipeTrip
-            assertNotNull("$id trip", trip)
+            assertNotNull("$id trip xy=${v.debugXY.toList()} hid=${v.debugHidden} imp=${v.debugImpact}", trip)
             val tx = trip!!.x1
             var n = 0
             while (v.debugSwipeTrip != null && n++ < 400) v.debugFrames(1)
@@ -107,13 +107,33 @@ class V1024SwipeTest {
     @Test fun hoveringCharactersEndWhereSwiped() {
         for (id in listOf("surfer", "gajju")) {
             val v = view(id)
-            v.debugPlace(150f, onFloor = false, y = 900f)
-            v.debugRelease(2200f, -400f)
+            v.debugPlace(40f, onFloor = false, y = 900f)
+            v.debugRelease(2250f, -400f)
             val trip = v.debugSwipeTrip ?: error("$id no trip")
             var n = 0
             while (v.debugSwipeTrip != null && n++ < 400) v.debugFrames(1)
             assertEquals(id, trip.x1, v.debugXY[0], 1.5f); assertEquals(id, trip.y1, v.debugXY[1], 1.5f)
         }
+    }
+
+    @Test fun flingRules() {
+        // aimed past the side edge = hide, not splat
+        var v = view("billa"); v.debugPlace(600f, onFloor = true); v.debugRelease(4000f, 0f)
+        assertFalse(v.debugImpact); assertNull(v.debugSwipeTrip); v.debugFrames(60); assertTrue("hidden", v.debugHidden)
+        // released near the left edge, flung left = hide
+        v = view("hollowman"); v.debugPlace(40f, onFloor = true); v.debugRelease(-2500f, 0f)
+        assertFalse(v.debugImpact); v.debugFrames(60); assertTrue(v.debugHidden)
+        // aimed above the top = thwack on the top
+        v = view("mask"); v.debugPlace(400f, onFloor = true); v.debugRelease(0f, -6000f)
+        assertTrue(v.debugImpact)
+        // Mask Man's sheet trick reappears exactly at a HIGH target, then falls and lands
+        v = view("mask"); v.debugPlace(200f, onFloor = true); val g = v.debugXY[2]; v.debugRelease(900f, -2500f)
+        val trip = v.debugSwipeTrip ?: error("no mask trip")
+        assertTrue("high target", trip.y1 < g - 300f)
+        var n = 0; while (v.debugSwipeTrip != null && n++ < 400) v.debugFrames(1)
+        assertEquals(trip.x1, v.debugXY[0], 1.5f); assertEquals(trip.y1, v.debugXY[1], 30f)
+        n = 0; while (v.debugXY[1] < g - 2f && n++ < 600) v.debugFrames(1)
+        assertEquals(g, v.debugXY[1], 3f)
     }
 
     @Test fun upwardThrowStillSplats() {
@@ -163,8 +183,8 @@ class V1024SwipeTest {
     }
 
     @Test fun renderSwipeStrip() {
-        val rows = listOf("surfer", "skater", "monkey", "mask", "chittu", "billa", "hollowman", "gajju")
-        val ks = floatArrayOf(0.05f, 0.2f, 0.4f, 0.47f, 0.6f, 0.76f, 0.9f, 1f)
+        val rows = listOf("skater", "surfer")
+        val ks = floatArrayOf(0.05f, 0.16f, 0.31f, 0.45f, 0.55f, 0.65f, 0.76f, 0.87f, 1f)
         val cw = 220; val rh = 300
         val bmp = Bitmap.createBitmap(160 + cw * ks.size, rh * rows.size, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp); c.drawColor(Color.rgb(0xF7, 0xF5, 0xFB))

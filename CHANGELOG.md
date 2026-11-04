@@ -158,3 +158,10 @@ Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real ca
 - **A sideways swipe never splats any more.** Only an upward throw splats. A hard fling at a close edge still hides the character there; a downward swipe works as before.
 - **New character: Skater Girl.** A cute curly-haired girl (dark brown curls, lilac jacket over a mint tee, denim shorts, pink high-tops) on a coral skateboard with yellow wheels; she rolls on it and pushes with one foot. Powers (fixed): **kickflip show** (main, first on double-tap), **grind** with sparks, **board spin**. Her own lines and personality. She's last in the crew list, so existing crew picks don't change.
 - No new permissions. No frame-loop Random (all trips are time-based). New test: V1024SwipeTest.
+
+## v10.25 (code 60): swipe and flight fixes from the phone test
+- **No more jets on characters without a jet power.** Kutti Satan, Angel, Surfing Girl, Gajju and the others fly without thrust or flames; only Armour Anna, Superboy, Rocket Girl (and Kutti Satan with a jet power switched on) show jets. Surfing Girl only surfs.
+- **One clear fling rule:** flung toward a side edge (aimed past it, or let go near it) = **hide** there. A long throw from far across the screen = **splat** on that wall. Aimed above the top of the screen = **thwack** on the top: a clear squash under the edge with stars, then the fall and landing. Anything else = the character's own trip to the spot.
+- **Mask Man's bedsheet trick** now reappears exactly where you swiped, even up high; then he falls and lands.
+- **Hollow Man** and the other swipe trips now play from a real fling (the old toss check used to grab the fling first).
+- **Skater Girl's swipe is a full skate show:** push off, ollie, kickflip, manual, heelflip, grind with sparks, wall ride, 360 and a landing pose, with the board flipping and wheels spinning.

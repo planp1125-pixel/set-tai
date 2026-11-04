@@ -3688,8 +3688,25 @@ class MonkeyView(
         val fx = mx; val fy = my
         val near = 40 * d
         val fast = 1400 * d
-        if (upSwipeDown <= 0f && tryToss(fvx, fvy)) return true   // v10.20: tossed from high up = it flies and hits things
-        if (upSwipeDown <= 0f && trySwipeTrip(fvx, fvy)) return true   // v10.24: each character's own trip to the swiped spot
+        if (upSwipeDown <= 0f && host != null && !wp && !hiddenTab && !profile.ridesProp && hypot(fvx, fvy) > SWIPE_TRIP_DP * d && dragTravel >= 30 * d) {
+            // v10.25 one clear rule for a fling: aimed at / released near a side edge = HIDE; a long throw from far = SPLAT on
+            // that wall; aimed above the top of the screen = THWACK on the top; otherwise the character's own trip there.
+            val cx = mx + boxW / 2f; val px = cx + fvx * 0.38f; val py = my + fvy * 0.38f
+            val side = if (fvx < 0) -1 else 1
+            val horiz = abs(fvx) >= abs(fvy)
+            if (horiz) {
+                val nearEdge = if (side < 0) cx < sw() * 0.22f else cx > sw() * 0.78f
+                val past = if (side < 0) -px else px - sw()
+                if (nearEdge || past > 0f) {
+                    val far = if (side < 0) cx > sw() * 0.55f else cx < sw() * 0.45f
+                    if (far && past > sw() * 0.5f && tryToss(fvx, fvy, force = true)) return true
+                    hideToEdge(side); return false
+                }
+            } else if (fvy < 0f && py < topY() - boxH * 0.2f) {
+                if (tryToss(fvx, fvy, force = true)) return true
+            }
+            if (fvy <= 0f || abs(fvy) <= abs(fvx) * 1.2f) { if (trySwipeTrip(fvx, fvy)) return true }
+        }
         if (hovers) {
             val sp = hypot(fvx, fvy)
             if (upSwipeDown > 0f) {          // swipe down = touch down, with a big curved rocket flight (v6 real-device fix)
@@ -4350,6 +4367,10 @@ class MonkeyView(
      * Anna, speed streaks for Superboy. Always visible, effects window or not (v5 fix: on some phones the power landings
      * looked like plain falls because their only visible part lived in the effects window).
      */
+    /** v10.25: only bodies with a jet / rocket power ever show jets or thrust (Anna, Superboy's landing kit, Rocket Girl, Kutti Satan if a jet power is on). */
+    private fun hasJetPower(): Boolean = character.id == "armour" || character.id == "superboy" || character.id == "rocketgirl" ||
+        com.combo.monkeycompanion.brain.PowerPrefs.enabled(character).any { it.id == "jets" || it.id == "rocket" || it.id == "boost" } ||
+        (com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null && character.usesHoverJets)
     private fun drawLandingThrust(c: Canvas) {
         if (saver && !hovers) return
         val s = landStyle
@@ -4361,6 +4382,7 @@ class MonkeyView(
         val cx = ox + boxW / 2f; val cy = oy + boxH / 2f
         if (arcRot + rotEase + shockSpin != 0f) c.rotate(arcRot + rotEase + shockSpin, cx, cy)      // the body is drawn in the same rotated frame (restored by drawMonkey)
         if (!jets && !streaks) return
+        if (jets && !hasJetPower()) return   // v10.25: no thrust for non-jet characters (surfer, Angel, Kutti Satan…)
         if (jets && profile.ridesProp) return   // v10.10 Rocket Girl: no boot jets / blast cones; her rocket's spark fountain is the exhaust
         if (!hoverJets) landFlames++ else hoverFlames++
         if (fxHosted) landFxSeen = true
@@ -5757,21 +5779,24 @@ class MonkeyView(
         if (trip.done) {
             swipeTrip = null
             mx = trip.x1; my = trip.y1
-            surf = if (trip.style.hovers) freeSurf(my) else screenSurf(SK.FLOOR)
-            clampToSurf()
-            if (!trip.style.hovers) my = ground()
+            if (trip.style.hovers) { surf = freeSurf(my); clampToSurf() }
+            else if (my < ground() - 4 * d) { surf = freeSurf(my); beginSmartFall() }   // v10.25: appeared up high -> falls and lands
+            else { surf = screenSurf(SK.FLOOR); clampToSurf(); my = ground() }
         }
     }
 
-    private fun tryToss(fvx: Float, fvy: Float): Boolean {
+    private fun tryToss(fvx: Float, fvy: Float, force: Boolean = false): Boolean {
         if (host == null || wp || profile.ridesProp || hiddenTab) return false
+        if (!force) return false   // v10.25: only the fling rule in settleAfterDrag decides a splat / thwack
         val spDp = hypot(fvx, fvy) / d
         val screenH = host?.screenHeight()?.toFloat() ?: return false
         if (fvy > 0f && abs(fvy) > abs(fvx) * 1.2f) return false   // mostly downward: the old drop / bottom-hide
-        if (fvy >= 0f || abs(fvy) < abs(fvx)) return false   // v10.24: only an UPWARD throw splats; a sideways swipe never does
-        if (!com.combo.monkeycompanion.engine.impact.ImpactPlay.isToss(spDp, ground() - my, screenH, hovers)) return false
         impact = com.combo.monkeycompanion.engine.impact.ImpactPlay().also { it.spin = (fvx / d * 0.3f).coerceIn(-720f, 720f) }
         ivx = fvx; ivy = fvy
+        if (fvy < 0f && abs(fvy) > abs(fvx)) {   // v10.25 aimed above the top: make sure it really reaches the top edge
+            val need = kotlin.math.sqrt(2f * com.combo.monkeycompanion.engine.impact.ImpactPlay.GRAVITY_DP * d * max(1f, my - topY())) * 1.15f
+            if (-ivy < need) ivy = -need
+        }
         falling = false; vy = 0f; tweenT = -1f; tweenDone = null; arc = null; afterLand = null
         climber.deactivate(); surf = freeSurf(my)
         reactionLayer.clear()

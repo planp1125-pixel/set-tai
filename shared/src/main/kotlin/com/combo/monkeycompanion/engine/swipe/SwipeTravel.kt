@@ -20,7 +20,7 @@ object SwipeTravel {
         SHEET_TRICK(2.6f, false, "bedsheet magic trick"),
         POUNCE(1.3f, false, "cat pounce"),
         MOUSE_HOLE(1.9f, false, "mouse-hole dive"),
-        SKATE(3.4f, false, "skate tricks"),
+        SKATE(5.4f, false, "skate show"),
         RUN(1.3f, false, "run"),
     }
 
@@ -41,7 +41,7 @@ object SwipeTravel {
     /** Where a fling lands: along the swipe, inside the screen; floor styles end ON the floor (y = [ground]). */
     fun target(style: Style, x0: Float, y0: Float, fvx: Float, fvy: Float, minX: Float, maxX: Float, minY: Float, ground: Float): FloatArray {
         val x = (x0 + fvx * 0.38f).coerceIn(minX, maxX)
-        val y = if (style.hovers) (y0 + fvy * 0.3f).coerceIn(minY, ground) else ground
+        val y = if (style.hovers || style == Style.SHEET_TRICK) (y0 + fvy * 0.3f).coerceIn(minY, ground) else ground
         return floatArrayOf(x, y)
     }
 
@@ -127,13 +127,14 @@ object SwipeTravel {
                     f.scale = 1f - 0.3f * sink
                     f.alpha = if (sink > 0.97f) 0f else 1f
                 }
-                Style.SKATE -> {
+                Style.SKATE -> {   // v10.25 show: push, ollie, kickflip, manual, heelflip, grind, wall ride, 360, landing
                     val e = ss(0f, 1f, k)
                     f.x = lerpX(e)
-                    val hop = 46f * u * bell(0.12f, 0.27f, k) + 62f * u * bell(0.36f, 0.56f, k) + 34f * u * bell(0.62f, 0.8f, k)
-                    f.y = lerpY(ss(0f, 0.3f, k)) - hop
-                    f.rot = -dir * 18f * bell(0.12f, 0.27f, k)   // ollie nose-up
-                    f.splash = bell(0.92f, 1f, k)               // landing dust
+                    val hop = 46f * u * bell(0.1f, 0.22f, k) + 62f * u * bell(0.24f, 0.38f, k) + 56f * u * bell(0.5f, 0.6f, k) +
+                        90f * u * bell(0.7f, 0.82f, k) + 50f * u * bell(0.82f, 0.92f, k)
+                    f.y = lerpY(ss(0f, 0.2f, k)) - hop
+                    f.rot = -dir * 18f * bell(0.1f, 0.22f, k) - dir * 14f * bell(0.4f, 0.5f, k) + dir * 65f * bell(0.7f, 0.82f, k)
+                    f.splash = bell(0.93f, 1f, k)
                     f.atTarget = true
                 }
                 Style.RUN -> { f.x = lerpX(ss(0f, 1f, k)); f.y = lerpY(ss(0f, 0.4f, k)); f.atTarget = true }
@@ -191,13 +192,16 @@ object SwipeTravel {
                     else if (k > 0.6f) { p.armLRaise = 150f * (1f - ss(0.85f, 1f, k)); p.armRRaise = p.armLRaise; p.eyesHappy = 1f }
                 }
                 Style.SKATE -> {
-                    p.dvAura = 1f                                                       // board on
-                    p.dvSpell = ss(0.4f, 0.54f, k)                                      // kickflip: board rolls 360
-                    p.spinX = if (k in 0.62f..0.8f) cos(ss(0.62f, 0.8f, k) * 2f * PI.toFloat()) else 1f   // 360 spin
-                    val crouch = maxOf(bell(0.08f, 0.14f, k), bell(0.32f, 0.38f, k), bell(0.9f, 1f, k))
-                    p.squashY = 1f - 0.12f * crouch; p.squashX = 1f / p.squashY
-                    p.armLRaise = 70f + 50f * bell(0.36f, 0.56f, k); p.armRRaise = 50f + 60f * bell(0.12f, 0.27f, k)
-                    p.legLSwing = -14f; p.legRSwing = 18f
+                    p.dvAura = 1f                                                                        // board on
+                    p.dvSpell = if (k < 0.45f) ss(0.26f, 0.36f, k) else 1f - ss(0.51f, 0.59f, k)        // kickflip, then heelflip (rolls back)
+                    p.surfSpray = bell(0.6f, 0.7f, k)                                                    // grind sparks
+                    p.spinX = if (k in 0.82f..0.92f) cos(ss(0.82f, 0.92f, k) * 2f * PI.toFloat()) else 1f   // 360
+                    val crouch = maxOf(bell(0.02f, 0.1f, k), bell(0.6f, 0.7f, k), bell(0.92f, 0.97f, k))
+                    p.squashY = 1f - 0.14f * crouch; p.squashX = 1f / p.squashY
+                    p.legLSwing = -14f; p.legRSwing = 18f + 22f * maxOf(0f, sin(t * 6f)) * bell(0f, 0.1f, k)   // pushing off
+                    p.armLRaise = 70f + 60f * maxOf(bell(0.24f, 0.38f, k), bell(0.5f, 0.6f, k)); p.armRRaise = 50f + 70f * maxOf(bell(0.1f, 0.22f, k), bell(0.7f, 0.82f, k))
+                    if (k in 0.4f..0.5f) { p.armLRaise = 100f; p.armRRaise = 100f }                       // manual: balance
+                    if (k > 0.95f) { p.armLRaise = 160f; p.armRRaise = 160f; p.eyesHappy = 1f }         // landing pose
                     p.mouthSmile = 1f
                 }
                 Style.RUN -> {
