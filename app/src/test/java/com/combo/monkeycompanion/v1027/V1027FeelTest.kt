@@ -136,7 +136,7 @@ class V1027FeelTest {
         val v = view("monkey"); val f = Finger(v)
         val b0 = v.debugBox()
         longPress(f)
-        f.move((1..4).map { -10f * it to 0f })   // ~15 dp
+        f.move((1..5).map { -20f * it to 0f })   // ~38 dp: past the touch slop, short of a shot
         assertTrue(v.debugSling)
         f.up()
         assertFalse(v.debugSling)

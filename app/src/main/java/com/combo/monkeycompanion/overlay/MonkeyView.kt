@@ -6448,11 +6448,11 @@ class MonkeyView(
                 if (rub.shakes == 3) say(pickLine(listOf("Whoa whoa WHOA!! 😵", "Stop shaking meee!! 🌀", "My brain is rattling!! 🫨")), 1600L)
             }
             RubTracker.Kind.STROKE -> if (!tickling) {
-                if (!petting && rub.strokes >= 2) startPetting()
+                if (!petting && rub.strokes >= 3 && rub.strokes > rub.tickles) startPetting()
                 if (petting) { buzz(TouchFeel.purr()); petHeartsUntil = now + 1600L; if (controller.state != MonkeyState.HAPPY_PAT) controller.play(MonkeyState.HAPPY_PAT, 1.4f) }
             }
             RubTracker.Kind.TICKLE -> if (!petting) {
-                if (!tickling && rub.tickles >= 2) startTickle()
+                if (!tickling && rub.tickles >= 2 && rub.tickles >= rub.strokes) startTickle()
                 if (tickling) { buzz(TouchFeel.tickle()); if (controller.state != MonkeyState.GIGGLE) controller.play(MonkeyState.GIGGLE, 1.4f) }
             }
             RubTracker.Kind.NONE -> Unit
@@ -7076,7 +7076,7 @@ class MonkeyView(
         climber.deactivate()
         chatBtnUntil = 0f
         if (!longPressed) { if (feelOn()) buzz(TouchFeel.grab(feelW)) else performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) }
-        rub.reset(lastMoveRawX / d, lastMoveRawY / d, SystemClock.uptimeMillis() / 1000f); dragTickAcc = 0f; feelLastX = lastMoveRawX; feelLastY = lastMoveRawY
+        rub.reset(lastMoveRawX / d, lastMoveRawY / d, lastMoveTime / 1000f); dragTickAcc = 0f; feelLastX = lastMoveRawX; feelLastY = lastMoveRawY
         petting = false; tickling = false
         controller.onDragStart()
         feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.PICKUP, doing = doingBefore)   // v10.18
