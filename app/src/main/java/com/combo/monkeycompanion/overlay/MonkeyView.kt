@@ -3697,7 +3697,9 @@ class MonkeyView(
             if (horiz) {
                 val nearEdge = if (side < 0) cx < sw() * 0.22f else cx > sw() * 0.78f
                 val past = if (side < 0) -px else px - sw()
-                if (nearEdge || past > 0f) {
+                val ownTrip = com.combo.monkeycompanion.engine.swipe.SwipeTravel.styleFor(character.id,
+                    com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null) != null
+                if (nearEdge || (ownTrip && past > 0f)) {   // Anna / Superboy / Rocket Girl / Satan / Angel keep their old fly-off arcs
                     val far = if (side < 0) cx > sw() * 0.55f else cx < sw() * 0.45f
                     if (far && past > sw() * 0.5f && tryToss(fvx, fvy, force = true)) return true
                     hideToEdge(side); return false
