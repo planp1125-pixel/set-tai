@@ -82,7 +82,9 @@ jobs:
           tag_name: ci-${{ github.run_number }}
           target_commitish: ${{ github.sha }}
           name: Test build ${{ github.run_number }}
-          prerelease: true
+          # shown at the TOP of the Releases page as "Latest", so the newest build is always the first one you see
+          prerelease: false
+          make_latest: "true"
           files: out/set-tai-full-release.apk
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
