@@ -70,6 +70,8 @@ object Landings {
                 listOf(Style.JETS to 2, Style.ROCKET_ARC to 3) else emptyList())
         // v10.23 Angel: soft winged landings, never jets
         characterId == "angel" -> listOf(Style.SNORE_FLOAT to 3, Style.CAPE_FLOAT to 2, Style.NINJA_FLIP to 1)
+        // v10.24 Skater Girl: lands like a skater, never jets
+        characterId == "skater" -> listOf(Style.NINJA_FLIP to 3, Style.CANNONBALL to 1, Style.PARACHUTE to 1)
         characterId == "mask" -> listOf((if (umbrella) Style.PARACHUTE else Style.CHICKEN_FLAP) to 4, Style.CROW_CARRY to 3, Style.NINJA_FLIP to 2,
             Style.SNORE_FLOAT to 1, Style.CANNONBALL to 1)
 

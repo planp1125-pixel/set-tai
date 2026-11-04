@@ -143,3 +143,18 @@ Double-tap Billa or Chittu (or pick "show" in the long-press menu) and a real ca
 - The planned swipe fixes move to the next version.
 - No new permissions. No frame-loop Random (her animation is all time-based). New test: V1023AngelTest.
 
+
+## v10.24 (code 59): every character swipes in its own style; Skater Girl
+- **Swipe a character and it travels to the spot you swiped toward, in its own way, and lands there:**
+  - **Surfing Girl:** a full surf show on a moving wave with spray: S-turn carves, a tube ride under the curl, an aerial off the lip (a full flip), a cutback with a big spray splash, then a splash landing. No thrust, no jets.
+  - **Settai:** hops and dives *into* the screen (shrinks away spinning), then pops back out at the spot with sparkles.
+  - **Hollow Man:** moonwalks there with a spin glide in the middle and a freeze pose at the end.
+  - **Gajju:** flaps his big ears like wings, fast, and flies there.
+  - **Mask Man:** holds up a striped bedsheet, it drops flat… he's gone, then he appears at the spot like a magic trick.
+  - **Billa:** butt-wiggle, then a big cat pounce. **Chittu:** dives into a mouse hole and pops out of a new hole at the spot.
+  - **Skater Girl:** skates there doing an ollie, a kickflip and a 360 spin, then lands.
+  - **Your own Studio characters:** run there.
+  - Armour Anna, Superboy and Rocket Girl are unchanged. Kutti Satan's and Angel's black-magic swipes come next.
+- **A sideways swipe never splats any more.** Only an upward throw splats. A hard fling at a close edge still hides the character there; a downward swipe works as before.
+- **New character: Skater Girl.** A cute curly-haired girl (dark brown curls, lilac jacket over a mint tee, denim shorts, pink high-tops) on a coral skateboard with yellow wheels; she rolls on it and pushes with one foot. Powers (fixed): **kickflip show** (main, first on double-tap), **grind** with sparks, **board spin**. Her own lines and personality. She's last in the crew list, so existing crew picks don't change.
+- No new permissions. No frame-loop Random (all trips are time-based). New test: V1024SwipeTest.

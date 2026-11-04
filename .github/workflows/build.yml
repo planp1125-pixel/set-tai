@@ -58,14 +58,20 @@ jobs:
           SETTAI_KEYSTORE_PASSWORD: ${{ secrets.SETTAI_KEYSTORE_PASSWORD }}
           SETTAI_KEY_ALIAS: ${{ secrets.SETTAI_KEY_ALIAS }}
           SETTAI_KEY_PASSWORD: ${{ secrets.SETTAI_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleFullRelease :app:assemblePlayRelease :app:bundlePlayRelease --stacktrace
+          # v10.24: Play bundle OFF to save CI time/memory (only the full APK). Set to "true" to build the Play APK + AAB again.
+          BUILD_PLAY_BUNDLE: "false"
+        run: |
+          if [ "$BUILD_PLAY_BUNDLE" = "true" ]; then ./gradlew :app:assembleFullRelease :app:assemblePlayRelease :app:bundlePlayRelease --stacktrace
+          else ./gradlew :app:assembleFullRelease --stacktrace; fi
       - name: Collect APKs + AAB
         run: |
           set -e
           mkdir -p out
           cp "$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)" out/set-tai-full-release.apk
-          cp "$(find app/build/outputs/apk/play/release -name '*.apk' | head -1)" out/set-tai-play-release.apk
-          cp "$(find app/build/outputs/bundle/playRelease -name '*.aab' | head -1)" out/set-tai-play-release.aab
+          if [ -d app/build/outputs/bundle/playRelease ]; then
+            cp "$(find app/build/outputs/apk/play/release -name '*.apk' | head -1)" out/set-tai-play-release.apk
+            cp "$(find app/build/outputs/bundle/playRelease -name '*.aab' | head -1)" out/set-tai-play-release.aab
+          fi
           ls -l out
           for f in out/*; do echo "== $f"; keytool -printcert -jarfile "$f" | grep -E 'Owner|SHA256' || true; done
       # Every green build of main becomes a pre-release "ci-<number>" with the APK (Release files are free storage).
@@ -82,6 +88,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
+          fail_on_unmatched_files: false
           files: |
             out/*.apk
             out/*.aab

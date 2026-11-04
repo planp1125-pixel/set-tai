@@ -1891,7 +1891,7 @@ class MonkeyView(
         if (!live || !running || paused || (hiddenTab && tabPeekT < 0f && !tabTracking)) return -1L
         if (powerOn) return if (saver) 33L else 0L
         if (fireworks.active || skyActive || reactionLayer.busy || living.anticipating) return 0L   // v10.8: smooth reactions / fireworks
-        if (dragging || tracking || falling || impact != null || coyoteScareTimer > 0f || isEdgeCrashLanding || abs(notifFlingVy) > 5f ||
+        if (dragging || tracking || falling || impact != null || swipeTrip != null || coyoteScareTimer > 0f || isEdgeCrashLanding || abs(notifFlingVy) > 5f ||
             tweenT >= 0f || hideAnim >= 0f || typing || exiting || notifCardOpen || blinkT >= 0f ||
             controller.state == MonkeyState.WALK || controller.state == MonkeyState.DANCE || controller.state == MonkeyState.WAVE ||
             balls.looseActive
@@ -2860,6 +2860,7 @@ class MonkeyView(
         if (juggleOn) jugglePose(drawPose)
         applyDailyPoses(drawPose, dt)   // v10.20 sulk (arms folded, turned away) and the goodnight yawn
         impact?.applyPose(drawPose, t)   // v10.20 physical comedy wins over everything else
+        swipeTrip?.applyPose(drawPose, t)   // v10.24 the character's own swipe trip
         syncFx()
         updateGeometry()
         if (smoothAnim && profile.anim.enabled && !climber.active) {
@@ -2911,6 +2912,7 @@ class MonkeyView(
         syncImeDodge()
         if (rotEase != 0f) { rotEase *= exp(-dt * 9f); if (abs(rotEase) < 0.3f) rotEase = 0f }
         if (rocketFlyOn) { if (dragging) { rocketFlyOn = false; rocketFly.cancel(); arcRot = 0f } else { stepRocketFly(dt); return } }
+        if (swipeTrip != null) { stepSwipeTrip(dt); return }   // v10.24
         if (impact != null) { stepImpact(dt); return }   // v10.20
         if (isEdgeCrashLanding) {
             stepEdgeCrashLanding(dt)
@@ -3687,6 +3689,7 @@ class MonkeyView(
         val near = 40 * d
         val fast = 1400 * d
         if (upSwipeDown <= 0f && tryToss(fvx, fvy)) return true   // v10.20: tossed from high up = it flies and hits things
+        if (upSwipeDown <= 0f && trySwipeTrip(fvx, fvy)) return true   // v10.24: each character's own trip to the swiped spot
         if (hovers) {
             val sp = hypot(fvx, fvy)
             if (upSwipeDown > 0f) {          // swipe down = touch down, with a big curved rocket flight (v6 real-device fix)
@@ -5710,11 +5713,62 @@ class MonkeyView(
     val debugImpactKind get() = impact?.kind?.name
 
     /** Released high up and fast (or a flyer thrown very hard): it flies under gravity and hits whatever it reaches. */
+    // ---------------- v10.24 each character's own swipe trip (engine/swipe/SwipeTravel, no RNG) ----------------
+    private var swipeTrip: com.combo.monkeycompanion.engine.swipe.SwipeTravel.Trip? = null
+    private val swipeFrame = com.combo.monkeycompanion.engine.swipe.SwipeTravel.Frame()
+    private val swipeFx = com.combo.monkeycompanion.rig.SwipeFx()
+
+    private fun trySwipeTrip(fvx: Float, fvy: Float): Boolean {
+        if (host == null || wp || hiddenTab || profile.ridesProp) return false
+        val custom = com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null
+        val style = com.combo.monkeycompanion.engine.swipe.SwipeTravel.styleFor(character.id, custom) ?: return false
+        val sp = hypot(fvx, fvy)
+        if (sp < SWIPE_TRIP_DP * d || dragTravel < 30 * d) return false
+        if (fvy > 0f && abs(fvy) > abs(fvx) * 1.2f) return false          // mostly down: the old drop / land / bottom-hide
+        if (abs(fvx) >= abs(fvy) && sp > 1400 * d) {                         // flung hard at a CLOSE edge: edge-hide still works
+            val cx = mx + boxW / 2f
+            if (if (fvx < 0) cx < sw() * 0.22f else cx > sw() * 0.78f) return false
+        }
+        val minX = 10 * d; val maxX = max(minX, sw() - boxW - 10 * d)
+        val tg = com.combo.monkeycompanion.engine.swipe.SwipeTravel.target(style, mx, my, fvx, fvy, minX, maxX, hoverMinY(), ground())
+        startSwipeTrip(style, tg[0], tg[1])
+        return true
+    }
+
+    /** Tests / previews: start [style] to box position ([tx], [ty]). */
+    fun startSwipeTrip(style: com.combo.monkeycompanion.engine.swipe.SwipeTravel.Style, tx: Float, ty: Float) {
+        falling = false; vy = 0f; tweenT = -1f; tweenDone = null; arc = null; afterLand = null; impact = null
+        climber.deactivate()
+        val trip = com.combo.monkeycompanion.engine.swipe.SwipeTravel.Trip(style, mx, my, tx, ty, d)
+        swipeTrip = trip
+        controller.face(trip.dir)
+        reactionLayer.clear()
+        runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Swipe trip: ${style.label}", "${character.name}, swiped by you") }
+    }
+
+    val debugSwipeTrip get() = swipeTrip
+
+    private fun stepSwipeTrip(dt: Float) {
+        val trip = swipeTrip ?: return
+        if (dragging) { swipeTrip = null; return }
+        trip.step(dt)
+        trip.frame(swipeFrame)
+        mx = swipeFrame.x; my = swipeFrame.y
+        if (trip.done) {
+            swipeTrip = null
+            mx = trip.x1; my = trip.y1
+            surf = if (trip.style.hovers) freeSurf(my) else screenSurf(SK.FLOOR)
+            clampToSurf()
+            if (!trip.style.hovers) my = ground()
+        }
+    }
+
     private fun tryToss(fvx: Float, fvy: Float): Boolean {
         if (host == null || wp || profile.ridesProp || hiddenTab) return false
         val spDp = hypot(fvx, fvy) / d
         val screenH = host?.screenHeight()?.toFloat() ?: return false
         if (fvy > 0f && abs(fvy) > abs(fvx) * 1.2f) return false   // mostly downward: the old drop / bottom-hide
+        if (fvy >= 0f || abs(fvy) < abs(fvx)) return false   // v10.24: only an UPWARD throw splats; a sideways swipe never does
         if (!com.combo.monkeycompanion.engine.impact.ImpactPlay.isToss(spDp, ground() - my, screenH, hovers)) return false
         impact = com.combo.monkeycompanion.engine.impact.ImpactPlay().also { it.spin = (fvx / d * 0.3f).coerceIn(-720f, 720f) }
         ivx = fvx; ivy = fvy
@@ -5895,12 +5949,33 @@ class MonkeyView(
                 canvas.scale(ip.sx, ip.sy, px, py)
             }
         }
+        val trip = swipeTrip
+        var tripLayer = false
+        if (trip != null) {   // v10.24 swipe trip: scale / spin / fade about the feet, props behind
+            val fr = swipeFrame
+            val fx = ox + boxW / 2f; val fy = oy + boxH - groundPad
+            swipeFx.drawBehind(canvas, fr, fx, fy, boxH * 0.7f, d, t)
+            if (fr.sink > 0f) { canvas.clipRect(-10000f, -10000f, 100000f, fy + 2f * d); canvas.translate(0f, fr.sink) }
+            if (fr.rot != 0f) canvas.rotate(fr.rot, fx, fy - boxH * 0.3f)
+            if (fr.scale != 1f) canvas.scale(fr.scale, fr.scale, fx, fy)
+            if (fr.alpha < 0.999f) { canvas.saveLayerAlpha(-10000f, -10000f, 100000f, 100000f, (255 * fr.alpha).toInt()); tripLayer = true }
+        }
         if ((falling && landBeat <= 0f && coyoteScareTimer <= 0f || hoverOn) && !climber.active) drawLandingThrust(canvas)
         if (climber.active && character.id == "monkey") {
             canvas.translate(-winX.toFloat(), -winY.toFloat())
             drawWithSoot(canvas) { climber.draw(canvas, drawPose, t, renderer) }
         } else drawWithSoot(canvas) { renderer.draw(canvas, rig, drawPose, t) }
         drawHeldBalls(canvas)
+        if (tripLayer) canvas.restore()
+        if (trip != null) {
+            val fr = swipeFrame
+            canvas.save()
+            if (fr.sink > 0f) canvas.translate(0f, -fr.sink)
+            if (fr.scale != 1f) canvas.scale(1f / fr.scale, 1f / fr.scale, ox + boxW / 2f, oy + boxH - groundPad)
+            if (fr.rot != 0f) canvas.rotate(-fr.rot, ox + boxW / 2f, oy + boxH - groundPad - boxH * 0.3f)
+            swipeFx.drawFront(canvas, fr, ox + boxW / 2f, oy + boxH - groundPad, boxH * 0.7f, d, t, trip.dir)
+            canvas.restore()
+        }
         if (falling && coyoteScareTimer > 0f) {
             drawCoyoteScareOverlay(canvas)
         }
@@ -7629,6 +7704,12 @@ class MonkeyView(
     }
 
     fun debugHide(side: Int, rest: Boolean = false) = hideToEdge(side, rest)
+    /** v10.24 tests: put the box at ([x], [y]) (top-left px) standing on the floor or free. */
+    fun debugPlace(x: Float, onFloor: Boolean, y: Float = 0f) { mx = x; my = if (onFloor) ground() else y; surf = if (onFloor) screenSurf(SK.FLOOR) else freeSurf(my); falling = false }
+    /** v10.24 tests: release after a drag of [travel] px with fling velocity ([fvx], [fvy]) px/s. */
+    fun debugRelease(fvx: Float, fvy: Float, travel: Float = 200f) { upSwipeDown = -1f; dragTravel = travel; settleAfterDrag(fvx, fvy) }
+    val debugXY get() = floatArrayOf(mx, my, ground(), sw(), boxW.toFloat(), boxH.toFloat())
+    val debugImpact get() = impact != null
     fun debugBellySpray() = startTrunkSpray()
     val debugSpraying get() = sprayT >= 0f
     val debugHidden get() = hiddenTab
@@ -7697,6 +7778,8 @@ class MonkeyView(
         private val HEADPHONE_TYPES = setOf(android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET, android.media.AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
             android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, android.media.AudioDeviceInfo.TYPE_USB_HEADSET, 26 /* BLE_HEADSET */)
         private const val TAB_PEEK_SECS = 3.2f
+        /** v10.24: a swipe faster than this (dp/s) sends a character on its own swipe trip. */
+        const val SWIPE_TRIP_DP = 700f
         /** v10.9: a swipe faster than this (dp/s) launches Rocket Girl's rocket. */
         const val ROCKET_SWIPE_DP = 380f
         /** v10.10: a rocket launch needs a real swipe (at least this far), never a tap. */

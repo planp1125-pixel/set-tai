@@ -210,9 +210,10 @@ class GajjuRenderer : MonkeyRenderer() {
         val ae = anim
         val flap = if (ae == null) 0.1f * sin(now * 3.6f)
             else 0.1f * sin(now * 3.6f) + ae.appendageAngle(com.combo.monkeycompanion.engine.anim.Appendage.EARS) * 0.006f
+        val flapFast = 0.22f * pose.dvAura.coerceIn(0f, 1f) * sin(now * 24f)   // v10.24 swipe: big ears flap fast like wings
         for (s in intArrayOf(-1, 1)) {
             c.save(); c.scale(s.toFloat(), 1f)
-            c.translate(30f, -34f); c.scale(1f + flap, 1f - flap * 0.4f); c.translate(-30f, 34f)
+            c.translate(30f, -34f); c.scale(1f + flap + flapFast, 1f - (flap + flapFast) * 0.4f); c.translate(-30f, 34f)
             fill.shader = null; fill.color = SKIN
             c.drawPath(ear, fill); c.drawPath(ear, outline)
             fill.color = EAR_IN; c.drawPath(earInner, fill)

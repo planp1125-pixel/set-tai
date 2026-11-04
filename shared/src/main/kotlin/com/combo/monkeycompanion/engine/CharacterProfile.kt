@@ -76,6 +76,8 @@ object CharacterProfiles {
     val DEVIL = CharacterProfile("devil", airPatrolChance = 0.35f, airDanceChance = 0.12f, anim = AnimTuning.DEVIL, body = BodyFeatures(tail = true))
     /** v10.23 Angel: floats like Kutti Satan, patrols the air a little more (she has wings). */
     val ANGEL = CharacterProfile("angel", airPatrolChance = 0.4f, airDanceChance = 0.15f, anim = AnimTuning.DEVIL)
+    /** v10.24 Skater Girl: a floor character who rolls on her board. */
+    val SKATER = CharacterProfile("skater", anim = AnimTuning.SURF)
     /** Custom photo look-alikes and anything new. */
     val DEFAULT = CharacterProfile("default", anim = AnimTuning.CHIBI)
 
@@ -93,6 +95,7 @@ object CharacterProfiles {
         "surfer" -> SURFER
         "devil" -> DEVIL
         "angel" -> ANGEL
+        "skater" -> SKATER
         else -> DEFAULT
     }
 }
