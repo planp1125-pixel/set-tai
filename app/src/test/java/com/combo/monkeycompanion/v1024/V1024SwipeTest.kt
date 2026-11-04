@@ -161,6 +161,21 @@ class V1024SwipeTest {
         }
     }
 
+    @Test fun noCharacterButTheJetHeroesEverLoopsWhenSwipedFromTheBottom() {
+        for (c in CharacterRegistry.all.filter { it.id !in Landings.ARC_IDS }) for ((vx, vy) in listOf(2400f to -600f, 600f to -2600f, -2400f to -300f, 1500f to -1500f)) {
+            val v = view(c.id)
+            v.debugPlace(390f, onFloor = true)
+            v.debugRelease(vx, vy)
+            var n = 0
+            while (n++ < 420) {
+                v.debugFrames(1)
+                assertNull("${c.id} arc ($vx,$vy)", v.debugArc)
+                assertNotEquals("${c.id} rocket arc ($vx,$vy)", Landings.Style.ROCKET_ARC, v.debugLandStyle)
+                assertEquals("${c.id} jets ($vx,$vy)", 0, v.debugLandFlames)
+            }
+        }
+    }
+
     @Test fun upwardThrowStillSplats() {
         val v = view("billa")
         v.debugPlace(400f, onFloor = false, y = v.debugXY[2] - 800f)

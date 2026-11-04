@@ -184,9 +184,7 @@ class LandingE2ETest {
             v.debugFrames(1)
             if (v.debugFalling && v.debugLandStyle == Landings.Style.ROCKET_ARC) got = true else v.debugFrames(400)
         }
-        assertTrue(got)
-        val tr = fly(v)
-        assertTrue(tr.deviation() > 150f); assertTrue(v.debugLandFlames > 20); assertTrue(tr.maxRot > 30f)
+        assertFalse("v10.25.1: Settai never flies the looping jet arc", got)
     }
 
     @Test fun maskManTries() {

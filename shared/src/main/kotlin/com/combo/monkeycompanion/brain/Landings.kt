@@ -49,9 +49,10 @@ object Landings {
      * about half the weight (monkey 11/20, Mask Man 4/9 + his umbrella; Superboy and Anna are mostly powered).
      */
     /** v10.25.1: bodies without jets never pick a jet / rocket landing (it flew them UP with thrust). */
-    private val NO_JET_IDS = setOf("surfer", "gajju", "hollowman", "skater", "angel", "devil")
+    /** v10.25.1: ONLY these bodies may loop / arc / use jets when landing; every other body never does. */
+    val ARC_IDS = setOf("armour", "superboy", "rocketgirl")
     fun pool(characterId: String, umbrella: Boolean): List<Pair<Style, Int>> = poolRaw(characterId, umbrella).let { l ->
-        if (characterId in NO_JET_IDS) l.filter { it.first != Style.JETS && it.first != Style.SCREAM_JETS && it.first != Style.ROCKET_ARC }.ifEmpty { listOf(Style.SIMPLE to 1) } else l
+        if (characterId !in ARC_IDS) l.filter { it.first != Style.JETS && it.first != Style.SCREAM_JETS && it.first != Style.ROCKET_ARC }.ifEmpty { listOf(Style.SIMPLE to 1) } else l
     }
     private fun poolRaw(characterId: String, umbrella: Boolean): List<Pair<Style, Int>> = when {
         characterId == "superboy" -> listOf(Style.ROCKET_ARC to 5, Style.CAPE_FLOAT to 2, Style.SPEED_DIVE to 2, Style.CANNONBALL to 1)

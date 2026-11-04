@@ -576,7 +576,7 @@ class MonkeyView(
         override fun startFall() {
             if (chargeTrip) return            // v6: perched under the battery icon for the charger moment
             when {
-                hovers && selfLand -> { selfLand = false; beginSmartFall(false, Landings.Style.ROCKET_ARC, "long idle: lands by itself") }
+                hovers && selfLand -> { selfLand = false; beginSmartFall(false, if (character.id in Landings.ARC_IDS) Landings.Style.ROCKET_ARC else null, "long idle: lands by itself") }
                 hovers -> patrolFlight()          // v5: flying heroes don't drop, they float somewhere else
                 else -> beginSmartFall(byUser = false)   // v4.5: its own drops get smart landings too
             }
@@ -3712,7 +3712,6 @@ class MonkeyView(
         if (hovers) {
             val sp = hypot(fvx, fvy)
             if (upSwipeDown > 0f) {          // swipe down = touch down, with a big curved rocket flight (v6 real-device fix)
-                if (!hasJetPower()) { beginSmartFall(); return true }   // v10.25.1: non-jet bodies just drop and land (never up, never jets)
                 rocketLanding(upSwipeDown); return true
             }
             if (profile.ridesProp && livingOn && sp > ROCKET_SWIPE_DP * d && dragTravel >= ROCKET_SWIPE_MIN_TRAVEL_DP * d) {
@@ -3731,10 +3730,13 @@ class MonkeyView(
                 if (nearEdge) { hideToEdge(side); return false }      // edge-hide still works
                 val tx = (mx + boxW / 2f + side * sw() * (0.35f + 0.2f * Random.nextFloat())).coerceIn(boxW / 2f + 10 * d, sw() - boxW / 2f - 10 * d)
                 val ty = (my + boxH / 2f + (Random.nextFloat() - 0.5f) * 300f * d).coerceIn(hoverMinY() + boxH / 2f, ground() + boxH / 2f - 60 * d)
+                if (swipeTripInsteadOfArc(tx, ty)) return true   // v10.25.1: no looping jet arc for non-jet bodies
                 flyTo(tx, ty, 1f, "you flung me ${if (side < 0) "left" else "right"}"); return true
             }
             if (sp > fast && fvy < 0) {
-                flyTo(boxW / 2f + Random.nextFloat() * (sw() - boxW), hoverMinY() + boxH / 2f + Random.nextFloat() * 200f * d, 1f, "you flung me up"); return true
+                val ux = boxW / 2f + Random.nextFloat() * (sw() - boxW); val uy = hoverMinY() + boxH / 2f + Random.nextFloat() * 200f * d
+                if (swipeTripInsteadOfArc(ux, uy)) return true
+                flyTo(ux, uy, 1f, "you flung me up"); return true
             }
             if (my < g - 64 * d) { hoverHere(); return false }
         }
@@ -3944,6 +3946,12 @@ class MonkeyView(
 
     /** Fly along a random curve to the box centre ([tx], [ty]) and hover there ([slow] > 1 = lazy patrol). */
     private fun flyTo(tx: Float, ty: Float, slow: Float, why: String?) {
+        if (why == null && character.id !in Landings.ARC_IDS) {   // v10.25.1 idle patrol: a gentle glide, no loop, no jets
+            val fx = mx; val fy = my
+            mx = (tx - boxW / 2f).coerceIn(10 * d, max(10 * d, sw() - boxW - 10 * d)); my = (ty - boxH / 2f).coerceIn(hoverMinY(), ground())
+            surf = freeSurf(my); slideFrom(fx, fy, 1.8f); return
+        }
+        if (swipeTripInsteadOfArc(tx, ty)) return   // v10.25.1: only Anna / Superboy / Rocket Girl fly the looping arc
         val fx = mx; val fy = my
         beginFall()
         mx = fx; my = fy
@@ -3963,6 +3971,7 @@ class MonkeyView(
      * first, Anna jet-brake + thud). Battery saver only trims particles; the flight and the flames stay.
      */
     private fun rocketLanding(v: Float) {
+        if (character.id !in Landings.ARC_IDS) { beginSmartFall(); return }   // v10.25.1: no looping arc for the others
         val fx = mx; val fy = my
         beginFall()
         mx = fx; my = fy
@@ -5773,6 +5782,15 @@ class MonkeyView(
     }
 
     val debugSwipeTrip get() = swipeTrip
+    /** v10.25.1: a body without jets never flies the looping rocket arc when swiped: it plays its own trip to ([cx], [cy]) (centre). */
+    private fun swipeTripInsteadOfArc(cx: Float, cy: Float): Boolean {
+        if (character.id in Landings.ARC_IDS) return false
+        val style = com.combo.monkeycompanion.engine.swipe.SwipeTravel.styleFor(character.id,
+            com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null) ?: return false
+        val tx = (cx - boxW / 2f).coerceIn(10 * d, max(10 * d, sw() - boxW - 10 * d))
+        val ty = if (style.hovers) (cy - boxH / 2f).coerceIn(hoverMinY(), ground()) else ground()
+        startSwipeTrip(style, tx, ty); return true
+    }
 
     private fun stepSwipeTrip(dt: Float) {
         val trip = swipeTrip ?: return
