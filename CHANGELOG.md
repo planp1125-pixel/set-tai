@@ -2,6 +2,12 @@
 
 Plain-words history. Older builds (v9.2 – v10.11) are described in detail in [docs/CHANGELOG.md](docs/CHANGELOG.md). Below is a short summary of those, then every tagged release in this repo.
 
+## v10.35 (code 73)
+
+- Fix: Armor Anna no longer vanishes and reappears while a medium slingshot marble bounces. The hover logic (`hoverOn`) stayed on during the marble, and Anna's hover-jet pad resized the overlay window every frame. `hoverOn` is now off while `marbleOn`. Marble physics are unchanged.
+- Checked the other characters. Only Anna (and custom companions with Iron-boy jets) resized the window. Superboy, Gajju, Surfer, Kutti Satan and Angel only picked up a hover pose mid-bounce, which is now gone too. Walkers and the monkey were never affected. Rocket Girl's slingshot uses rocket flight, not the marble.
+- New V1035Test: marble bounce with no hover logic for armour, superboy, devil and monkey, never hidden, no jet-pad window growth.
+
 ## v10.34 (code 72)
 - **Your own shows, no new install needed:** long-press → 🎬 Show → 🎭 Shows lists the bundled Satan vs Angel and your saved shows (▶ play, 🗑 delete).
 - Add a script by pasting it, picking a `.show` / `.txt` file (Android file picker, no storage permission), or fetching an https link (GitHub links work).

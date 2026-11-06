@@ -356,7 +356,7 @@ class MonkeyView(
     private val hovers get() = host != null && !wp && !isEdgeCrashLanding && character.can(com.combo.monkeycompanion.character.Locomotion.FLOAT) &&
         character.can(com.combo.monkeycompanion.character.Locomotion.FLY) && powerSetting() != Superpowers.OFF
     private val isMask get() = profile.clumsyClimber && host != null && !wp
-    private val hoverOn get() = hovers && !falling && surf.spot == -2 && surf.kind == SK.FLOOR && !dragging && impact == null
+    private val hoverOn get() = hovers && !falling && surf.spot == -2 && surf.kind == SK.FLOOR && !dragging && impact == null && !marbleOn   // v10.35: no hover (jet-pad window resize) while marble-bouncing
     private var heavyShake = 0f
     private val climber = Climber(rigScale)
     private val current = Pose()

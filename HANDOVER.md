@@ -1,8 +1,12 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.34 (versionCode 72)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.35 (versionCode 73)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
-## v10.34 current handoff
+## v10.35 current handoff
+
+- `MonkeyView.hoverOn` now includes `!marbleOn`. Before this, startMarble set `freeSurf` (spot -2), so hoverers counted as hovering mid-marble, and Anna's `usesHoverJets` jet-pad window resize made her vanish. Covered by `v1035/V1035Test`. Shows tap-to-edit and the bundled-script editor are not started.
+
+## v10.34 handoff
 
 - Baseline v10.33 `881c1b1`. Menu key `story` (g_show, label "🎭 Shows") now opens `ui/ShowsActivity` (falls back to playing the bundled default).
 - `overlay/UserShows.kt`: store in `filesDir/user-shows/<slug>.show`, `validate` = parse + cast ids exist, `fetch` (https only, GitHub blob→raw, 200 KB cap, user-initiated). `ScriptShowHub.startResult(ctx, asset=…|text=…)` returns null or a line-numbered message; `start`/`startText` wrap it. The stage window uses the application context.
