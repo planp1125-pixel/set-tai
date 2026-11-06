@@ -26,7 +26,7 @@ POST JSON `{userId, characterId, system, bodySense, message, history?}`;
 history entries `{fromUser: boolean, text: string}`. Success `{text, leftToday}`.
 Missing IDs/messages: 400; streamed bodies >8192 bytes: 413; over quota: 429
 `{error:"daily_limit",leftToday:0}`. Gemini failures: safe 502, no raw upstream
-body, key, URL, or request data in errors or console logs. Text <=200 Unicode codepoints.
+body, key, URL, or request data in errors or console logs. Usual replies are about 30-40 words and are capped at 200 Unicode codepoints. If the user asks to explain more fully, the cap is 560 (about 90 words).
 
 40 **attempts** per anonymous install ID per UTC day, including background AI.
 Failures count conservatively. SQLite-backed `Quota` Durable Objects reserve
@@ -39,8 +39,7 @@ no application logging is emitted. Metrics/traces are sampled without body loggi
 
 Cloudflare's free platform quotas still apply. Anonymous IDs can be reset/replaced;
 this is a fair-use cap, not anti-abuse authentication or a global Google budget.
-Local jokes/dance/phone commands bypass this endpoint. Android AI remains off
-until Give Brain is explicitly enabled. Own-key and on-device engines remain optional.
+Local jokes/dance/phone commands bypass this endpoint. Android AI defaults to Set-Tai Cloud; Give Brain can still be turned off. Own-key and on-device engines remain optional.
 
 ## Deployment check
 

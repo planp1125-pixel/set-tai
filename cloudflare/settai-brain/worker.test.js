@@ -25,6 +25,7 @@ describe("Set-Tai gateway", () => {
       expect(url).toBe(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`);
       expect(url).not.toContain(env.GEMINI_API_KEY);
       const body = JSON.parse(init.body);
+      expect(body.generationConfig.maxOutputTokens).toBe(160);
       expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "minimal" });
       expect(body.generationConfig).not.toHaveProperty("temperature");
       expect(body.generationConfig).not.toHaveProperty("topP");
@@ -36,6 +37,17 @@ describe("Set-Tai gateway", () => {
     const kv = await env.QUOTA.list();
     expect(kv.keys.some(k => k.name.includes(data.userId))).toBe(false);
     expect(kv.keys.some(k => /^[a-f0-9]{64}:\d{4}-\d{2}-\d{2}$/.test(k.name))).toBe(true);
+  });
+
+  it("allows a longer Unicode reply only when the user asked for more detail", async () => {
+    const f = vi.fn(async (_url, init) => {
+      const body = JSON.parse(init.body);
+      expect(body.generationConfig.maxOutputTokens).toBe(320);
+      return Response.json({ candidates: [{ content: { parts: [{ text: "😈".repeat(700) }] } }] });
+    }); vi.stubGlobal("fetch", f);
+    const data = input(); data.message = "Please explain that more fully";
+    const r = await worker.fetch(req(data), env); const out = await r.json();
+    expect(r.status).toBe(200); expect(Array.from(out.text)).toHaveLength(560); expect(out.text.endsWith("…")).toBe(true);
   });
   it("40 atomic reservations hold even concurrently; next day resets; users are independent", async () => {
     const q = env.QUOTA_GATE.getByName(crypto.randomUUID());

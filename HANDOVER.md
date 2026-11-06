@@ -1,18 +1,21 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.28 (versionCode 66)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.29 (versionCode 67)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
-## v10.28 current handoff (supersedes older behaviour notes below)
+## v10.29 current handoff (supersedes older behaviour notes below)
 
-- Baseline **23ebd80 / v10.27 (65)** was pulled first. v10.26.1's `flickThrow=false`,
-  v10.26.2 power unblocking and v10.27 Touch Feel (weight, slingshot, heartbeat,
-  purr, tickle, shake, boops and landing thumps) are untouched. No MonkeyView or
-  touch/physics/renderer changes; no new permissions or frame-loop RNG calls.
-- **Set-Tai Cloud** is the default ONLINE brain after explicit Give Brain opt-in.
-  No key and no Gmail sign-in. AI stays off on a new install and when disabled.
-  `GatewayBrain.kt`, `ChatHub.kt`, `AppSettings.cloudUserId()` (persisted anonymous
-  UUID), `useOwnApiKey=false` (explicit advanced override). Offline models remain.
-  Network has short deadlines and friendly character-aware scripted fallback.
+- Baseline is **v10.28 (66)** plus the test-only RealOverlayPathTest hover wait on main.
+  Touch Feel, flickThrow=false, GoldenTrace, swipe paths and power cooldowns stay untouched.
+- **Set-Tai Cloud is ON by default** for fresh prefs (`aiBrainEnabled=true`, `brainType=ONLINE`,
+  `useOwnApiKey=false`). Stored OFF / NONE / offline / own-key always win. Give Brain OFF still
+  writes `brain=NONE`. `GatewayBrain.kt` display trim is 560 code points (worker still caps
+  usual replies at 200 and detail replies at 560). Anonymous `cloudUserId()` unchanged.
+- **Dual FABs:** faint 💬 left + 🎤 right of the character (same idle alpha 0.18). Mic tap enables
+  Voice if needed then `startListen` (Allow-mic chip when permission is missing). `fabSpeak` pref
+  kept unused. Heart stays above the head.
+- **"Explain more" chip** (`QuickChip.EXPLAIN_MORE`) after a successful GatewayBrain chat reply;
+  sends exact phrase `Please explain that more fully` (must stay in sync with `worker.js`).
+  Not shown on the long follow-up, resting/quota fallbacks, or offline/own-key replies.
 - Worker **settai-brain**: https://settai-brain.settai-companion.workers.dev/health
   (`POST /v1/chat` for Android). Maintenance source/config/tests/README in
   `cloudflare/settai-brain/`. **Change model ONLY at `MODEL` in worker.js**, then
@@ -21,13 +24,11 @@ Updated for **v10.28 (versionCode 66)**, 6 Nov 2026. Owner: Manikandan Gopalakri
 - Quota: 40 attempts per anonymous ID per **UTC** day, including background AI.
   SHA-256 hash + day/count mirrored in KV `settai-brain-quota`; SQLite-backed
   Quota DO reservations prevent KV eventual-consistency/concurrent overrun.
-  No chat logs. Failed upstream attempts count. KV errors fail closed. Anonymous
+  Usual replies ~30-40 words / 200 chars; detail ask ("Please explain that more fully") ~90 words / 560 chars. No chat logs. Failed upstream attempts count. KV errors fail closed. Anonymous
   IDs are not authentication; resets/new IDs can evade per-install fair-use.
-- **Live deployment caveat:** health HTTP 200. The one live chat returned gateway
-  HTTP 502 / Gemini HTTP 400 (`gemini_unavailable`). No raw upstream error/key is
-  returned. Model metadata GET returned 200 for the exact requested model. No
-  model substitution. Gateway is deployed but live Gemini replies are NOT yet
-  verified; Android gracefully uses scripted lines while upstream is unavailable.
+- **Live deployment:** health HTTP 200. GEMINI_API_KEY was set in the Cloudflare dashboard;
+  live chat returns Gemini replies. Model stays `gemini-3.5-flash-lite` (change only at MODEL
+  in worker.js). Worker length rules for v10.29 are already deployed; do not revert them.
 - Voice bug causes: RANDOM overrides did not cover IDLE/BORED; MindLines' default
   branch still said "banana break" for every newer body; ProactiveLines shared
   monkey jokes; generic prompt/comedy and error lines leaked monkey identity. Newer bodies
@@ -38,6 +39,10 @@ Updated for **v10.28 (versionCode 66)**, 6 Nov 2026. Owner: Manikandan Gopalakri
   uses saved name/relationship/outfit and `analysisSummary`, not monkey defaults.
 - `LocalChat` jokes/movement and existing PhoneCommands run before the brain, so
   battery/dance/jokes do not spend cloud quota. Public health never calls Gemini.
+- v10.29: Cloud default, dual FABs, Explain-more chip, worker 30-40 / detail 560 already live.
+  Worker tests: 7 passed. Full Android unit suite: 533 passed (0 failed), including GoldenTrace.
+  Tag `v10.29` is new (never move `v10.28`). Official APK `settai-v10.29.apk` (15,266,426 bytes,
+  10.29 / 67, same debug signing cert as v10.28). BUILD_PLAY_BUNDLE stays off.
 - v10.28 focused Android tests: 10 passed; Workers runtime tests: 6 passed (mock
   Gemini; actual DO concurrency). Final full suite: 528 passed, including all 13 GoldenTrace tests. Worker tests
   are now a separate read-only, no-secrets CI job (mocked Gemini only).

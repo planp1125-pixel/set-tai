@@ -251,6 +251,7 @@ class V109Test {
         val v = view("monkey")
         v.debugFrames(30); v.draw(Canvas(bmp))
         assertTrue("chat button shown", v.debugChatFabVisible)
+        assertTrue("mic button shown", v.debugMicFabVisible)
         val pt = FloatArray(2); v.debugChatFab(pt)
         val w = v.debugWin()
         // inside the window and not on the face

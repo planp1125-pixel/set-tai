@@ -30,9 +30,9 @@ class AppSettings(ctx: Context) {
     }
 
     /**
-     * v9.5 Strict Opt-In Gate for "Give Brain":
-     * Defaults to FALSE (and brainType = NONE). Until the user explicitly enables "Give Brain",
-     * no AI model is ever used anywhere in the app.
+     * v10.29 Give Brain defaults to Set-Tai Cloud ON for fresh installs (no key needed).
+     * Already-saved prefs always win: a stored ai_brain_enabled / brain / use_own_api_key is never overridden.
+     * Turning Give Brain OFF still writes brain=NONE; turning it back ON from NONE selects ONLINE/cloud.
      */
     /** v10.12: funny Tom-and-Jerry style skits between Duo/Trio friends (no AI used). */
     var skitsEnabled: Boolean
@@ -40,7 +40,7 @@ class AppSettings(ctx: Context) {
         set(v) { p.edit().putBoolean("skits_enabled", v).apply() }
 
     /** v10.13: peek in with a pose when a camera app opens. */
-    /** v10.13: the faint chat button opens 💬 typing (false) or 🎤 speaking (true). */
+    /** v10.13 (unused since v10.29): kept so old prefs do not crash. Dual FABs always show 💬 and 🎤. */
     var fabSpeak: Boolean
         get() = p.getBoolean("fabSpeak", false)
         set(v) { p.edit().putBoolean("fabSpeak", v).apply() }
@@ -49,16 +49,20 @@ class AppSettings(ctx: Context) {
         set(v) { p.edit().putBoolean("photobomb", v).apply() }
 
     var aiBrainEnabled: Boolean
-        get() = p.getBoolean("ai_brain_enabled", p.getString("brain", "NONE") != "NONE")
+        get() = when {
+            p.contains("ai_brain_enabled") -> p.getBoolean("ai_brain_enabled", true)
+            p.contains("brain") -> p.getString("brain", "ONLINE") != BrainType.NONE.name
+            else -> true
+        }
         set(v) {
             val e = p.edit().putBoolean("ai_brain_enabled", v)
             if (!v) e.putString("brain", BrainType.NONE.name)
-            else if (p.getString("brain", "NONE") == "NONE") e.putString("brain", BrainType.ONLINE.name)
+            else if (!p.contains("brain") || p.getString("brain", "NONE") == BrainType.NONE.name) e.putString("brain", BrainType.ONLINE.name)
             e.apply()
         }
 
     var brainType: BrainType
-        get() = runCatching { BrainType.valueOf(p.getString("brain", "NONE")!!) }.getOrDefault(BrainType.NONE)
+        get() = runCatching { BrainType.valueOf(p.getString("brain", "ONLINE")!!) }.getOrDefault(BrainType.ONLINE)
         set(v) {
             p.edit()
                 .putString("brain", v.name)
@@ -196,7 +200,7 @@ class AppSettings(ctx: Context) {
         get() = p.getBoolean("double_tap_power", true)
         set(v) = p.edit().putBoolean("double_tap_power", v).apply()
 
-    /** v10.9 Settings › "Chat button": a small floating 💬 button beside each character opens the chat. */
+    /** v10.9 / v10.29 Settings › "Chat button": faint 💬 (left) and 🎤 (right) beside each character. */
     var chatButton: Boolean
         get() = p.getBoolean("chat_button", true)
         set(v) = p.edit().putBoolean("chat_button", v).apply()

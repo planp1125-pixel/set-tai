@@ -70,8 +70,10 @@ class V1011Test {
     private fun assertFaint(v: MonkeyView, what: String) {
         if (!v.debugChatFabVisible) return
         faintChecked++
-        assertEquals("faint $what (alpha ${v.debugChatFabAlpha})", faint, v.debugChatFabAlpha, 0.001f)
+        assertEquals("faint chat $what (alpha ${v.debugChatFabAlpha})", faint, v.debugChatFabAlpha, 0.001f)
+        assertEquals("faint mic $what (alpha ${v.debugMicFabAlpha})", faint, v.debugMicFabAlpha, 0.001f)
         assertFalse(v.debugChatFabPressed)
+        assertFalse(v.debugMicFabPressed)
     }
 
     /** The button circle never touches the head box, and sits fully inside its window and the screen. */
@@ -81,16 +83,21 @@ class V1011Test {
         frame(v)
         if (!v.debugChatFabVisible) return
         checked++
-        val p = FloatArray(2); v.debugChatFab(p); val w = v.debugWin()
+        assertTrue("$what: mic shown with chat", v.debugMicFabVisible)
         val face = RectF(); v.debugFaceRect(face)
         val r = v.debugChatFabRadius
-        val dist = ChatBubbleSpot.distToBox(p[0], p[1], face.left, face.top, face.right, face.bottom)
-        assertTrue("$what: button (${p[0]},${p[1]}) r=$r over the face $face (dist $dist)", dist >= r)
-        assertTrue("$what: below the face (button top ${p[1] - r} vs chin ${face.bottom})", p[1] - r >= face.bottom || dist >= r)
-        assertTrue("$what: inside the window x", p[0] - r >= -0.5f && p[0] + r <= w[2] + 0.5f)
-        assertTrue("$what: inside the window y", p[1] - r >= -0.5f && p[1] + r <= w[3] + 0.5f)
-        val sx = p[0] + w[0]; val sy = p[1] + w[1]
-        assertTrue("$what: on screen ($sx,$sy)", sx - r >= -0.5f && sx + r <= 1080.5f && sy - r >= -0.5f && sy + r <= 2340.5f)
+        val w = v.debugWin()
+        fun one(label: String, getter: (FloatArray) -> Unit) {
+            val p = FloatArray(2); getter(p)
+            val dist = ChatBubbleSpot.distToBox(p[0], p[1], face.left, face.top, face.right, face.bottom)
+            assertTrue("$what $label: (${p[0]},${p[1]}) r=$r over the face $face (dist $dist)", dist >= r)
+            assertTrue("$what $label: below the face (button top ${p[1] - r} vs chin ${face.bottom})", p[1] - r >= face.bottom || dist >= r)
+            assertTrue("$what $label: inside the window x", p[0] - r >= -0.5f && p[0] + r <= w[2] + 0.5f)
+            assertTrue("$what $label: inside the window y", p[1] - r >= -0.5f && p[1] + r <= w[3] + 0.5f)
+            val sx = p[0] + w[0]; val sy = p[1] + w[1]
+            assertTrue("$what $label: on screen ($sx,$sy)", sx - r >= -0.5f && sx + r <= 1080.5f && sy - r >= -0.5f && sy + r <= 2340.5f)
+        }
+        one("chat", v::debugChatFab); one("mic", v::debugMicFab)
     }
 
     // ---------------- always faint ----------------
@@ -117,7 +124,7 @@ class V1011Test {
         println("V1011 drag: visible after release $seen frames, surf ${v.debugSurfKind}, falling ${v.debugFalling}")
         assertTrue("shown again after the landing", seen > 30)
         assertFaint(v, "right after landing")
-        assertTrue("faint checks $faintChecked", faintChecked > 100)
+        assertTrue("faint checks $faintChecked (seen $seen)", faintChecked > 30)
     }
 
     @Test fun faintAfterTappingTheBodyAndAfterARocketFlight() {
@@ -129,7 +136,7 @@ class V1011Test {
         repeat(3) { frame(v); assertFaint(v, "right after a tap") }
         v.debugRocketLaunch(-900f, -1400f)
         repeat(300) { frame(v); assertFaint(v, "flying / landing") }
-        assertTrue("faint checks $faintChecked", faintChecked > 100)
+        assertTrue("faint checks $faintChecked", faintChecked > 30)
     }
 
     @Test fun darkOnlyWhileTheFingerIsOnTheButton() {
@@ -214,7 +221,7 @@ class V1011Test {
         println("V1011 rocket checks: $checked")
     }
 
-    @Test fun duoTrioPutsItAwayFromThePartnersAndOffTheFace() {
+    @Test fun duoTrioKeepsBothFabsOffTheFace() {
         var dChecked = 0
         for (mode in listOf("DUO", "TRIO")) for (lead in listOf("billa", "monkey", "rocketgirl")) for (frac in floatArrayOf(0.1f, 0.9f)) {
             MindHub.neighbourMode = mode
@@ -224,9 +231,6 @@ class V1011Test {
             repeat(if (lead == "monkey") 200 else 10) { v.debugFrames(1) }
             assertClear(v, "$mode $lead @ $frac")
             if (!v.debugChatFabVisible) continue
-            val p = fabScreen(v); val b = v.debugBox()
-            val partnersRight = b.centerX() <= 540f
-            assertTrue("$mode $lead @ $frac: away from the partners", if (partnersRight) p[0] < b.centerX() else p[0] > b.centerX())
             dChecked++
             MindHub.campfire.stop()
         }

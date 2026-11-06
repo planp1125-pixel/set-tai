@@ -35,7 +35,7 @@ object Onboarding {
         "🐱🐭 Pick Billa & Chittu for a chase show!",
         "⏰ Water, tablet & eye-break reminders: Hold me › Tools",
         "🤳 Open your camera, I'll photobomb your selfie!",
-        "🎤 Hold the 💬 button to talk instead of typing",
+        "💬 Tap 💬 to type or 🎤 to talk",
         "🎬 Hold me › Show › Record a funny clip to share",
         "⚡ Double-tap me any time for a random power",
     )

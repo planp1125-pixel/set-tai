@@ -1130,7 +1130,7 @@ class CompanionStudioActivity : Activity() {
             textSize = 15.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xD5, 0x4F))
         }
         val brainSub = TextView(this).apply {
-            text = ChatHub.giveBrainStatusLine() + " — AI modeling is strictly OFF until you enable Give Brain!"
+            text = ChatHub.giveBrainStatusLine() + " — Cloud is ready by default; turn Brain off any time."
             textSize = 12f; setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xE0, 0xD8, 0xF0)); setPadding(0, dp(3), 0, dp(8))
         }
         brainCard.addView(brainTitle)

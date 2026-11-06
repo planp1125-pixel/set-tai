@@ -571,7 +571,7 @@ class CustomCompanionStudioTest {
         val rosterNames = CharacterRegistry.allWithCustom.map { it.name }
         assertTrue("Roster contains Ananya and Kutti: $rosterNames", "Ananya" in rosterNames && "Kutti" in rosterNames)
 
-        // 4. Verify Strict "🧠 Give Brain" Opt-In Gate (OFF by default until user enables Give Brain!)
+        // 4. Verify Give Brain gate: disabling still turns AI OFF; enabling turns it back ON
         ChatHub.settings.provider = com.combo.monkeycompanion.ai.Provider.GEMINI
         ChatHub.settings.setApiKeyFor(com.combo.monkeycompanion.ai.Provider.GEMINI, "test-dummy-key-1234")
         ChatHub.setBrainEnabled(false)
@@ -929,7 +929,7 @@ class CustomCompanionStudioTest {
         c.drawText("5. 🧘 Doomscroll Breaker & 20-20-20 Eye Care Guard", fsBox.left + 14f, fsBox.top + 118f, bPaint)
         c.drawText("6. 🔋 Battery 85% Charge Guard & >40°C Heat Watchdog", fsBox.left + 14f, fsBox.top + 137f, bPaint)
         c.drawText("🧠 Highlighted 'Give Brain' Opt-In + Woman Fix:", fsBox.left + 14f, fsBox.top + 163f, hPaint)
-        c.drawText("• [🧠 Give Brain] on Home/Studio/Settings (OFF 🔒 default)", fsBox.left + 14f, fsBox.top + 183f, Paint(bPaint).apply { color = Color.rgb(0xFF, 0xD5, 0x4F); typeface = Typeface.DEFAULT_BOLD })
+        c.drawText("• [🧠 Give Brain] on Home/Studio/Settings (Cloud ready by default)", fsBox.left + 14f, fsBox.top + 183f, Paint(bPaint).apply { color = Color.rgb(0xFF, 0xD5, 0x4F); typeface = Typeface.DEFAULT_BOLD })
         c.drawText("• Woman clean skin neck + unclipped flight head!", fsBox.left + 14f, fsBox.top + 202f, bPaint)
         c.drawText("• 10-Handle Mesh + 2.5x Loupe + [◀ ▲ ▼ ▶] D-Pad", fsBox.left + 14f, fsBox.top + 221f, Paint(bPaint).apply { color = Color.rgb(0x69, 0xF0, 0xAE) })
 

@@ -36,7 +36,7 @@ It's **an overlay only, not a launcher.**
 - Drag, fling, fall and bounce physics, hiding at the edge as a `<` tab, landings, superpowers, a radial long-press menu, and adaptive FPS (60/24/8/0).
 - **Photo-to-look-alike Companion Studio**: EXIF fix, a 68-point face mesh, gender and age detection, and hair colour. Editing uses zoom from 1x to 6x, split compare, Move Mesh handles, a 2.5x loupe, trackpad mode, a D-pad nudge and live 1:1 mesh-to-character copying. It always produces clean 2D vector faces, never raw photo cutouts.
 - **Multi-character roster** (`CustomCompanionStore`). Custom names are saved and never overwritten.
-- **🧠 Give Brain** opt-in card on Home, Studio and Settings. AI is **strictly OFF** unless enabled (`AppSettings.aiBrainEnabled = false` by default). Lines are local or canned otherwise.
+- **🧠 Give Brain** card on Home, Studio and Settings. **Set-Tai Cloud is ON by default** (`aiBrainEnabled=true`, `brainType=ONLINE`, no own key). Turn Brain off any time for local/canned lines only.
 - **Daily utilities** (`DailyUtilityEngine`):
   - OTP and delivery catcher
   - Doomscroll / YouTube / Reels screen-time guard, plus a 20-20-20 eye break. This works **even while tucked at the edge tab**: it auto-wakes, alerts, then re-tucks.

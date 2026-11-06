@@ -266,6 +266,8 @@ data class QuickChip(val id: String, val label: String, val arg: String = "") {
         val QUIT = QuickChip("quit", "✕ Quit")
         val LATER = QuickChip("later", "Later")
         val OK = QuickChip("later", "Got it")
+        /** v10.29: after a normal Set-Tai Cloud reply; arg MUST stay in sync with worker.js detail regex. */
+        val EXPLAIN_MORE = QuickChip("say", "Explain more", "Please explain that more fully")
         fun open(name: String) = QuickChip("open", "Open ${name.take(14)}", name)
         fun say(label: String, text: String) = QuickChip("say", label, text)
 

@@ -243,9 +243,10 @@ object ChatHub {
     }
 
     fun giveBrainStatusLine(): String = when {
-        !isBrainEnabled() -> "🔒 AI Brain: OFF (Local Mode Only — Tap 'Give Brain' to enable AI model)"
+        !isBrainEnabled() -> "🔒 AI Brain: OFF (Local Mode Only — Tap 'Give Brain' to turn Cloud back on)"
         hasRealBrain() -> "✅ AI Brain: ON · ${brainLabel()} (Active for AI Modeling, Chat & Recaps)"
-        settings.brainType == BrainType.ONLINE -> "⚠️ AI Brain: ON (${settings.provider.label}) — Tap 'Give Brain' to paste API key"
+        settings.brainType == BrainType.ONLINE && settings.useOwnApiKey -> "⚠️ AI Brain: ON (${settings.provider.label}) — Tap 'Give Brain' to paste API key"
+        settings.brainType == BrainType.ONLINE -> "☁️ Set-Tai Cloud is ready (no key needed)"
         else -> "⚠️ AI Brain: ON (On-Device) — Tap 'Give Brain' to finish model setup"
     }
 
@@ -311,7 +312,18 @@ object ChatHub {
                 memory.updateLast(final); memory.commit()
                 com.combo.monkeycompanion.agent.ScreenAgent.end()
                 spoke(final)
-                main.post { busy = false; fire { it.onReply(final, true) }; fire { it.onHistoryChanged() } }
+                // v10.29: one "Explain more" chip after a normal Set-Tai Cloud reply (not on the long follow-up, resting fallback, offline/own-key).
+                val explainChip = b is GatewayBrain
+                    && "Please explain that more fully" !in typed
+                    && !final.contains("cloud connection is resting")
+                    && !final.contains("Today's cloud chats are used up")
+                    && final.isNotBlank()
+                main.post {
+                    busy = false
+                    fire { it.onReply(final, true) }
+                    fire { it.onHistoryChanged() }
+                    if (explainChip) fire { it.onChips(listOf(com.combo.monkeycompanion.agent.QuickChip.EXPLAIN_MORE)) }
+                }
             } catch (t: Throwable) {
                 // v10.13.1: never show raw runtime errors (token ids, stack text) to the user
                 android.util.Log.w("ChatHub", "reply failed", t)

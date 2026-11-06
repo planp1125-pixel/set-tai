@@ -26,7 +26,16 @@ import java.util.concurrent.atomic.AtomicInteger
 class CloudBrainTest {
     private val context: Context get() = ApplicationProvider.getApplicationContext()
     private var server: HttpServer? = null
-    @Before fun before() { context.getSharedPreferences("monkey_settings", Context.MODE_PRIVATE).edit().clear().commit(); CharacterRegistry.select("devil") }
+    @Before fun before() {
+        context.getSharedPreferences("monkey_settings", Context.MODE_PRIVATE).edit().clear().commit()
+        CharacterRegistry.select("devil")
+        // ChatHub keeps a live AppSettings; after clear, force Cloud defaults and rebuild the brain.
+        runCatching {
+            ChatHub.init(context)
+            ChatHub.settings.useOwnApiKey = false
+            ChatHub.setBrainEnabled(true)
+        }
+    }
     @After fun after() { server?.stop(0); CharacterRegistry.select("monkey") }
     private fun serve(status: Int, response: String, seen: (String) -> Unit = {}): String {
         val s = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0); server = s
@@ -39,15 +48,25 @@ class CloudBrainTest {
     }
     @Test fun optInAndAnonymousIdPersistAndTouchDefaultsStayUnchanged() {
         val a = AppSettings(context)
-        assertFalse(a.aiBrainEnabled); assertEquals(BrainType.NONE, a.brainType)
+        // v10.29: fresh prefs default to Set-Tai Cloud on (no own key); flickThrow stays off
+        assertTrue(a.aiBrainEnabled); assertEquals(BrainType.ONLINE, a.brainType)
         assertFalse(a.useOwnApiKey); assertFalse(a.flickThrow)
         val id = a.cloudUserId(); assertEquals(id, UUID.fromString(id).toString()); assertEquals(id, AppSettings(context).cloudUserId())
-        a.aiBrainEnabled = true; assertEquals(BrainType.ONLINE, a.brainType)
         a.aiBrainEnabled = false; assertEquals(BrainType.NONE, a.brainType)
+        a.aiBrainEnabled = true; assertEquals(BrainType.ONLINE, a.brainType)
         assertEquals(id, a.cloudUserId())
+        // already-saved OFF must win
+        a.aiBrainEnabled = false
+        assertFalse(AppSettings(context).aiBrainEnabled)
+        assertEquals(BrainType.NONE, AppSettings(context).brainType)
     }
-    @Test fun defaultIsGatewayOnlyAfterGiveBrainAndOwnKeyRemainsExplicit() {
-        ChatHub.init(context); ChatHub.setBrainEnabled(false)
+    @Test fun defaultIsGatewayWithoutNeedingGiveBrainAndOwnKeyRemainsExplicit() {
+        ChatHub.init(context)
+        assertTrue(ChatHub.settings.aiBrainEnabled)
+        assertEquals(BrainType.ONLINE, ChatHub.settings.brainType)
+        assertFalse(ChatHub.settings.useOwnApiKey)
+        assertTrue(ChatHub.brain() is GatewayBrain)
+        ChatHub.setBrainEnabled(false)
         assertFalse(ChatHub.brain().isReal)
         ChatHub.setBrainEnabled(true); assertTrue(ChatHub.brain() is GatewayBrain)
         ChatHub.settings.useOwnApiKey = true
@@ -123,5 +142,12 @@ class CloudBrainTest {
         assertNotNull(LocalChat.reply("tell me a joke")); assertNotNull(LocalChat.reply("another joke"))
         assertTrue(LocalChat.reply("dance for me")!!.contains("[dance]"))
         assertNull(LocalChat.reply("Why is the sky blue?"))
+    }
+
+    @Test fun gatewayTrimsToDisplayCapOf560CodePoints() {
+        val long = "あ".repeat(600)
+        val url = serve(200, JSONObject().put("text", long).put("leftToday", 38).toString())
+        val out = GatewayBrain("id", { true }, endpoint = url).chat("", emptyList(), "hi", null) {}
+        assertEquals(560, out.codePointCount(0, out.length))
     }
 }

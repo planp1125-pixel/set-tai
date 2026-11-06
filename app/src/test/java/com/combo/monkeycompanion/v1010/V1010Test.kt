@@ -152,6 +152,8 @@ class V1010Test {
         val v = view("monkey")
         v.draw(Canvas(bmp))
         assertEquals("v10.11: faint from the very first frame (no 'just moved' solid state)", FloatButton.IDLE_ALPHA, v.debugChatFabAlpha, 0.001f)
+        assertEquals(FloatButton.IDLE_ALPHA, v.debugMicFabAlpha, 0.001f)
+        assertTrue(v.debugMicFabVisible)
         repeat(60 * 7) { v.debugFrames(1) }
         v.draw(Canvas(bmp))
         assertTrue("faded when idle (${v.debugChatFabAlpha})", v.debugChatFabAlpha < 0.25f)

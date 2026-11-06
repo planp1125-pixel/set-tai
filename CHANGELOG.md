@@ -2,6 +2,12 @@
 
 Plain-words history. Older builds (v9.2 – v10.11) are described in detail in [docs/CHANGELOG.md](docs/CHANGELOG.md). Below is a short summary of those, then every tagged release in this repo.
 
+## v10.29 (code 67)
+- **Set-Tai Cloud is the default brain** on a fresh install: no API key, no provider picker. Already-saved Brain off / offline / own-key choices are kept. Turning Give Brain off still disables AI; turning it back on from NONE picks Cloud again.
+- **Two faint overlay buttons** beside every character: 💬 chat on the left, 🎤 mic on the right. One tap to type, one tap to talk. The old "Chat button opens Speak" toggle is gone. Near a screen edge each button clamps onto the window (sides never flip).
+- **"Explain more" chip** after a normal Cloud reply. Tap it to ask for a longer answer (uses one of the 40 daily chats). Usual cloud replies aim for about 30–40 words (200-character cap); a detail ask allows up to about 90 words (560 characters). The worker already live with those rules is included in this release.
+- Persona guidance and the phone's GatewayBrain display trim match those caps. Tests cover the new defaults, dual FABs and the explain phrase.
+
 ## Before this repo (summary)
 - **v9.2 – v9.5 (codes 19–22):** the overlay companion grows up; v9.5 is the official baseline.
 - **v10.0 (23):** physics moved into `PhysicsBody` with golden-trace tests. No behaviour change.

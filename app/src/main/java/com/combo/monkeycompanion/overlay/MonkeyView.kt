@@ -6753,18 +6753,22 @@ class MonkeyView(
         }
         if (e.actionMasked == MotionEvent.ACTION_DOWN) {
             // The frame loop may be stopped (resting tab / nap): wake it for anything aimed at Settai.
-            val mine = !(wp || ln) || hitTest(e.x, e.y) != TouchZone.NONE || btnHit(e.x, e.y) || notifCardOpen ||
+            val mine = !(wp || ln) || hitTest(e.x, e.y) != TouchZone.NONE || btnHit(e.x, e.y) || chatFabHit(e.x, e.y) || micFabHit(e.x, e.y) || notifCardOpen ||
                 (bubbleOn && e.x >= bubbleLeft && e.x <= bubbleLeft + bubble.width && e.y >= bubbleTop && e.y <= bubbleTop + bubble.height)
-            if (mine) { noteInteraction(); chatFab.wake(); if (!running && live && !paused) start() }
+            if (mine) { noteInteraction(); chatFab.wake(); micFab.wake(); if (!running && live && !paused) start() }
         }
         if (hiddenTab && !wp) return onTabTouch(e)
         if (fabPressing && e.actionMasked != MotionEvent.ACTION_DOWN) {
             when (e.actionMasked) {
                 MotionEvent.ACTION_UP -> {
-                    fabPressing = false; chatFab.hold(false)
-                    if (hypot(e.x - fabLX, e.y - fabLY) <= chatFabR + 18 * d) { if (fabSpeakMode()) speakChatFab() else tapChatFab() }
+                    val which = fabWhich; fabPressing = false; fabWhich = 0
+                    chatFab.hold(false); micFab.hold(false)
+                    when (which) {
+                        1 -> if (hypot(e.x - fabLX, e.y - fabLY) <= chatFabR + 18 * d) tapChatFab()
+                        2 -> if (hypot(e.x - micLX, e.y - micLY) <= chatFabR + 18 * d) speakChatFab()
+                    }
                 }
-                MotionEvent.ACTION_CANCEL -> { fabPressing = false; chatFab.hold(false) }
+                MotionEvent.ACTION_CANCEL -> { fabPressing = false; fabWhich = 0; chatFab.hold(false); micFab.hold(false) }
             }
             invalidate(); return true
         }
@@ -6854,9 +6858,17 @@ class MonkeyView(
                     return true
                 }
                 if (chatFabHit(e.x, e.y)) {
-                    // v10.10: pressed state on touch-down (opaque + darker); the chat opens on release
-                    tracking = false; chatBtnUntil = 0f; fabPressing = true; fabDownAt = SystemClock.uptimeMillis(); fabSpeakBuzzed = false
+                    // v10.29: pressed state on touch-down; chat opens on release
+                    tracking = false; chatBtnUntil = 0f; fabPressing = true; fabWhich = 1
                     chatFab.hold(true)
+                    performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                    if (!running && live && !paused) start()
+                    invalidate()
+                    return true
+                }
+                if (micFabHit(e.x, e.y)) {
+                    tracking = false; chatBtnUntil = 0f; fabPressing = true; fabWhich = 2
+                    micFab.hold(true)
                     performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                     if (!running && live && !paused) start()
                     invalidate()
@@ -7171,6 +7183,7 @@ class MonkeyView(
     }
 
     private val chatFab = com.combo.monkeycompanion.brain.FloatButton()
+    private val micFab = com.combo.monkeycompanion.brain.FloatButton()
     private val chatFabR get() = 15f * d
     /** v10.11: finger target radius (21 dp = a 42 dp touch target, bigger than the 30 dp button). */
     private val chatFabTouchR get() = chatFabR + 6f * d
@@ -7186,6 +7199,7 @@ class MonkeyView(
     private fun attendingNow(): Boolean = host != null && !wp && !dragging && !showOn &&
         ((fingerDown && t - fingerDownT > 0.25f && !gestureDragged) || t < attendUntil || (bubbleOn && (arcOn || typing || bubbleChips.isNotEmpty())))
     private var fabLX = 0f; private var fabLY = 0f
+    private var micLX = 0f; private var micLY = 0f
     private var fabSitAt = -1L
     private var fabQuiet = false
     /** v10.11: the head box (view px) the chat button was placed against this frame. */
@@ -7196,8 +7210,11 @@ class MonkeyView(
     /** Tests: the face/head box in this view (the same one the chat button keeps clear of). */
     fun debugFaceRect(out: RectF) { faceRectView(out) }
     val debugChatFabVisible get() = chatFabOn
-    /** The chat button's centre in this view (tests). */
+    val debugMicFabVisible get() = chatFabOn
+    /** The LEFT chat button's centre in this view (tests). */
     fun debugChatFab(out: FloatArray) { out[0] = fabLX; out[1] = fabLY }
+    /** The RIGHT mic button's centre in this view (tests). */
+    fun debugMicFab(out: FloatArray) { out[0] = micLX; out[1] = micLY }
     var debugChatOpened = 0; private set
 
     private fun chatFabWanted(): Boolean {
@@ -7214,9 +7231,9 @@ class MonkeyView(
 
     private fun stepChatFab(dt: Float) {
         chatFabOn = chatFabWanted()
-        if (!chatFabOn) { chatFab.reset(); return }
-        // v10.11: always faint; dark + solid only while the finger is on it (no "just moved" state, no fade timer)
-        chatFab.step(dt)
+        if (!chatFabOn) { chatFab.reset(); micFab.reset(); return }
+        // v10.11 / v10.29: always faint; dark + solid only while the finger is on that button
+        chatFab.step(dt); micFab.step(dt)
     }
 
     private val fabM = Matrix()
@@ -7248,67 +7265,86 @@ class MonkeyView(
     }
 
     /**
-     * v10.11: put the chat button low beside the body (by the feet), on the side away from the face (away from Duo/Trio
-     * partners too), flipping sides near a screen edge, always fully on screen and never over the head.
+     * v10.29: always two faint buttons low beside the feet — 💬 LEFT of body centre, 🎤 RIGHT.
+     * Clamp onto the visible window near a screen edge (never flip sides). Keep clear of the face/head box
+     * and of each other; the friendship heart stays above the head.
      */
     private fun placeChatFab() {
         val r = chatFabR
         faceRectView(fabFace)
         val cx = ox + boxW / 2f; val feetY = oy + boxH - groundPad
-        renderer.faceRect(rig, fabFaceLocal)
-        val faceMid = fabFaceLocal.centerX()
-        val pref = when {
-            neighbourOverlayVisible() -> if (mx + boxW / 2f <= sw() / 2f) -1 else 1    // partners stand on the other side
-            abs(faceMid - cx) > 3f * d -> if (faceMid > cx) -1 else 1                // the face leans one way: go the other
-            else -> -rig.facingSign                                                   // behind where she looks
-        }
         val inX = boxW / 2f - r - 1f * d
-        val sides = intArrayOf(pref, -pref)
-        var k = 0
-        for (s in sides) {
-            fabCand[k++] = cx + s * inX; fabCand[k++] = feetY - r                     // beside the feet
-            fabCand[k++] = cx + s * inX; fabCand[k++] = oy + boxH - r - 1f * d          // as low as the box goes
-            fabCand[k++] = cx + s * (boxW / 2f + r * 0.4f); fabCand[k++] = feetY - r   // a little further out (wide windows)
-        }
-        // into this view (wall / ceiling turns and the duck-behind-an-edge offset), then into the window
+        // local candidates: chat left, mic right
+        fabPts[0] = cx - inX; fabPts[1] = feetY - r
+        fabPts[2] = cx + inX; fabPts[3] = feetY - r
         fabM.reset(); fabM.postTranslate(sinkX, heavyShake)
         val rot = bodyEdgeRot()
         if (rot != 0f) fabM.preRotate(rot, ox + boxW / 2f, oy + boxH / 2f)
-        if (!fabM.isIdentity) fabM.mapPoints(fabCand)
+        if (!fabM.isIdentity) fabM.mapPoints(fabPts, 0, fabPts, 0, 2)
         val sw = sw(); val sh = (host?.screenHeight() ?: height).toFloat()
-        // allowed: inside this window AND on the screen
         fabArea[0] = max(0f, -winX.toFloat()); fabArea[1] = max(0f, -winY.toFloat())
         fabArea[2] = min(winW.toFloat(), sw - winX); fabArea[3] = min(winH.toFloat(), sh - winY)
         if (wp || winW <= 0) { fabArea[0] = 0f; fabArea[1] = 0f; fabArea[2] = width.toFloat(); fabArea[3] = height.toFloat() }
-        for (i in 0 until 6) {
-            fabCand[2 * i] = fabCand[2 * i].coerceIn(fabArea[0] + r + 1f, max(fabArea[0] + r + 1f, fabArea[2] - r - 1f))
-            fabCand[2 * i + 1] = fabCand[2 * i + 1].coerceIn(fabArea[1] + r + 1f, max(fabArea[1] + r + 1f, fabArea[3] - r - 1f))
-        }
+        fun clampX(x: Float) = x.coerceIn(fabArea[0] + r + 1f, max(fabArea[0] + r + 1f, fabArea[2] - r - 1f))
+        fun clampY(y: Float) = y.coerceIn(fabArea[1] + r + 1f, max(fabArea[1] + r + 1f, fabArea[3] - r - 1f))
+        var chatX = clampX(fabPts[0]); var chatY = clampY(fabPts[1])
+        var micX = clampX(fabPts[2]); var micY = clampY(fabPts[3])
         fabFaceArr[0] = fabFace.left; fabFaceArr[1] = fabFace.top; fabFaceArr[2] = fabFace.right; fabFaceArr[3] = fabFace.bottom
-        val i = com.combo.monkeycompanion.brain.ChatBubbleSpot.choose(fabCand, fabFaceArr, fabArea, r, 2f * d)
-        fabLX = fabCand[2 * i]; fabLY = fabCand[2 * i + 1]
-        chatFab.place(fabLX + winX, fabLY + winY, if (i < 3) pref else -pref)
+        val gap = 2f * d
+        fun clearFace(x0: Float, y0: Float, outward: Float): FloatArray {
+            var x = x0; var y = y0
+            if (!com.combo.monkeycompanion.brain.ChatBubbleSpot.circleHitsBox(x, y, r + gap, fabFaceArr[0], fabFaceArr[1], fabFaceArr[2], fabFaceArr[3])) {
+                return floatArrayOf(x, y)
+            }
+            // nudge down, then further out on this button's own side — never flip
+            y = clampY(y + r + 4f * d)
+            if (!com.combo.monkeycompanion.brain.ChatBubbleSpot.circleHitsBox(x, y, r + gap, fabFaceArr[0], fabFaceArr[1], fabFaceArr[2], fabFaceArr[3])) {
+                return floatArrayOf(x, y)
+            }
+            x = clampX(x + outward * (r + 6f * d))
+            y = clampY(y)
+            return floatArrayOf(x, y)
+        }
+        run { val p = clearFace(chatX, chatY, -1f); chatX = p[0]; chatY = p[1] }
+        run { val p = clearFace(micX, micY, 1f); micX = p[0]; micY = p[1] }
+        // keep apart without flipping sides
+        val minDist = 2f * r + 6f * d
+        val dx = micX - chatX; val dy = micY - chatY
+        val dist = hypot(dx, dy)
+        if (dist < minDist && dist > 0.1f) {
+            val push = (minDist - dist) / 2f
+            val nx = dx / dist; val ny = dy / dist
+            chatX = clampX(chatX - nx * push); chatY = clampY(chatY - ny * push)
+            micX = clampX(micX + nx * push); micY = clampY(micY + ny * push)
+        } else if (dist <= 0.1f) {
+            chatX = clampX(chatX - minDist / 2f); micX = clampX(micX + minDist / 2f)
+        }
+        fabLX = chatX; fabLY = chatY
+        micLX = micX; micLY = micY
+        chatFab.place(fabLX + winX, fabLY + winY, -1)
+        micFab.place(micLX + winX, micLY + winY, 1)
     }
 
     private fun drawChatFab(canvas: Canvas) {
         if (!chatFabOn) return
-        // v10.11: no lag (a lagging button used to drift over the face mid-move); a press doesn't move it
-        if (!fabPressing || chatFab.x.isNaN()) placeChatFab()
-        val r = chatFabR * (1f - 0.18f * chatFab.press)
-        val lx = fabLX; val ly = fabLY
-        val a = (255 * chatFab.alpha).toInt()
-        // v10.10: held down = fully opaque and darker
-        val pk = if (fabPressing) 1f else 0f
+        // v10.11 / v10.29: no lag; a press on one button doesn't move either
+        if (!fabPressing || chatFab.x.isNaN() || micFab.x.isNaN()) placeChatFab()
+        drawOneFab(canvas, fabLX, fabLY, chatFab, fabWhich == 1 && fabPressing, "💬")
+        drawOneFab(canvas, micLX, micLY, micFab, fabWhich == 2 && fabPressing, "🎤")
+    }
+
+    private fun drawOneFab(canvas: Canvas, lx: Float, ly: Float, fab: com.combo.monkeycompanion.brain.FloatButton, pressing: Boolean, icon: String) {
+        val r = chatFabR * (1f - 0.18f * fab.press)
+        val a = (255 * fab.alpha).toInt()
+        val pk = if (pressing) 1f else 0f
         val fill = Color.rgb((0xE8 + (0x9A - 0xE8) * pk).toInt(), (0x8A + (0x4A - 0x8A) * pk).toInt(), (0x2E + (0x0C - 0x2E) * pk).toInt())
         btnPaint.style = Paint.Style.FILL; btnPaint.color = fill; btnPaint.alpha = (a * 0.25f).toInt()
-        canvas.drawCircle(lx, ly, r * 1.35f, btnPaint)   // soft glow
+        canvas.drawCircle(lx, ly, r * 1.35f, btnPaint)
         btnPaint.alpha = a; canvas.drawCircle(lx, ly, r, btnPaint)
         btnPaint.style = Paint.Style.STROKE; btnPaint.strokeWidth = 1.6f * d; btnPaint.color = Color.WHITE; btnPaint.alpha = a
         canvas.drawCircle(lx, ly, r, btnPaint)
-        btnText.alpha = a; btnText.textSize = 14 * d * (1f - 0.18f * chatFab.press)
-        // v10.13: one-tap shortcut for the mode chosen in Settings: 💬 type or 🎤 speak
-        val speak = fabSpeakMode()
-        canvas.drawText(if (speak) "\uD83C\uDFA4" else "\uD83D\uDCAC", lx, ly - (btnText.descent() + btnText.ascent()) / 2, btnText)
+        btnText.alpha = a; btnText.textSize = 14 * d * (1f - 0.18f * fab.press)
+        canvas.drawText(icon, lx, ly - (btnText.descent() + btnText.ascent()) / 2, btnText)
         btnText.alpha = 255; btnText.textSize = 17 * d; btnPaint.alpha = 255
     }
 
@@ -7372,10 +7408,12 @@ class MonkeyView(
         else { rig.headTop(heartHead); heartHead[0] += sinkX }
         val maxW = (if (wp) sw() else winW.toFloat()); val maxH = (if (wp) (host?.screenHeight() ?: height).toFloat() else winH.toFloat())
         // v10.19.2: beside the top of the head (upper corner), on the chat button's side; the button stays lower down
-        val side = if (chatFabOn && !chatFab.x.isNaN() && abs(fabLX - heartHead[0]) > 1f) Math.signum(fabLX - heartHead[0]) else 1f
+        // v10.29: heart stays above the head; nudge up if it would meet either FAB
+        val side = 1f
         var cx = heartHead[0] + side * (MonkeyRig.HEAD_R * rigScale + r * 0.5f)
         var cy = heartHead[1] + r * 0.6f
         if (chatFabOn && !chatFab.x.isNaN() && abs(cx - fabLX) < r + chatFabR + 6f * d) cy = min(cy, fabLY - chatFabR - r - 6f * d)
+        if (chatFabOn && !micFab.x.isNaN() && abs(cx - micLX) < r + chatFabR + 6f * d) cy = min(cy, micLY - chatFabR - r - 6f * d)
         cx = cx.coerceIn(r * 1.8f, max(r * 1.8f, maxW - r * 1.8f)); cy = cy.coerceIn(r * 1.6f, max(r * 1.6f, maxH - r * 1.6f))
         heartLX = cx; heartLY = cy; heartLR = r
         if (heartShowFor > 0f) { drawHeartPopup(canvas, cx, cy, maxW, maxH); return }
@@ -7454,19 +7492,23 @@ class MonkeyView(
     private fun heartHit(x: Float, y: Float) = heartOn && heartLR > 0f && heartShowFor <= 0f && !(bubbleOn) && hypot(x - heartLX, y - heartLY) <= heartLR + 12f * d
 
     private fun chatFabHit(x: Float, y: Float) = chatFabOn && !chatFab.x.isNaN() && hypot(x - fabLX, y - fabLY) <= chatFabTouchR
+    private fun micFabHit(x: Float, y: Float) = chatFabOn && !micFab.x.isNaN() && hypot(x - micLX, y - micLY) <= chatFabTouchR
 
-    /** The chat button: opens the chat exactly like double-tap used to (the AI stays off unless Give Brain is on). */
+    /** v10.29: which overlay FAB is pressed — 0 none, 1 chat (left), 2 mic (right). */
     private var fabPressing = false
-    /** Tests: the chat button is held down right now (pressed look). */
-    val debugChatFabPressed get() = fabPressing
+    private var fabWhich = 0
+    /** Tests: the LEFT chat button is held down right now (pressed look). */
+    val debugChatFabPressed get() = fabPressing && fabWhich == 1
     val debugChatFabAlpha get() = chatFab.alpha
-    private var fabDownAt = 0L
-    private var fabSpeakBuzzed = false
-    private fun fabSpeakMode() = ChatHub.settings.fabSpeak
+    val debugMicFabPressed get() = fabPressing && fabWhich == 2
+    val debugMicFabAlpha get() = micFab.alpha
     private fun speakChatFab() {
-        chatFab.pressed()
-        if (com.combo.monkeycompanion.agent.Voice.enabled(context)) startListen(hold = false)
-        else say("Switch on the Voice power (Settings › Phone powers) and I'll listen 🎤 · tap 💬 to type", 4000L)
+        micFab.pressed()
+        // One tap for non-technical users: turn Voice on if needed; startListen shows Allow-mic chip when permission is missing.
+        if (!com.combo.monkeycompanion.agent.Voice.enabled(context)) {
+            com.combo.monkeycompanion.ai.AppSettings(context).setGroupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE, true)
+        }
+        startListen(hold = false)
     }
     private fun tapChatFab() {
         chatFab.pressed()

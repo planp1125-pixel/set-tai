@@ -21,6 +21,8 @@ class V1014OverlayTest {
     private fun view(id: String): MonkeyView {
         ChatHub.init(ctx); MindHub.init(ctx); MindHub.campfire.stop(); MindHub.neighbourMode = "SOLO"
         ctx.getSharedPreferences("settai_v3", 0).edit().clear().commit()
+        // v10.29: Cloud is on by default; this suite asserts scripted-speech hold/settle behaviour
+        ChatHub.setBrainEnabled(false)
         ChatHub.settings.gags = false; ChatHub.settings.batterySaver = false
         CharacterRegistry.select(id)
         val v = MonkeyView(ctx, LandingE2ETest.Host())

@@ -129,7 +129,7 @@ class SettingsActivity : Activity() {
     private fun build(): View {
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(28)) }
         col.addView(text("Set-Tai brain & settings", 26f, true).apply { gravity = Gravity.CENTER_HORIZONTAL })
-        col.addView(text("Give Brain enables Set-Tai Cloud: no API key or Gmail sign-in. 40 cloud requests per UTC day; messages go to Gemini. Local jokes and commands stay on your phone.", 14f, color = soft))
+        col.addView(text("Set-Tai Cloud is ready by default: no API key or Gmail sign-in. You can still turn Brain off. 40 cloud requests per UTC day; messages go to Gemini. Local jokes and commands stay on your phone.", 14f, color = soft))
 
         // Brain type
         val group = RadioGroup(this)
@@ -642,20 +642,15 @@ class SettingsActivity : Activity() {
             setOnCheckedChangeListener { _, c -> s.doubleTapPower = c }
         }
         val chatBtn = CheckBox(this).apply {
-            text = "Chat button: a small 💬 button floats beside each character. Tap it to chat."
+            text = "Chat buttons: faint 💬 on the left and 🎤 on the right of each character. Tap 💬 to type or 🎤 to talk."
             setTextColor(brown); isChecked = s.chatButton
             setOnCheckedChangeListener { _, c -> s.chatButton = c }
-        }
-        val fabMode = CheckBox(this).apply {
-            text = "Chat button opens 🎤 Speak (mic) instead of 💬 Chat (type). The button icon changes to match; one tap starts it."
-            setTextColor(brown); isChecked = s.fabSpeak
-            setOnCheckedChangeListener { _, c -> s.fabSpeak = c }
         }
         val energy = text("Measuring…", 12f, color = soft).also { energyText = it }
         return card(
             "Rest & battery",
             text("Auto-rest: if you don't play with Settai for a while, it hides behind the nearest edge (just a tab). Tap the tab to call it back, double-tap to chat. It also pops out for low battery, overheating and timers.", 12f, color = soft),
-            restSp, unlock, saver, gags, smooth, living, sfx, touchFeel, flickThrow, dtPower, chatBtn, fabMode,
+            restSp, unlock, saver, gags, smooth, living, sfx, touchFeel, flickThrow, dtPower, chatBtn,
             text("Energy", 13f, bold = true), energy,
             text("Changes apply within a minute.", 12f, color = soft),
         )
@@ -924,9 +919,9 @@ class SettingsActivity : Activity() {
 }
 
 /**
- * v9.5 Reusable "🧠 Give Brain" Quick-Setup Dialog & Highlighted Card Builder!
- * Exposed on Home, Character Creation (CompanionStudioActivity), and Settings so the AI model is
- * strictly OFF by default and only used when the user explicitly enables & configures "Give Brain".
+ * v9.5 / v10.29 Reusable "🧠 Give Brain" Quick-Setup Dialog & Highlighted Card Builder!
+ * Exposed on Home, Character Creation (CompanionStudioActivity), and Settings. Set-Tai Cloud is ready
+ * by default; the user can still turn Brain off or pick offline / own-key.
  */
 object GiveBrainDialog {
     fun show(
@@ -1113,7 +1108,7 @@ object GiveBrainDialog {
         }
 
         android.app.AlertDialog.Builder(act)
-            .setTitle("🧠 Give Brain to Settai (AI Opt-In)")
+            .setTitle("🧠 Give Brain to Settai")
             .setView(ScrollView(act).apply { addView(root) })
             .setNeutralButton("Full Brain Settings") { _, _ ->
                 act.startActivity(Intent(act, SettingsActivity::class.java))
