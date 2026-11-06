@@ -2764,6 +2764,7 @@ class MonkeyView(
         controller.update(dt)
         if (att) { mx = keepX; my = keepY }
         if (stepExit()) return
+        stepArmorShed(dt) // detached metal keeps flying even during attention or a power
         if (!stepPower(dt) && !att) stepPhysics(dt)
         stepHide(dt)
         stepEntrance(dt)
@@ -2945,33 +2946,31 @@ class MonkeyView(
         postNext(wall0, iv)
     }
 
-    // ---------------- v10.36 Armor Anna: plates fly off on splat / marble, then snap back like Iron Man ----------------
-    private var shedK = 0f          // 0 suited .. 1 plates fully off
-    private var shedPhase = 0       // 0 none, 1 blowing off, 2 off (waiting), 3 flying home
-    private var shedHold = 0f
-    val debugArmorShed get() = shedK
-    val debugArmorShedPhase get() = shedPhase
+    // v10.37: he falls in his inner clothes; independent metal flies in screen space, never in his squash layer.
+    private val armorScatter = com.combo.monkeycompanion.rig.ArmorScatter()
+    private var armorMarbleShedAttempted = false
+    val debugArmorShed get() = armorScatter.amount
+    val debugArmorShedPhase get() = armorScatter.phase
+    val debugArmorPieces get() = armorScatter.frame(rig, winX.toFloat(), winY.toFloat())
+    val debugArmorRecovery get() = armorScatter.recovery
     private fun armourRenderer() = renderer as? com.combo.monkeycompanion.rig.ArmourRenderer
     private fun startArmorShed() {
-        if (armourRenderer() == null) return
-        shedPhase = 1; shedHold = 0f
+        val r = armourRenderer() ?: return
+        val h = host ?: return
+        // The rig belongs to the last geometry frame. Carry its captured attachment centers to the current hit.
+        val dx = mx - winX - ox
+        val dy = my - typeLift - winY - oy
+        if (armorScatter.start(rig, winX + dx, winY + dy,
+                android.graphics.RectF(0f, 0f, h.screenWidth().toFloat(), h.screenHeight().toFloat()))) r.shed = 1f
     }
     private fun stepArmorShed(dt: Float) {
         val r = armourRenderer()
-        if (r == null) { shedPhase = 0; shedK = 0f; return }
-        when (shedPhase) {
-            1 -> { shedK = (shedK + dt / 0.18f).coerceAtMost(1f); if (shedK >= 1f) shedPhase = 2 }
-            2 -> { shedHold += dt; if (!marbleOn && impact == null && shedHold > 0.6f) shedPhase = 3 }
-            3 -> {
-                shedK = (shedK - dt / 0.45f).coerceAtLeast(0f)
-                if (shedK <= 0f) { shedPhase = 0; feelSharpHit(0.35f) }   // clank — suit snaps back on
-            }
-        }
-        r.shed = shedK * shedK * (3f - 2f * shedK)   // smoothstep
+        if (r == null) { armorScatter.clear(); return }
+        if (armorScatter.step(dt, marbleOn || impact != null)) feelSharpHit(0.35f)
+        r.shed = if (armorScatter.active) 1f else 0f
     }
 
     private fun stepPhysics(dt: Float) {
-        stepArmorShed(dt)
         if (edgeCrashCooldown > 0f) edgeCrashCooldown = (edgeCrashCooldown - dt).coerceAtLeast(0f)
         if (mcOn && !dragging) stepMaskClimb(dt)
         if (host == null) return
@@ -3575,6 +3574,29 @@ class MonkeyView(
 
     // ---------------- Geometry ----------------
 
+    /** Union with a stable screen-space scatter envelope; only window origin changes, never mx/my. */
+    private fun placeWindowWithArmorEnvelope() {
+        val h = host ?: return
+        if (armorScatter.active && !wp && !ln) {
+            val e = android.graphics.RectF(armorScatter.envelope)
+            // Docking follows his live bones, not the launch pose. Include generous plate corner room
+            // around the moving body too (even when he has crossed to the opposite edge).
+            val plateRoom = 64f * effectiveRigScale()
+            e.union(mx - plateRoom, my - typeLift - plateRoom,
+                mx + boxW + plateRoom, my - typeLift + boxH + plateRoom)
+            val oldX = winX; val oldY = winY
+            val right = max(winX + winW, kotlin.math.ceil(e.right).toInt()).coerceAtMost(h.screenWidth())
+            val bottom = max(winY + winH, kotlin.math.ceil(e.bottom).toInt()).coerceAtMost(h.screenHeight())
+            winX = min(winX, kotlin.math.floor(e.left).toInt()).coerceAtLeast(0)
+            winY = min(winY, kotlin.math.floor(e.top).toInt()).coerceAtLeast(0)
+            winW = (right - winX).coerceAtLeast(1); winH = (bottom - winY).coerceAtLeast(1)
+            val dx = (oldX - winX).toFloat(); val dy = (oldY - winY).toFloat()
+            ox += dx; oy += dy; bubbleLeft += dx; bubbleTop += dy
+            notifCardLeft += dx; notifCardTop += dy
+        }
+        h.placeWindow(winX, winY, winW, winH)
+    }
+
     private fun updateGeometry() {
         val showBubble = bubbleOn
         if (host == null) {
@@ -3599,7 +3621,7 @@ class MonkeyView(
             if (hideSide == 2) { winW = tabL.toInt(); winH = thick; winX = (tabPos - tabL / 2).toInt(); winY = sh - host.bottomInset() - winH }
             else { winW = thick; winH = tabL.toInt(); winY = (tabPos - tabL / 2).toInt(); winX = if (hideSide < 0) 0 else sw - winW }
             ox = 0f; oy = 0f
-            host.placeWindow(winX, winY, winW, winH)
+            placeWindowWithArmorEnvelope()
             return
         }
         val boxY = my - typeLift
@@ -3616,7 +3638,7 @@ class MonkeyView(
                 bubbleLeft = (ox + boxW / 2f - bw / 2f).coerceIn(0f, max(0f, winW - bw))
                 bubbleTop = oy + boxH + bubble.trailSpace
             }
-            host.placeWindow(winX, winY, winW, winH)
+            placeWindowWithArmorEnvelope()
             return
         }
         if (powerOn && !(wp || ln)) {
@@ -3632,7 +3654,7 @@ class MonkeyView(
                 bubbleLeft = (ox + boxW / 2f - bw / 2f).coerceIn(0f, max(0f, winW - bw))
                 bubbleTop = max(0f, oy + bubbleOverlap() - bubble.trailSpace - bubble.height)
             }
-            host.placeWindow(winX, winY, winW, winH)
+            placeWindowWithArmorEnvelope()
             return
         }
         if ((arc != null || (falling && landStyle.fx && (landStyle.power || landStyle == Landings.Style.CROW_CARRY))) && !(wp || ln)) {
@@ -3647,14 +3669,14 @@ class MonkeyView(
                 bubbleLeft = (ox + boxW / 2f - bw / 2f).coerceIn(0f, max(0f, winW - bw))
                 bubbleTop = max(0f, oy + bubbleOverlap() - bubble.trailSpace - bubble.height)
             }
-            host.placeWindow(winX, winY, winW, winH)
+            placeWindowWithArmorEnvelope()
             return
         }
         if (exiting && exitKind == com.combo.monkeycompanion.brain.Exit.ROCKET && controller.state == MonkeyState.EXIT && controller.stateTime > 1.2f && !(wp || ln)) {
             // Lift-off: a tall, narrow window from the top of the screen down to the launch spot.
             winX = mx.toInt(); winW = boxW; winY = 0; winH = (boxY + boxH).toInt().coerceAtLeast(boxH)
             ox = 0f; oy = boxY - winY
-            host.placeWindow(winX, winY, winW, winH)
+            placeWindowWithArmorEnvelope()
             return
         }
         if (notifCardOpen && !wp) {
@@ -3676,7 +3698,7 @@ class MonkeyView(
             oy = boxY - winY
             ox = mx - winX
             notifCardLeft = (ox + boxW / 2f - cw / 2f).coerceIn(0f, max(0f, winW - cw))
-            host.placeWindow(winX, winY, winW, winH)
+            placeWindowWithArmorEnvelope()
             return
         }
         if (!showBubble) {
@@ -3743,7 +3765,7 @@ class MonkeyView(
             winX = 0; winY = 0; winW = sw; winH = sh
             return
         }
-        host.placeWindow(winX, winY, winW, winH)
+        placeWindowWithArmorEnvelope()
     }
 
     private fun clampPosition() {
@@ -6050,7 +6072,7 @@ class MonkeyView(
         impact = null; swipeTrip = null; falling = false; vy = 0f; tweenT = -1f; tweenDone = null; arc = null; afterLand = null
         climber.deactivate(); surf = freeSurf(my)
         marbleOn = true; marbleBounces = 0; marbleSide = 0
-        startArmorShed()   // v10.36
+        armorMarbleShedAttempted = false
         marbleSquashT = 0f; marbleSx = 1f; marbleSy = 1f
         ivx = fvx; ivy = fvy
         reactionLayer.clear()
@@ -6114,6 +6136,7 @@ class MonkeyView(
     }
 
     private fun marbleBounce(side: Int, closeDp: Float) {
+        if (!armorMarbleShedAttempted) { armorMarbleShedAttempted = true; startArmorShed() }
         marbleBounces++
         marbleSide = side
         marbleSquashT = 0.12f
@@ -6260,6 +6283,7 @@ class MonkeyView(
         }
         if (impact?.stars == true) drawEdgeCrashStarsOverlay(canvas)   // v10.20 dizzy
         canvas.restore()
+        armorScatter.draw(canvas, rig, winX.toFloat(), winY.toFloat())
         drawImpactWord(canvas)
     }
 
@@ -6583,24 +6607,40 @@ class MonkeyView(
     private var tiltTickAcc = 0.48f
     private var tiltFallSaid = false
     private var tiltVx = 0f; private var tiltVy = 0f
+    private var tiltOwnsRoll = false
     val debugTiltSliding get() = tiltSlideSide != 0
     val debugTiltLean get() = tiltLean
 
+    /** Tilt may acquire only a settled screen boundary, never a free-floating/hovering character. */
+    private fun restingOnScreenEdge(): Boolean {
+        if (surf.spot != -1) return false // -2 is free mid-air hover, not the visual floor
+        val eps = 2f * d
+        return when (surf.kind) {
+            SK.FLOOR -> abs(my - ground()) <= eps
+            SK.CEIL -> abs(my - topY()) <= eps
+            SK.WALL_L -> mx <= eps
+            SK.WALL_R -> mx >= sw() - boxW - eps
+        }
+    }
     private fun canTiltPhysics(): Boolean =
         host != null && !wp && live && !paused && !hiddenTab && !dragging && !pinchOn && !pinchSpring &&
-            !slingOn && swipeTrip == null && impact == null && !marbleOn && !powerOn && !rocketFlyOn &&
-            hideAnim < 0f && !(v5On && stage.playing) && !typing && !exiting
+            !slingOn && swipeTrip == null && arc == null && !falling && impact == null && !marbleOn && !powerOn && !rocketFlyOn &&
+            !isEdgeCrashLanding && coyoteScareTimer <= 0f &&
+            (!climber.active || (climber.gripped && controller.state == MonkeyState.IDLE)) &&
+            !mcOn && tweenT < 0f && !chargeTrip &&
+            hideAnim < 0f && !(v5On && stage.playing) && !typing && !exiting &&
+            (restingOnScreenEdge() || tiltOwnsRoll) // only continue OUR ball motion after it leaves its starting edge
 
     /** Continuous slide / fall from live accelerometer (Stage calls this every frame). */
     fun tiltTick(det: com.combo.monkeycompanion.v5.MotionDetector, dt: Float) {
         if (!canTiltPhysics()) {
             if (tiltSlideSide != 0 || tiltLean != 0f) { tiltSlideSide = 0; tiltLean = 0f }
-            tiltVx = 0f; tiltVy = 0f
+            tiltVx = 0f; tiltVy = 0f; tiltOwnsRoll = false
             return
         }
         // Flat on a table = sleep mask path, never a mid-air fall
         if (det.isTableFaceDown()) {
-            tiltSlideSide = 0; tiltLean = 0f; tiltVx = 0f; tiltVy = 0f; return
+            tiltSlideSide = 0; tiltLean = 0f; tiltVx = 0f; tiltVy = 0f; tiltOwnsRoll = false; return
         }
         val deg = det.tiltDeg()
         val a = abs(deg)
@@ -6611,14 +6651,14 @@ class MonkeyView(
         // accelerometer: +mx right (gx<0 = right side low), +my down (gy>0 = upright).
         val upside = det.isUpsideDownInHand()
         if (a >= slideAt || upside) {
+            tiltOwnsRoll = true
             if (a >= fallAt || upside) {
                 if (!tiltFallSaid) {
                     tiltFallSaid = true
                     say(pickLine(listOf("Aiyyo I'm falling!! 😵", "Whoa— too tippy!! 🫣", "Hold the phoneee!! 😱")), 1800L)
                 }
             } else tiltFallSaid = false
-            if (falling) { falling = false; vy = 0f }
-            arc = null
+            // No cancellation of flight/fall here: acquire only a settled edge (including a still, fully planted wall grip).
             if (climber.active) climber.deactivate()
             val gx = det.gravX(); val gy = det.gravY()
             val acc = 95f * d * (1.2f - 0.45f * w)            // px/s² per m/s²; light ones skitter faster
@@ -6665,7 +6705,8 @@ class MonkeyView(
         tiltFallSaid = false
         if (a < 18f) {
             tiltVx = 0f; tiltVy = 0f
-            val wasTilting = tiltSlideSide != 0
+            val wasTilting = tiltOwnsRoll
+            tiltOwnsRoll = false
             tiltSlideSide = 0
             tiltLean *= 0.7f
             if (abs(tiltLean) < 0.05f) tiltLean = 0f

@@ -1,8 +1,16 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.36 (versionCode 74)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.37 (versionCode 75)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
-## v10.36 current handoff
+## v10.37 current handoff
+
+- `rig/ArmorScatter.kt` owns 13 deterministic independent screen-space plates (no RNG). Each captures its mapped bone center on the first hit, scatters with rig-scaled distinct translations/spins over 0.4 s (screen-edge reflection/clamping), waits until impact/marble is over PLUS 0.6 s, then docks to live bone targets staggered over 0.8 s. Width/height interpolate on return if his rig scale changed. Redundant active triggers are ignored.
+- `MonkeyView.marbleBounce` triggers once per marble sequence (`armorMarbleShedAttempted`, reset in `startMarble`). `impactHit` still triggers comic impacts. `stepArmorShed` runs once in the frame loop, outside power/attention physics ownership, without changing RNG call order. `ArmourRenderer.shed` suppresses his attached torso/limb armour and draws inner clothes; helmet stays on. Detached metal draws AFTER the body canvas restore.
+- All overlay `placeWindow` calls share `placeWindowWithArmorEnvelope`: stable launch envelope unioned with normal geometry plus moving-body docking margin, screen-clamped; shifts ox/oy and bubble/card offsets but never mx/my. No hover getter or slingshot physics changes.
+- `canTiltPhysics` now requires `arc == null`. The later clarification adds settled-boundary acquisition (`restingOnScreenEdge`) and explicit airborne/action exclusions (fall, edge crash, tween, active climb, charge trip). `tiltOwnsRoll` only continues a roll originally acquired at a boundary; exclusions clear ownership/velocity. A fully planted idle wall grip counts as settled. Free-air hover is never acquired. Preserve the arc paths/styles, swipeTrip/rocket exclusions, and excluded-state velocity reset. Tests explicitly disable autonomous roam so the pre-existing random flight edge-crash gag cannot contaminate user-swipe assertions.
+- Full unit run: **601 passed, 0 failed/skipped**, including **20 V1037** and **13/13 GoldenTrace**. No flakes in the final run. Tests: `v1037/V1037Test`; V1036 mid-air pickup assertions updated for the owner's settled-boundary-only clarification. No Ironboy/custom shed, helmet-off, Shows editing, look-at-user, export, or quota features.
+
+## v10.36 handoff
 
 - `MonkeyView.tiltTick` now does its own 2D integration (`tiltVx`/`tiltVy`, using `MotionDetector.gravX()/gravY()`), with no `beginFall` on side tilt and no `my = ground()` pin. The edges bounce with `TouchFeel.marbleRestitution`. Level (<18°) clears the state and calls `beginFall` if the character is mid-air. `drag_tick` uses `tiltTickAcc` (frame time) and fires only when the character moved more than 0.5 px. Armour shed: `MonkeyView.startArmorShed` is called from `impactHit` and `startMarble`. `stepArmorShed` runs at the top of `stepPhysics` (phase 1 = off in 0.18 s, 2 = hold until the marble or impact ends plus 0.6 s, 3 = home in 0.45 s, then feelSharpHit) and drives `ArmourRenderer.shed`. The renderer draws the inner body, then the plates translated and rotated outward. The helmet stays on. Custom Ironboy companions use other renderers, so they don't shed yet. Tests: `v1036/V1036Test`.
 

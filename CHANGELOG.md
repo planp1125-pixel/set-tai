@@ -2,6 +2,14 @@
 
 Plain-words history. Older builds (v9.2 – v10.11) are described in detail in [docs/CHANGELOG.md](docs/CHANGELOG.md). Below is a short summary of those, then every tagged release in this repo.
 
+## v10.37 (code 75)
+
+- Armor Anna's armour now visibly breaks into **13 independent plates** (chest, paired shoulders, upper arms, forearms, thighs, shins and boots). He stays in his white vest, blue lungi and bare arms; his helmet stays on. Each plate spins about its own center, with rig-scaled forceful scatter, not around the overlay origin.
+- Actual marble collision triggers the shed, not slingshot release. Later bounces do not restart it. Comic splats/impacts still trigger it. Fly-out takes 0.4 s. Pieces stay at captured screen positions while he falls; after the bounce/impact ends, he gets a real 0.6 s recovery hold, then plates fly home to his current moving attachments, staggered over 0.8 s, and snap back with a clank.
+- Metal is drawn in a separate pass, outside his body squash/rotation. The overlay reserves screen-clamped scatter room until the last piece docks; pieces scatter inward at physical screen edges instead of vanishing into clipped window space.
+- Fix intermittent swipe up/down stall: tilt physics now excludes an active flight `arc`, so it cannot erase Anna's or Superboy's looping flight. Tilt can only acquire him when settled on the floor or a screen edge; free mid-air hovering, falling and other ongoing actions are not grabbed. A roll that started at an edge may complete its own motion. Existing swipe styles/path selection are unchanged; Rocket Girl remains excluded while rocket flight runs.
+- New V1037 tests cover piece independence, pivots, scale, screen capture, timing, stagger/live docking, hit triggers, overlay containment, real comic SPLAT rendering, and swipe/tilt coexistence. Other characters/custom Ironboy companions do not shed. No helmet-off or other pending features.
+
 ## v10.36 (code 74)
 
 - Tilt physics, like a ball: the phone glass is a surface the character rolls on. The accelerometer gives screen-space gravity (right side low means roll right, upright means down, upside-down means toward the top). Tipping the phone on its side now rolls them to that side, even from mid-air. Before, they were yanked to the floor and stuck at the bottom. They bounce off the edges with marble restitution and a single sharp hit, and they never hide.

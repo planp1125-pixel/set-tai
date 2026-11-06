@@ -39,6 +39,7 @@ class V1036Test {
     }
     @After fun after() {
         MindHub.focusBuddy.stop(); ActivityScheduler.resetForTest(ctx)
+        ChatHub.settings.roam = true
         CharacterRegistry.select("monkey"); ChatHub.settings.touchFeel = true; ChatHub.settings.flickThrow = false
     }
 
@@ -46,6 +47,7 @@ class V1036Test {
         ctx.getSharedPreferences("settai_v3", 0).edit().clear().commit()
         ChatHub.settings.gags = false; ChatHub.settings.livingReactions = true; ChatHub.settings.batterySaver = false
         ChatHub.settings.touchFeel = true; ChatHub.settings.flickThrow = false
+        ChatHub.settings.roam = false
         CharacterRegistry.select(id)
         val v = MonkeyView(ctx, LandingE2ETest.Host())
         v.layout(0, 0, 1080, 2340)
@@ -107,23 +109,24 @@ class V1036Test {
     }
     private fun ticks() = synchronized(Feel.log) { Feel.log.count { it == "drag_tick" } }
 
-    @Test fun steepRightTiltFromMidAirRollsRightNotToFloor() {
+    @Test fun steepRightTiltDoesNotGrabAnAlreadyMidAirCharacter() {
         val v = view("monkey")
         v.debugPlace(300f, onFloor = false, y = 800f)
         val b0 = v.debugBox(); val floorTop = v.debugXY[2]
         feed(v, -9.6f, 0.4f, 90)
         val b = v.debugBox()
-        assertTrue("moved right (x0=${b0.left} now=${b.left})", b.left > b0.left + 100f)
+        assertEquals("v10.37 clarification: mid-air is not acquired by tilt", b0.left, b.left, 0.1f)
         assertTrue("not slammed to floor (top=${b.top} floor=$floorTop)", b.top < floorTop - 200f)
-        assertFalse(v.debugFalling); assertFalse(v.debugHidden); assertTrue(v.debugTiltSliding)
+        assertFalse(v.debugFalling); assertFalse(v.debugHidden); assertFalse(v.debugTiltSliding)
     }
 
-    @Test fun steepRightTiltFromCenterMidAir() {
+    @Test fun steepRightTiltLeavesCenterMidAirAlone() {
         val v = view("gajju")
         v.debugPlace(450f, onFloor = false, y = 900f)
         val x0 = v.debugBox().left
         feed(v, -9.6f, 0.4f, 120)
-        assertTrue(v.debugBox().left > x0 + 100f); assertFalse(v.debugHidden)
+        assertEquals(x0, v.debugBox().left, 0.1f); assertFalse(v.debugHidden)
+        assertFalse(v.debugTiltSliding)
     }
 
     @Test fun steepRightTiltFromFloorTravelsRight() {
@@ -135,13 +138,13 @@ class V1036Test {
         assertFalse(v.debugHidden)
     }
 
-    @Test fun uprightAgainDropsMidAirCharacterToFloor() {
+    @Test fun uprightAgainDoesNotTakeOwnershipOfUnrelatedMidAirCharacter() {
         val v = view("monkey")
         v.debugPlace(300f, onFloor = false, y = 800f)
         feed(v, -9.6f, 0.4f, 40)
         feed(v, 0.2f, 9.8f, 240)
         assertFalse(v.debugTiltSliding)
-        assertTrue("back near floor (top=${v.debugBox().top} floor=${v.debugXY[2]})", v.debugBox().top > v.debugXY[2] - 60f)
+        assertEquals("tilt never owned him, so must not drop him", 800f, v.debugBox().top, 0.1f)
     }
 
     @Test fun slidingTicksButSettledAtEdgeIsSilent() {
