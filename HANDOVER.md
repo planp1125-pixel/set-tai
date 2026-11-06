@@ -1,8 +1,15 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.37 (versionCode 75)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.38 (versionCode 76)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
-## v10.37 current handoff
+## v10.38 current handoff
+
+- `ArmorScatter` now owns 14 loose bodies including a helmet attached to `rig.head` at `HEAD_CY`. Detached poses capture screen-space centers; initial velocities use the existing distinct rig-scaled scatter strengths. Physics is deterministic: gravity 1800*rig.scale px/s², <=1/120 s substeps, damped wall/top response, floor restitution 0.30 and at most two contacts before settling flat. No accelerometer inputs or Random. The envelope conservatively reserves the ballistic horizontal range/apex and the full visual floor, plus the existing live-body docking room.
+- Phases: 1 ballistic (continues immediately past the old 0.4 s apex), 2 all pieces resting on floor, 3 magnetic return. A 0.18 s ground rest starts only when he too is settled on the floor and impact/marble/flight/fall/actions have ended. 0.8 s staggered return targets live bones; helmet docks last. `MonkeyView` supplies the real feet-floor plane `ground()+boxH-groundPad`, not the body's top-coordinate `ground()`, and gates his settled state separately from piece settling.
+- `ArmourRenderer` reuses `HumanRenderer.humanHead` with his existing skin/shade/hair while shed, retains his moustache, and omits attached helmet/visor. Loose helmet is a hollow procedural gunmetal/saffron shell and visor, not another skin face. Suited rendering is unchanged. All loose metal still draws after the body squash/rotation restore. Custom Ironboy remains excluded.
+- Full unit suite: **612 passed, 0 failed/errors/skipped**, including **11 new V1038** and **13/13 GoldenTrace**; no flakes in the full run. Test coverage: `v1038/V1038Test`; V1037 hover/hold/13-piece assumptions updated. No v10.37 tilt-ownership code changed, no swipe path changes, no unrelated features.
+
+## v10.37 handoff
 
 - `rig/ArmorScatter.kt` owns 13 deterministic independent screen-space plates (no RNG). Each captures its mapped bone center on the first hit, scatters with rig-scaled distinct translations/spins over 0.4 s (screen-edge reflection/clamping), waits until impact/marble is over PLUS 0.6 s, then docks to live bone targets staggered over 0.8 s. Width/height interpolate on return if his rig scale changed. Redundant active triggers are ignored.
 - `MonkeyView.marbleBounce` triggers once per marble sequence (`armorMarbleShedAttempted`, reset in `startMarble`). `impactHit` still triggers comic impacts. `stepArmorShed` runs once in the frame loop, outside power/attention physics ownership, without changing RNG call order. `ArmourRenderer.shed` suppresses his attached torso/limb armour and draws inner clothes; helmet stays on. Detached metal draws AFTER the body canvas restore.

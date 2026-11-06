@@ -187,7 +187,7 @@ class ArmourRenderer : HumanRenderer() {
     override val hair = Color.rgb(0x40, 0x3A, 0x36)
     /** Real phone battery percent, for the low-power gag (set by the view). */
     var batteryPct = -1
-    /** v10.37: while detached plates draw in screen space, he wears his inner clothes; helmet stays on. */
+    /** v10.38: while detached metal draws in screen space, he wears his inner clothes and his own bare head/face. */
     var shed = 0f
     private val VEST = Color.rgb(0xF2, 0xEE, 0xE4)
     private val LUNGI = Color.rgb(0x3E, 0x6E, 0xB8)
@@ -283,6 +283,7 @@ class ArmourRenderer : HumanRenderer() {
 
     /** Helmet shell with an open face (visor drawn on top in drawHeadExtras). */
     override fun drawHeadBase(c: Canvas, p: Pose, t: Float) {
+        if (shed > 0.001f) { humanHead(c); return } // his existing skin/hair, uncovered ears and uncle moustache
         fill.shader = null
         // ear discs
         for (s in intArrayOf(-1, 1)) {
@@ -302,6 +303,7 @@ class ArmourRenderer : HumanRenderer() {
     override fun drawHeadExtras(c: Canvas, p: Pose, t: Float) {
         paintStache(c, p, 0f, Color.rgb(0x3A, 0x30, 0x2C))
         super.drawHeadExtras(c, p, t)
+        if (shed > 0.001f) return // helmet/visor travels with the loose metal, not on his bare face
         // Visor: hinged at the crown; 0 = down over the face, 1 = flipped up.
         val up = p.visor.coerceIn(0f, 1f)
         c.save(); c.translate(0f, -62f); c.scale(1f, 1f - 0.82f * up); c.translate(0f, 62f - 4f * up)

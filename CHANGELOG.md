@@ -2,6 +2,14 @@
 
 Plain-words history. Older builds (v9.2 – v10.11) are described in detail in [docs/CHANGELOG.md](docs/CHANGELOG.md). Below is a short summary of those, then every tagged release in this repo.
 
+## v10.38 (code 76)
+
+- Armor Anna's helmet now detaches with his suit: **14 independent pieces**. While unsuited he is bare-headed in his white vest and blue lungi. His own existing skin, hair and moustache are drawn underneath; no duplicate face rides inside the loose helmet.
+- Loose metal no longer freezes at a fly-out apex. Every piece gets a screen-space outward impulse **and downward gravity from the first tick**, spins, makes at most two small ground contacts, and settles flat on the actual visual floor. The helmet falls and bounces too. Physical screen edges reflect/damp the motion, and the stable overlay envelope includes the whole fall to the floor, even far from him.
+- Magnetic return waits for **both** Anna's bounce/splat to finish with him settled on the floor **and** all 14 pieces to land. After a brief 0.18 s ground rest, the suit and helmet fly to his live attachments, staggered over 0.8 s, and snap back. If he lands first, his metal finishes falling; if it lands first, it waits on the ground, not in mid-air.
+- Actual-hit triggers, no restart on subsequent bounces, screen-space pivots and the separate non-squashed metal drawing pass are preserved. Custom Ironboy companions and other characters do not shed. v10.37's settled-floor/edge-only tilt ownership and all unique swipe paths are unchanged.
+- Added V1038 tests; updated V1037 expectations for 14 pieces, gravity/ground rest, and rotated piece containment. No unrelated features or stronger splat haptic.
+
 ## v10.37 (code 75)
 
 - Armor Anna's armour now visibly breaks into **13 independent plates** (chest, paired shoulders, upper arms, forearms, thighs, shins and boots). He stays in his white vest, blue lungi and bare arms; his helmet stays on. Each plate spins about its own center, with rig-scaled forceful scatter, not around the overlay origin.

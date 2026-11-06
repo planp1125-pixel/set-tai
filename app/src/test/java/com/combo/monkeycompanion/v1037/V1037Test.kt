@@ -99,15 +99,15 @@ class V1037Test {
     private val screen = RectF(0f, 0f, 1080f, 2340f)
     private fun scatter(r: MonkeyRig = rig()) = ArmorScatter().apply { assertTrue(start(r, 0f, 0f, screen)) }
 
-    @Test fun thirteenIndependentPiecesAroundTheirOwnAttachmentCenters() {
+    @Test fun fourteenIndependentPiecesAroundTheirOwnAttachmentCenters() {
         val r = rig(); val a = scatter(r)
         val attached = a.attachments(r, 0f, 0f)
         val f = a.frame(r, 0f, 0f)
-        assertEquals(13, f.size); assertEquals(13, f.map { it.id }.toSet().size)
+        assertEquals(14, f.size); assertEquals(14, f.map { it.id }.toSet().size)
         f.zip(attached).forEach { (p, t) -> assertEquals(t.x, p.x, 0.01f); assertEquals(t.y, p.y, 0.01f) }
         a.step(0.2f, true)
         val moved = a.frame(r, 0f, 0f).zip(f).map { (p, f0) -> Pair(p.x - f0.x, p.y - f0.y) }
-        assertEquals("distinct plate trajectories, not three body groups", 13, moved.toSet().size)
+        assertEquals("distinct plate trajectories, not three body groups", 14, moved.toSet().size)
         // Moving the rig AND the window origin cannot drag already-captured metal around.
         val old = a.frame(r, 0f, 0f)
         val other = a.frame(rig(700f, 1500f), 50f, 120f)
@@ -125,18 +125,17 @@ class V1037Test {
         }
     }
 
-    @Test fun outwardFlightLastsPointFourSecondsAndIgnoresRedundantHits() {
+    @Test fun fallingMetalIgnoresRedundantHitsAndOnlyReturnsFromGround() {
         val r = rig(); val a = scatter(r)
         repeat(18) { a.step(1f/60f, true) }
-        assertEquals("still flying outward at 0.3 s", 1, a.phase)
+        assertEquals("still falling ballistically at 0.3 s", 1, a.phase)
         val before = a.elapsed
         assertFalse(a.start(r, 0f, 0f, screen)); assertEquals(before, a.elapsed, 0f)
-        repeat(8) { a.step(1f/60f, true) }
+        repeat(300) { a.step(1f/60f, true) } // v10.38: metal falls/bounces until all pieces are on the ground
         assertEquals(2, a.phase)
-        repeat(180) { a.step(1f/60f, true) }
         assertEquals("no recovery hold spent while bouncing", 0f, a.recovery, 0f)
-        a.step(0.4f, false); assertEquals(2, a.phase)
-        a.step(0.21f, false); assertEquals(3, a.phase)
+        a.step(0.1f, false); assertEquals(2, a.phase)
+        a.step(0.09f, false); assertEquals(3, a.phase)
         a.step(0.65f, false)
         val f = a.frame(r, 0f, 0f)
         assertTrue("staggered docking", f.any { it.docked } && f.any { !it.docked })
@@ -155,9 +154,9 @@ class V1037Test {
             repeat(25) {
                 a.step(1f/60f, true)
                 for (p in a.frame(r, 0f, 0f)) {
-                    val radius = kotlin.math.hypot(p.w, p.h)/2f
-                    assertTrue(p.x-radius >= 0f && p.x+radius <= screen.right)
-                    assertTrue(p.y-radius >= 0f && p.y+radius <= screen.bottom)
+                    val (rx, ry) = extents(p)
+                    assertTrue(p.x-rx >= 0f && p.x+rx <= screen.right)
+                    assertTrue(p.y-ry >= 0f && p.y+ry <= screen.bottom)
                 }
             }
         }
@@ -168,14 +167,19 @@ class V1037Test {
         f.move((1..14).map { (if (strong) -42f else -14f) * it to (if (strong) 0f else 16f) * it })
         f.up()
     }
+    private fun extents(p: ArmorScatter.Piece): Pair<Float,Float> {
+        val rad = Math.toRadians(p.angle.toDouble())
+        val c = kotlin.math.abs(kotlin.math.cos(rad)).toFloat(); val ss = kotlin.math.abs(kotlin.math.sin(rad)).toFloat()
+        return (c*p.w + ss*p.h)/2f to (ss*p.w + c*p.h)/2f
+    }
     private fun contain(v: MonkeyView) {
         val w = v.debugWin()
         for (p in v.debugArmorPieces) {
-            val radius = kotlin.math.hypot(p.w, p.h)/2f
-            assertTrue("${p.id} outside window left $w", p.x-radius >= w[0]-1f)
-            assertTrue("${p.id} outside window right", p.x+radius <= w[0]+w[2]+1f)
-            assertTrue("${p.id} outside window top win=${w.toList()} piece=$p body=${v.debugBox()} phase=${v.debugArmorShedPhase}", p.y-radius >= w[1]-1f)
-            assertTrue("${p.id} outside window bottom", p.y+radius <= w[1]+w[3]+1f)
+            val (rx, ry) = extents(p)
+            assertTrue("${p.id} outside window left $w", p.x-rx >= w[0]-1f)
+            assertTrue("${p.id} outside window right", p.x+rx <= w[0]+w[2]+1f)
+            assertTrue("${p.id} outside window top win=${w.toList()} piece=$p body=${v.debugBox()} phase=${v.debugArmorShedPhase}", p.y-ry >= w[1]-1f)
+            assertTrue("${p.id} outside window bottom", p.y+ry <= w[1]+w[3]+1f)
         }
     }
     @Test fun actualMarbleFirstHitTriggersOnceAndWindowContainsWholeLifecycle() {

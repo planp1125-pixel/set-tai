@@ -2953,6 +2953,8 @@ class MonkeyView(
     val debugArmorShedPhase get() = armorScatter.phase
     val debugArmorPieces get() = armorScatter.frame(rig, winX.toFloat(), winY.toFloat())
     val debugArmorRecovery get() = armorScatter.recovery
+    val debugArmorAllSettled get() = armorScatter.allSettled
+    val debugArmorFloor get() = armorScatter.floorY
     private fun armourRenderer() = renderer as? com.combo.monkeycompanion.rig.ArmourRenderer
     private fun startArmorShed() {
         val r = armourRenderer() ?: return
@@ -2961,12 +2963,16 @@ class MonkeyView(
         val dx = mx - winX - ox
         val dy = my - typeLift - winY - oy
         if (armorScatter.start(rig, winX + dx, winY + dy,
-                android.graphics.RectF(0f, 0f, h.screenWidth().toFloat(), h.screenHeight().toFloat()))) r.shed = 1f
+                android.graphics.RectF(0f, 0f, h.screenWidth().toFloat(), h.screenHeight().toFloat()),
+                ground() + boxH - groundPad)) r.shed = 1f
     }
     private fun stepArmorShed(dt: Float) {
         val r = armourRenderer()
         if (r == null) { armorScatter.clear(); return }
-        if (armorScatter.step(dt, marbleOn || impact != null)) feelSharpHit(0.35f)
+        val landed = !marbleOn && impact == null && !falling && arc == null && !powerOn && !rocketFlyOn &&
+            !dragging && !slingOn && !pinchOn && !pinchSpring && swipeTrip == null && !isEdgeCrashLanding &&
+            !chargeTrip && !exiting && tweenT < 0f && surf.kind == SK.FLOOR && my >= ground() - 2f*d
+        if (armorScatter.step(dt, !landed)) feelSharpHit(0.35f)
         r.shed = if (armorScatter.active) 1f else 0f
     }
 
