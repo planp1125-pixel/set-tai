@@ -1,8 +1,40 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.29 (versionCode 67)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.30 (versionCode 68)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
-## v10.29 current handoff (supersedes older behaviour notes below)
+## v10.30 current handoff (supersedes older behaviour notes below)
+
+- Baseline is **v10.29 (67)** at `1ff85ff` / tag `v10.29`. Do not revert Cloud default, dual FABs,
+  Explain-more chip, worker 30–40 / detail 560, GatewayBrain 560, flickThrow=false, unique swipe
+  travel, hide-on-edge, sulking, GoldenTrace RNG order, or power cooldowns.
+- **Sharper wall hit:** `impactHit` and marble bounces call `Feel.playSharpHit` (logs `wall_hit`).
+  Cancels in-flight vibration first so sling `sling_snap` cannot smear over contact. Prefers
+  `VibrationEffect` composition CLICK+THUD (or HEAVY_CLICK), else EFFECT_HEAVY_CLICK, else a
+  8–18ms waveform from `TouchFeel.wallHit`. Soft landings still use `feelThud` / `thump`.
+  Touch feel OFF → system `LONG_PRESS`. Heartbeat / purr / tickle / sling notches unchanged.
+- **Marble bounce:** slingshot with tension `< TouchFeel.MARBLE_MAX_TENSION` (0.72) enters
+  `marbleOn` flight: gravity, restitution by weight, sharp bounce click, brief squash, settle
+  after ~5 bounces or low speed. Side bounces never hide and never start swipe-travel / splat.
+  Full-power slingshot still ImpactPlay SPLAT/THWACK/PANCAKE. Rocket Girl (`ridesProp`) keeps
+  rocket fly. Debug: `debugMarbleBounce`, `debugMarbleBounces`, `debugMarbleSide`.
+- **Pinch-and-pop:** 2nd pointer on the body starts pinch (cancels menu/sling/drag-throw). Squash
+  from pointer distance; release → elastic overshoot + `pop` buzz + short character line (no
+  banana jokes unless `monkey`). Debug: `debugPinch`, `debugPinchSx/Sy`.
+- **Onboarding:** `Onboarding.Gesture.SLING` / `PINCH` added after HOLD. Skip chip unchanged.
+  Only fresh installs (`onbDone` false); upgraders who already finished the 3-step demo are not
+  re-shown (no separate `onbToysDone` one-shot).
+- **Phone tilt:** `MotionDetector.tiltDeg()` + continuous `StageHost.tiltTick`. Slide ~32–45°,
+  fall ~80–90° (weight-scaled) or upside-down-in-hand; table face-down stays sleep-mask.
+  Discrete TILT_LEFT/RIGHT no longer one-shot `slideToEdge`. Debug: `debugTiltFeed`,
+  `debugTiltSliding`.
+- Files: `TouchFeel.kt`, `Feel.kt`, `MonkeyView.kt`, `Onboarding.kt`, `Motion.kt`, `Stage.kt`.
+  Tests: `V1030FeelTest`, V1013/V10131 onboarding, MotionTest helpers. Tag `v10.30` is new
+  (never move `v10.28` / `v10.29`). BUILD_PLAY_BUNDLE off.
+- Full Android unit suite: **546 passed** (0 failed), including 13 GoldenTrace + 12 V1030.
+  Official APK `settai-v10.30.apk` (15,276,442 bytes, 10.30 / 68, same debug signing cert as v10.29).
+
+## v10.29 handoff (kept for Cloud / FAB / Explain-more context)
+
 
 - Baseline is **v10.28 (66)** plus the test-only RealOverlayPathTest hover wait on main.
   Touch Feel, flickThrow=false, GoldenTrace, swipe paths and power cooldowns stay untouched.

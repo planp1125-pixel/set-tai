@@ -2,6 +2,14 @@
 
 Plain-words history. Older builds (v9.2 – v10.11) are described in detail in [docs/CHANGELOG.md](docs/CHANGELOG.md). Below is a short summary of those, then every tagged release in this repo.
 
+## v10.30 (code 68)
+- **Sharper wall / floor / ceiling hit:** a glass slap (short click+thud) at the exact contact frame, canceling any sling-snap buzz so the hit is not mushy. Soft landings still use the old thump. Touch feel off keeps the system LONG_PRESS knock.
+- **Marble bounce:** a medium slingshot (tension under ~0.72) flies and rebounds off edges with a click and a brief squash — no hide, no comic splat. Full-power slingshot still SPLATs / THWACKs / PANCAKEs (with the sharp hit). Rocket Girl keeps her rocket fly.
+- **Pinch-and-pop:** two fingers squash them; let go and they spring back with a pop buzz and a short line. One-finger tap / long-press / slingshot / swipe unchanged.
+- **First-user demo:** the skippable overlay demo now also teaches slingshot and pinch-and-pop (five steps total). Skip still ends it. Only fresh installs (`onbDone` false) see it — existing users who already finished the old 3-step demo are not forced through again.
+- **Phone tilt:** around ~45° they slide toward the low edge (faster as it steepens; heavier bodies start sooner). Around ~90° on their side or ~180° upside-down in hand they fall. Flat face-down on a table still only puts on the sleep mask. No tilt while dragging / pinching / slingshotting / hidden / in a power / banana game. Sliding into an edge does not hide them.
+- Touch Feel heartbeat / purr / tickle / sling notches stay. Swipe travel, hide-on-edge, flickThrow default, GoldenTrace and v10.29 Cloud / dual FABs / Explain-more stay intact.
+
 ## v10.29 (code 67)
 - **Set-Tai Cloud is the default brain** on a fresh install: no API key, no provider picker. Already-saved Brain off / offline / own-key choices are kept. Turning Give Brain off still disables AI; turning it back on from NONE picks Cloud again.
 - **Two faint overlay buttons** beside every character: 💬 chat on the left, 🎤 mic on the right. One tap to type, one tap to talk. The old "Chat button opens Speak" toggle is gone. Near a screen edge each button clamps onto the window (sides never flip).

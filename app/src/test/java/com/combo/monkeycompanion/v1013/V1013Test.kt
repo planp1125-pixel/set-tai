@@ -113,9 +113,15 @@ class V1013OnboardingTest {
         assertNotNull(r.onGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.DOUBLE_TAP))
         assertFalse(r.done)
         assertNotNull(r.onGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.HOLD))
+        assertFalse("v10.30: sling + pinch still remain", r.done)
+        assertNotNull(r.onGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.SLING))
+        assertNotNull(r.onGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.PINCH))
         assertTrue(r.done)
         val s = com.combo.monkeycompanion.brain.Onboarding.Run(); s.skip(); assertTrue(s.done)
-        val t = com.combo.monkeycompanion.brain.Onboarding.Run(); repeat(31) { t.step(1f) }; assertTrue("about 30 s max", t.done)
+        val t = com.combo.monkeycompanion.brain.Onboarding.Run()
+        repeat(com.combo.monkeycompanion.brain.Onboarding.MAX_SECS.toInt() + 1) { t.step(1f) }
+        assertTrue("times out after MAX_SECS", t.done)
+        assertEquals(5, com.combo.monkeycompanion.brain.Onboarding.steps.size)
     }
     @Test fun sevenDailyTipsOncePerDayRespectingBlocks() {
         assertEquals(7, O.tips.size)

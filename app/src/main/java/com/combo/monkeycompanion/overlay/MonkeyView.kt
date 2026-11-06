@@ -216,6 +216,7 @@ class MonkeyView(
             else { val fx = mx; val fy = my; surf = screenSurf(SK.FLOOR); mx = if (side < 0) 0f else max(0f, sw() - boxW); my = ground(); slideFrom(fx, fy, 0.7f) }
             say(listOf("Wheee— slidiiing! 🛝", "Hold on, it's tilting! 😵").random(), 1800L)
         }
+        override fun tiltTick(det: com.combo.monkeycompanion.v5.MotionDetector, dt: Float) = this@MonkeyView.tiltTick(det, dt)
         override fun sleepNow(on: Boolean) { if (on) { endTyping(); controller.sleep() } else controller.wakeUp(Lines.pick(Lines.POKED_AWAKE)) }
         override fun leaveBy(side: Int) { hideToEdge(if (side < 0) -1 else 1, rest = true); ui.postDelayed({ if (hiddenTab) autoUnhide() }, 13_000L) }
         override fun comeBack() { if (hiddenTab) autoUnhide() }
@@ -1893,7 +1894,7 @@ class MonkeyView(
         if (!live || !running || paused || (hiddenTab && tabPeekT < 0f && !tabTracking)) return -1L
         if (powerOn) return if (saver) 33L else 0L
         if (fireworks.active || skyActive || reactionLayer.busy || living.anticipating) return 0L   // v10.8: smooth reactions / fireworks
-        if (dragging || tracking || falling || impact != null || swipeTrip != null || coyoteScareTimer > 0f || isEdgeCrashLanding || abs(notifFlingVy) > 5f ||
+        if (dragging || tracking || falling || impact != null || marbleOn || pinchOn || pinchSpring || tiltSlideSide != 0 || swipeTrip != null || coyoteScareTimer > 0f || isEdgeCrashLanding || abs(notifFlingVy) > 5f ||
             tweenT >= 0f || hideAnim >= 0f || typing || exiting || notifCardOpen || blinkT >= 0f ||
             controller.state == MonkeyState.WALK || controller.state == MonkeyState.DANCE || controller.state == MonkeyState.WAVE ||
             balls.looseActive
@@ -2141,13 +2142,13 @@ class MonkeyView(
         if (!running && live && !paused) start()
     }
 
-    /** true = the gesture was part of the demo (it advanced). */
+    /** true = the gesture was part of the demo (it advanced). HOLD still opens the popup so they can see it. */
     private fun onbGesture(g: com.combo.monkeycompanion.brain.Onboarding.Gesture): Boolean {
         val r = onb ?: return false
         val praise = r.onGesture(g) ?: return false
         if (r.done) { onb = null; ui.removeCallbacks(onbTick); ui.postDelayed({ sayInfo("$praise\nYou're ready! Have fun 🙌", 3500L) }, 350L) }
         else ui.postDelayed({ sayInfo(praise, 1500L); ui.postDelayed({ showOnbStep() }, 1600L) }, 350L)
-        return g == com.combo.monkeycompanion.brain.Onboarding.Gesture.HOLD && r.done
+        return g == com.combo.monkeycompanion.brain.Onboarding.Gesture.HOLD
     }
 
     private fun endOnboarding() {
@@ -2913,8 +2914,10 @@ class MonkeyView(
         if (stepChaseShow()) return
         syncImeDodge()
         if (rotEase != 0f) { rotEase *= exp(-dt * 9f); if (abs(rotEase) < 0.3f) rotEase = 0f }
+        if (pinchSpring) stepPinchSpring(dt)
         if (rocketFlyOn) { if (dragging) { rocketFlyOn = false; rocketFly.cancel(); arcRot = 0f } else { stepRocketFly(dt); return } }
         if (swipeTrip != null) { stepSwipeTrip(dt); return }   // v10.24
+        if (marbleOn) { stepMarble(dt); return }   // v10.30 marble bounce
         if (impact != null) { stepImpact(dt); return }   // v10.20
         if (isEdgeCrashLanding) {
             stepEdgeCrashLanding(dt)
@@ -5783,6 +5786,15 @@ class MonkeyView(
     val debugImpactPhase get() = impact?.phase?.name
     val debugImpactKind get() = impact?.kind?.name
 
+    // ---------------- v10.30 marble bounce (medium slingshot: rebound off edges, no splat / no hide) ----------------
+    private var marbleOn = false
+    private var marbleBounces = 0
+    private var marbleSide = 0   // -1 left, 1 right, 2 top, 3 floor
+    private var marbleSquashT = 0f
+    private var marbleSx = 1f
+    private var marbleSy = 1f
+    private var lastSlingForce = 1f
+
     /** Released high up and fast (or a flyer thrown very hard): it flies under gravity and hits whatever it reaches. */
     // ---------------- v10.24 each character's own swipe trip (engine/swipe/SwipeTravel, no RNG) ----------------
     private var swipeTrip: com.combo.monkeycompanion.engine.swipe.SwipeTravel.Trip? = null
@@ -5809,7 +5821,7 @@ class MonkeyView(
     /** Tests / previews: start [style] to box position ([tx], [ty]) ([tour]: a lap around the screen first). */
     fun startSwipeTrip(style: com.combo.monkeycompanion.engine.swipe.SwipeTravel.Style, tx: Float, ty: Float,
                        tour: Int = com.combo.monkeycompanion.engine.swipe.SwipeTravel.TOUR_NONE) {
-        falling = false; vy = 0f; tweenT = -1f; tweenDone = null; arc = null; afterLand = null; impact = null
+        falling = false; vy = 0f; tweenT = -1f; tweenDone = null; arc = null; afterLand = null; impact = null; endMarble(silent = true)
         climber.deactivate()
         val minX = 10 * d; val maxX = max(minX, sw() - boxW - 10 * d)
         val trip = com.combo.monkeycompanion.engine.swipe.SwipeTravel.Trip(style, mx, my, tx, ty, d, tour, minX, maxX, hoverMinY(), ground())
@@ -5848,6 +5860,7 @@ class MonkeyView(
     private fun tryToss(fvx: Float, fvy: Float, force: Boolean = false): Boolean {
         if (host == null || wp || profile.ridesProp || hiddenTab) return false
         if (!force) return false   // v10.25: only the fling rule in settleAfterDrag decides a splat / thwack
+        endMarble(silent = true)
         val spDp = hypot(fvx, fvy) / d
         val screenH = host?.screenHeight()?.toFloat() ?: return false
         if (!force && fvy > 0f && abs(fvy) > abs(fvx) * 1.2f) return false   // mostly downward: the old drop / bottom-hide
@@ -5910,8 +5923,11 @@ class MonkeyView(
 
     private fun impactHit(ip: com.combo.monkeycompanion.engine.impact.ImpactPlay, k: com.combo.monkeycompanion.engine.impact.ImpactPlay.Kind, side: Int) {
         if (!ip.hit(k, side)) return
+        val spd = hypot(ivx, ivy) / d
+        val hitForce = maxOf(lastSlingForce, (spd / 4200f)).coerceIn(0.55f, 1f)
         ivx = 0f; ivy = 0f
-        feelThud(1f) { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) }
+        // v10.30: cancel any sling-snap buzz, then a sharp glass slap (not the long landing thump)
+        feelSharpHit(hitForce)
         if (!silent) runCatching { com.combo.monkeycompanion.audio.Sfx.play(context, com.combo.monkeycompanion.audio.Sfx.S.CRACK, 0.35f) }
         // contact point in screen pixels (for the dust) and in view pixels (for the comic word)
         val (vx0, vy0) = when (k) {
@@ -5961,6 +5977,98 @@ class MonkeyView(
         controller.touched()
         val line = impactLine; impactLine = null
         if (line != null && !aiVoiceOn()) say(line, 2600L)   // Brain on: the reaction engine already spoke
+    }
+
+    /** v10.30: medium slingshot — fly like a marble, bounce off edges, never hide / never comic-splat. */
+    private fun startMarble(fvx: Float, fvy: Float) {
+        impact = null; swipeTrip = null; falling = false; vy = 0f; tweenT = -1f; tweenDone = null; arc = null; afterLand = null
+        climber.deactivate(); surf = freeSurf(my)
+        marbleOn = true; marbleBounces = 0; marbleSide = 0
+        marbleSquashT = 0f; marbleSx = 1f; marbleSy = 1f
+        ivx = fvx; ivy = fvy
+        reactionLayer.clear()
+        runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Marble", "${(hypot(fvx, fvy) / d).toInt()} dp/s") }
+    }
+
+    private fun endMarble(silent: Boolean = false) {
+        if (!marbleOn && marbleSquashT <= 0f) return
+        marbleOn = false; marbleSquashT = 0f; marbleSx = 1f; marbleSy = 1f
+        if (!silent) {
+            surf = screenSurf(SK.FLOOR); clampToSurf()
+            controller.idleNow(1.8f); controller.touched()
+        }
+    }
+
+    private fun stepMarble(dt: Float) {
+        if (dragging) { endMarble(silent = true); return }
+        val g = com.combo.monkeycompanion.engine.impact.ImpactPlay.GRAVITY_DP * d
+        val maxX = max(0f, sw() - boxW)
+        val rest = TouchFeel.marbleRestitution(feelW)
+        ivy += g * dt; mx += ivx * dt; my += ivy * dt
+        if (marbleSquashT > 0f) {
+            marbleSquashT = (marbleSquashT - dt).coerceAtLeast(0f)
+            if (marbleSquashT <= 0f) { marbleSx = 1f; marbleSy = 1f }
+            else {
+                val k = (marbleSquashT / 0.12f).coerceIn(0f, 1f)
+                // ease back toward 1 while the brief squash lasts
+                marbleSx = 1f + (marbleSx - 1f) * k
+                marbleSy = 1f + (marbleSy - 1f) * k
+            }
+        }
+        var bounced = false
+        when {
+            mx <= 0f && ivx < 0f -> {
+                mx = 0f; ivx = -ivx * rest; ivy *= 0.92f
+                marbleBounce(-1, abs(ivx) / d); bounced = true
+            }
+            mx >= maxX && ivx > 0f -> {
+                mx = maxX; ivx = -ivx * rest; ivy *= 0.92f
+                marbleBounce(1, abs(ivx) / d); bounced = true
+            }
+            my <= topY() && ivy < 0f -> {
+                my = topY(); ivy = -ivy * rest; ivx *= 0.92f
+                marbleBounce(2, abs(ivy) / d); bounced = true
+            }
+            my >= ground() && ivy > 0f -> {
+                my = ground()
+                val spd = hypot(ivx, ivy) / d
+                if (marbleBounces >= TouchFeel.MARBLE_MAX_BOUNCES || spd < TouchFeel.MARBLE_SETTLE_DP) {
+                    marbleLand(spd); return
+                }
+                ivy = -ivy * rest; ivx *= 0.88f
+                marbleBounce(3, abs(ivy) / d); bounced = true
+                if (abs(ivy) / d < TouchFeel.MARBLE_SETTLE_DP * 0.85f) { marbleLand(hypot(ivx, ivy) / d); return }
+            }
+        }
+        // air time / energy budget: settle if nearly stopped or too many bounces already spent
+        if (!bounced && (marbleBounces >= TouchFeel.MARBLE_MAX_BOUNCES || hypot(ivx, ivy) / d < TouchFeel.MARBLE_SETTLE_DP * 0.35f) && my >= ground() - 2f * d) {
+            my = ground(); marbleLand(hypot(ivx, ivy) / d)
+        }
+    }
+
+    private fun marbleBounce(side: Int, closeDp: Float) {
+        marbleBounces++
+        marbleSide = side
+        marbleSquashT = 0.12f
+        val force = (closeDp / 2200f).coerceIn(0.25f, 1f) * (0.55f + 0.45f * lastSlingForce)
+        when (side) {
+            -1, 1 -> { marbleSx = 1f - 0.28f * force; marbleSy = 1f + 0.16f * force }   // flat against the wall
+            2 -> { marbleSy = 1f - 0.22f * force; marbleSx = 1f + 0.14f * force }        // squash under the top
+            else -> { marbleSy = 1f - 0.26f * force; marbleSx = 1f + 0.18f * force }     // floor squash
+        }
+        feelSharpHit(force.coerceIn(0.3f, 1f))
+        if (!silent) runCatching { com.combo.monkeycompanion.audio.Sfx.play(context, com.combo.monkeycompanion.audio.Sfx.S.CRACK, 0.18f * force.coerceIn(0.3f, 1f)) }
+        BSN.record("I bounced off the glass like a marble", BSN.Feeling.WHOOSH)
+    }
+
+    private fun marbleLand(spdDp: Float) {
+        marbleOn = false
+        ivx = 0f; ivy = 0f
+        surf = screenSurf(SK.FLOOR); clampToSurf()
+        feelThud((spdDp / 900f).coerceIn(0.15f, 0.7f)) { performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY) }
+        controller.onLanded()
+        marbleSquashT = 0.08f; marbleSx = 1.08f; marbleSy = 0.9f; marbleSide = 3
+        controller.idleNow(1.6f); controller.touched()
     }
 
     /** The comic word ("SPLAT!") pops at the contact point and fades out. */
@@ -6017,6 +6125,9 @@ class MonkeyView(
             val ph = abs(sin(controller.stateTime * 6.2f * controller.anim.walkSpeed)); if (ph < 0.18f) (1f - ph / 0.18f) * 1.8f * d else 0f
         } else 0f
         canvas.translate(sinkX, (if (climber.active) sinkY else 0f) + heavyShake)
+        if (tiltLean != 0f && impact == null && !marbleOn && !pinchOn) {
+            canvas.rotate(tiltLean * 14f, ox + boxW / 2f, oy + boxH - groundPad)
+        }
         val edgeRot = bodyEdgeRot()
         if (edgeRot != 0f) {
             canvas.rotate(edgeRot, ox + boxW / 2f, oy + boxH / 2f)
@@ -6033,6 +6144,18 @@ class MonkeyView(
                 }
                 canvas.scale(ip.sx, ip.sy, px, py)
             }
+        }
+        if (marbleSquashT > 0f && (marbleSx != 1f || marbleSy != 1f)) {
+            val (px, py) = when (marbleSide) {
+                -1 -> ox to oy + boxH * 0.55f
+                1 -> ox + boxW to oy + boxH * 0.55f
+                2 -> ox + boxW / 2f to oy
+                else -> ox + boxW / 2f to oy + boxH - groundPad
+            }
+            canvas.scale(marbleSx, marbleSy, px, py)
+        }
+        if ((pinchOn || pinchSpring) && (pinchSx != 1f || pinchSy != 1f)) {
+            canvas.scale(pinchSx, pinchSy, ox + boxW / 2f, oy + boxH * 0.55f)
         }
         val trip = swipeTrip
         var tripLayer = false
@@ -6377,9 +6500,87 @@ class MonkeyView(
     private val feelW: Float get() = TouchFeel.weight(character.id, character.heavy)
     private fun feelOn() = host != null && !wp && Feel.on()
     private fun buzz(b: com.combo.monkeycompanion.engine.feel.Buzz?) { if (host != null && !wp) Feel.play(context, b) }
-    /** A landing / hit felt by weight; with Touch feel off, the old system haptic. */
+    /** A soft landing felt by weight; with Touch feel off, the old system haptic. */
     private fun feelThud(force: Float, fallback: () -> Unit) {
         if (feelOn()) buzz(TouchFeel.thump(force, feelW)) else fallback()
+    }
+    /** v10.30 glass slap: cancel in-flight buzz, then a sharp knock (Touch feel off = system LONG_PRESS). */
+    private fun feelSharpHit(force: Float) {
+        if (feelOn()) Feel.playSharpHit(context, force, feelW)
+        else performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+    }
+
+    // ---------------- v10.30 phone tilt: slide ~45°, fall ~90° / upside-down ----------------
+    private var tiltLean = 0f
+    private var tiltSlideSide = 0
+    private var tiltHapticAt = 0L
+    private var tiltFallSaid = false
+    val debugTiltSliding get() = tiltSlideSide != 0
+    val debugTiltLean get() = tiltLean
+
+    private fun canTiltPhysics(): Boolean =
+        host != null && !wp && live && !paused && !hiddenTab && !dragging && !pinchOn && !pinchSpring &&
+            !slingOn && swipeTrip == null && impact == null && !marbleOn && !powerOn && !rocketFlyOn &&
+            hideAnim < 0f && !(v5On && stage.playing) && !typing && !exiting
+
+    /** Continuous slide / fall from live accelerometer (Stage calls this every frame). */
+    fun tiltTick(det: com.combo.monkeycompanion.v5.MotionDetector, dt: Float) {
+        if (!canTiltPhysics()) {
+            if (tiltSlideSide != 0 || tiltLean != 0f) { tiltSlideSide = 0; tiltLean = 0f }
+            return
+        }
+        // Flat on a table = sleep mask path, never a mid-air fall
+        if (det.isTableFaceDown()) {
+            tiltSlideSide = 0; tiltLean = 0f; return
+        }
+        val deg = det.tiltDeg()
+        val a = abs(deg)
+        val w = feelW
+        val slideAt = com.combo.monkeycompanion.v5.MotionDetector.SLIDE_DEG - 6f * w   // heavy starts sooner
+        val fallAt = com.combo.monkeycompanion.v5.MotionDetector.FALL_DEG - 10f * w    // Gajju ~80°, Chittu ~89°
+        // ~90° on side, or upside-down in hand (~180°)
+        if (a >= fallAt || det.isUpsideDownInHand()) {
+            tiltSlideSide = 0; tiltLean = (if (deg > 0) -1f else 1f) * 0.85f
+            if (!falling && arc == null) {
+                beginFall()
+                if (!tiltFallSaid) {
+                    tiltFallSaid = true
+                    say(pickLine(listOf("Aiyyo I'm falling!! 😵", "Whoa— too tippy!! 🫣", "Hold the phoneee!! 😱")), 1800L)
+                }
+            }
+            return
+        }
+        tiltFallSaid = false
+        if (a >= slideAt && !falling) {
+            val side = if (deg > 0f) -1 else 1   // left edge downhill when deg>0
+            val k = ((a - slideAt) / (fallAt - slideAt).coerceAtLeast(1f)).coerceIn(0f, 1f)
+            val speed = (140f + 320f * k) * d * (1.2f - 0.45f * w)   // light ones skitter faster
+            val maxX = max(0f, sw() - boxW)
+            if (surf.kind != SK.FLOOR || climber.active) { climber.deactivate(); surf = screenSurf(SK.FLOOR); my = ground() }
+            mx = (mx + side * speed * dt).coerceIn(0f, maxX)   // stop at the edge — do not hide
+            my = ground()
+            tiltSlideSide = side
+            tiltLean = side * (0.35f + 0.55f * k)
+            if (controller.state != MonkeyState.WALK && controller.state != MonkeyState.STARTLED)
+                controller.play(MonkeyState.WALK, 0.35f)
+            controller.face(side.toFloat())
+            val now = SystemClock.uptimeMillis()
+            if (now - tiltHapticAt > 480L) {
+                tiltHapticAt = now
+                if (feelOn()) buzz(TouchFeel.dragTick(w))
+            }
+        } else if (a < 18f) {
+            tiltSlideSide = 0
+            tiltLean *= 0.7f
+            if (abs(tiltLean) < 0.05f) tiltLean = 0f
+        }
+    }
+
+    /** Tests: feed synthetic accelerometer samples through the live Stage detector + a physics tick. */
+    fun debugTiltFeed(x: Float, y: Float, z: Float, tMs: Long, dt: Float = 1f / 60f) {
+        if (!v5On) return
+        stage.debugFeedAccel(x, y, z, tMs)
+        tiltTick(stage.debugDetector, dt)
     }
     private val rub = RubTracker()
     private var dragTickAcc = 0f
@@ -6387,6 +6588,15 @@ class MonkeyView(
     private var petting = false; private var tickling = false
     private var feelLineN = 0
     private var slingOn = false; private var slingNotch = 0
+    // v10.30 pinch-and-pop
+    private var pinchOn = false
+    private var pinchSpring = false
+    private var pinchBase = 1f
+    private var pinchSx = 1f
+    private var pinchSy = 1f
+    private var pinchFromSx = 1f
+    private var pinchFromSy = 1f
+    private var pinchSpringT = 0f
     private var heartBeatOn = false; private var heartBeatAt = 0L; private var heartBpm = 72
     private var scaredUntil = 0L
     private var dizzyUntil = 0L
@@ -6491,6 +6701,74 @@ class MonkeyView(
         BSN.record("you shook me really hard", BSN.Feeling.DIZZY)
     }
 
+    private fun pointerDist(e: MotionEvent): Float {
+        if (e.pointerCount < 2) return 0f
+        val dx = e.getX(0) - e.getX(1); val dy = e.getY(0) - e.getY(1)
+        return hypot(dx, dy)
+    }
+
+    private fun startPinch(e: MotionEvent) {
+        pinchOn = true; pinchSpring = false
+        pinchBase = pointerDist(e).coerceAtLeast(8f * d)
+        pinchSx = 1f; pinchSy = 1f
+        say(pickLine(listOf("Hey— two fingers?! 😮", "Gently… I'm squashy 🫠", "Ooo squeeze? 😆")), 1400L)
+        if (!running && live && !paused) start()
+        invalidate()
+    }
+
+    private fun updatePinch(e: MotionEvent) {
+        if (e.pointerCount < 2) return
+        val r = (pointerDist(e) / pinchBase).coerceIn(0.35f, 1.55f)
+        val k = (1f - r)   // >0 pinch in, <0 spread
+        if (k >= 0f) {
+            pinchSy = (1f - 0.55f * k).coerceIn(0.45f, 1f)
+            pinchSx = (1f + 0.38f * k).coerceIn(1f, 1.48f)
+        } else {
+            val s = (-k).coerceIn(0f, 0.55f)
+            pinchSy = (1f + 0.28f * s).coerceIn(1f, 1.28f)
+            pinchSx = (1f - 0.18f * s).coerceIn(0.72f, 1f)
+        }
+        invalidate()
+    }
+
+    private fun endPinch() {
+        if (!pinchOn) return
+        pinchOn = false
+        pinchFromSx = pinchSx; pinchFromSy = pinchSy
+        pinchSpring = true; pinchSpringT = 0f
+        if (feelOn()) Feel.playPop(context) else performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        onbGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.PINCH)
+        say(when (character.id) {
+            "billa" -> "Mrrp— pop! 😼"
+            "chittu" -> "Squeak-pop! 🐭"
+            "gajju" -> "Boing!! Trunk spring! 🐘"
+            "devil" -> "Hey!! Springy 😈"
+            "armour" -> "Boing. Rubber… armour? 🤖"
+            "monkey" -> "Boing! Banana bounce! 🍌"
+            else -> pickLine(listOf("Boing!!", "Pop!", "Whoa— springy!", "I'm rubber!"))
+        }, 1600L)
+        BSN.record("you pinched me and I popped back", BSN.Feeling.EXCITED)
+        if (!running && live && !paused) start()
+    }
+
+    private fun endPinchQuiet() {
+        pinchOn = false; pinchSpring = false; pinchSx = 1f; pinchSy = 1f; pinchSpringT = 0f
+    }
+
+    private fun stepPinchSpring(dt: Float) {
+        if (!pinchSpring) return
+        pinchSpringT += dt
+        val t = pinchSpringT
+        val decay = kotlin.math.exp(-10f * t)
+        val wave = kotlin.math.cos(28f * t)
+        pinchSx = 1f + (pinchFromSx - 1f) * decay * wave
+        pinchSy = 1f + (pinchFromSy - 1f) * decay * wave
+        if (t > 0.48f || (t > 0.18f && abs(pinchSx - 1f) < 0.025f && abs(pinchSy - 1f) < 0.025f)) {
+            pinchSx = 1f; pinchSy = 1f; pinchSpring = false
+        }
+        invalidate()
+    }
+
     /** Long-press, then pull: the character becomes the stone of a slingshot. */
     private fun beginSling() {
         slingOn = true; slingNotch = 0
@@ -6509,14 +6787,22 @@ class MonkeyView(
             if (hideAnim < 0f) controller.onDragEnd(settleAfterDrag(0f, 0f))
             return
         }
+        val tn = TouchFeel.tension(pull)
+        lastSlingForce = tn
         val sp = TouchFeel.launchSpeedDp(pull) * d
         val inv = 1f / max(1f, hypot(pdx, pdy))
         val fvx = -pdx * inv * sp; val fvy = -pdy * inv * sp
-        buzz(TouchFeel.slingSnap(TouchFeel.tension(pull)))
+        buzz(TouchFeel.slingSnap(tn))
+        onbGesture(com.combo.monkeycompanion.brain.Onboarding.Gesture.SLING)
         scaredUntil = SystemClock.uptimeMillis() + 20_000L
         BSN.record("you shot me from a slingshot", BSN.Feeling.WHOOSH)
-        feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.THROW, force = TouchFeel.tension(pull), extra = "slingshot")
-        val flew = if (profile.ridesProp) { startRocketFly(fvx, fvy, sp); true } else tryToss(fvx, fvy, force = true)
+        feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.THROW, force = tn, extra = "slingshot")
+        // v10.30: medium pull = marble bounce; full power (or Rocket Girl) keeps the comic smash / rocket fly
+        val flew = when {
+            profile.ridesProp -> { startRocketFly(fvx, fvy, sp); true }
+            tn < TouchFeel.MARBLE_MAX_TENSION -> { startMarble(fvx, fvy); true }
+            else -> tryToss(fvx, fvy, force = true)
+        }
         if (!flew) { if (hideAnim < 0f) controller.onDragEnd(settleAfterDrag(0f, 0f)); return }
         controller.onDragEnd(true)
     }
@@ -6581,13 +6867,19 @@ class MonkeyView(
         if (again) postInvalidateOnAnimation()
     }
 
-    // v10.27 test hooks
+    // v10.27 / v10.30 test hooks
     val debugSling get() = slingOn
     val debugHeartbeat get() = heartBeatOn
     val debugPetting get() = petting
     val debugTickling get() = tickling
     val debugDizzy get() = SystemClock.uptimeMillis() < dizzyUntil
-    val debugImpactOn get() = impact != null || falling || rocketFlyOn
+    val debugImpactOn get() = impact != null || falling || rocketFlyOn || marbleOn
+    val debugMarbleBounce get() = marbleOn
+    val debugMarbleBounces get() = marbleBounces
+    val debugMarbleSide get() = marbleSide
+    val debugPinch get() = pinchOn
+    val debugPinchSx get() = pinchSx
+    val debugPinchSy get() = pinchSy
     private fun fracX(px: Float) = (px / max(1f, sw() - boxW)).coerceIn(0f, 1f)
     private fun fracY(py: Float) = ((ground() - py) / max(1f, ground() - topY())).coerceIn(0f, 1f)
     private fun pxX(f: Float) = f * max(0f, sw() - boxW)
@@ -6892,10 +7184,29 @@ class MonkeyView(
                 lastMoveRawX = e.rawX; lastMoveRawY = e.rawY; lastMoveTime = e.eventTime; vx = 0f; vyDrag = 0f; flickFelt = false
                 gN = 0; gPush(e.eventTime, e.rawX, e.rawY)
                 ui.removeCallbacks(heartHold); stopHeartbeat(); slingOn = false
+                if (pinchSpring) endPinchQuiet()
                 // v4.3 gesture map (see brain/Gestures): long-press = options menu; moving past the slop cancels it.
                 ui.postDelayed(longPress, com.combo.monkeycompanion.brain.Gestures.LONG_PRESS_MS)
             }
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                // v10.30 pinch-and-pop: second finger on the body — no menu, no slingshot, no drag-throw
+                if (tracking && host != null && !wp && !hiddenTab && e.pointerCount >= 2) {
+                    ui.removeCallbacks(longPress); ui.removeCallbacks(heartHold); stopHeartbeat()
+                    if (slingOn) { slingOn = false; mx = downMx; my = downMy; syncFx() }
+                    dragging = false; endRub()
+                    startPinch(e)
+                    return true
+                }
+            }
+            MotionEvent.ACTION_POINTER_UP -> {
+                if (pinchOn) {
+                    // one finger left = pinch ends (spring-back pop)
+                    if (e.pointerCount <= 2) { endPinch(); tracking = false }
+                    return true
+                }
+            }
             MotionEvent.ACTION_MOVE -> {
+                if (pinchOn) { updatePinch(e); return true }
                 if (notifTouchActive) {
                     parent?.requestDisallowInterceptTouchEvent(true)
                     val totalDy = e.y - notifDownRawY
@@ -6947,6 +7258,7 @@ class MonkeyView(
             }
             MotionEvent.ACTION_UP -> {
                 ui.removeCallbacks(longPress)
+                if (pinchOn) { endPinch(); tracking = false; return true }
                 if (notifTouchActive) {
                     val wasScrolling = notifScrolling
                     notifTouchActive = false
@@ -7018,6 +7330,7 @@ class MonkeyView(
             MotionEvent.ACTION_CANCEL -> {
                 ui.removeCallbacks(longPress); ui.removeCallbacks(heartHold); stopHeartbeat()
                 if (slingOn) { slingOn = false; mx = downMx; my = downMy }
+                if (pinchOn) endPinchQuiet()
                 petting = false; tickling = false
                 notifTouchActive = false; notifScrolling = false
                 bubbleSwipe = false; bubbleDragX = 0f
@@ -7074,7 +7387,7 @@ class MonkeyView(
         // v10.20: caught while flying / falling = a mid-air catch (daily challenge); grabbing also ends an impact
         if (impact?.phase == com.combo.monkeycompanion.engine.impact.ImpactPlay.Phase.FLIGHT || impact?.phase == com.combo.monkeycompanion.engine.impact.ImpactPlay.Phase.FALL ||
             falling || arc != null || rocketFlyOn) runCatching { com.combo.monkeycompanion.fun5.Fun5Store.noteChallenge(context, com.combo.monkeycompanion.v5.Challenge.Event.CATCH) }
-        impact = null
+        impact = null; endMarble(silent = true); endPinchQuiet()
         ui.removeCallbacks(longPress)
         if (longPressed) closeMenu()   // long-press then drag: the menu goes, the drag wins
         pendingTap?.let { ui.removeCallbacks(it) }; pendingTap = null

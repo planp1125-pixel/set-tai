@@ -86,6 +86,20 @@ object TouchFeel {
             if (f > 0.55f) listOf(Pulse(45, (8 + 16 * k).roundToInt(), amp(0.2f + 0.3f * k))) else emptyList())
     }
 
+    /**
+     * v10.30 glass slap: a VERY short hard knock when a body hits a wall / floor / ceiling hard.
+     * Not the long landing [thump] rumble — that one feels like the phone buzzing, not a body hitting glass.
+     */
+    fun wallHit(force: Float, w: Float): Buzz {
+        val f = force.coerceIn(0f, 1f)
+        val k = (0.45f + 0.55f * f) * (0.55f + 0.45f * w)
+        val on = (8 + 10 * k).roundToInt().coerceIn(8, 18)
+        return Buzz("wall_hit", listOf(Pulse(0, on, amp(0.72f + 0.28f * k))))
+    }
+
+    /** v10.30 pinch-and-pop: a tiny sharp click when they spring back. */
+    fun pop(): Buzz = Buzz("pop", listOf(Pulse(0, 10, amp(0.85f))))
+
     /** Slingshot: a click for every notch of stretch (faster, stronger as it tightens). */
     fun slingTick(tension: Float): Buzz = Buzz("sling_tick", listOf(Pulse(0, (6 + 10 * tension).roundToInt(), amp(0.2f + 0.7f * tension))))
 
@@ -100,6 +114,21 @@ object TouchFeel {
     fun notch(pullDp: Float): Int = (tension(pullDp) * SLING_NOTCHES).toInt()
     /** Launch speed (dp/s), straight away from the pull. */
     fun launchSpeedDp(pullDp: Float): Float = 1300f + 4700f * tension(pullDp)
+
+    /**
+     * v10.30 marble bounce: a slingshot with tension under this flies and bounces off edges like a marble
+     * (full-power slingshot still does the comic SPLAT / THWACK / PANCAKE).
+     */
+    const val MARBLE_MAX_TENSION = 0.72f
+    const val MARBLE_MAX_BOUNCES = 5
+    /** Below this speed (dp/s) a marble settles into a normal landing. */
+    const val MARBLE_SETTLE_DP = 280f
+    /** Restitution: light bodies (Chittu) livelier, heavy (Gajju) duller. */
+    fun marbleRestitution(w: Float): Float = when {
+        w < 0.25f -> 0.70f
+        w > 0.80f -> 0.55f
+        else -> 0.62f
+    }
 
     /** How long you keep holding still (after the menu opened) before you feel the heartbeat. */
     const val HEART_HOLD_MS = 1100L

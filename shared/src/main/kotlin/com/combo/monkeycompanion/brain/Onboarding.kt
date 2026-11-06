@@ -1,16 +1,20 @@
 package com.combo.monkeycompanion.brain
 
-/** v10.13 first-time demo on the floating character + 7 daily tips + "new" dots (pure, unit-tested). */
+/** v10.13 first-time demo on the floating character + 7 daily tips + "new" dots (pure, unit-tested).
+ *  v10.30: also teaches slingshot + pinch-and-pop (still one demo, still skippable). */
 object Onboarding {
-    enum class Gesture { TAP, DOUBLE_TAP, HOLD }
+    enum class Gesture { TAP, DOUBLE_TAP, HOLD, SLING, PINCH }
     data class Step(val expect: Gesture, val line: String, val praise: String)
 
     val steps = listOf(
         Step(Gesture.TAP, "👋 Hi! I'm Set-Tai. Tap me!", "Hehe, that tickles! 😆"),
         Step(Gesture.DOUBLE_TAP, "Now double-tap me! ⚡", "Boom! That's my power 🎆"),
         Step(Gesture.HOLD, "Now hold me! ✋", "This is my popup: games, shows, tools & more 🎉"),
+        Step(Gesture.SLING, "Hold me, then pull back and let go — that's my slingshot! 🎯", "Wheee! Nice shot! 🚀"),
+        Step(Gesture.PINCH, "Pinch me with two fingers, then let go — I pop back! 🫠", "Boing! I'm springy! ✨"),
     )
-    const val MAX_SECS = 30f
+    /** Longer demo now has five steps; still auto-ends if they wander off. */
+    const val MAX_SECS = 75f
 
     /** One demo run. [onGesture] returns the praise line when the expected gesture arrives. */
     class Run {

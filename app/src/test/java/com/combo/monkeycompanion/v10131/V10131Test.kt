@@ -60,5 +60,5 @@ class V10131Test {
         }
     }
 
-    @Test fun onboardingStillThreeSteps() { assertTrue(Onboarding.steps.size == 3) }
+    @Test fun onboardingStillFiveSteps() { assertTrue(Onboarding.steps.size == 5) }
 }

@@ -68,6 +68,8 @@ interface StageHost {
     fun floorX(frac: Float)
     fun charX(): Float
     fun slideToEdge(side: Int)
+    /** v10.30 continuous phone-tilt physics (slide ~45°, fall ~90°/180°). No-op default for tests. */
+    fun tiltTick(det: com.combo.monkeycompanion.v5.MotionDetector, dt: Float) {}
     fun sleepNow(on: Boolean)
     fun leaveBy(side: Int)
     fun comeBack()
@@ -201,6 +203,11 @@ class Stage(private val h: StageHost) : PairHub.Listener {
         if (!v && faceDownMask) faceDownMask = false
     }
     val sensorOn get() = motion.active
+    /** Tests: feed a synthetic accelerometer sample (also runs discrete onMotion). */
+    fun debugFeedAccel(x: Float, y: Float, z: Float, tMs: Long) {
+        motion.detector.feed(x, y, z, tMs)?.let { onMotion(it) }
+    }
+    val debugDetector get() = motion.detector
 
     /** Phone unlocked (the overlay forwards it). */
     fun onUnlock() { festivalCheck(); weatherCheck(); dailyCheck(); goodnight() }
@@ -214,6 +221,10 @@ class Stage(private val h: StageHost) : PairHub.Listener {
         stepGames(dt)
         visitor?.let { v -> if (!v.step(dt)) visitor = null }
         if (sulking && t >= sulkPoseAt) stepSulk()
+        // v10.30: continuous tilt slide / fall (banana game steals tilt; face-down sleep stays discrete)
+        if (banana == null && !faceDownMask && Fun5Store.on(c, Fun5Store.Feature.MOTION)) {
+            h.tiltTick(motion.detector, dt)
+        }
     }
 
     /** [front] = drawn over the body (masks, props); else behind (banners, bananas, the visitor). Screen space. */
@@ -287,8 +298,9 @@ class Stage(private val h: StageHost) : PairHub.Listener {
                 when (e) {
                     MotionDetector.Event.SHAKE -> { dizzyUntil = t + 3.2f; com.combo.monkeycompanion.ai.BodySense.record("you shook the phone", com.combo.monkeycompanion.ai.BodySense.Feeling.DIZZY); h.play(MonkeyState.STARTLED, 1.4f); h.say(shakeLine(false), 2400L); h.wake(); com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.SHAKE) }
                     MotionDetector.Event.HARD_SHAKE -> { dizzyUntil = t + 2f; com.combo.monkeycompanion.ai.BodySense.record("you shook the phone hard", com.combo.monkeycompanion.ai.BodySense.Feeling.DIZZY); h.play(MonkeyState.ANGRY, 2.4f); h.say(shakeLine(true), 2600L); h.wake(); com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.HARD_SHAKE) }
-                    MotionDetector.Event.TILT_LEFT -> h.slideToEdge(-1)
-                    MotionDetector.Event.TILT_RIGHT -> h.slideToEdge(1)
+                    // v10.30: continuous tiltTick handles slide/fall; keep LEVEL as a soft recover nudge
+                    MotionDetector.Event.TILT_LEFT, MotionDetector.Event.TILT_RIGHT -> Unit
+                    MotionDetector.Event.LEVEL -> h.tiltTick(motion.detector, 0f)
                     else -> Unit
                 }
             }

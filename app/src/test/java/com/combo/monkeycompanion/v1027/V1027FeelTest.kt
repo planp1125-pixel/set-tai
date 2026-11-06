@@ -127,7 +127,7 @@ class V1027FeelTest {
             f.up()
             assertFalse("${c.id}: band let go", v.debugSling)
             assertTrue("${c.id}: snap felt", felt("sling_snap"))
-            assertTrue("${c.id}: flies off", v.debugImpactOn || v.debugBox().top < y0 - 5f)
+            assertTrue("${c.id}: flies off", v.debugImpactOn || v.debugMarbleBounce || v.debugBox().top < y0 - 5f)
             repeat(60 * 6) { v.debugFrames(1) }
         }
     }

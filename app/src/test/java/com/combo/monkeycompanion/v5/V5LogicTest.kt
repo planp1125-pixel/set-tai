@@ -148,9 +148,25 @@ class MotionTest {
         val d4 = MotionDetector(); run(d4, List(5) { Triple(0f, 0f, 9.8f) })
         val face = run(d4, List(80) { Triple(0f, 0f, -9.8f) }, 1000)
         assertEquals(listOf(MotionDetector.Event.FACE_DOWN), face)
-        assertEquals(MotionDetector.Event.FACE_UP, run(d4, List(40) { Triple(0f, 0f, 9.8f) }, 7000).firstOrNull())
+                assertEquals(MotionDetector.Event.FACE_UP, run(d4, List(40) { Triple(0f, 0f, 9.8f) }, 7000).firstOrNull())
+    }
+    @Test fun tiltDegAndFaceDownHelpers() {
+        val d = MotionDetector()
+        run(d, List(30) { Triple(0f, 9.8f, 0.5f) })
+        assertTrue(kotlin.math.abs(d.tiltDeg()) < 8f)
+        run(d, List(40) { Triple(6.9f, 6.9f, 0.4f) }, 2000)
+        val mid = kotlin.math.abs(d.tiltDeg())
+        assertTrue("about 45° got $mid", mid in 35f..55f)
+        run(d, List(40) { Triple(9.6f, 0.3f, 0.2f) }, 5000)
+        assertTrue(kotlin.math.abs(d.tiltDeg()) > 80f)
+        val table = MotionDetector()
+        run(table, List(5) { Triple(0f, 0f, 9.8f) })
+        run(table, List(50) { Triple(0.1f, 0.1f, -9.8f) }, 1000)
+        assertTrue(table.isTableFaceDown())
+        assertFalse(table.isUpsideDownInHand())
     }
 }
+
 
 class WeatherCricketMunchTest {
     @Test fun weather() {
