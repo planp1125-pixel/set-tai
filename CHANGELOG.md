@@ -2,6 +2,11 @@
 
 Plain-words history. Older builds (v9.2 – v10.11) are described in detail in [docs/CHANGELOG.md](docs/CHANGELOG.md). Below is a short summary of those, then every tagged release in this repo.
 
+## v10.34 (code 72)
+- **Your own shows, no new install needed:** long-press → 🎬 Show → 🎭 Shows lists the bundled Satan vs Angel and your saved shows (▶ play, 🗑 delete).
+- Add a script by pasting it, picking a `.show` / `.txt` file (Android file picker, no storage permission), or fetching an https link (GitHub links work).
+- Bad scripts aren't saved; you're told the line number and what's wrong. Scripts are stored privately in the app.
+
 ## v10.33 (code 71)
 - **Scream face for every character:** the shared Expression engine has a new `scream` face. Eyes 1.8 (fear 1.4, shocked 1.5), mouth fully open at 1.2 (fear 0.55, shocked 0.9), brows up in panic, a quick shake. Kutti Satan and Angel's eyes and mouth now grow past the shocked size for it; anything below shocked looks the same as before.
 - **Satan vs Angel:** a one-second `both face scream for 1` right after they see the cracked glass (face only, no new line). The later beats move 1 s later: sorry bro at 19.0, vanish at 21.4, end at 22.6.

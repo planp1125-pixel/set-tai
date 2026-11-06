@@ -1438,7 +1438,7 @@ class MonkeyView(
                 "funny" -> doSomethingFunny()
                 "skit" -> startSkitNow()
                 "show" -> startChaseShow()
-                "story" -> startScriptShow()
+                "story" -> openShows()
                 "banana_game" -> stage.startGame(com.combo.monkeycompanion.v5.Games.Game.BANANA)
                 "eater" -> startScreenEater()
                 "selfie" -> startPhotobomb(manual = true)
@@ -2020,12 +2020,19 @@ class MonkeyView(
     /** v10.32: play the scripted show (Satan vs Angel by default) on the full-screen stage; tap the stage to stop. */
     fun startScriptShow(asset: String = ScriptShowHub.DEFAULT): Boolean {
         if (wp || host == null) return false
-        val ok = ScriptShowHub.start(context, asset, (resources.displayMetrics.heightPixels.toFloat() / resources.displayMetrics.widthPixels.coerceAtLeast(1)).coerceIn(1.2f, 3f))
-        if (!ok) sayInfo("The show can't start right now 🎬", 2500L)
+        val err = ScriptShowHub.startResult(context, asset = asset, aspect = (resources.displayMetrics.heightPixels.toFloat() / resources.displayMetrics.widthPixels.coerceAtLeast(1)).coerceIn(1.2f, 3f))
+        val ok = err == null
+        if (!ok) sayInfo("🎬 $err", 4500L)
         debugScriptStarted = ok
         return ok
     }
     var debugScriptStarted = false; private set
+
+    /** v10.34: the Shows list (bundled + yours; add by paste / file / link). */
+    fun openShows() {
+        runCatching { context.startActivity(Intent(context, com.combo.monkeycompanion.ui.ShowsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            .onFailure { startScriptShow() }
+    }
 
     fun startChaseShow() {
         if (ChaseShowHub.show != null) return

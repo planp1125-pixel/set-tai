@@ -173,7 +173,7 @@ object LongPressMenu {
     }
     private val SUB = mapOf(
         "smash" to ("💥" to "Smash"), "banana_game" to ("🍌" to "Bananas"), "eater" to ("😋" to "Eat screen"),
-        "show" to ("🐱🐭" to "Start show"), "story" to ("😈😇" to "Satan vs Angel"), "clip" to ("🎥" to "Record"), "selfie" to ("🤳" to "Photobomb"),
+        "show" to ("🐱🐭" to "Start show"), "story" to ("🎭" to "Shows"), "clip" to ("🎥" to "Record"), "selfie" to ("🤳" to "Photobomb"),
         "sleep" to ("😴" to "Sleep"), "focus" to ("📚" to "Study"), "breathe" to ("🫧" to "Breathe"),
         "comfort_hug" to ("🫂" to "Hug"), "comfort_sign" to ("📣" to "Cheer"), "comfort_coffee" to ("☕" to "Coffee"),
         "chat" to ("💬" to "Chat"), "talk" to ("🎤" to "Mic"), "screen" to ("👀" to "Screen"), "missed" to ("🔔" to "Notifications"),

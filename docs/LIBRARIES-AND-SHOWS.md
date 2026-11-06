@@ -23,7 +23,7 @@ This file answers three questions: **What's the plan now? What libraries do we a
 
 **Still later (NOT BUILT):**
 1. More actions and faces as shows need them (wave, clap, whisper, bow…).
-2. Loading scripts from the user's notes or chat (today scripts are bundled files in `assets/shows/`), plus a picker for several scripts and casting from the chat ("Gajju vs Billa").
+2. **Built in v10.34:** import your own scripts by paste, file or link (see "Your own shows" below). Still later: loading straight from notes or chat, and casting by chat ("Gajju vs Billa").
 3. Sounds and haptic cues inside scripts (`stage sfx …`).
 4. Rules beyond "near" (e.g. `when ray hits shield`, `when <role> taps`).
 5. Moving the older Billa & Chittu Drama / Episode shows onto the script player.
@@ -62,7 +62,7 @@ All the drawing is procedural (no character bitmaps). **The key fact:** every ch
 | **Script player** *(v10.32)* | `shared/.../engine/script/ShowScript.kt`, `ScriptPlayer.kt`, `ScriptStageRenderer.kt`; app `overlay/ScriptShowHub.kt`, `ScriptStageView.kt` | Plain-text scene → timeline for any cast; timed beats + proximity rules; dialogue | Any character ids in `cast:` |
 | **Character icon** *(v10.31)* | `app/.../overlay/CharacterIcon.kt` | Draws the current character as the notification / AOD icon | Any body |
 
-**Honest gaps (v10.32):** scripts are bundled files, not yet read from notes or chat. The older Billa & Chittu Drama still uses its own Episode engine. Props are a small catalog. The only rule type is "near".
+**Honest gaps (v10.34):** scripts can be imported by paste, file or link, but not yet read straight from notes or chat. The older Billa & Chittu Drama still uses its own Episode engine. Props are a small catalog. The only rule type is "near".
 
 ---
 
@@ -75,7 +75,8 @@ All the drawing is procedural (no character bitmaps). **The key fact:** every ch
 | Props engine | **Built in v10.32** (`engine/props/`). Add more kinds to `Props.catalog` |
 | Script player | **Built in v10.32** (`engine/script/`) |
 | Stage effects (rays, clash, crack) | **Built in v10.32** (`engine/stagefx/`) |
-| Scripts from notes / chat, script picker, casting by chat | NOT BUILT |
+| Import scripts (paste / file / link) + Shows list | **Built in v10.34** |
+| Scripts straight from notes / chat, casting by chat | NOT BUILT |
 | Sound / haptic cues in scripts | NOT BUILT |
 | More rule types (`hits`, `taps`, `after <event>`) | NOT BUILT |
 | Billa & Chittu dramas moved onto the script player | NOT BUILT |
@@ -157,3 +158,28 @@ Coordinates are screen fractions: x from 0 (left) to 1 (right), y from 0 (top) t
 **Play it:** long-press the character → 🎬 Show → 😈😇 Satan vs Angel (`MonkeyView.startScriptShow()`). It plays on a full-screen stage window, the companion windows hide meanwhile, and a tap stops it. Double-tap is unchanged (it still fires a random power, the main one first).
 
 **Add a new show:** copy `satan_vs_angel.show`, change `cast:` and the beats, and add a menu entry calling `startScriptShow("shows/<file>.show")`. An unknown verb, role or bad time throws `ScriptError` with the line number.
+
+## 7. Your own shows (v10.34)
+
+You don't need a new APK for each script. Long-press the character → 🎬 Show → 🎭 Shows opens the Shows list:
+- **⭐ bundled shows** (Satan vs Angel) and **📝 your shows**. ▶ plays, 🗑 deletes one of yours. Tap the screen during a show to stop it.
+- **Add a show**, three ways:
+  1. **Paste** the whole script, then *Save & play* or *Save*.
+  2. **Pick a file**: a `.show` or `.txt` file through Android's file picker (no storage permission).
+  3. **Fetch link**: any `https://` text link. A GitHub `…/blob/…` link is turned into its raw link automatically. A private repo's link won't work without a login, so use a public file or a paste.
+- A script is checked before it's saved. If something's wrong, you see e.g. `Script problem on line 3: unknown verb 'dance-wildly'` and nothing is saved.
+- Saved in app-private storage: `files/user-shows/<title-slug>.show`. The same title overwrites the old one. Uninstalling the app deletes them.
+
+Code: `overlay/UserShows.kt` (store, list, check, fetch), `ui/ShowsActivity.kt` (the list + add screen; it's an Activity because the Android file picker needs one), and `ScriptShowHub.startResult(ctx, asset | text)`, which returns null when the show is playing or a message with the line number.
+
+Small example:
+```
+title: Wave hello
+cast: hero=monkey, pal=gajju
+at 0: hero enter left to 0.3 0.86 in 1.5
+at 0.5: pal enter right to 0.7 0.5 in 1.5
+at 2: hero face happy; hero do point for 1.5; hero say "Hello friend!" for 2
+at 3: pal look hero; pal say "Hi!" for 1.5
+at 5: both vanish
+end at 6
+```

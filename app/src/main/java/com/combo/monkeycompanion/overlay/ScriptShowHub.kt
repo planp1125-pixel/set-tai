@@ -19,14 +19,25 @@ object ScriptShowHub {
         ShowScript.parse(ctx.assets.open(asset).bufferedReader().use { it.readText() })
 
     /** Starts [asset] (true = playing). */
-    fun start(ctx: Context, asset: String = DEFAULT, aspect: Float = 2.17f): Boolean {
-        if (running || ChaseShowHub.show != null) return false
-        val sc = runCatching { load(ctx, asset) }.getOrElse { android.util.Log.w("ScriptShow", "bad script", it); return false }
-        player = ScriptPlayer(sc, aspect)
+    fun start(ctx: Context, asset: String = DEFAULT, aspect: Float = 2.17f): Boolean = startResult(ctx, asset = asset, aspect = aspect) == null
+
+    /** v10.34: start from raw script text (user shows). */
+    fun startText(ctx: Context, text: String, aspect: Float = 2.17f): Boolean = startResult(ctx, text = text, aspect = aspect) == null
+
+    /** Starts a show from [asset] or [text]. null = playing; otherwise a plain message (bad script: with its line number). */
+    fun startResult(ctx: Context, asset: String? = null, text: String? = null, aspect: Float = 2.17f): String? {
+        if (running) return "A show is already playing"
+        if (ChaseShowHub.show != null) return "The chase show is playing"
+        val sc = try {
+            ShowScript.parse(text ?: ctx.assets.open(asset ?: DEFAULT).bufferedReader().use { it.readText() })
+        } catch (e: com.combo.monkeycompanion.engine.script.ScriptError) { return UserShows.message(e) }
+        catch (e: Exception) { return "Couldn't read the show: ${e.message}" }
+        val pl = try { ScriptPlayer(sc, aspect) } catch (e: com.combo.monkeycompanion.engine.script.ScriptError) { return UserShows.message(e) }
+        player = pl
         startMs = SystemClock.uptimeMillis()
-        if (!ScriptStageView.open(ctx)) { player = null; return false }
+        if (!ScriptStageView.open(ctx.applicationContext)) { player = null; return "The show stage couldn't open (is Set-Tai allowed to draw over apps?)" }
         runCatching { com.combo.monkeycompanion.audio.Sfx.warm(ctx) }
-        return true
+        return null
     }
 
     /** Show seconds since start. */

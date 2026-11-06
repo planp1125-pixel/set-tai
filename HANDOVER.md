@@ -1,8 +1,14 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.33 (versionCode 71)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.34 (versionCode 72)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
-## v10.33 current handoff
+## v10.34 current handoff
+
+- Baseline v10.33 `881c1b1`. Menu key `story` (g_show, label "🎭 Shows") now opens `ui/ShowsActivity` (falls back to playing the bundled default).
+- `overlay/UserShows.kt`: store in `filesDir/user-shows/<slug>.show`, `validate` = parse + cast ids exist, `fetch` (https only, GitHub blob→raw, 200 KB cap, user-initiated). `ScriptShowHub.startResult(ctx, asset=…|text=…)` returns null or a line-numbered message; `start`/`startText` wrap it. The stage window uses the application context.
+- Tests: `v1034/V1034Test`. No changes to engines, double-tap, swipe travel or Touch Feel.
+
+## v10.33 handoff
 
 - Baseline v10.32 `681401f`. `Expressions` adds `scream` (eye 1.8, mouth 1.2, brow -14, browY -6, smile -0.3, sweat 0.5, shake 3).
 - `DevilRenderer` (Satan + Angel) used to clamp the drawn eye height at 1.15 and the mouth at 1.0, so fear, shocked and scream all drew the same eyes. Now the eyes grow only above 1.5 (up to 1.8) and the mouth only above 1.0 (up to 1.2). Values ≤ shocked render exactly as before. The monkey renderer already allows mouth 1.2. The chibi renderer caps the mouth at 1.0.
