@@ -41,14 +41,21 @@ Updated for **v10.28 (versionCode 66)**, 6 Nov 2026. Owner: Manikandan Gopalakri
 - v10.28 focused Android tests: 10 passed; Workers runtime tests: 6 passed (mock
   Gemini; actual DO concurrency). Final full suite: 528 passed, including all 13 GoldenTrace tests. Worker tests
   are now a separate read-only, no-secrets CI job (mocked Gemini only).
-- **RELEASE GATE:** GitHub currently reports `private=false`, `visibility=public`
-  for planp1125-pixel/set-tai (verified with repo metadata after the first push).
-  This agent did NOT change visibility. It conflicts with the standing private-repo
-  rule. Initial implementation f4fca7c was already pushed before discovering this.
-  Final refinements are committed locally only; no v10.28 tag/release or final APK
-  has been published. Explicit approval to change repo visibility to PRIVATE (or
-  release publicly despite the previous private rule) is needed before more
-  outward publication. Do not assume changing visibility is harmless to forks/stars.
+- **Publication approved and completed:** repo is now PRIVATE. Existing tag
+  `v10.28` stays at `68f6eb364e23a54deb2403f01c998f5160788262` (never move it).
+  Release: https://github.com/planp1125-pixel/set-tai/releases/tag/v10.28 .
+  Verified local APK `settai-v10.28.apk` (15,264,882 bytes, 10.28 / 66, same
+  signing certificate as v10.27) was uploaded to that release alongside desktop
+  assets. The tag CI's Android job failed at the RealOverlayPathTest setup hover
+  assertion; other hover/GoldenTrace tests passed. Do not call that tag run green.
+- **Test-only post-release fix:** `RealOverlayPathTest` no longer assumes the
+  preparatory mid-air release must hover after exactly 30 frames. Its bounded
+  `awaitHover` waits for real `debugHovering` (up to 900 frames), with failure
+  diagnostics for character/saver, frames, hover, falling, arc/phase and box.
+  All actual swipe/WindowManager/curve assertions remain. No production code,
+  physics, Touch Feel, GoldenTrace or version changes; no new tag is needed.
+  Focused regression passed twice; full local suite passed all 528 tests, including
+  all 13 GoldenTrace tests. The test-only follow-up is on main, not a moved tag.
 - CI Play bundle remains OFF. Never move tags or force push. No key/keystore added.
 
 ## 1. What the app is

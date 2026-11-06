@@ -206,7 +206,7 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Pokes:** belly = soft squish, head / nose = tiny boop, anywhere else = a light tick.
 - **Landings:** every landing is a thump: bigger from higher up and for heavier characters (falls, hero landings, power landings, wall splats).
 
-## v10.28 candidate (code 66): built-in cloud brain and each character's own humour
+## v10.28 (code 66): built-in cloud brain and each character's own humour
 - Give Brain now selects Set-Tai Cloud by default: no key to paste and no Gmail sign-in. Optional own-key/server and on-device brains remain. AI is still strictly opt-in.
 - Secret-free Android gateway, anonymous persisted install UUID, short timeouts and local fallback. 40 cloud attempts per UTC day, 8 KB request limit, 200-character replies; only hashed quota records, no chat logs.
 - New maintainable Cloudflare Worker source/config/tests in `cloudflare/settai-brain`. Health: https://settai-brain.settai-companion.workers.dev/health . Model is set once in worker.js.
@@ -214,4 +214,5 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Local jokes, dance/movement and existing phone commands bypass AI/network; natural joke requests ("Can you tell me a joke?", "make me laugh") stay local too. Shared low-battery banana lines are now monkey-only.
 - v10.27 Touch Feel, fast-flick throw OFF default, physics, drawing and powers unchanged.
 - Deployment caveat: health is green, but the single live Gemini test returned upstream HTTP 400 (gateway 502). Model metadata is reachable; no model was substituted. Android falls back locally while upstream is unavailable.
-- Validation: 528 Android tests passed (including all 13 GoldenTrace tests); 6 mocked-Gemini Worker runtime tests passed. Release is held: GitHub reports the repo is public, conflicting with the standing private-repo rule; no visibility change or v10.28 tag was made.
+- Validation: 528 Android tests passed locally (including all 13 GoldenTrace tests); 6 mocked-Gemini Worker runtime tests passed. Owner then approved PRIVATE publication; v10.28 is tagged at 68f6eb3 and its verified Android APK was uploaded to the release. Historical tag CI is not green (hover setup assertion).
+- Test-only follow-up: RealOverlayPathTest waits for the real hover state with a bounded frame budget and useful diagnostics instead of a fixed 30-frame setup delay. Real swipe/flight assertions and all v10.27 app behaviour are unchanged. Version stays 10.28 / 66; no replacement tag. Focused regression passed twice and the full 528-test local suite passed, including all 13 GoldenTrace tests.

@@ -101,14 +101,29 @@ class RealOverlayPathTest {
         clock += 10; touch(r, MotionEvent.ACTION_UP, x + 6f, y - liftPx + swipePx)
     }
 
+    /** Setup is complete when the real view hovers, not after an assumed half-second.
+     * Startup/release state can outlast a fixed frame count in CI. */
+    private fun awaitHover(r: Rig, id: String, saver: Boolean, maxFrames: Int = 900) {
+        var frames = 0
+        while (!r.view.debugHovering && frames < maxFrames) {
+            r.view.debugFrames(1)
+            frames++
+        }
+        assertTrue(
+            "$id saver=$saver failed to settle into hover after $frames/$maxFrames frames: " +
+                "hover=${r.view.debugHovering}, falling=${r.view.debugFalling}, " +
+                "arc=${r.view.debugArcPlan}, arcPhase=${r.view.debugArcPhase}, box=${r.view.debugBox()}",
+            r.view.debugHovering
+        )
+    }
+
     @Test fun swipeDownMovesTheRealWindowAlongACurve() {
         for (id in listOf("superboy", "armour")) {
             for (saver in listOf(false, true)) {
                 val r = start(id, saver)
                 // let go mid-air first: it hovers
                 swipeDown(r, swipePx = 0f)
-                r.view.debugFrames(30)
-                assertTrue("$id hovers", r.view.debugHovering)
+                awaitHover(r, id, saver)
                 val before = "box ${r.view.debugBox()} lp ${r.lp().x},${r.lp().y} ${r.lp().width}x${r.lp().height}"
                 swipeDown(r)
                 val xs = ArrayList<Int>(); val ys = ArrayList<Int>(); var dbg = ""; val bx = ArrayList<Int>()
