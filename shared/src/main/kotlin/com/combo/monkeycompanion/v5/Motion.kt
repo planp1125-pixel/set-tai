@@ -90,6 +90,10 @@ class MotionDetector {
      * 0 ≈ level, ±45 ≈ gentle downhill, ±90 ≈ on its side, near ±180 ≈ upside-down in hand.
      * Uses atan2(gx, gy): gx>0 (left side lower) → positive.
      */
+    /** v10.36: filtered gravity (device axes) for screen-space tilt rolling. */
+    fun gravX(): Float = gx
+    fun gravY(): Float = gy
+
     fun tiltDeg(): Float = Math.toDegrees(atan2(gx.toDouble(), gy.toDouble())).toFloat()
 
     /** Screen flat on a table (or already in face-down sleep) — not a mid-air tip-over. */

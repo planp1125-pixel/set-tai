@@ -2,6 +2,14 @@
 
 Plain-words history. Older builds (v9.2 – v10.11) are described in detail in [docs/CHANGELOG.md](docs/CHANGELOG.md). Below is a short summary of those, then every tagged release in this repo.
 
+## v10.36 (code 74)
+
+- Tilt physics, like a ball: the phone glass is a surface the character rolls on. The accelerometer gives screen-space gravity (right side low means roll right, upright means down, upside-down means toward the top). Tipping the phone on its side now rolls them to that side, even from mid-air. Before, they were yanked to the floor and stuck at the bottom. They bounce off the edges with marble restitution and a single sharp hit, and they never hide.
+- The gentle ~45° slide along the floor works as before. Turning the phone upright again drops a mid-air character back to the floor. Table face-down still goes down the sleep-mask path.
+- Battery: the slide `drag_tick` buzz now plays only while the character is actually moving, timed by frame time. Once they settle at an edge, it stops.
+- Armor Anna armour shed (therikkanum): when he splats or marble-bounces, his gunmetal and saffron plates fly off with a spin. He is drawn in his inner clothes (white vest, blue lungi, bare arms) and keeps his helmet. Once the bounce or impact is over, the plates fly home and snap back on with a clank, like Iron Man. Only ArmourRenderer (Anna) does this; other characters are untouched.
+- New V1036Test. V1030FeelTest's steep-tilt test now expects a roll instead of a fall to the bottom.
+
 ## v10.35 (code 73)
 
 - Fix: Armor Anna no longer vanishes and reappears while a medium slingshot marble bounces. The hover logic (`hoverOn`) stayed on during the marble, and Anna's hover-jet pad resized the overlay window every frame. `hoverOn` is now off while `marbleOn`. Marble physics are unchanged.

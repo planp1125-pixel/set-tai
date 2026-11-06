@@ -187,8 +187,40 @@ class ArmourRenderer : HumanRenderer() {
     override val hair = Color.rgb(0x40, 0x3A, 0x36)
     /** Real phone battery percent, for the low-power gag (set by the view). */
     var batteryPct = -1
+    /** v10.36 armour shed: 0 = suited, 1 = plates blown fully off (set by the view; he wears his inner clothes). */
+    var shed = 0f
+    private val VEST = Color.rgb(0xF2, 0xEE, 0xE4)
+    private val LUNGI = Color.rgb(0x3E, 0x6E, 0xB8)
+
+    /** Plates fly outward from the body (dx, dy in rig units at shed=1) with a spin. */
+    private inline fun plate(c: Canvas, dx: Float, dy: Float, spin: Float, body: () -> Unit) {
+        val k = shed.coerceIn(0f, 1f)
+        if (k <= 0.001f) { body(); return }
+        c.save(); c.translate(dx * k, dy * k); c.rotate(spin * k); body(); c.restore()
+    }
+
+    private fun innerLegs(c: Canvas, rig: MonkeyRig) {
+        limb(c, rig.legL, LEG, 12f, LUNGI, true); limb(c, rig.legR, LEG, 12f, LUNGI, true)
+        limb(c, rig.legL, LEG, 12f, LUNGI, false); limb(c, rig.legR, LEG, 12f, LUNGI, false)
+        blob(c, rig.legL, -2f, LEG + 2f, 9f, 5f, skinShade); blob(c, rig.legR, 2f, LEG + 2f, 9f, 5f, skinShade)
+    }
+    private fun innerTorso(c: Canvas, rig: MonkeyRig) {
+        c.save(); c.concat(rig.hips); c.scale(1.02f, 1f)
+        fill.shader = null; fill.color = VEST; c.drawPath(suit, fill); c.drawPath(suit, outline)
+        c.restore()
+    }
+    private fun innerArms(c: Canvas, rig: MonkeyRig) {
+        limb(c, rig.armLUpper, rig.upperLen, 10f, skin, true); limb(c, rig.armLFore, rig.foreLen, 9f, skin, true)
+        limb(c, rig.armRUpper, rig.upperLen, 10f, skin, true); limb(c, rig.armRFore, rig.foreLen, 9f, skin, true)
+        limb(c, rig.armLUpper, rig.upperLen, 10f, skin, false); limb(c, rig.armLFore, rig.foreLen, 9f, skin, false)
+        limb(c, rig.armRUpper, rig.upperLen, 10f, skin, false); limb(c, rig.armRFore, rig.foreLen, 9f, skin, false)
+    }
 
     override fun drawLegs(c: Canvas, rig: MonkeyRig) {
+        if (shed > 0.001f) innerLegs(c, rig)
+        plate(c, -70f, 150f, -160f) { plateLegs(c, rig) }
+    }
+    private fun plateLegs(c: Canvas, rig: MonkeyRig) {
         limb(c, rig.legL, LEG, 16f, GUN, true); limb(c, rig.legR, LEG, 16f, GUN, true)
         limb(c, rig.legL, LEG, 16f, GUN, false); limb(c, rig.legR, LEG, 16f, GUN, false)
         blob(c, rig.legL, 0f, LEG * 0.45f, 6f, 5f, SAFFRON)
@@ -198,6 +230,10 @@ class ArmourRenderer : HumanRenderer() {
     }
 
     override fun drawTorso(c: Canvas, rig: MonkeyRig) {
+        if (shed > 0.001f) innerTorso(c, rig)
+        plate(c, 40f, -180f, 200f) { plateTorso(c, rig) }
+    }
+    private fun plateTorso(c: Canvas, rig: MonkeyRig) {
         val p = pose
         c.save(); c.concat(rig.hips); c.scale(1.18f, 1f)
         fill.shader = null; fill.color = GUN; c.drawPath(suit, fill); c.drawPath(suit, outline)
@@ -238,6 +274,10 @@ class ArmourRenderer : HumanRenderer() {
     }
 
     override fun drawArms(c: Canvas, rig: MonkeyRig) {
+        if (shed > 0.001f) innerArms(c, rig)
+        plate(c, 170f, -60f, 260f) { plateArms(c, rig) }
+    }
+    private fun plateArms(c: Canvas, rig: MonkeyRig) {
         limb(c, rig.armLUpper, rig.upperLen, 13f, GUN, true); limb(c, rig.armLFore, rig.foreLen, 12f, GUN, true)
         limb(c, rig.armRUpper, rig.upperLen, 13f, GUN, true); limb(c, rig.armRFore, rig.foreLen, 12f, GUN, true)
         limb(c, rig.armLUpper, rig.upperLen, 13f, GUN, false); limb(c, rig.armLFore, rig.foreLen, 12f, GUN, false)

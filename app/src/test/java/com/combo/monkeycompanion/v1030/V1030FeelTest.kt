@@ -257,6 +257,7 @@ class V1030FeelTest {
     @Test fun steepTiltStartsAFallAndLevelStopsSlide() {
         val v = view("gajju")
         v.debugPlace(400f, onFloor = true)
+        val x0 = v.debugBox().left
         var tMs = 3_000L
         // ~90° on side
         repeat(50) {
@@ -264,7 +265,10 @@ class V1030FeelTest {
             v.debugFrames(1)
             tMs += 16
         }
-        assertTrue("falls when tipped on side", v.debugFalling || v.debugBox().top < v.debugXY[2] - 4f)
+        // v10.36: on its side the character rolls toward the low (left) edge like a ball
+        assertTrue("rolls left when tipped on side (x0=$x0 now=${v.debugBox().left})", v.debugBox().left < x0 - 40f)
+        assertTrue("side roll is observable", v.debugTiltSliding)
+        assertFalse("must not hide from tilt", v.debugHidden)
         // bring back upright
         repeat(40) {
             v.debugTiltFeed(0.2f, 9.8f, 0.3f, tMs, 1f / 60f)

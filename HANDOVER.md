@@ -1,8 +1,12 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.35 (versionCode 73)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.36 (versionCode 74)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
-## v10.35 current handoff
+## v10.36 current handoff
+
+- `MonkeyView.tiltTick` now does its own 2D integration (`tiltVx`/`tiltVy`, using `MotionDetector.gravX()/gravY()`), with no `beginFall` on side tilt and no `my = ground()` pin. The edges bounce with `TouchFeel.marbleRestitution`. Level (<18°) clears the state and calls `beginFall` if the character is mid-air. `drag_tick` uses `tiltTickAcc` (frame time) and fires only when the character moved more than 0.5 px. Armour shed: `MonkeyView.startArmorShed` is called from `impactHit` and `startMarble`. `stepArmorShed` runs at the top of `stepPhysics` (phase 1 = off in 0.18 s, 2 = hold until the marble or impact ends plus 0.6 s, 3 = home in 0.45 s, then feelSharpHit) and drives `ArmourRenderer.shed`. The renderer draws the inner body, then the plates translated and rotated outward. The helmet stays on. Custom Ironboy companions use other renderers, so they don't shed yet. Tests: `v1036/V1036Test`.
+
+## v10.35 handoff
 
 - `MonkeyView.hoverOn` now includes `!marbleOn`. Before this, startMarble set `freeSurf` (spot -2), so hoverers counted as hovering mid-marble, and Anna's `usesHoverJets` jet-pad window resize made her vanish. Covered by `v1035/V1035Test`. Shows tap-to-edit and the bundled-script editor are not started.
 

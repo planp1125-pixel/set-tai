@@ -2945,7 +2945,33 @@ class MonkeyView(
         postNext(wall0, iv)
     }
 
+    // ---------------- v10.36 Armor Anna: plates fly off on splat / marble, then snap back like Iron Man ----------------
+    private var shedK = 0f          // 0 suited .. 1 plates fully off
+    private var shedPhase = 0       // 0 none, 1 blowing off, 2 off (waiting), 3 flying home
+    private var shedHold = 0f
+    val debugArmorShed get() = shedK
+    val debugArmorShedPhase get() = shedPhase
+    private fun armourRenderer() = renderer as? com.combo.monkeycompanion.rig.ArmourRenderer
+    private fun startArmorShed() {
+        if (armourRenderer() == null) return
+        shedPhase = 1; shedHold = 0f
+    }
+    private fun stepArmorShed(dt: Float) {
+        val r = armourRenderer()
+        if (r == null) { shedPhase = 0; shedK = 0f; return }
+        when (shedPhase) {
+            1 -> { shedK = (shedK + dt / 0.18f).coerceAtMost(1f); if (shedK >= 1f) shedPhase = 2 }
+            2 -> { shedHold += dt; if (!marbleOn && impact == null && shedHold > 0.6f) shedPhase = 3 }
+            3 -> {
+                shedK = (shedK - dt / 0.45f).coerceAtLeast(0f)
+                if (shedK <= 0f) { shedPhase = 0; feelSharpHit(0.35f) }   // clank — suit snaps back on
+            }
+        }
+        r.shed = shedK * shedK * (3f - 2f * shedK)   // smoothstep
+    }
+
     private fun stepPhysics(dt: Float) {
+        stepArmorShed(dt)
         if (edgeCrashCooldown > 0f) edgeCrashCooldown = (edgeCrashCooldown - dt).coerceAtLeast(0f)
         if (mcOn && !dragging) stepMaskClimb(dt)
         if (host == null) return
@@ -5962,6 +5988,7 @@ class MonkeyView(
 
     private fun impactHit(ip: com.combo.monkeycompanion.engine.impact.ImpactPlay, k: com.combo.monkeycompanion.engine.impact.ImpactPlay.Kind, side: Int) {
         if (!ip.hit(k, side)) return
+        startArmorShed()   // v10.36: therikkanum — armour plates scatter
         val spd = hypot(ivx, ivy) / d
         val hitForce = maxOf(lastSlingForce, (spd / 4200f)).coerceIn(0.55f, 1f)
         ivx = 0f; ivy = 0f
@@ -6023,6 +6050,7 @@ class MonkeyView(
         impact = null; swipeTrip = null; falling = false; vy = 0f; tweenT = -1f; tweenDone = null; arc = null; afterLand = null
         climber.deactivate(); surf = freeSurf(my)
         marbleOn = true; marbleBounces = 0; marbleSide = 0
+        startArmorShed()   // v10.36
         marbleSquashT = 0f; marbleSx = 1f; marbleSy = 1f
         ivx = fvx; ivy = fvy
         reactionLayer.clear()
@@ -6552,8 +6580,9 @@ class MonkeyView(
     // ---------------- v10.30 phone tilt: slide ~45°, fall ~90° / upside-down ----------------
     private var tiltLean = 0f
     private var tiltSlideSide = 0
-    private var tiltHapticAt = 0L
+    private var tiltTickAcc = 0.48f
     private var tiltFallSaid = false
+    private var tiltVx = 0f; private var tiltVy = 0f
     val debugTiltSliding get() = tiltSlideSide != 0
     val debugTiltLean get() = tiltLean
 
@@ -6566,52 +6595,82 @@ class MonkeyView(
     fun tiltTick(det: com.combo.monkeycompanion.v5.MotionDetector, dt: Float) {
         if (!canTiltPhysics()) {
             if (tiltSlideSide != 0 || tiltLean != 0f) { tiltSlideSide = 0; tiltLean = 0f }
+            tiltVx = 0f; tiltVy = 0f
             return
         }
         // Flat on a table = sleep mask path, never a mid-air fall
         if (det.isTableFaceDown()) {
-            tiltSlideSide = 0; tiltLean = 0f; return
+            tiltSlideSide = 0; tiltLean = 0f; tiltVx = 0f; tiltVy = 0f; return
         }
         val deg = det.tiltDeg()
         val a = abs(deg)
         val w = feelW
         val slideAt = com.combo.monkeycompanion.v5.MotionDetector.SLIDE_DEG - 6f * w   // heavy starts sooner
         val fallAt = com.combo.monkeycompanion.v5.MotionDetector.FALL_DEG - 10f * w    // Gajju ~80°, Chittu ~89°
-        // ~90° on side, or upside-down in hand (~180°)
-        if (a >= fallAt || det.isUpsideDownInHand()) {
-            tiltSlideSide = 0; tiltLean = (if (deg > 0) -1f else 1f) * 0.85f
-            if (!falling && arc == null) {
-                beginFall()
+        // v10.36: the glass is a surface a marble rolls on. Screen-space gravity from the
+        // accelerometer: +mx right (gx<0 = right side low), +my down (gy>0 = upright).
+        val upside = det.isUpsideDownInHand()
+        if (a >= slideAt || upside) {
+            if (a >= fallAt || upside) {
                 if (!tiltFallSaid) {
                     tiltFallSaid = true
                     say(pickLine(listOf("Aiyyo I'm falling!! 😵", "Whoa— too tippy!! 🫣", "Hold the phoneee!! 😱")), 1800L)
                 }
-            }
+            } else tiltFallSaid = false
+            if (falling) { falling = false; vy = 0f }
+            arc = null
+            if (climber.active) climber.deactivate()
+            val gx = det.gravX(); val gy = det.gravY()
+            val acc = 95f * d * (1.2f - 0.45f * w)            // px/s² per m/s²; light ones skitter faster
+            val cap = 620f * d * (1.2f - 0.45f * w)
+            tiltVx += -gx * acc * dt
+            tiltVy += gy * acc * dt
+            val maxX = max(0f, sw() - boxW)
+            val top = topY(); val bot = ground()
+            val onFloorNow = my >= bot - 0.5f
+            if (onFloorNow && tiltVy > 0f) tiltVy = 0f
+            if (onFloorNow) tiltVx *= (1f - 0.8f * dt)        // a little rolling friction on the floor
+            val sp = hypot(tiltVx, tiltVy)
+            if (sp > cap) { tiltVx *= cap / sp; tiltVy *= cap / sp }
+            val ox0 = mx; val oy0 = my
+            mx += tiltVx * dt; my += tiltVy * dt
+            val rest = TouchFeel.marbleRestitution(w)
+            val hitV = 160f * d
+            var hit = 0f
+            if (mx < 0f) { mx = 0f; if (tiltVx < -hitV) { hit = -tiltVx; tiltVx = -tiltVx * rest } else tiltVx = 0f }
+            else if (mx > maxX) { mx = maxX; if (tiltVx > hitV) { hit = tiltVx; tiltVx = -tiltVx * rest } else tiltVx = 0f }
+            if (my > bot) { my = bot; if (tiltVy > hitV) { hit = max(hit, tiltVy); tiltVy = -tiltVy * rest } else tiltVy = 0f }
+            else if (my < top) { my = top; if (tiltVy < -hitV) { hit = max(hit, -tiltVy); tiltVy = -tiltVy * rest } else tiltVy = 0f }
+            surf = if (my >= bot - 0.5f) screenSurf(SK.FLOOR) else freeSurf(my)
+            if (hit > 0f) feelSharpHit((hit / (600f * d)).coerceIn(0.2f, 1f))
+            val moved = hypot(mx - ox0, my - oy0) > 0.5f
+            val side = if (abs(gx) > 0.8f) (if (gx > 0f) -1 else 1) else tiltSlideSide.takeIf { it != 0 } ?: 1
+            tiltSlideSide = side
+            val k = ((a - slideAt) / (fallAt - slideAt).coerceAtLeast(1f)).coerceIn(0f, 1f)
+            tiltLean = side * (0.35f + 0.55f * k)
+            if (moved) {
+                if (controller.state != MonkeyState.WALK && controller.state != MonkeyState.STARTLED)
+                    controller.play(MonkeyState.WALK, 0.35f)
+                controller.face(side.toFloat())
+                // v10.36 battery: tick only while actually moving (first move, then every ~480 ms of motion);
+                // silent once settled at an edge. Frame-time based, so it never depends on the wall clock.
+                tiltTickAcc += dt
+                if (tiltTickAcc >= 0.48f) {
+                    tiltTickAcc = 0f
+                    if (feelOn()) buzz(TouchFeel.dragTick(w))
+                }
+            } else tiltTickAcc = 0.48f   // next real movement ticks immediately
             return
         }
         tiltFallSaid = false
-        if (a >= slideAt && !falling) {
-            val side = if (deg > 0f) -1 else 1   // left edge downhill when deg>0
-            val k = ((a - slideAt) / (fallAt - slideAt).coerceAtLeast(1f)).coerceIn(0f, 1f)
-            val speed = (140f + 320f * k) * d * (1.2f - 0.45f * w)   // light ones skitter faster
-            val maxX = max(0f, sw() - boxW)
-            if (surf.kind != SK.FLOOR || climber.active) { climber.deactivate(); surf = screenSurf(SK.FLOOR); my = ground() }
-            mx = (mx + side * speed * dt).coerceIn(0f, maxX)   // stop at the edge — do not hide
-            my = ground()
-            tiltSlideSide = side
-            tiltLean = side * (0.35f + 0.55f * k)
-            if (controller.state != MonkeyState.WALK && controller.state != MonkeyState.STARTLED)
-                controller.play(MonkeyState.WALK, 0.35f)
-            controller.face(side.toFloat())
-            val now = SystemClock.uptimeMillis()
-            if (now - tiltHapticAt > 480L) {
-                tiltHapticAt = now
-                if (feelOn()) buzz(TouchFeel.dragTick(w))
-            }
-        } else if (a < 18f) {
+        if (a < 18f) {
+            tiltVx = 0f; tiltVy = 0f
+            val wasTilting = tiltSlideSide != 0
             tiltSlideSide = 0
             tiltLean *= 0.7f
             if (abs(tiltLean) < 0.05f) tiltLean = 0f
+            // upright again: visual bottom is down — drop back to the floor if left mid-air
+            if (wasTilting && !falling && arc == null && my < ground() - 4f * d) { surf = freeSurf(my); beginFall() }
         }
     }
 
