@@ -1,8 +1,16 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.31 (versionCode 69)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.32 (versionCode 70)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
-## v10.31 current handoff
+## v10.32 current handoff
+
+- Baseline **v10.31 (69)** `ca8680c`. The full engine guide and script format are in [docs/LIBRARIES-AND-SHOWS.md](docs/LIBRARIES-AND-SHOWS.md).
+- New shared engines: `engine/expression/Expressions.kt`, `engine/movement/Movement.kt`, `engine/props/Props.kt`, `engine/stagefx/StageFx.kt`, `engine/script/{ShowScript,ScriptPlayer,ScriptStageRenderer}.kt`. The Action Library has 7 actions. `Character.vanishStyle` (Devil RED_SMOKE, Angel WHITE_SMOKE, default POOF).
+- App: `overlay/ScriptShowHub.kt` + `ScriptStageView.kt` (full-screen stage, same window flags as ShowStageView, tap = stop). `MonkeyView.startScriptShow()`; menu item `story` in `g_show` (V1013Test updated). `MonkeyView.onDraw` skips while a script show runs.
+- Scripts: `app/src/main/assets/shows/satan_vs_angel.show`. No frame-loop RNG anywhere (the crack shape uses its own seeded java.util.Random). Engines contain no character-id strings (a test greps for them).
+- Tests: `v1032/V1032Test` (parse, errors, hover/enter, fireball-near vanish + whole scene, Gajju/Billa + dosa pan, walker vs flier, shared pose, render sheet `app/build/test-out/v1032-satan-vs-angel.png`).
+
+## v10.31 handoff
 
 - Baseline **v10.30 (68)** `242f27b`. Everything from the v10.30 notes below still applies.
 - **Libraries / shows / characters guide: [docs/LIBRARIES-AND-SHOWS.md](docs/LIBRARIES-AND-SHOWS.md)**. Read it before adding actions, characters or show scripts.

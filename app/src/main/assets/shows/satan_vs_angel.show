@@ -1,0 +1,47 @@
+# Set-Tai show script (format: docs/LIBRARIES-AND-SHOWS.md, "Show scripts").
+# Roles are names used below; the right side is ANY character id (try angel=gajju, satan=billa).
+title: Satan vs Angel
+cast: angel=angel, satan=devil
+
+# 1. Angel flies in, then hovers silently in one place
+at 0.0: angel enter left to 0.68 0.40 in 2.4
+at 2.4: angel hover; angel turn right; angel face sleepy
+
+# 2. Satan comes in from the edge of the display
+at 2.8: satan enter left to 0.22 0.62 in 1.3
+at 4.1: satan hover; satan look angel; satan face evil
+
+# 3. Satan shoots fireballs fast
+at 4.6: satan do throw for 2.2; satan throw fireball at angel every 0.3 x7 speed 1.5
+
+# 4. When a fireball gets near Angel, she vanishes (generic proximity rule: any prop, any role)
+when fireball near angel within 0.08: angel vanish in 0.5; satan say "Hee-hee! 😈" for 1.4
+
+# 5. Angel is back, wakes and sees Satan
+at 7.6: angel appear at 0.74 0.36 in 0.6
+at 8.2: angel face wake; angel look satan
+at 8.8: satan stop; satan face angry
+
+# Satan's red lines from the eyes; Angel's shield stops them
+at 9.3: satan ray eyes to angel red for 2.2
+at 9.6: angel hold shield; angel do raise_shield for 1.9; angel face determined
+at 11.6: angel drop
+
+# Fire rays from Satan's hands vs Angel's powerful yellow rays: they clash
+at 12.0: satan do cast_hands for 4.2; satan ray hands to angel red for 4.2
+at 12.3: angel do cast_hands for 3.9; angel ray hands to satan yellow for 3.9
+at 12.4: stage clash satan angel for 4.0
+
+# The clash falls onto the display and the glass cracks
+at 14.6: stage drop clash in 0.8
+at 15.4: stage crack at clash
+at 15.4: both stop; both face shocked; both look crack
+
+# Both look at the crack, then at each other, stop fighting, say sorry in fear
+at 17.0: satan look angel; angel look satan
+at 17.6: both face fear; both do cower for 2.6
+at 18.0: both say "sorry bro" for 2.0
+
+# Both disappear in their own vanish style (Satan red smoke, Angel white smoke)
+at 20.4: satan vanish in 0.7; angel vanish in 0.7
+end at 21.6

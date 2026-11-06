@@ -32,6 +32,7 @@ object Angel : Character("angel") {
     override val noun: String get() = "little angel"
     override val tagline: String get() = "Kutti Satan's sweet opposite: halo, little wings, healing sparkles. Double-tap: a golden healing glow!"
     override val locomotion = setOf(Locomotion.FLOAT, Locomotion.FLY)
+    override val vanishStyle get() = com.combo.monkeycompanion.engine.stagefx.VanishStyle.WHITE_SMOKE
     override val wardrobe = listOf(WardrobeItem("halo", "Halo", defaultOn = true, note = "Her floating gold halo"))
     override fun newRenderer() = AngelRenderer()
     override val powers: List<Superpower> by lazy { listOf(HealingGlowPower, HaloSpinPower, AngelFlightPower, AngelFloatPower) }

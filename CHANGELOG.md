@@ -2,6 +2,11 @@
 
 Plain-words history. Older builds (v9.2 – v10.11) are described in detail in [docs/CHANGELOG.md](docs/CHANGELOG.md). Below is a short summary of those, then every tagged release in this repo.
 
+## v10.32 (code 70)
+- **Show engines, for any characters:** an Expression engine (14 named faces), a Movement engine (enter from an edge, fly or walk by the body's locomotion, hover, vanish/appear, exit), a Props engine (fireball, shield, dosa pan, shock ball, laddu, ball; thrown props really fly), shared stage effects (eye/hand rays, clash, cracked glass, vanish smoke in each body's own style) and 6 more Action Library moves (look_at, raise_shield, cast_hands, throw, cower, point).
+- **Script player:** plain-text scene scripts (`assets/shows/*.show`) with timed beats, dialogue and proximity rules like `when fireball near angel: angel vanish`. Nothing in it is specific to Satan or Angel; swap the cast or the prop and it still plays.
+- **First show: Satan vs Angel** (the user's scene). Long-press → 🎬 Show → 😈😇 Satan vs Angel. Tap the stage to stop. Double-tap still fires a random power with the main power first.
+
 ## v10.31 (code 69)
 - **Mic listens again, and shows it:** tapping 🎤 shows `🎤 Listening… tap me to send` right away, and the words you say appear in the bubble as you speak. Tap the character to send. Fixes: AI chatter / reaction lines (on by default since Cloud became the default in v10.29) no longer replace the Listening bubble; recogniser `ERROR_CLIENT` no longer counts as "cancelled" (that silently closed the bubble, so the mic seemed to do nothing); tap-to-send delivers the heard words even if the recogniser never answers (2.5 s fallback), and the tap no longer turns into a poke; the overlay service adds the microphone foreground type while listening.
 - **Listening-for-gossip pose:** a hand cupped to the ear, head tilted, eyes sideways. It lives in the new shared **Action Library** (`engine/action/ActionLibrary.kt`, action `listen_ear`), and every character (built-in or studio) plays the same action. No per-character copies.

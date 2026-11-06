@@ -74,6 +74,7 @@ object KuttiSatan : Character("devil") {
     override val noun: String get() = "little devil"
     override val tagline: String get() = "Your own cute little devil: blinks, floats, does black magic. Double-tap: vanish in red smoke, pop out the other side!"
     override val locomotion = setOf(Locomotion.FLOAT, Locomotion.FLY)
+    override val vanishStyle get() = com.combo.monkeycompanion.engine.stagefx.VanishStyle.RED_SMOKE
     override val wardrobe = listOf(
         WardrobeItem("heart", "Heart tail tip", defaultOn = true, note = "The little red heart at the end of his tail"),
         WardrobeItem("blush", "Blush", defaultOn = false, note = "Rosy cheeks when he's happy"),

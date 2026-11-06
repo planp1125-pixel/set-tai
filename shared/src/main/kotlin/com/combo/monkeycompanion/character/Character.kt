@@ -125,6 +125,8 @@ abstract class Character(val id: String) {
     /** v10.10: the one-time tip the first time this body is picked (with double-tap power on). */
     open val doubleTapTip: String get() = signaturePower?.let { "Double-tap me for my ${it.title}! ⚡ Tap 💬 to chat." } ?: "Double-tap me for a power! ⚡"
     open val voice: LineVoice? get() = null
+    /** v10.32: how this body vanishes in a show script (shared stage-fx puff; Satan red smoke, Angel white-gold). */
+    open val vanishStyle: com.combo.monkeycompanion.engine.stagefx.VanishStyle get() = com.combo.monkeycompanion.engine.stagefx.VanishStyle.POOF
 
     /** Pose for a shared state: the monkey animation library first, then this body's adapter. */
     fun fill(p: Pose, s: MonkeyState, t: Float, st: Float, c: AnimContext, w: Wear) {

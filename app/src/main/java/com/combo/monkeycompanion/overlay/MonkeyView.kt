@@ -1438,6 +1438,7 @@ class MonkeyView(
                 "funny" -> doSomethingFunny()
                 "skit" -> startSkitNow()
                 "show" -> startChaseShow()
+                "story" -> startScriptShow()
                 "banana_game" -> stage.startGame(com.combo.monkeycompanion.v5.Games.Game.BANANA)
                 "eater" -> startScreenEater()
                 "selfie" -> startPhotobomb(manual = true)
@@ -2015,6 +2016,16 @@ class MonkeyView(
         "chittu" -> com.combo.monkeycompanion.engine.show.Role.RAT
         else -> null
     }
+
+    /** v10.32: play the scripted show (Satan vs Angel by default) on the full-screen stage; tap the stage to stop. */
+    fun startScriptShow(asset: String = ScriptShowHub.DEFAULT): Boolean {
+        if (wp || host == null) return false
+        val ok = ScriptShowHub.start(context, asset, (resources.displayMetrics.heightPixels.toFloat() / resources.displayMetrics.widthPixels.coerceAtLeast(1)).coerceIn(1.2f, 3f))
+        if (!ok) sayInfo("The show can't start right now 🎬", 2500L)
+        debugScriptStarted = ok
+        return ok
+    }
+    var debugScriptStarted = false; private set
 
     fun startChaseShow() {
         if (ChaseShowHub.show != null) return
@@ -5228,6 +5239,7 @@ class MonkeyView(
     fun debugRefreshSettings() = refreshQuipSettings()
 
     override fun onDraw(canvas: Canvas) {
+        if (ScriptShowHub.running && !wp) return   // v10.32: the scripted show draws the cast on its own stage
         val c0 = Debug.threadCpuTimeNanos()
         drawAll(canvas)
         if (!hiddenTab) drawFeel(canvas)

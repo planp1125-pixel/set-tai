@@ -20,7 +20,7 @@ class V1013Test {
         assertEquals(listOf("g_powers", "g_games", "g_show", "g_modes", "g_tools", "g_access", "hide", "quit"), LongPressMenu.groupedMain())
         assertFalse("chat" in LongPressMenu.groupedMain()); assertFalse("settings" in LongPressMenu.groupedMain())
         assertEquals(listOf("smash", "banana_game", "eater"), LongPressMenu.groupItems("g_games"))
-        assertEquals(listOf("show", "clip", "selfie"), LongPressMenu.groupItems("g_show"))
+        assertEquals(listOf("show", "story", "clip", "selfie"), LongPressMenu.groupItems("g_show"))
         assertEquals(6, LongPressMenu.groupItems("g_modes").size)
         assertEquals(5, LongPressMenu.groupItems("g_tools").size)
         assertEquals(listOf("chat", "talk", "screen", "missed"), LongPressMenu.groupItems("g_access"))
