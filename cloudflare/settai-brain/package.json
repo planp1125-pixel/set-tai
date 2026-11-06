@@ -1,0 +1,13 @@
+{
+  "name": "settai-brain",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0",
+    "@cloudflare/vitest-plugin": "latest",
+    "wrangler": "latest"
+  }
+}

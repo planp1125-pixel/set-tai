@@ -129,14 +129,14 @@ class SettingsActivity : Activity() {
     private fun build(): View {
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(28)) }
         col.addView(text("Set-Tai brain & settings", 26f, true).apply { gravity = Gravity.CENTER_HORIZONTAL })
-        col.addView(text("Choose how Settai thinks. On-device is private and free; online is smarter and needs an API key.", 14f, color = soft))
+        col.addView(text("Give Brain enables Set-Tai Cloud: no API key or Gmail sign-in. 40 cloud requests per UTC day; messages go to Gemini. Local jokes and commands stay on your phone.", 14f, color = soft))
 
         // Brain type
         val group = RadioGroup(this)
         val opts = listOf(
             BrainType.NONE to "No brain (canned Settai lines)",
             BrainType.OFFLINE to "On-device AI (offline, private)",
-            BrainType.ONLINE to "Online AI (your API key)",
+            BrainType.ONLINE to "Set-Tai Cloud (optional own-key override)",
         )
         opts.forEachIndexed { i, (bt, label) ->
             group.addView(RadioButton(this).apply { id = 100 + i; text = label; textSize = 15f; setTextColor(brown); isChecked = s.brainType == bt })
@@ -201,8 +201,8 @@ class SettingsActivity : Activity() {
             loadOnline()
         }
         loadOnline()
-        return card(
-            "Online brain",
+        val advanced = card(
+            "Advanced: your own API provider",
             text("Provider", 13f, color = soft), sp,
             text("API key (stored encrypted on this phone)", 13f, color = soft), keyField, keyHint,
             text("Model", 13f, color = soft), modelField,
@@ -211,6 +211,17 @@ class SettingsActivity : Activity() {
             button("Save & test", primary = true) { saveOnline(); pickModel(auto = true) },
             onlineResult,
         )
+        advanced.visibility = if (s.useOwnApiKey) View.VISIBLE else View.GONE
+        val own = CheckBox(this).apply {
+            text = "Advanced: use my own API key / server"
+            isChecked = s.useOwnApiKey
+            setOnCheckedChangeListener { _, checked ->
+                s.useOwnApiKey = checked
+                advanced.visibility = if (checked) View.VISIBLE else View.GONE
+                refreshPicker()
+            }
+        }
+        return card("Set-Tai Cloud", text("Built in. No key or Gmail needed. 40 requests per UTC day (including background AI). Local commands cost no chats. Your messages and character context go to Gemini; the gateway keeps only anonymous quota counts.", 13f, color = soft), own, advanced)
     }
 
     private fun loadOnline() {
@@ -329,6 +340,7 @@ class SettingsActivity : Activity() {
         }
         val on = s.aiBrainEnabled
         row("No AI (canned lines)", !on || s.brainType == BrainType.NONE, { s.brainType = BrainType.NONE; ChatHub.setBrainEnabled(false); brainGroup?.check(100); updateCards(); refreshPicker() })
+        row("☁️ Set-Tai Cloud · no key / sign-in", on && s.brainType == BrainType.ONLINE && !s.useOwnApiKey, { s.useOwnApiKey = false; activate(BrainType.ONLINE) })
         for (f in ModelStore.installed(this)) {
             val title = ModelStore.CATALOG.firstOrNull { it.file == f.name }?.title?.substringBefore(" (") ?: f.name
             row("📱 $title  ·  ${mb(f.length())}", on && s.brainType == BrainType.OFFLINE && s.offlineModelPath == f.path,
@@ -338,7 +350,7 @@ class SettingsActivity : Activity() {
         for (pr in Provider.values()) {
             val ok = if (pr == Provider.CUSTOM) s.customBaseUrl.isNotBlank() else s.apiKeyFor(pr).isNotBlank()
             if (!ok) continue
-            row("☁️ ${pr.label} (${s.modelFor(pr)})", on && s.brainType == BrainType.ONLINE && s.provider == pr, { s.provider = pr; activate(BrainType.ONLINE) })
+            row("☁️ ${pr.label} (${s.modelFor(pr)})", on && s.brainType == BrainType.ONLINE && s.useOwnApiKey && s.provider == pr, { s.useOwnApiKey = true; s.provider = pr; activate(BrainType.ONLINE) })
         }
         if (box.childCount == 1) box.addView(text("No models or API keys yet. Download a model or add a key below.", 12f, color = soft))
     }
@@ -987,9 +999,27 @@ object GiveBrainDialog {
         styleToggle()
         root.addView(toggleRow)
 
+        root.addView(TextView(act).apply {
+            text = "Set-Tai Cloud is ready when you enable Brain. No key or Gmail sign-in. 40 requests per UTC day, including background AI. Chats and character context go to Gemini; only anonymous quota counts are stored by the gateway. Local jokes, dance and phone commands stay local."
+            textSize = 13f; setTextColor(soft)
+        })
+        val advanced = LinearLayout(act).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = if (s.useOwnApiKey) View.VISIBLE else View.GONE
+        }
+        root.addView(CheckBox(act).apply {
+            text = "Advanced: use my own API key / server"
+            isChecked = s.useOwnApiKey
+            setOnCheckedChangeListener { _, checked ->
+                s.useOwnApiKey = checked
+                advanced.visibility = if (checked) View.VISIBLE else View.GONE
+                styleToggle(); onChanged?.invoke()
+            }
+        })
+        root.addView(advanced)
         val providers = Provider.entries
         var curProvider = s.provider
-        root.addView(TextView(act).apply {
+        advanced.addView(TextView(act).apply {
             text = "AI Provider (Gemini / OpenRouter / Groq / OpenAI / xAI / Claude):"
             textSize = 12.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(soft)
         })
@@ -1022,19 +1052,19 @@ object GiveBrainDialog {
             }
         }
         syncProviderFields()
-        root.addView(sp)
-        root.addView(keyInput)
-        root.addView(hintTv)
-        root.addView(TextView(act).apply {
+        advanced.addView(sp)
+        advanced.addView(keyInput)
+        advanced.addView(hintTv)
+        advanced.addView(TextView(act).apply {
             text = "Model Name:"
             textSize = 12.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(soft)
         })
-        root.addView(modelInput)
+        advanced.addView(modelInput)
 
         val testResultTv = TextView(act).apply {
             textSize = 12.5f; setTextColor(soft); setPadding(0, dp(6), 0, dp(4))
         }
-        root.addView(Button(act).apply {
+        advanced.addView(Button(act).apply {
             text = "⚡ Save Key, Enable Brain & Test Connection"
             isAllCaps = false; textSize = 13.5f; setTextColor(Color.WHITE)
             background = GradientDrawable().apply { cornerRadius = dp(20).toFloat(); setColor(purple) }
@@ -1044,6 +1074,7 @@ object GiveBrainDialog {
                 val m = modelInput.text?.toString()?.trim().orEmpty().ifBlank { curProvider.defaultModel }
                 s.setModelFor(curProvider, m)
                 s.provider = curProvider
+                s.useOwnApiKey = true
                 s.brainType = BrainType.ONLINE
                 ChatHub.setBrainEnabled(true)
                 styleToggle()
@@ -1061,7 +1092,7 @@ object GiveBrainDialog {
                 }
             }
         }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
-        root.addView(testResultTv)
+        advanced.addView(testResultTv)
 
         if (onRunAiPhotoModel != null) {
             root.addView(Button(act).apply {
@@ -1089,7 +1120,7 @@ object GiveBrainDialog {
             }
             .setPositiveButton("Done") { _, _ ->
                 val k = keyInput.text?.toString()?.trim().orEmpty()
-                if (k.isNotEmpty()) {
+                if (s.useOwnApiKey && k.isNotEmpty()) {
                     s.setApiKeyFor(curProvider, k)
                     s.provider = curProvider
                     s.brainType = BrainType.ONLINE

@@ -1,6 +1,45 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.26 (versionCode 62)**, 4 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.28 (versionCode 66)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.28 current handoff (supersedes older behaviour notes below)
+
+- Baseline **23ebd80 / v10.27 (65)** was pulled first. v10.26.1's `flickThrow=false`,
+  v10.26.2 power unblocking and v10.27 Touch Feel (weight, slingshot, heartbeat,
+  purr, tickle, shake, boops and landing thumps) are untouched. No MonkeyView or
+  touch/physics/renderer changes; no new permissions or frame-loop RNG calls.
+- **Set-Tai Cloud** is the default ONLINE brain after explicit Give Brain opt-in.
+  No key and no Gmail sign-in. AI stays off on a new install and when disabled.
+  `GatewayBrain.kt`, `ChatHub.kt`, `AppSettings.cloudUserId()` (persisted anonymous
+  UUID), `useOwnApiKey=false` (explicit advanced override). Offline models remain.
+  Network has short deadlines and friendly character-aware scripted fallback.
+- Worker **settai-brain**: https://settai-brain.settai-companion.workers.dev/health
+  (`POST /v1/chat` for Android). Maintenance source/config/tests/README in
+  `cloudflare/settai-brain/`. **Change model ONLY at `MODEL` in worker.js**, then
+  deploy. It is `gemini-3.5-flash-lite`, minimal thinking, no sampling parameters.
+  Google key is ONLY the Cloudflare GEMINI_API_KEY secret; never in repo/APK.
+- Quota: 40 attempts per anonymous ID per **UTC** day, including background AI.
+  SHA-256 hash + day/count mirrored in KV `settai-brain-quota`; SQLite-backed
+  Quota DO reservations prevent KV eventual-consistency/concurrent overrun.
+  No chat logs. Failed upstream attempts count. KV errors fail closed. Anonymous
+  IDs are not authentication; resets/new IDs can evade per-install fair-use.
+- **Live deployment caveat:** health HTTP 200. The one live chat returned gateway
+  HTTP 502 / Gemini HTTP 400 (`gemini_unavailable`). No raw upstream error/key is
+  returned. Model metadata GET returned 200 for the exact requested model. No
+  model substitution. Gateway is deployed but live Gemini replies are NOT yet
+  verified; Android gracefully uses scripted lines while upstream is unavailable.
+- Voice bug causes: RANDOM overrides did not cover IDLE/BORED; MindLines' default
+  branch still said "banana break" for every newer body; ProactiveLines shared
+  monkey jokes; generic prompt/comedy and error lines leaked monkey identity.
+  `CharacterHumor` gives all 13 built-ins distinct 3-line joke pools, guards shared
+  fallbacks without new RNG calls, and selects suitable rest lines. Prompt names
+  the exact body and forbids monkey/banana jokes except for monkey. Studio voice
+  uses saved name/relationship/outfit and `analysisSummary`, not monkey defaults.
+- `LocalChat` jokes/movement and existing PhoneCommands run before the brain, so
+  battery/dance/jokes do not spend cloud quota. Public health never calls Gemini.
+- v10.28 focused Android tests: 10 passed; Workers runtime tests: 6 passed (mock
+  Gemini; actual DO concurrency). Full suite / GoldenTrace / release CI pending.
+- CI Play bundle remains OFF. Never move tags or force push. No key/keystore added.
 
 ## 1. What the app is
 Set-Tai (Settai, "mischievous" in Tamil) is a **floating overlay companion app** for Android. It is not a launcher and not a full-screen app.

@@ -385,7 +385,7 @@ object MindHub {
         val mood = "Your current mood: energy %.1f, bored %.1f, social %.1f, curious %.1f, grumpy %.1f, content %.1f.".format(
             java.util.Locale.ROOT, d.energy, d.boredom, d.social, d.curiosity, d.annoyance, d.contentment)
         val fav = m.personality.fav
-        val likes = "Your favourites: the ${fav.corner.label}, napping at the ${fav.napSpot.label}, ${fav.favApp.label} apps, snack: ${fav.snack}; you dislike ${fav.hatedApp.label} apps."
+        val likes = "Your favourites: the ${fav.corner.label}, napping at the ${fav.napSpot.label}, ${fav.favApp.label} apps, snack: ${MindLines.snack(CharacterRegistry.current.id, fav.snack)}; you dislike ${fav.hatedApp.label} apps."
         val mem = m.diary.promptSnippet(m.characterId, now, 5)
         val wLine = world.state.promptLine()
         val hLine = HeartEngine.promptNote(care.currentMood, care.pending)

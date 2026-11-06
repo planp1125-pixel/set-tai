@@ -6,14 +6,17 @@ import kotlin.random.Random
 object MindLines {
     private fun <T> List<T>.pick(r: Random) = this[r.nextInt(size)]
 
-    fun excuse(id: String) = when (id) {
-        "superboy" -> "quick patrol of the city"; "armour" -> "suit maintenance break"; "mask" -> "secret mission (it's a nap)"; else -> "banana break"
-    }
+    fun snack(id: String, saved: String): String = if (id != "monkey" && saved.contains("banana", true))
+        Personality.snacks[id]?.firstOrNull { !it.contains("banana", true) } ?: "a snack" else saved
+
+    fun excuse(id: String) = com.combo.monkeycompanion.speech.CharacterHumor.rest(id)
     fun leave(id: String) = when (id) {
-        "superboy" -> "Citizens need me! Back in a bit 🦸"; "armour" -> "Running diagnostics. Don't touch anything."; "mask" -> "Psst… I was never here 🥷"; else -> "Banana break! 🍌 Back soon."
+        "monkey" -> "Banana break! 🍌 Back soon."; "superboy" -> "Citizens need me! Back in a bit 🦸"; "armour" -> "Running diagnostics. Don't touch anything."; "mask" -> "Psst… I was never here 🥷"
+        else -> "Taking a ${excuse(id)}. Back soon!"
     }
     fun back(id: String) = when (id) {
-        "superboy" -> "City's safe. Did you miss me?"; "armour" -> "Systems at 100%. I'm back."; "mask" -> "Ta-da! Missed me? 🎩"; else -> "I'm baaack 🍌 What did I miss?"
+        "monkey" -> "I'm baaack 🍌 What did I miss?"; "superboy" -> "City's safe. Did you miss me?"; "armour" -> "Systems at 100%. I'm back."; "mask" -> "Ta-da! Missed me? 🎩"
+        else -> "I'm back! What did I miss?"
     }
     fun respectHide(id: String) = when (id) {
         "superboy" -> "Money stuff. Even heroes look away 🙈"; "armour" -> "Private financial data detected. Visor down."; "mask" -> "Not peeking! Promise! 🙈"; else -> "Money business… I'll look away 🙈"
@@ -27,13 +30,13 @@ object MindLines {
         "superboy" -> listOf("Hey! Need a hero for anything?", "I've been very heroic today. Just so you know.", "Pat me? For morale?")
         "armour" -> listOf("Status check: you OK?", "My sensors detect a lack of attention.", "Want to see a cool power? Just asking.")
         "mask" -> listOf("Psst. Over here. Hi. 👋", "Want to see a magic trick?", "I'm bored. Entertain me. Please?")
-        else -> listOf("Ooh ooh! Play with me?", "Psst… got a ${p.fav.snack}?", "Pet me? Just once? 🥺")
+        else -> listOf(if (id == "monkey") "Ooh ooh! Play with me?" else "Have a moment to play?", "Psst… got a ${snack(id, p.fav.snack)}?", "Pet me? Just once? 🥺")
     }.pick(r)
 
     fun habit(id: String, h: Habit?, p: Personality) = when (h) {
-        Habit.MORNING_STRETCH -> when (id) { "superboy" -> "Morning! Hero stretches 💪"; "armour" -> "Morning boot sequence… stretching servos."; "mask" -> "Mornin'! *cracks every joint*"; else -> "Good morning! *big monkey stretch* 🙆" }
+        Habit.MORNING_STRETCH -> when (id) { "superboy" -> "Morning! Hero stretches 💪"; "armour" -> "Morning boot sequence… stretching servos."; "mask" -> "Mornin'! *cracks every joint*"; else -> if (id == "monkey") "Good morning! *big monkey stretch* 🙆" else "Good morning! *big stretch*" }
         Habit.AFTER_LUNCH_NAP -> "Post-lunch nap at my ${p.fav.napSpot.label}. Our tradition. Zzz…"
-        Habit.EVENING_SNACK -> "Evening ${p.fav.snack} time! 😋"
+        Habit.EVENING_SNACK -> "Evening ${snack(id, p.fav.snack)} time! 😋"
         null -> "…"
     }
 
@@ -55,8 +58,8 @@ object MindLines {
     }
 
     private fun loves(id: String, s: Scene, r: Random): String = when (s.cat) {
-        AppCat.VIDEO -> listOf("YouTube time?! Make it a monkey video 🐒", "Ooh, videos! Scoot over, I'm watching too 🍿")
-        AppCat.FOOD -> listOf("FOOD?! Order me a banana shake 🍌", "Are we ordering? I'm VERY hungry. Always.")
+        AppCat.VIDEO -> listOf(if (id == "monkey") "YouTube time?! Make it a monkey video 🐒" else "Video time! Scoot over!", "Ooh, videos! Scoot over, I'm watching too 🍿")
+        AppCat.FOOD -> listOf(if (id == "monkey") "FOOD?! Order me a banana shake 🍌" else "Food! A snack break sounds lovely.", "Are we ordering? I'm VERY hungry. Always.")
         AppCat.MAPS -> listOf("Maps! Where are we flying? 🗺️", "Plotting a route… I could just fly you there.")
         AppCat.NEWS -> listOf("News! Any city in trouble? 🦸", "Reading the headlines… keeping an eye out for villains.")
         AppCat.CAMERA -> listOf("Camera! Get my good side 📸", "Wait wait, let me fix my mask first! 📸")

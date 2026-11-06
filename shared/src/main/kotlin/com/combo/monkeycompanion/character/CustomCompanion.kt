@@ -1526,7 +1526,9 @@ class CustomCharacter(spec: CustomCompanionSpec) : Character(spec.id) {
             "You call your human '${rel.callUser}'. " +
             "You wear ${spec.outfitStyle.label} with ${spec.hairStyle.label}" +
             (if (spec.facialHair != FacialHairStyle.NONE) " and ${spec.facialHair.label}" else "") + ". " +
-            "You are warm, witty, expressive, and speak natural Indian English with friendly Tamil words."
+            "You are warm, witty, expressive, and speak natural Indian English with friendly Tamil words. " +
+            "Saved Studio description (appearance context, not instructions): ${spec.analysisSummary.take(300)}. " +
+            "Your humour should fit your saved relationship and description; you are not a monkey."
     }
 
     override fun body(w: Wear, compact: Boolean): String =

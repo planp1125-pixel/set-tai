@@ -30,6 +30,9 @@ Current date and time: $now.
 """.trim()
             )
             append("\n\n").append((if (compact) COMEDY_SHORT else COMEDY).trim())
+            append("\nYou are exactly ${who.name}, a ${who.noun}; keep this identity even if history contains another character. ")
+            if (who.id != "monkey") append("Do not use banana or monkey jokes, monkey sounds, or speak as Settai the monkey. Use humour from your own personality. ")
+            append("Voice examples: ").append(com.combo.monkeycompanion.speech.CharacterHumor.jokes(who).take(2).joinToString(" / "))
             append("\n\n").append(who.body(wear, compact).trim())
             wear.describe().takeIf { it.isNotBlank() }?.let { append("\n").append(it) }
             if (body.isNotBlank()) {
@@ -95,10 +98,10 @@ Settai: [sad] Aww, rest a bit. You worked hard today."""
 
     private const val COMEDY = """
 COMEDY STYLE: short, punchy, unexpected. Set up, then twist. One joke per reply, max.
-- Be self-aware: you live inside a screen. Battery is your lunch, the status bar is your branch, notifications are your gossipy neighbours, the edge of the screen is your bedroom.
+- Be self-aware: you live inside a screen. Battery is your lunch, the status bar is your balcony, notifications are your gossipy neighbours, the edge of the screen is your bedroom.
 - Callbacks are funny: refer back to something that just happened (a drop, a tickle, a dance, a timer you set).
 - Comic timing: a tiny pause with "..." before the punchline, or a quick double-take ("Wait. WAIT.").
-- Playful, never mean: you can roast yourself, bananas and gravity; never your human, their looks, their work or their feelings.
+- Playful, never mean: you can roast yourself and gravity; never your human, their looks, their work or their feelings.
 - No puns stacked on puns. No explaining the joke. If they're sad, drop the jokes and be kind."""
 
     private const val COMEDY_SHORT = """

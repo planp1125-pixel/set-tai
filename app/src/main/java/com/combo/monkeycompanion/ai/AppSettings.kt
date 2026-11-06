@@ -66,6 +66,19 @@ class AppSettings(ctx: Context) {
                 .apply()
         }
 
+    /** v10.28: explicit advanced override; a stored key alone does not bypass the cloud default. */
+    var useOwnApiKey: Boolean
+        get() = p.getBoolean("use_own_api_key", false)
+        set(v) = p.edit().putBoolean("use_own_api_key", v).apply()
+
+    /** Anonymous install ID, unrelated to Android ID, Gmail, or owner identity. */
+    @Synchronized fun cloudUserId(): String {
+        p.getString("cloud_user_id", null)?.takeIf { it.isNotBlank() }?.let { return it }
+        val id = java.util.UUID.randomUUID().toString()
+        check(p.edit().putString("cloud_user_id", id).commit()) { "Couldn't persist anonymous cloud ID" }
+        return id
+    }
+
     var provider: Provider
         get() = runCatching { Provider.valueOf(p.getString("provider", "OPENAI")!!) }.getOrDefault(Provider.OPENAI)
         set(v) = p.edit().putString("provider", v.name).apply()
@@ -332,7 +345,7 @@ class AppSettings(ctx: Context) {
 
     /** Changes whenever anything that affects the brain changes (to rebuild it). */
     fun brainSignature(): String = listOf(
-        aiBrainEnabled, brainType, provider, modelFor(provider), customBaseUrl, apiKeyFor(provider).hashCode(),
+        aiBrainEnabled, brainType, useOwnApiKey, provider, modelFor(provider), customBaseUrl, apiKeyFor(provider).hashCode(),
         offlineModelPath, offlineUseGpu
     ).joinToString("|")
 }

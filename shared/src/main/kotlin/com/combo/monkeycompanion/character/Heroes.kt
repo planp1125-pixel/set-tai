@@ -59,8 +59,8 @@ object Superboy : Character("superboy") {
     override val voice: LineVoice by lazy {
         voiceOf("superhero", HeroLines.SB_HELLO, HeroLines.SB_POKED, HeroLines.SB_TICKLE, HeroLines.SB_PAT, HeroLines.SB_GRUMPY, HeroLines.SB_BAD,
             HeroLines.SB_HEAT, HeroLines.SB_BATTERY, HeroLines.SB_RANDOM, HeroLines.SB_DANCE, HeroLines.SB_HIDE, HeroLines.SB_FALL, HeroLines.SB_LAND_IDLE,
-            mapOf(Gag.SLIP to listOf("A banana peel? I can FLY! || ...I forgot to.", "Even heroes slip. Rarely. Today."),
-                Gag.JUGGLE to listOf("Juggling with super reflexes!", "Three bananas, one hero, zero drops. || Okay, one drop."),
+            mapOf(Gag.SLIP to listOf("A slippery floor? I can FLY! || ...I forgot to.", "Even heroes slip. Rarely. Today."),
+                Gag.JUGGLE to listOf("Juggling with super reflexes!", "Three props, one hero, zero drops. || Okay, one drop."),
                 Gag.CHASE_FLY to listOf("Is that a cockroach?! || Oh. A fly. I knew that.", "Halt, buzzing villain!"),
                 Gag.SELFIE to listOf("Hero selfie! Cape in frame!", "Say 'Superboy'!")))
     }
@@ -136,7 +136,7 @@ object ArmourAnna : Character("armour") {
     override val voice: LineVoice by lazy {
         voiceOf("armoured hero", HeroLines.AA_HELLO, HeroLines.AA_POKED, HeroLines.AA_TICKLE, HeroLines.AA_PAT, HeroLines.AA_GRUMPY, HeroLines.AA_BAD,
             HeroLines.AA_HEAT, HeroLines.AA_BATTERY, HeroLines.AA_RANDOM, HeroLines.AA_DANCE, HeroLines.AA_HIDE, HeroLines.AA_FALL, HeroLines.AA_LAND,
-            mapOf(Gag.SLIP to listOf("A banana peel defeated a genius. Don't tell anyone.", "Gyro failure! || Caused by... fruit."),
+            mapOf(Gag.SLIP to listOf("A slippery floor defeated a genius. Don't tell anyone.", "Gyro failure! || Caused by... misplaced confidence."),
                 Gag.JUGGLE to listOf("Juggling with servo precision.", "Calculated trajectories. Bananas don't care."),
                 Gag.SELFIE to listOf("Visor up, smile on. Click.", "For my LinkedIn."),
                 Gag.SNEEZE to listOf("ACHOO! || The visor's all foggy now.", "Even the suit said bless you.")))
@@ -296,10 +296,10 @@ Speak mostly in clear, natural English. Only occasionally drop in a single light
             add(if (w.has("stache")) "[sneeze] (your moustache flies off)" else "[sneeze]")
             add("[slip]"); add("[binoculars]")
             add("[fakesleep]")
-            add(if (w.has("belt")) "[juggle] (belt gadgets)" else "[juggle] (bananas)")
+            add(if (w.has("belt")) "[juggle] (belt gadgets)" else "[juggle] (comedy props)")
             add(if (w.has("crow")) "[chasefly] (your pet crow steals your hat)" else "[chasefly]")
             add("[airguitar]")
-            add(if (w.has("bananaphone")) "[selfie] (you answer your banana phone)" else "[selfie]")
+            add(if (w.has("bananaphone")) "[selfie] (you answer your comedy prop phone)" else "[selfie]")
         }.joinToString(" ")
         return if (compact) """
 You have a body (a lanky masked comedy hero). To move, put ONE tag in square brackets: [dance] [jump] [wave] [giggle] [angry] [sleep] [hide] [spin] [think] [happy] [sad]${if (extra.isEmpty()) "" else " " + extra.joinToString(" ") { it.substringBefore(" (") }}. Fun bits: $bits. Superpower: [fly]. If asked to move, always use the tag.

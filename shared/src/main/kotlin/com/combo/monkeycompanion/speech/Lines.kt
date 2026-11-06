@@ -284,17 +284,17 @@ object Lines {
 
     @Synchronized fun pick(pool0: List<String>): String {
         val v = voice
-        val pool = v?.pool(pool0) ?: pool0
+        val pool = CharacterHumor.pool(pool0, v?.pool(pool0))
         val line = pickRaw(pool)
-        return v?.polish(line) ?: line
+        return CharacterHumor.safe(v?.polish(line) ?: line)
     }
 
     /** v10.8: like [pick] (character voice + polish) but the choice comes from [chooser] (a separate seeded RNG). */
     @Synchronized fun pickWith(pool0: List<String>, chooser: (List<String>) -> String): String {
         val v = voice
-        val pool = v?.pool(pool0) ?: pool0
+        val pool = CharacterHumor.pool(pool0, v?.pool(pool0))
         val line = chooser(pool)
-        return v?.polish(line) ?: line
+        return CharacterHumor.safe(v?.polish(line) ?: line)
     }
 
     @Synchronized private fun pickRaw(pool: List<String>): String {

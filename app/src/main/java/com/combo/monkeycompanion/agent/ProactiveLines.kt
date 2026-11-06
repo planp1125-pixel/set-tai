@@ -4,7 +4,7 @@ import kotlin.random.Random
 
 /** v4.2 templated proactive lines (no brain needed, no battery spent). */
 object ProactiveLines {
-    private fun <T> List<T>.pick() = this[Random.nextInt(size)]
+    private fun List<String>.pick() = com.combo.monkeycompanion.speech.CharacterHumor.safe(this[Random.nextInt(size)])
 
     fun otp(app: String, code: String) = "🔐 Courier slipped a vault key from $app: $code. Only for your eyes — I'm looking away! 🙈"
 
@@ -78,5 +78,5 @@ object ProactiveLines {
         "What do you call a monkey with a phone? A smart-ape! 🐒📱",
         "Your notifications called. They said 'ping'. That's it. That's the joke. 🔔",
     )
-    fun joke() = JOKES.pick()
+    fun joke() = com.combo.monkeycompanion.speech.CharacterHumor.jokes().pick()
 }

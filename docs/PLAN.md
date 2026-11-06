@@ -208,3 +208,9 @@ Balance (agreed 3 Nov): about **80% everyday phone moments** (charging, notifica
 4. Free first, paid later (§10) OK? Any price you have in mind?
 5. Should episodes be **weekly for all pairs**, or one pair per week in rotation (less writing)?
 6. Content repo: OK to make a separate **public** repo just for drama scripts (the app code stays private)?
+
+## v10.28 maintenance checkpoint (6 Nov 2026)
+- ✅ Built-in opt-in cloud gateway; no user key/Gmail needed. Source, quota rules and model maintenance in `cloudflare/settai-brain/README.md`.
+- ✅ Distinct built-in joke voices and Studio description-based persona; local commands stay local.
+- ✅ Preserve v10.27 Touch Feel and fast-flick throws OFF by default.
+- ⚠ Health passes; live Gemini chat returned upstream 400. Scripted fallback is available. No weekly-drama scope change.

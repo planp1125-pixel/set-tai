@@ -1,0 +1,41 @@
+{
+  "name": "settai-brain",
+  "main": "worker.js",
+  "account_id": "85be72455bbe5a418fd5c6544cb2edf3",
+  "compatibility_date": "2026-11-06",
+  "workers_dev": true,
+  "kv_namespaces": [
+    {
+      "binding": "QUOTA",
+      "id": "460f314f69b04ba0b530046993b2b64d"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "QUOTA_GATE",
+        "class_name": "Quota"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Quota"
+      ]
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": false,
+      "head_sampling_rate": 0.01
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  }
+}

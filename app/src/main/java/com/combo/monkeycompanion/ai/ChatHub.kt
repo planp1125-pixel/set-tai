@@ -178,6 +178,7 @@ object ChatHub {
         settings = AppSettings(app)
         com.combo.monkeycompanion.mind.MindHub.init(app)
         AgentPromptMore.init(app)
+        settings.cloudUserId() // persist once on first app initialisation, without enabling AI
         memory = ChatMemory(app)
         powers = PhonePowers(app, settings, { action -> main.post { setPending(action) } }, withdraw = { a -> main.post { if (pending === a) setPending(null) } }, react = { body, prop ->
             main.post {
@@ -207,6 +208,7 @@ object ChatHub {
         return when (s.brainType) {
             BrainType.NONE -> CannedBrain()
             BrainType.ONLINE -> {
+                if (!s.useOwnApiKey) return GatewayBrain(s.cloudUserId(), { settings.aiBrainEnabled && settings.brainType == BrainType.ONLINE && !settings.useOwnApiKey }, { bodyState() })
                 val pr = s.provider
                 val key = s.apiKeyFor(pr)
                 val model = s.modelFor(pr)
@@ -235,6 +237,7 @@ object ChatHub {
     fun isBrainEnabled(): Boolean = runCatching { settings.aiBrainEnabled && settings.brainType != BrainType.NONE }.getOrDefault(false)
 
     fun setBrainEnabled(on: Boolean) {
+        if (!on) runCatching { brain?.cancel() }
         settings.aiBrainEnabled = on
         synchronized(this) { brainSig = "" }
     }
@@ -268,6 +271,12 @@ object ChatHub {
         // v4.2: "what's on my screen", "summarise this chat", "reply for me", "roast this screen"...: a digest + an in-character answer.
         com.combo.monkeycompanion.agent.ScreenTalk.parse(typed)?.let { screenTalk(it, typed); return }
         if (handlePhoneCommand(typed, replyingTo)) return
+        LocalChat.reply(typed)?.let { raw ->
+            val line = act(raw, typed)
+            quickLocal(typed, line)
+            fire { it.onReply(line, true) }; spoke(line)
+            return
+        }
         busy = true; yieldToHuman()
         val offline = settings.brainType == BrainType.OFFLINE
         // Small on-device models have a short context: keep only the last few turns so nothing gets truncated.
@@ -286,7 +295,7 @@ object ChatHub {
                 val th = if (b.supportsTools) tools else null
                 toolActed = false
                 val usePowers = powers.specs.isNotEmpty() && (!offline || settings.offlineTools)
-                val sys = Persona.systemPrompt(th != null && usePowers, bodyNow(facts = !usePowers), compact = offline, actionTool = th != null,
+                val sys = Persona.systemPrompt(th != null && usePowers, bodyNow(facts = !usePowers), compact = offline || b is GatewayBrain, actionTool = th != null,
                     powerTags = if (usePowers && (th == null || offline)) powers.tagHelp() else "",
                     phoneState = if (usePowers) powers.state() else "",
                     extra = if (usePowers) AgentPrompt.build(settings, th != null && !offline, typed) else "")
@@ -298,7 +307,7 @@ object ChatHub {
                 }
                 val shownReply = act(reply.ifBlank { last }, typed)
                 val final = shownReply.ifBlank { if (reply.isNotBlank()) "Ta-da!" else "" }
-                    .ifBlank { "Ooh ooh... I lost my train of thought. Try again?" }
+                    .ifBlank { "I lost my train of thought. Try again?" }
                 memory.updateLast(final); memory.commit()
                 com.combo.monkeycompanion.agent.ScreenAgent.end()
                 spoke(final)
@@ -307,7 +316,7 @@ object ChatHub {
                 // v10.13.1: never show raw runtime errors (token ids, stack text) to the user
                 android.util.Log.w("ChatHub", "reply failed", t)
                 val m = if (t is BrainException && t.message?.let { com.combo.monkeycompanion.brain.PromptBudget.isTooLong(it) || it.length > 160 } != true) t.message ?: "" else com.combo.monkeycompanion.brain.PromptBudget.FRIENDLY
-                val shown = if (last.isNotBlank()) "$last …" else m.ifBlank { "Oops, my brain slipped on a banana peel 🍌 Try again?" }
+                val shown = if (last.isNotBlank()) "$last …" else m.ifBlank { "My thoughts got tangled. Try again?" }
                 memory.updateLast(shown); memory.commit()
                 com.combo.monkeycompanion.agent.ScreenAgent.end()
                 main.post { busy = false; fire { it.onError(m) }; fire { it.onReply(shown, true) }; fire { it.onHistoryChanged() } }

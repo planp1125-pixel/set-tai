@@ -12,8 +12,8 @@ android {
         applicationId = "com.combo.monkeycompanion"
         minSdk = 26
         targetSdk = 35
-        versionCode = 65
-        versionName = "10.27"
+        versionCode = 66
+        versionName = "10.28"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
     signingConfigs {
