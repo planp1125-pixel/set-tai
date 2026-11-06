@@ -53,7 +53,7 @@ Changes are NOT done until your human taps Yes in your bubble, so say something 
 """.trim()
                 )
             }
-            if (powerTags.isNotBlank()) append("\n").append(POWER_TAGS.trim().replace("{TAGS}", powerTags.trim()))
+            if (powerTags.isNotBlank()) append("\n").append(POWER_TAGS.trim().replace("{TAGS}", powerTags.trim()).replace("Settai:", "${who.name}:" ))
             if (phoneState.isNotBlank()) append("\nYour phone right now: ").append(phoneState.trim()).append('.')
             if (extra.isNotBlank()) append("\n").append(extra.trim())
         }

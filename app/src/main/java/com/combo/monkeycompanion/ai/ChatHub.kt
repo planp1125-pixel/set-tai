@@ -78,7 +78,7 @@ object ChatHub {
 
     private val actionSpec = ToolSpec(
         "do_action",
-        "Move your monkey body. Use when your human asks you to move, or to express yourself.",
+        "Move your current character body. Use when your human asks you to move, or to express yourself.",
         org.json.JSONObject().put("type", "object").put("properties", org.json.JSONObject().put("action",
             org.json.JSONObject().put("type", "string").put("enum", org.json.JSONArray(BodyAction.entries.map { it.tag }))
                 .put("description", "What to do"))).put("required", org.json.JSONArray().put("action"))

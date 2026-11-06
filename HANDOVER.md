@@ -30,7 +30,8 @@ Updated for **v10.28 (versionCode 66)**, 6 Nov 2026. Owner: Manikandan Gopalakri
   verified; Android gracefully uses scripted lines while upstream is unavailable.
 - Voice bug causes: RANDOM overrides did not cover IDLE/BORED; MindLines' default
   branch still said "banana break" for every newer body; ProactiveLines shared
-  monkey jokes; generic prompt/comedy and error lines leaked monkey identity.
+  monkey jokes; generic prompt/comedy and error lines leaked monkey identity. Newer bodies
+  also inherited the low-battery "tell my bananas" line; this is now monkey-only.
   `CharacterHumor` gives all 13 built-ins distinct 3-line joke pools, guards shared
   fallbacks without new RNG calls, and selects suitable rest lines. Prompt names
   the exact body and forbids monkey/banana jokes except for monkey. Studio voice
@@ -38,7 +39,16 @@ Updated for **v10.28 (versionCode 66)**, 6 Nov 2026. Owner: Manikandan Gopalakri
 - `LocalChat` jokes/movement and existing PhoneCommands run before the brain, so
   battery/dance/jokes do not spend cloud quota. Public health never calls Gemini.
 - v10.28 focused Android tests: 10 passed; Workers runtime tests: 6 passed (mock
-  Gemini; actual DO concurrency). Full suite / GoldenTrace / release CI pending.
+  Gemini; actual DO concurrency). Final full suite: 528 passed, including all 13 GoldenTrace tests. Worker tests
+  are now a separate read-only, no-secrets CI job (mocked Gemini only).
+- **RELEASE GATE:** GitHub currently reports `private=false`, `visibility=public`
+  for planp1125-pixel/set-tai (verified with repo metadata after the first push).
+  This agent did NOT change visibility. It conflicts with the standing private-repo
+  rule. Initial implementation f4fca7c was already pushed before discovering this.
+  Final refinements are committed locally only; no v10.28 tag/release or final APK
+  has been published. Explicit approval to change repo visibility to PRIVATE (or
+  release publicly despite the previous private rule) is needed before more
+  outward publication. Do not assume changing visibility is harmless to forks/stars.
 - CI Play bundle remains OFF. Never move tags or force push. No key/keystore added.
 
 ## 1. What the app is

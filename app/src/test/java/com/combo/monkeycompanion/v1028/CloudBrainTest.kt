@@ -103,6 +103,7 @@ class CloudBrainTest {
             assertTrue(starts.add(CharacterHumor.jokes(who).first()))
             if (who.id == "monkey") continue
             repeat(30) { for (pool in pools) assertFalse("${who.id}: $pool", monkey.containsMatchIn(Lines.pick(pool))) }
+            repeat(10) { assertFalse(monkey.containsMatchIn(com.combo.monkeycompanion.brain.PhoneMoments.line(com.combo.monkeycompanion.brain.PhoneMoments.Moment.LOW, who.id))) }
             assertFalse(monkey.containsMatchIn(MindLines.leave(who.id)))
             assertFalse(monkey.containsMatchIn(MindLines.excuse(who.id)))
             val prompt = Persona.systemPrompt(false, who = who)
@@ -118,6 +119,7 @@ class CloudBrainTest {
         assertFalse(CharacterHumor.jokes(c).any { it.contains("banana", true) || it.contains("monkey", true) })
     }
     @Test fun localRequestsDoNotNeedACloudBrain() {
+        assertNotNull(LocalChat.reply("Can you tell me a joke?")); assertNotNull(LocalChat.reply("make me laugh"));
         assertNotNull(LocalChat.reply("tell me a joke")); assertNotNull(LocalChat.reply("another joke"))
         assertTrue(LocalChat.reply("dance for me")!!.contains("[dance]"))
         assertNull(LocalChat.reply("Why is the sky blue?"))

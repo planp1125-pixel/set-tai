@@ -63,7 +63,8 @@ class GatewayBrain(
                     onText(text); return text
                 }
                 if (!response.isSuccessful) throw BrainException("Cloud unavailable.")
-                val text = result?.optString("text")?.trim().orEmpty().take(200)
+                val raw = result?.optString("text")?.trim().orEmpty()
+                val text = raw.substring(0, raw.offsetByCodePoints(0, minOf(200, raw.codePointCount(0, raw.length))))
                 if (text.isBlank()) throw BrainException("Empty cloud reply.")
                 if (!enabled() || cancelled) throw BrainException("Chat cancelled.")
                 onText(text); return text
