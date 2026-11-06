@@ -10,6 +10,7 @@ It's **an overlay only, not a launcher.**
 - Package: `com.combo.monkeycompanion`. This folder is **v10.8 (`versionCode 31`)**. The next build must be `versionCode 32` or higher.
 - `minSdk 26`, `targetSdk 35`, `compileSdk 37 (minor 2)`. Flavors: `full` (default) and `play`.
 - What changed in each build: **[docs/CHANGELOG.md](docs/CHANGELOG.md)**. What's left on the roadmap: **[FUTURE_PLAN.md](FUTURE_PLAN.md)**.
+- Libraries, characters and how to build shows (plan + what exists + what to build): **[docs/LIBRARIES-AND-SHOWS.md](docs/LIBRARIES-AND-SHOWS.md)**.
 - How each of Disney's 12 animation principles maps to the code: **[docs/DISNEY_12.md](docs/DISNEY_12.md)**.
 - v9.5 is still the old fallback; the M1 physics-extraction notes are in [docs/M1_ANALYSIS.md](docs/M1_ANALYSIS.md).
 - Older long-form design notes (v7 "phone as a world" dictionary, mind and diary design): [docs/README-v7-legacy.md](docs/README-v7-legacy.md).

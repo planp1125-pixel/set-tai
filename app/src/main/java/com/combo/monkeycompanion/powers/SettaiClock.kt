@@ -136,7 +136,7 @@ object SettaiClock {
         val full = PendingIntent.getActivity(ctx, 9500 + id, Intent(ctx, RingActivity::class.java).putExtra(EXTRA_ID, id).putExtra("title", title).putExtra("line", line)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val n = NotificationCompat.Builder(ctx, CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_monkey)
+            .let { com.combo.monkeycompanion.overlay.CharacterIcon.applyTo(it, ctx) }
             .setContentTitle(title).setContentText(line)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)

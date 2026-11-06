@@ -928,6 +928,8 @@ class MonkeyView(
 
     private fun speak(text: String, durationMs: Long, voice: Voice) {
         if (debugQuiet) return
+        // v10.31: never cover the "Listening… tap me to send" bubble with AI / scripted chatter while the mic is open
+        if (listenTap || com.combo.monkeycompanion.agent.Voice.listening) return
         if (voice == Voice.SCRIPT && aiVoiceOn()) { bodyMoment(controller.state.name.lowercase().replace('_', ' ')); return }
         if (movingNow || (settledFor < SETTLE_SECS && (heldLines.isNotEmpty() || heldReply != null))) {
             if (heldLines.size >= 4) heldLines.removeFirst()
@@ -1156,6 +1158,16 @@ class MonkeyView(
     /** v4: 0..1 steering wheel while the screen agent drives; [micT] while push-to-talk listens. */
     private var wheelK = 0f
     private var micK = 0f
+    private var listenActT = 0f
+    private var listenSendSwallow = false
+    /** Tests: shared listen-at-ear action weight (0..1) and the right-arm raise drawn last frame. */
+    val debugListenPoseK get() = micK
+    var debugLastArmR = 0f; private set
+    /** Tests: the words the last listen delivered to the chat. */
+    var debugLastHeard: String? = null; private set
+    val debugListenTap get() = listenTap
+    val debugBubbleText get() = if (bubbleOn && bubbleAge < bubbleLife) lastShown else null
+    fun debugStartListen() = startListen(hold = false)
     private val drivingListener: (Boolean) -> Unit = { on -> ui.post { if (on) { sleepFrames = 0; setPaused(false); if (hiddenTab && !autoUnhide()) return@post; showBubble("🛞 ${character.name} is driving! Tap me to stop.", 4f) } } }
     private var earsT = 0f
     private var yawnT = 0f
@@ -1486,10 +1498,11 @@ class MonkeyView(
         perkTarget = 1f; listenTap = true
         showBubble("🎤 Listening… tap me to send", 30f, talk = false, reply = false)
         var miss: com.combo.monkeycompanion.agent.Voice.Miss? = null
-        V.listen(context, onPartial = { p -> if (perkTarget > 0f) showBubble("🎤 “${p.takeLast(120)}”", 30f, talk = false, reply = false) },
+        V.listen(context, onPartial = { p -> if (perkTarget > 0f) showBubble(listenPartialLine(p), 30f, talk = false, reply = false) },
             onMiss = { miss = it }) { heard ->
             perkTarget = 0f; listenTap = false
             if (heard != null) {
+                debugLastHeard = heard
                 aiReply = null
                 showBubble("🗣️ “${heard.take(120)}”", 2f, talk = false, reply = false)
                 touchConvo()
@@ -1503,6 +1516,8 @@ class MonkeyView(
         }
         if (!running && live && !paused) start()
     }
+
+    private fun listenPartialLine(p: String) = "🎤 “${p.takeLast(120)}”\nListening… tap me to send"
 
     private fun cancelListen(line: String?) {
         listenTap = false; perkTarget = 0f
@@ -2803,6 +2818,11 @@ class MonkeyView(
         if (wheelK > 0.02f) { drawPose.wheel = wheelK; if (driving) drawPose.goggles = max(drawPose.goggles, wheelK) }
         micK += ((if (com.combo.monkeycompanion.agent.Voice.listening) 1f else 0f) - micK) * min(1f, dt * 6f)
         if (micK > 0.02f) { drawPose.micGlow = micK; drawPose.earWiggle += 0.5f * micK * sin(t * 9f) }
+        // v10.31: the shared library "listening for gossip" pose (hand at ear) — one action for every character
+        if (com.combo.monkeycompanion.agent.Voice.listening) listenActT += dt else listenActT = 0f
+        if (micK > 0.02f && !dragging && !falling && !powerOn)
+            com.combo.monkeycompanion.engine.action.ActionLibrary.apply(com.combo.monkeycompanion.engine.action.ActionLibrary.ListenEar.id, drawPose, listenActT, micK)
+        debugLastArmR = drawPose.armRRaise
         if (yawnT > 0f) {
             yawnT -= dt
             val y = envelope(yawnT, 2.4f)
@@ -7049,6 +7069,12 @@ class MonkeyView(
                 (bubbleOn && e.x >= bubbleLeft && e.x <= bubbleLeft + bubble.width && e.y >= bubbleTop && e.y <= bubbleTop + bubble.height)
             if (mine) { noteInteraction(); chatFab.wake(); micFab.wake(); if (!running && live && !paused) start() }
         }
+        if (listenSendSwallow) {
+            // v10.31: the rest of the tap-to-send gesture (UP / MOVE) does nothing else
+            if (e.actionMasked == MotionEvent.ACTION_UP || e.actionMasked == MotionEvent.ACTION_CANCEL) listenSendSwallow = false
+            if (e.actionMasked != MotionEvent.ACTION_DOWN) return true
+            listenSendSwallow = false
+        }
         if (hiddenTab && !wp) return onTabTouch(e)
         if (fabPressing && e.actionMasked != MotionEvent.ACTION_DOWN) {
             when (e.actionMasked) {
@@ -7091,8 +7117,10 @@ class MonkeyView(
                     }
                 }
                 if (listenTap && com.combo.monkeycompanion.agent.Voice.listening) {
-                    // Listening: a tap on Settai or the bubble sends what was heard so far.
-                    listenTap = false; tracking = false
+                    // Listening: a tap on Settai or the bubble sends what was heard so far (v10.31: the tap is
+                    // swallowed whole — the UP must not become a poke / feel-touch line that hides the words).
+                    listenTap = false; tracking = false; listenSendSwallow = true
+                    showBubble("🎤 Sending…", 6f, talk = false, reply = false)
                     com.combo.monkeycompanion.agent.Voice.stopListening()
                     return true
                 }

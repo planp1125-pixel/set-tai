@@ -65,7 +65,7 @@ object LaunchGate {
             nm.createNotificationChannel(NotificationChannel(CHANNEL, "Things Settai opens for you", NotificationManager.IMPORTANCE_HIGH))
         val pi = PendingIntent.getActivity(ctx, what.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val n = NotificationCompat.Builder(ctx, CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_monkey)
+            .let { com.combo.monkeycompanion.overlay.CharacterIcon.applyTo(it, ctx) }
             .setContentTitle("Tap to open: $what")
             .setContentText("Settai can't open it from the wallpaper by himself.")
             .setContentIntent(pi).setAutoCancel(true)

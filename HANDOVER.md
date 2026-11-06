@@ -1,8 +1,17 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.30 (versionCode 68)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.31 (versionCode 69)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
-## v10.30 current handoff (supersedes older behaviour notes below)
+## v10.31 current handoff
+
+- Baseline **v10.30 (68)** `242f27b`. Everything from the v10.30 notes below still applies.
+- **Libraries / shows / characters guide: [docs/LIBRARIES-AND-SHOWS.md](docs/LIBRARIES-AND-SHOWS.md)**. Read it before adding actions, characters or show scripts.
+- **Mic:** `MonkeyView.speak()` drops lines while `listenTap || Voice.listening` (the Listening bubble can't be covered). `Voice` maps `ERROR_CLIENT` → `NO_MATCH` (it was `CANCELLED` = a silent close). It delivers once per session, has a tap-to-send fallback (`SEND_TIMEOUT_MS` 2.5 s, sends the last partial), and a `testEngine` seam for JVM tests. `Voice.listenHook` lets `MonkeyOverlayService` switch its FGS type to specialUse|microphone while listening (manifest + `FOREGROUND_SERVICE_MICROPHONE`, wrapped in runCatching). The tap-to-send gesture is swallowed (`listenSendSwallow`). The partial bubble keeps "Listening… tap me to send".
+- **Action Library:** `shared/.../engine/action/ActionLibrary.kt`, `ListenEar` (`listen_ear`) applied in the pose post-pass by `micK`. No RNG.
+- **Icon:** `overlay/CharacterIcon.kt` renders the current character (cached per id) as `IconCompat` small icon for every notification builder (vector `ic_stat_monkey` is only a fallback). `CharacterRegistry.onSelect` → service re-posts its notification. `sleepyPortrait` is per character now.
+- Tests: `v1031/V1031Test` (listen prompt, partials, tap-to-send, fallback, chatter guard, ear pose on 4 bodies, library reuse, icon follows character).
+
+## v10.30 handoff (supersedes older behaviour notes below)
 
 - Baseline is **v10.29 (67)** at `1ff85ff` / tag `v10.29`. Do not revert Cloud default, dual FABs,
   Explain-more chip, worker 30–40 / detail 560, GatewayBrain 560, flickThrow=false, unique swipe

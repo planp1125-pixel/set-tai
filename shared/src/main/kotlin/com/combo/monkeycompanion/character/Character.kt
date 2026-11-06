@@ -177,7 +177,11 @@ object CharacterRegistry {
 
     /** Switch the body (memory, settings, chat history all stay). */
     fun select(id: String?) {
+        val before = current
         current = byId(id) ?: MonkeyCharacter
         com.combo.monkeycompanion.speech.Lines.voice = current.voice
+        if (before.id != current.id) runCatching { onSelect?.invoke(current) }
     }
+    /** v10.31: told when the body changes (the overlay service refreshes its notification / AOD icon). */
+    @Volatile var onSelect: ((Character) -> Unit)? = null
 }

@@ -19,7 +19,7 @@ object DrivingNotice {
         runCatching {
             nm.createNotificationChannel(NotificationChannel(CH, "Settai is driving", NotificationManager.IMPORTANCE_LOW))
             val stop = PendingIntent.getBroadcast(ctx, 7, Intent(ctx, StopAgentReceiver::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-            nm.notify(ID, NotificationCompat.Builder(ctx, CH).setSmallIcon(R.drawable.ic_stat_monkey)
+            nm.notify(ID, NotificationCompat.Builder(ctx, CH).let { com.combo.monkeycompanion.overlay.CharacterIcon.applyTo(it, ctx) }
                 .setContentTitle("🛞 ${com.combo.monkeycompanion.character.CharacterRegistry.current.name} is driving your phone").setContentText("Tap Stop (or tap Settai) to take the wheel back.")
                 .setOngoing(true).setOnlyAlertOnce(true).addAction(0, "Stop", stop).setContentIntent(stop).build())
         }

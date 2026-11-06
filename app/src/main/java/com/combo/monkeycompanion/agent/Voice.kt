@@ -98,8 +98,42 @@ object Voice {
     fun listen(ctx: Context, onPartial: (String) -> Unit = {}, onMiss: (Miss) -> Unit = {}, onText: (String?) -> Unit) {
         stopSpeaking()
         cancelListen()
-        start(ctx, preferOnDevice = true, onPartial, onMiss, onText)
+        // v10.31: one delivery per listen, whatever ends it (result, error, tap-to-send timeout).
+        val gen = ++session
+        var delivered = false
+        val once: (String?) -> Unit = { t -> if (!delivered && gen == session) { delivered = true; main.removeCallbacks(sendTimeout); listenHook?.invoke(false); onText(t) } }
+        pendingText = once; pendingMiss = onMiss
+        listenHook?.invoke(true)
+        testEngine?.let { eng ->
+            listening = true; lastPartial = null
+            eng.onStart(object : TestSession {
+                override fun partial(text: String) { lastPartial = text; onPartial(text) }
+                override fun result(text: String?) { done(); lastPartial = null; if (text == null) onMiss(Miss.NO_MATCH); once(text) }
+                override fun error(miss: Miss) { done(); onMiss(miss); once(null) }
+            })
+            return
+        }
+        start(ctx, preferOnDevice = true, onPartial, onMiss, once)
     }
+
+    /** Tests only: replaces the platform SpeechRecognizer so a listen can be driven from JVM tests. */
+    interface TestSession { fun partial(text: String); fun result(text: String?); fun error(miss: Miss) }
+    interface TestEngine { fun onStart(s: TestSession); fun onStop() {} }
+    @Volatile var testEngine: TestEngine? = null
+    /** v10.31: the overlay service raises its foreground type to include the microphone while a listen runs. */
+    @Volatile var listenHook: ((Boolean) -> Unit)? = null
+    private var session = 0
+    private var pendingText: ((String?) -> Unit)? = null
+    private var pendingMiss: ((Miss) -> Unit)? = null
+    /** Tap-to-send: some recognisers never answer stopListening(); deliver what we heard after a short wait. */
+    private val sendTimeout = Runnable {
+        val t = lastPartial; lastPartial = null
+        val cb = pendingText; val miss = pendingMiss
+        if (rec != null || listening) { rec?.let { runCatching { it.cancel() } }; done() }
+        if (t.isNullOrBlank()) miss?.invoke(Miss.NO_MATCH)
+        cb?.invoke(t?.takeIf { it.isNotBlank() })
+    }
+    const val SEND_TIMEOUT_MS = 2500L
 
     private fun start(ctx: Context, preferOnDevice: Boolean, onPartial: (String) -> Unit, onMiss: (Miss) -> Unit, onText: (String?) -> Unit) {
         val useOnDevice = preferOnDevice && android.os.Build.VERSION.SDK_INT >= 31 && runCatching { SpeechRecognizer.isOnDeviceRecognitionAvailable(ctx) }.getOrDefault(false)
@@ -129,7 +163,9 @@ object Voice {
                     SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT, SpeechRecognizer.ERROR_SERVER -> Miss.NETWORK
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> Miss.NO_PERMISSION
                     SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> Miss.BUSY
-                    SpeechRecognizer.ERROR_CLIENT -> Miss.CANCELLED
+                    // v10.31: ERROR_CLIENT is NOT a user cancel (our own cancel destroys the recogniser first and
+                    // gets no callback). Treating it as "cancelled" silently closed the Listening bubble: a no-op mic.
+                    SpeechRecognizer.ERROR_CLIENT -> Miss.NO_MATCH
                     else -> Miss.NO_MATCH
                 })
                 onText(null)
@@ -164,7 +200,11 @@ object Voice {
     @Volatile var level = 0f; private set
 
     /** Hold released: finish and deliver what was said. */
-    fun stopListening() { rec?.let { runCatching { it.stopListening() } } }
+    fun stopListening() {
+        testEngine?.let { if (listening) { it.onStop(); main.removeCallbacks(sendTimeout); main.postDelayed(sendTimeout, SEND_TIMEOUT_MS) }; return }
+        rec?.let { runCatching { it.stopListening() } }
+        if (listening) { main.removeCallbacks(sendTimeout); main.postDelayed(sendTimeout, SEND_TIMEOUT_MS) }
+    }
 
     fun online(ctx: Context): Boolean = runCatching {
         val cm = ctx.getSystemService(android.net.ConnectivityManager::class.java)
@@ -182,5 +222,10 @@ object Voice {
     }
 
     private fun done() { listening = false; level = 0f; rec?.let { runCatching { it.destroy() } }; rec = null }
-    fun cancelListen() { rec?.let { runCatching { it.cancel() } }; done() }
+    fun cancelListen() {
+        val was = listening || rec != null
+        session++; main.removeCallbacks(sendTimeout); pendingText = null; pendingMiss = null
+        rec?.let { runCatching { it.cancel() } }; done()
+        if (was) listenHook?.invoke(false)
+    }
 }

@@ -89,6 +89,11 @@ class MonkeyOverlayService : Service(), OverlayHost {
             if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
         )
         if (!Settings.canDrawOverlays(this)) { stopSelf(); return }
+        // v10.31: while the mic listens, the service is also a microphone foreground service (Android 11+ only lets a
+        // visible-overlay app use the mic "while in use" this way); back to special-use when the listen ends.
+        com.combo.monkeycompanion.agent.Voice.listenHook = { on -> micForeground(on) }
+        // v10.31: the notification (status bar + always-on display) icon follows the chosen character.
+        com.combo.monkeycompanion.character.CharacterRegistry.onSelect = { android.os.Handler(mainLooper).post { sleepyNotification(false) } }
         addOverlay()
         val f = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF); addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_USER_PRESENT)
@@ -468,6 +473,8 @@ class MonkeyOverlayService : Service(), OverlayHost {
     }
 
     override fun onDestroy() {
+        com.combo.monkeycompanion.agent.Voice.listenHook = null
+        com.combo.monkeycompanion.character.CharacterRegistry.onSelect = null
         com.combo.monkeycompanion.agent.RoutineEvents.stop()
         com.combo.monkeycompanion.agent.Proactive.stop()
         showFx(null)
@@ -509,7 +516,22 @@ class MonkeyOverlayService : Service(), OverlayHost {
         }
     }
 
-    private val sleepyPortrait: android.graphics.Bitmap? by lazy { runCatching { Portraits.sleeping(this, (96 * resources.displayMetrics.density).toInt()) }.getOrNull() }
+    private fun micForeground(on: Boolean) {
+        if (Build.VERSION.SDK_INT < 30) return
+        val type = if (on && com.combo.monkeycompanion.powers.Perm.MIC.granted(this))
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        else ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        runCatching { ServiceCompat.startForeground(this, NOTIF_ID, buildNotification(), if (Build.VERSION.SDK_INT >= 34) type else 0) }
+    }
+
+    // v10.31: per character (was a lazy val: stuck on whoever was picked first)
+    private var sleepyFor: String? = null
+    private var sleepyBmp: android.graphics.Bitmap? = null
+    private val sleepyPortrait: android.graphics.Bitmap? get() {
+        val id = com.combo.monkeycompanion.character.CharacterRegistry.current.id
+        if (sleepyFor != id || sleepyBmp == null) { sleepyBmp = runCatching { Portraits.sleeping(this, (96 * resources.displayMetrics.density).toInt()) }.getOrNull(); sleepyFor = id }
+        return sleepyBmp
+    }
 
     private fun buildNotification(asleep: Boolean = false): Notification {
         val pi = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -518,7 +540,7 @@ class MonkeyOverlayService : Service(), OverlayHost {
         val dance = PendingIntent.getService(this, 2, Intent(this, MonkeyOverlayService::class.java).setAction(ACTION_DANCE), pi)
         val chat = PendingIntent.getService(this, 3, Intent(this, MonkeyOverlayService::class.java).setAction(ACTION_CHAT), pi)
         return NotificationCompat.Builder(this, CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_monkey)
+            .let { CharacterIcon.applyTo(it, this) }
             .setContentTitle(com.combo.monkeycompanion.character.CharacterRegistry.current.name.let { n -> if (asleep) "$n is asleep 💤" else if (n == "Settai") getString(R.string.notif_title) else "$n is awake ✨" })
             .setContentText(if (asleep) (if (com.combo.monkeycompanion.character.CharacterRegistry.current.can(com.combo.monkeycompanion.character.Locomotion.CLIMB)) "Zzz… unlock and I'll climb back up!" else "Zzz… unlock and I'll be right back!") else getString(R.string.notif_text))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

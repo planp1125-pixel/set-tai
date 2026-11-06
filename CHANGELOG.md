@@ -2,6 +2,12 @@
 
 Plain-words history. Older builds (v9.2 – v10.11) are described in detail in [docs/CHANGELOG.md](docs/CHANGELOG.md). Below is a short summary of those, then every tagged release in this repo.
 
+## v10.31 (code 69)
+- **Mic listens again, and shows it:** tapping 🎤 shows `🎤 Listening… tap me to send` right away, and the words you say appear in the bubble as you speak. Tap the character to send. Fixes: AI chatter / reaction lines (on by default since Cloud became the default in v10.29) no longer replace the Listening bubble; recogniser `ERROR_CLIENT` no longer counts as "cancelled" (that silently closed the bubble, so the mic seemed to do nothing); tap-to-send delivers the heard words even if the recogniser never answers (2.5 s fallback), and the tap no longer turns into a poke; the overlay service adds the microphone foreground type while listening.
+- **Listening-for-gossip pose:** a hand cupped to the ear, head tilted, eyes sideways. It lives in the new shared **Action Library** (`engine/action/ActionLibrary.kt`, action `listen_ear`), and every character (built-in or studio) plays the same action. No per-character copies.
+- **Always-on display / notification icon = your character:** drawn live from the character renderer (Kutti Satan's silhouette when Satan is picked), and it follows when you switch. The asleep portrait follows too (it used to stay on the first character).
+- **Docs:** `docs/LIBRARIES-AND-SHOWS.md` covers the plan, the library inventory, what still needs to be built, how to add a library action, how to add a character, and how future scripts would play scenes.
+
 ## v10.30 (code 68)
 - **Sharper wall / floor / ceiling hit:** a glass slap (short click+thud) at the exact contact frame, canceling any sling-snap buzz so the hit is not mushy. Soft landings still use the old thump. Touch feel off keeps the system LONG_PRESS knock.
 - **Marble bounce:** a medium slingshot (tension under ~0.72) flies and rebounds off edges with a click and a brief squash — no hide, no comic splat. Full-power slingshot still SPLATs / THWACKs / PANCAKEs (with the sharp hit). Rocket Girl keeps her rocket fly.
