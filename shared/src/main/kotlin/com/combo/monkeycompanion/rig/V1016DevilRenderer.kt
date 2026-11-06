@@ -161,6 +161,8 @@ open class DevilRenderer : HumanRenderer() {
     /** Tall solid black ovals; closing = squash to a soft curved line (no highlights, ever). */
     override fun drawEyes(c: Canvas, p: Pose) {
         val open = p.eyeOpen.coerceIn(0f, 1.3f)
+        // v10.33: past shocked (1.5) the eyes grow for the shared "scream" face (1.8); below 1.5 nothing changes
+        val wide = (p.eyeOpen.coerceAtMost(1.8f) - 1.5f).coerceAtLeast(0f) / 0.3f
         val lx = p.lookX * 0.7f; val ly = p.lookY * 0.5f
         for (s in intArrayOf(-1, 1)) {
             val x = s * 13f + lx; val y = -32f + ly
@@ -171,7 +173,7 @@ open class DevilRenderer : HumanRenderer() {
                 line.shader = null; line.color = EYE; line.strokeWidth = 2.6f
                 tmp.reset(); tmp.moveTo(x - 6.5f, y); tmp.quadTo(x, y + 5f, x + 6.5f, y); c.drawPath(tmp, line)
             } else {
-                val ry = 10.5f * minOf(open, 1.15f); val rx = 6.6f * (1f + 0.12f * (1f - minOf(open, 1f)))
+                val ry = 10.5f * minOf(open, 1.15f) + 3.5f * wide; val rx = 6.6f * (1f + 0.12f * (1f - minOf(open, 1f))) + 1.6f * wide
                 fill.shader = null; fill.color = EYE; oval.set(x - rx, y - ry, x + rx, y + ry); c.drawOval(oval, fill)
             }
         }
@@ -180,11 +182,12 @@ open class DevilRenderer : HumanRenderer() {
     /** No mouth by default; a tiny expressive one only while talking / laughing / shocked. */
     override fun drawMouth(c: Canvas, p: Pose) {
         val o = p.mouthOpen.coerceIn(0f, 1f)
+        val yell = (p.mouthOpen.coerceAtMost(1.2f) - 1f).coerceAtLeast(0f) / 0.2f   // v10.33 scream: only above 1.0
         if (o < 0.12f && p.mouthSmile < 0.85f && p.mouthSmile > -0.4f) return
         val y = -12f
         if (o >= 0.12f) {
             fill.shader = null; fill.color = Color.rgb(0x5A, 0x14, 0x24)
-            oval.set(-3.2f - 1.5f * o, y - 1.5f, 3.2f + 1.5f * o, y + 1.5f + 5f * o); c.drawOval(oval, fill)
+            oval.set(-3.2f - 1.5f * o - 2f * yell, y - 1.5f - yell, 3.2f + 1.5f * o + 2f * yell, y + 1.5f + 5f * o + 4f * yell); c.drawOval(oval, fill)
         } else {
             line.shader = null; line.color = EYE; line.strokeWidth = 1.8f
             val curve = if (p.mouthSmile > 0f) 3.5f else -3f

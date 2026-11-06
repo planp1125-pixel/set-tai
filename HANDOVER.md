@@ -1,8 +1,14 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.32 (versionCode 70)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.33 (versionCode 71)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
-## v10.32 current handoff
+## v10.33 current handoff
+
+- Baseline v10.32 `681401f`. `Expressions` adds `scream` (eye 1.8, mouth 1.2, brow -14, browY -6, smile -0.3, sweat 0.5, shake 3).
+- `DevilRenderer` (Satan + Angel) used to clamp the drawn eye height at 1.15 and the mouth at 1.0, so fear, shocked and scream all drew the same eyes. Now the eyes grow only above 1.5 (up to 1.8) and the mouth only above 1.0 (up to 1.2). Values ≤ shocked render exactly as before. The monkey renderer already allows mouth 1.2. The chibi renderer caps the mouth at 1.0.
+- `satan_vs_angel.show`: `at 16.4: both face scream for 1`; later beats +1 s (end 22.6). V1032 timings updated; new `v1033/V1033Test`.
+
+## v10.32 handoff
 
 - Baseline **v10.31 (69)** `ca8680c`. The full engine guide and script format are in [docs/LIBRARIES-AND-SHOWS.md](docs/LIBRARIES-AND-SHOWS.md).
 - New shared engines: `engine/expression/Expressions.kt`, `engine/movement/Movement.kt`, `engine/props/Props.kt`, `engine/stagefx/StageFx.kt`, `engine/script/{ShowScript,ScriptPlayer,ScriptStageRenderer}.kt`. The Action Library has 7 actions. `Character.vanishStyle` (Devil RED_SMOKE, Angel WHITE_SMOKE, default POOF).

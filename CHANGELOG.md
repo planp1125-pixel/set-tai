@@ -2,6 +2,10 @@
 
 Plain-words history. Older builds (v9.2 – v10.11) are described in detail in [docs/CHANGELOG.md](docs/CHANGELOG.md). Below is a short summary of those, then every tagged release in this repo.
 
+## v10.33 (code 71)
+- **Scream face for every character:** the shared Expression engine has a new `scream` face. Eyes 1.8 (fear 1.4, shocked 1.5), mouth fully open at 1.2 (fear 0.55, shocked 0.9), brows up in panic, a quick shake. Kutti Satan and Angel's eyes and mouth now grow past the shocked size for it; anything below shocked looks the same as before.
+- **Satan vs Angel:** a one-second `both face scream for 1` right after they see the cracked glass (face only, no new line). The later beats move 1 s later: sorry bro at 19.0, vanish at 21.4, end at 22.6.
+
 ## v10.32 (code 70)
 - **Show engines, for any characters:** an Expression engine (14 named faces), a Movement engine (enter from an edge, fly or walk by the body's locomotion, hover, vanish/appear, exit), a Props engine (fireball, shield, dosa pan, shock ball, laddu, ball; thrown props really fly), shared stage effects (eye/hand rays, clash, cracked glass, vanish smoke in each body's own style) and 6 more Action Library moves (look_at, raise_shield, cast_hands, throw, cower, point).
 - **Script player:** plain-text scene scripts (`assets/shows/*.show`) with timed beats, dialogue and proximity rules like `when fireball near angel: angel vanish`. Nothing in it is specific to Satan or Angel; swap the cast or the prop and it still plays.

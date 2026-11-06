@@ -14,7 +14,7 @@ This file answers three questions: **What's the plan now? What libraries do we a
 
 **v10.32 (built):** the show engines are real now:
 - **Action Library** grew to 7 actions: `listen_ear`, `look_at`, `raise_shield`, `cast_hands`, `throw`, `cower`, `point`.
-- **Expression engine** `engine/expression/Expressions.kt`: 14 named faces.
+- **Expression engine** `engine/expression/Expressions.kt`: 15 named faces (v10.33 added `scream`: wide eyes, mouth thrown open).
 - **Movement engine** `engine/movement/Movement.kt`: enter from an edge, move / fly / walk, hover, vanish, appear, exit. Follows `Character.locomotion`.
 - **Props engine** `engine/props/Props.kt`: fireball, shield, dosa pan, shock ball, laddu, ball. Thrown props are `Projectile`s with real positions.
 - **Stage effects** `engine/stagefx/StageFx.kt`: rays from eyes or hands, a clash burst, the cracked-glass overlay, and vanish smoke in each body's `vanishStyle`.
@@ -55,7 +55,7 @@ All the drawing is procedural (no character bitmaps). **The key fact:** every ch
 | **Reaction lines (AI)** | `shared/.../ai/react/ReactionEngine.kt`, `docs/REACTION_ENGINE.md` | AI-written touch lines per character + mood | Per character id |
 | **Characters (built-in)** | `shared/.../character/*.kt` + `rig/*Renderer.kt`, list in `CharacterRegistry.all` | 13 bodies: Kutti Satan, Angel, Settai, Superboy, Armour Anna, Mask Man, Billa, Chittu, Gajju, Rocket Girl, Hollow Man, Surfing Girl, Skater Girl | — |
 | **Companion Studio (custom characters)** | `shared/.../character/CustomCompanion.kt` (`CustomCompanionSpec`, `CustomCharacter`, `CustomCompanionRegistry`), `app/.../ui/CompanionStudioActivity.kt`, `ChibiHumanRenderer.kt` | Make a person-like chibi character from choices (age, build, face shape, hair, outfit, relationship) | Registered at runtime; uses the shared Pose/Rig, so library actions work on it |
-| **Expression engine** *(v10.32)* | `shared/.../engine/expression/Expressions.kt` | Named faces: neutral, happy, sleepy, wake, look, curious, angry, evil, determined, shocked, fear, sorry, sad, smug | `Expressions.apply(name, pose, t, k)` writes the shared face slots |
+| **Expression engine** *(v10.32)* | `shared/.../engine/expression/Expressions.kt` | Named faces: neutral, happy, sleepy, wake, look, curious, angry, evil, determined, shocked, scream, fear, sorry, sad, smug | `Expressions.apply(name, pose, t, k)` writes the shared face slots |
 | **Movement engine** *(v10.32)* | `shared/.../engine/movement/Movement.kt` (`Mover`, `Edge`) | Enter from an edge, move/fly/walk, hover with a bob, vanish/appear fades, exit | `Mover.of(character)`: fliers (FLY/FLOAT) use the air, walkers stay on the floor |
 | **Props engine** *(v10.32)* | `shared/.../engine/props/Props.kt` (`Props`, `PropKind`, `Projectile`) | Hold or throw fireball, shield, dosa pan, shock ball, laddu, ball; projectiles have positions | Held props are drawn at the hand from the shared rig |
 | **Stage effects** *(v10.32)* | `shared/.../engine/stagefx/StageFx.kt` | Rays (eyes/hands, any colour), clash sparks, cracked-glass overlay, vanish smoke | `Character.vanishStyle` (POOF / RED_SMOKE / WHITE_SMOKE) |
@@ -138,7 +138,7 @@ Scripts are plain text in `app/src/main/assets/shows/<name>.show`. The worked ex
 | vanish / appear | `angel vanish in 0.5`, `angel appear at 0.74 0.36 in 0.6` | Movement + StageFx smoke in the body's `vanishStyle` |
 | exit | `satan exit right in 1` | Movement |
 | turn | `angel turn left` | Movement |
-| face | `both face fear [for 2]` | Expression engine |
+| face | `both face fear [for 2]`, `both face scream for 1` | Expression engine |
 | do / stop | `satan do throw for 2.2`, `both stop` | Action Library |
 | look | `angel look satan` / `look crack` / `look left` | Action Library `look_at` (also turns to face) |
 | say | `both say "sorry bro" for 2` | Speech bubble |

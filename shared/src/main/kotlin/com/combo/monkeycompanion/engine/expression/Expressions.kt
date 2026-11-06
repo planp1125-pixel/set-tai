@@ -30,6 +30,7 @@ object Expressions {
         "evil" to Face(eye = 0.75f, brow = 16f, mouth = 0.2f, smile = 0.9f, anger = 0.3f),
         "determined" to Face(eye = 1f, brow = 10f, mouth = 0f, smile = -0.1f),
         "shocked" to Face(eye = 1.5f, brow = -10f, browY = -5f, mouth = 0.9f, smile = -0.2f),
+        "scream" to Face(eye = 1.8f, brow = -14f, browY = -6f, mouth = 1.2f, smile = -0.3f, sweat = 0.5f, shake = 3f),
         "fear" to Face(eye = 1.4f, brow = -12f, browY = -3f, mouth = 0.55f, smile = -0.8f, sweat = 1f, shake = 2.5f),
         "sorry" to Face(eye = 1.1f, brow = -12f, browY = -2f, mouth = 0.3f, smile = -0.5f, blush = 0.5f, sweat = 0.6f, head = -6f, shake = 1.2f),
         "sad" to Face(eye = 0.8f, brow = -10f, mouth = 0.1f, smile = -0.9f),

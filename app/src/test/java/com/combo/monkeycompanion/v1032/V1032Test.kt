@@ -46,7 +46,7 @@ class V1032Test {
         assertEquals("fireball", s.rules[0].prop); assertEquals("angel", s.rules[0].target)
         assertEquals("vanish", s.rules[0].cmds[0].verb)
         assertTrue(s.beats.any { b -> b.cmds.any { it.verb == "say" && it.args[0] == "sorry bro" } })
-        assertEquals(21.6f, s.end, 0.01f)
+        assertEquals(22.6f, s.end, 0.01f)
     }
 
     @Test fun badScriptsSayWhichLine() {
@@ -82,10 +82,10 @@ class V1032Test {
         p.advanceTo(13f); assertTrue(p.clashOn); assertEquals(2, p.rays.count { it.src == "hands" })
         assertEquals(p.clashX to p.clashY, p.rayEnd(p.rays.first { it.from == "angel" }))
         p.advanceTo(15.6f); assertNotNull(p.crack); assertTrue(p.crack!!.cy > Mover.FLOOR)
-        p.advanceTo(18.5f); assertEquals("sorry bro", satan.saying(p.t)); assertEquals("sorry bro", angel.saying(p.t)); assertEquals("fear", satan.faceAt(p.t))
-        p.advanceTo(21.3f); assertTrue(satan.mover.gone && angel.mover.gone)
+        p.advanceTo(19.5f); assertEquals("sorry bro", satan.saying(p.t)); assertEquals("sorry bro", angel.saying(p.t)); assertEquals("fear", satan.faceAt(p.t))
+        p.advanceTo(22.3f); assertTrue(satan.mover.gone && angel.mover.gone)
         assertEquals(VanishStyle.RED_SMOKE, satan.character.vanishStyle); assertEquals(VanishStyle.WHITE_SMOKE, angel.character.vanishStyle)
-        p.advanceTo(21.7f); assertTrue(p.done)
+        p.advanceTo(22.7f); assertTrue(p.done)
     }
 
     @Test fun sameVerbsWorkForAnyCastAndAnyProp() {
@@ -125,7 +125,7 @@ class V1032Test {
         for (id in listOf("fireball", "shield", "dosa_pan", "shock")) assertNotNull(Props.byId(id))
         assertNull(Props.byId("piano"))
         // the renderer builds the same pose for the actor
-        val pl = ScriptPlayer(show()); pl.advanceTo(18.3f)
+        val pl = ScriptPlayer(show()); pl.advanceTo(18.9f)
         val pose = ScriptStageRenderer(pl).poseOf("angel")!!
         assertTrue(pose.eyeOpen > 1.2f)
     }
@@ -134,7 +134,7 @@ class V1032Test {
         assertTrue("story" in LongPressMenu.groupItems("g_show"))
         assertTrue("show" in LongPressMenu.groupItems("g_show"))
         val pl = ScriptPlayer(show(), 2340f / 1080f); val r = ScriptStageRenderer(pl)
-        val times = floatArrayOf(3f, 5.4f, 10f, 13.5f, 16.2f, 18.5f, 20.6f)
+        val times = floatArrayOf(3f, 5.4f, 10f, 13.5f, 16.8f, 19.5f, 21.6f)
         val W = 360; val H = 780
         val sheet = Bitmap.createBitmap(W * times.size, H, Bitmap.Config.ARGB_8888)
         val c = Canvas(sheet); c.drawColor(Color.rgb(0xD8, 0xE4, 0xF0))
