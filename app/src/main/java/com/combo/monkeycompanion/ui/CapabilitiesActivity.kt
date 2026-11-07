@@ -121,7 +121,7 @@ class CapabilitiesActivity : Activity() {
             setOnCheckedChangeListener { _, c ->
                 s.setGroupEnabled(g, c)
                 if (g == CapGroup.ROUTINES) com.combo.monkeycompanion.agent.RoutineScheduler.refresh(this@CapabilitiesActivity)
-                setContentView(build()); MaterialScreenPolish.apply(this)
+                setContentView(build()); MaterialScreenPolish.apply(this@CapabilitiesActivity)
             }
         }
         val views = ArrayList<View>()
