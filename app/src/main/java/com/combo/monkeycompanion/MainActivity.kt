@@ -320,7 +320,8 @@ class MainActivity : Activity() {
                 setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
             }
         }
-        for (tab in Tab.entries) {
+        // World remains in Explore; the bottom bar has four destinations.
+        for (tab in Tab.entries.filter { it != Tab.WORLD_CARE }) {
             val cell = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
@@ -1043,6 +1044,18 @@ class MainActivity : Activity() {
         }, btnLp())
         col.addView(themeCard, btnLp())
         col.addView(button("🧭 Search all features") { selectTab(Tab.EXPLORE) }, btnLp())
+        col.addView(TextView(this).apply {
+            text = "🔐 Permissions & device access"
+            textSize = 18f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(brown)
+            setPadding(0, dp(18), 0, dp(4))
+        })
+        col.addView(TextView(this).apply {
+            text = "Overlay is needed for the floating companion. Notification access and battery exemptions are optional."
+            textSize = 13f
+            setTextColor(soft)
+        })
 
         // 0. Pinned #1 Highlighted "🧠 Give Brain (Connect AI Model)" Card at the very top of Settings!
         val giveBrainSettingsCard = LinearLayout(this).apply {
@@ -1235,9 +1248,7 @@ class MainActivity : Activity() {
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
             return
         }
-        if (Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 7)
+        // Notifications are optional: request them in Settings, not when starting the overlay.
         MonkeyOverlayService.start(this)
         startBtn.postDelayed({ refresh() }, 300)
     }
