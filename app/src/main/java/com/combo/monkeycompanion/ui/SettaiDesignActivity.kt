@@ -1,5 +1,8 @@
 package com.combo.monkeycompanion.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
