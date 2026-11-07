@@ -1,5 +1,5 @@
 name: Validate and release v10.38.11 UI test
-# Validate the fixed Touch and Motion roaming scope and five-tab navigation.
+# Validate shared Material visual styling of the legacy feature screens.
 on:
   push:
     branches:
