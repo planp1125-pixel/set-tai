@@ -55,6 +55,9 @@ class SettaiDesignActivity : ComponentActivity() {
         var page by remember { mutableStateOf(0) }
         var selectedCharacter by remember { mutableStateOf(CharacterRegistry.current.id) }
         var crewMode by remember { mutableStateOf(Population.Mode.of(MindHub.neighbourMode)) }
+        var partnerPicker by remember { mutableIntStateOf(0) }
+        var partnerOne by remember { mutableStateOf(MindHub.customPartner1Id) }
+        var partnerTwo by remember { mutableStateOf(MindHub.customPartner2Id) }
         var theme by remember { mutableStateOf(ThemeSkin.mode(this)) }
         var search by remember { mutableStateOf("") }
         var exploreCategory by remember { mutableStateOf("All") }
@@ -72,6 +75,8 @@ class SettaiDesignActivity : ComponentActivity() {
                     overlayAllowed = Settings.canDrawOverlays(this@SettaiDesignActivity)
                     selectedCharacter = CharacterRegistry.current.id
                     crewMode = Population.Mode.of(MindHub.neighbourMode)
+                    partnerOne = MindHub.customPartner1Id
+                    partnerTwo = MindHub.customPartner2Id
                 }
             }
             lifecycleOwner.lifecycle.addObserver(observer)
@@ -168,7 +173,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                         else Text(if (overlayRunning) "Stop companion" else if (!overlayAllowed) "Enable overlay permission" else "Start companion")
                                     }
                                     if (launchMessage.isNotBlank()) Text(launchMessage, color = muted, fontSize = 13.sp)
-                                    TextButton(onClick = { advanced() }) { Text("Companion controls & preview") }
+                                    TextButton(onClick = { page = 1 }) { Text("Manage companions") }
                                 }
                             }
                             item { Heading("Quick actions", ink) }
@@ -207,7 +212,39 @@ class SettaiDesignActivity : ComponentActivity() {
                                     Text("Lead: " + CharacterRegistry.current.name, color = ink)
                                     if (crewMode != Population.Mode.SOLO) {
                                         Text("Partners use your saved crew configuration. Customize partners in the crew picker.", color = muted, fontSize = 12.sp)
-                                        TextButton(onClick = { advanced("characters") }) { Text("Configure partners") }
+                                        OutlinedButton(onClick = { partnerPicker = 1 }, modifier = Modifier.fillMaxWidth()) {
+                                            Text("Partner 1: " + (CharacterRegistry.byId(partnerOne)?.name ?: "Auto"))
+                                        }
+                                        if (crewMode == Population.Mode.TRIO) {
+                                            OutlinedButton(onClick = { partnerPicker = 2 }, modifier = Modifier.fillMaxWidth()) {
+                                                Text("Partner 2: " + (CharacterRegistry.byId(partnerTwo)?.name ?: "Auto"))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (partnerPicker != 0) {
+                                item {
+                                    Panel(surface) {
+                                        Heading("Choose partner " + partnerPicker, ink)
+                                        TextButton(onClick = { partnerPicker = 0 }) { Text("Cancel") }
+                                        val candidates = listOf(null) + CharacterRegistry.allWithCustom.filter {
+                                            it.id != selectedCharacter && (partnerPicker != 2 || it.id != partnerOne)
+                                        }
+                                        candidates.forEach { candidate ->
+                                            TextButton(onClick = {
+                                                val chosen = candidate?.id
+                                                val p1 = if (partnerPicker == 1) chosen else partnerOne
+                                                val p2 = if (partnerPicker == 2) chosen else partnerTwo?.takeIf { it != p1 }
+                                                MindHub.setCrew(this@SettaiDesignActivity, selectedCharacter, crewMode, p1, p2)
+                                                partnerOne = p1
+                                                partnerTwo = p2
+                                                MonkeyOverlayService.syncCrew(this@SettaiDesignActivity)
+                                                partnerPicker = 0
+                                            }, modifier = Modifier.fillMaxWidth()) {
+                                                Text(candidate?.name ?: "Auto", color = ink)
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -287,7 +324,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 Triple("Diary", "Care", "Moments and memories"),
                                 Triple("World & Care", "Care", "Activities, mood and companion world"),
                                 Triple("Shows", "Discover", "Watch and create animated shows"),
-                                Triple("Advanced controls", "Tools", "All original Set-Tai controls")
+                                Triple("Appearance", "Tools", "Theme and display settings")
                             )
                             val matching = features.filter { (title, category, description) ->
                                 (exploreCategory == "All" || exploreCategory == category) &&
@@ -317,7 +354,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                         "Diary" -> open(DiaryActivity::class.java)
                                         "World & Care" -> advanced("world")
                                         "Shows" -> open(ShowsActivity::class.java)
-                                        else -> advanced()
+                                        else -> { page = 4; settingsPanel = "appearance" }
                                     }
                                 }
                             }
@@ -335,11 +372,11 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             if (settingsPanel == "main") {
                                 item { Feature("Appearance", "Theme and display preferences", "◐", surface, ink, muted) { settingsPanel = "appearance" } }
-                                item { Feature("Companion & behaviour", "Motion, personality and preferences", "♡", surface, ink, muted) { advanced("settings") } }
+                                item { Feature("Companions & behaviour", "Choose companions and configure your crew", "♡", surface, ink, muted) { page = 1 } }
                                 item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
                                 item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
-                                item { Feature("Advanced settings", "Full original settings during migration", "⚙", surface, ink, muted) { advanced("settings") } }
-                                item { Text("Set-Tai v10.38.8", color = muted, fontSize = 12.sp) }
+                                item { Feature("Creative tools", "Shows and character studio", "✦", surface, ink, muted) { page = 2 } }
+                                item { Text("Set-Tai v10.38.9", color = muted, fontSize = 12.sp) }
                             }
                             if (settingsPanel == "permissions") {
                                 item {
@@ -352,7 +389,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                         }) { Text("Manage overlay permission") }
                                     }
                                 }
-                                item { Feature("Battery and other permissions", "Open the original guided permission controls", "♢", surface, ink, muted) { advanced("settings") } }
+                                item { Feature("Companion settings", "Open companion and behaviour controls", "♡", surface, ink, muted) { page = 1 } }
                             }
                             if (settingsPanel == "appearance") {
                             item {
