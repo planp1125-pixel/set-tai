@@ -1,5 +1,5 @@
 name: Validate and release v10.38.11 UI test
-# Validate the corrected Activity receiver in the Material screen styling pass.
+# Validate diary, studio and settings visual updates.
 on:
   push:
     branches:

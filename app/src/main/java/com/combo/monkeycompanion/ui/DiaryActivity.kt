@@ -16,7 +16,7 @@ import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
-import android.widget.CheckBox
+import android.widget.Switch
 import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
@@ -121,6 +121,11 @@ class DiaryActivity : Activity() {
         rebuild()
     }
 
+    private fun sectionLabel(label: String) = TextView(this).apply {
+        text = label; textSize = 11f; setTypeface(typeface, Typeface.BOLD); setTextColor(accent)
+        setPadding(dp(4), dp(12), 0, dp(8))
+    }
+
     private fun rebuild() {
         val m = MindHub.mindFor(who.id)
         val now = System.currentTimeMillis()
@@ -134,7 +139,7 @@ class DiaryActivity : Activity() {
             gravity = Gravity.CENTER_HORIZONTAL
         })
         col.addView(TextView(this).apply {
-            text = "Tune ${who.name}'s behaviour sliders, diary limits, and pinned memories on this phone."
+            text = "Explore personality, remember moments and choose what stays on this phone."
             textSize = 13f; setTextColor(soft); gravity = Gravity.CENTER_HORIZONTAL
             setPadding(0, dp(2), 0, dp(10))
         })
@@ -191,6 +196,7 @@ class DiaryActivity : Activity() {
                 textSize = 12.5f; setTextColor(soft); setPadding(0, dp(8), 0, 0)
             })
             col.addView(prof)
+            col.addView(sectionLabel("PERSONALITY"))
 
             // 2. Per-Character Behaviour Sliders Card
             val behCard = LinearLayout(this).apply {
@@ -200,7 +206,7 @@ class DiaryActivity : Activity() {
                 layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
             }
             behCard.addView(TextView(this).apply {
-                text = "🎛️ ${who.name}'s Behaviour Sliders"
+                text = "Behaviour & personality"
                 textSize = 16f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
                 setPadding(0, 0, 0, dp(4))
             })
@@ -224,6 +230,7 @@ class DiaryActivity : Activity() {
                 }
             })
             col.addView(behCard)
+            col.addView(sectionLabel("MEMORY & PRIVACY"))
 
             // 3. Diary Limits & Retention Controls Card
             val diary = m.diary
@@ -234,7 +241,7 @@ class DiaryActivity : Activity() {
                 layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
             }
             limCard.addView(TextView(this).apply {
-                text = "🔒 Diary Limits & What ${who.name} Remembers"
+                text = "Memory preferences"
                 textSize = 16f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
                 setPadding(0, 0, 0, dp(4))
             })
@@ -288,19 +295,19 @@ class DiaryActivity : Activity() {
             }
             limCard.addView(retRow)
 
-            limCard.addView(CheckBox(this).apply {
+            limCard.addView(Switch(this).apply {
                 text = "🧭 Log app places & visits"; isChecked = diary.logPlaces; textSize = 13f; setTextColor(brown)
                 setOnCheckedChangeListener { _, b -> diary.logPlaces = b; MindHub.flush() }
             })
-            limCard.addView(CheckBox(this).apply {
+            limCard.addView(Switch(this).apply {
                 text = "💬 Log chats, head pats & games"; isChecked = diary.logChats; textSize = 13f; setTextColor(brown)
                 setOnCheckedChangeListener { _, b -> diary.logChats = b; MindHub.flush() }
             })
-            limCard.addView(CheckBox(this).apply {
+            limCard.addView(Switch(this).apply {
                 text = "🌙 Log naps & away traces"; isChecked = diary.logNight; textSize = 13f; setTextColor(brown)
                 setOnCheckedChangeListener { _, b -> diary.logNight = b; MindHub.flush() }
             })
-            limCard.addView(CheckBox(this).apply {
+            limCard.addView(Switch(this).apply {
                 text = "⚡ Log superpowers & world events"; isChecked = diary.logWorld; textSize = 13f; setTextColor(brown)
                 setOnCheckedChangeListener { _, b -> diary.logWorld = b; MindHub.flush() }
             })
@@ -322,6 +329,7 @@ class DiaryActivity : Activity() {
             }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
             limCard.addView(noteBtnRow)
             col.addView(limCard)
+            col.addView(sectionLabel("RECENT MOMENTS"))
 
             // 4. Diary Entries Card (with Pin & Delete on each row)
             val diaryCard = LinearLayout(this).apply {

@@ -20,7 +20,7 @@ import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.CheckBox
+import android.widget.Switch
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -233,7 +233,7 @@ class SettingsActivity : Activity() {
             onlineResult,
         )
         advanced.visibility = if (s.useOwnApiKey) View.VISIBLE else View.GONE
-        val own = CheckBox(this).apply {
+        val own = Switch(this).apply {
             text = "Advanced: use my own API key / server"
             isChecked = s.useOwnApiKey
             setOnCheckedChangeListener { _, checked ->
@@ -404,11 +404,11 @@ class SettingsActivity : Activity() {
         }.apply { visibility = View.GONE }
         installedBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         offlineResult = text("", 13f, color = soft)
-        val gpu = CheckBox(this).apply {
+        val gpu = Switch(this).apply {
             text = "Use GPU (faster replies, but a big model can make the whole phone lag: turn off if it does)"; setTextColor(brown); isChecked = s.offlineUseGpu
             setOnCheckedChangeListener { _, c -> s.offlineUseGpu = c }
         }
-        val tools = CheckBox(this).apply {
+        val tools = Switch(this).apply {
             text = "Let the on-device brain use phone powers (tags like [alarm 07:00])"; setTextColor(brown); isChecked = s.offlineTools
             setOnCheckedChangeListener { _, c -> s.offlineTools = c }
         }
@@ -620,55 +620,55 @@ class SettingsActivity : Activity() {
         val secs = listOf(30, 60, 120, 300, 600, 0)
         val names = listOf("After 30 seconds", "After 1 minute", "After 2 minutes", "After 5 minutes", "After 10 minutes", "Never")
         val restSp = spinner(names, secs.indexOf(s.restSeconds).let { if (it < 0) 2 else it }) { s.restSeconds = secs[it] }
-        val saver = CheckBox(this).apply {
+        val saver = Switch(this).apply {
             text = "Battery saver (lower frame rate, fewer random moves and quips, rests within 1 minute)"; setTextColor(brown); isChecked = s.batterySaver
             setOnCheckedChangeListener { _, c -> s.batterySaver = c }
         }
-        val unlock = CheckBox(this).apply {
+        val unlock = Switch(this).apply {
             text = "When resting, come back out after I unlock the phone"; setTextColor(brown); isChecked = s.comeOutOnUnlock
             setOnCheckedChangeListener { _, c -> s.comeOutOnUnlock = c }
         }
-        val gags = CheckBox(this).apply {
+        val gags = Switch(this).apply {
             text = "Random comedy bits (sneezes, juggling, air guitar...)"; setTextColor(brown); isChecked = s.gags
             setOnCheckedChangeListener { _, c -> s.gags = c }
         }
-        val smooth = CheckBox(this).apply {
+        val smooth = Switch(this).apply {
             text = "Smooth animation (beta): squishy landings, tails, ears, hair and capes that swing and settle. Turn off for the classic feel."
             setTextColor(brown); isChecked = s.smoothAnimation
             setOnCheckedChangeListener { _, c -> s.smoothAnimation = c }
         }
-        val living = CheckBox(this).apply {
+        val living = Switch(this).apply {
             text = "Living reactions (beta): every touch gets a fresh reaction (head, belly, tail, ears, rocket…), never the same one twice in a row. Turn off for the classic taps."
             setTextColor(brown); isChecked = s.livingReactions
             setOnCheckedChangeListener { _, c -> s.livingReactions = c }
         }
-        val sfx = CheckBox(this).apply {
+        val sfx = Switch(this).apply {
             text = "Sound effects (Smash game, fireworks). Always quiet when your phone is on silent or vibrate."
             setTextColor(brown); isChecked = s.soundEffects
             setOnCheckedChangeListener { _, c -> s.soundEffects = c }
         }
-        val flickThrow = CheckBox(this).apply {
+        val flickThrow = Switch(this).apply {
             text = "Throw on fast flick: a very fast flick throws the character (SPLAT on a wall, THWACK on the top, PANCAKE on the floor). Off: any swipe makes it travel there with its own power."
             setTextColor(brown); isChecked = s.flickThrow
             setOnCheckedChangeListener { _, c -> s.flickThrow = c }
         }
-        val touchFeel = CheckBox(this).apply {
+        val touchFeel = Switch(this).apply {
             text = "Touch feel: feel them in your hand. A light or heavy bump when you pick one up, a rattle when you shake, a purr when you pet, a heartbeat when you keep holding, clicks when you pull the slingshot, a thump when they land."
             setTextColor(brown); isChecked = s.touchFeel
             setOnCheckedChangeListener { _, c -> s.touchFeel = c }
         }
-        val dtPower = CheckBox(this).apply {
+        val dtPower = Switch(this).apply {
             text = "Double-tap for power: double-tap a character and it fires one of its powers right away (a different one each time). Turn off to make double-tap open the chat like before."
             setTextColor(brown); isChecked = s.doubleTapPower
             setOnCheckedChangeListener { _, c -> s.doubleTapPower = c }
         }
-        val chatBtn = CheckBox(this).apply {
+        val chatBtn = Switch(this).apply {
             text = "Chat buttons: faint 💬 on the left and 🎤 on the right of each character. Tap 💬 to type or 🎤 to talk."
             setTextColor(brown); isChecked = s.chatButton
             setOnCheckedChangeListener { _, c -> s.chatButton = c }
         }
         val energy = text("Measuring…", 12f, color = soft).also { energyText = it }
-        val roam = CheckBox(this).apply {
+        val roam = Switch(this).apply {
             text = "Let Settai roam (climb the sides, hang from the top, drop down)"; setTextColor(brown); isChecked = s.roam
             setOnCheckedChangeListener { _, c -> s.roam = c }
         }
@@ -777,7 +777,7 @@ class SettingsActivity : Activity() {
         val diaryBtn = button("📖  Open Settai's diary…") {
             startActivity(Intent(this, DiaryActivity::class.java))
         }
-        val quips = CheckBox(this).apply {
+        val quips = Switch(this).apply {
             text = "Let Settai say random AI quips on its own"; setTextColor(brown); isChecked = s.quipsEnabled
             setOnCheckedChangeListener { _, c -> s.quipsEnabled = c }
         }
@@ -818,7 +818,7 @@ class SettingsActivity : Activity() {
             qStart.setText(QH.fmt(s.quietStart)); qEnd.setText(QH.fmt(s.quietEnd))
         }
         val cats = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        for (c in com.combo.monkeycompanion.agent.ProCat.entries) cats.addView(CheckBox(this).apply {
+        for (c in com.combo.monkeycompanion.agent.ProCat.entries) cats.addView(Switch(this).apply {
             text = c.label + (if (c.minLevel.ordinal > com.combo.monkeycompanion.agent.ProLevel.CHILL.ordinal) " (Buddy+)" else ""); setTextColor(brown); isChecked = s.proactiveCat(c)
             setOnCheckedChangeListener { _, on -> s.setProactiveCat(c, on) }
         })
@@ -830,11 +830,11 @@ class SettingsActivity : Activity() {
         val ents = listOf("off", "sometimes", "often")
         val entSp = spinner(listOf("Power entrances: Off", "Power entrances: Sometimes (~30% of pipe-ups)", "Power entrances: Often (~60%)"),
             ents.indexOf(s.powerEntrances).coerceAtLeast(1)) { s.powerEntrances = ents[it] }
-        val speakAll = CheckBox(this).apply {
+        val speakAll = Switch(this).apply {
             text = "Speak all replies out loud"; setTextColor(brown); isChecked = s.speakReplies
             setOnCheckedChangeListener { _, c -> s.speakReplies = c }
         }
-        val speakVoice = CheckBox(this).apply {
+        val speakVoice = Switch(this).apply {
             text = "Speak the answer when I asked by voice"; setTextColor(brown); isChecked = s.speakVoiceReplies
             setOnCheckedChangeListener { _, c -> s.speakVoiceReplies = c }
         }
@@ -846,7 +846,7 @@ class SettingsActivity : Activity() {
         }.apply { visibility = android.view.View.GONE }   // v10.13.1: the popup is 8 fixed groups now; arranging items no longer applies
         val moments = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            for (m in com.combo.monkeycompanion.brain.PhoneMoments.Moment.entries) addView(CheckBox(this@SettingsActivity).apply {
+            for (m in com.combo.monkeycompanion.brain.PhoneMoments.Moment.entries) addView(Switch(this@SettingsActivity).apply {
                 text = m.label; setTextColor(brown); isChecked = s.phoneMoment(m.id); minimumHeight = dp(44)
                 setOnCheckedChangeListener { _, c -> s.setPhoneMoment(m.id, c) }
             })
@@ -881,7 +881,7 @@ class SettingsActivity : Activity() {
             "${st.streak}-day streak · feeling ${com.combo.monkeycompanion.v5.Bond.warmthWord(b.warmth)}", 13f)
         views += text("Friendship grows when you pat him, chat, play games and come back each day. The level never goes down; if you stay away he just misses you a bit.", 12f, color = soft)
         for (ft in com.combo.monkeycompanion.fun5.Fun5Store.Feature.entries.filter { it.engagement }) {
-            views += CheckBox(this).apply {
+            views += Switch(this).apply {
                 text = ft.title; setTextColor(brown); isChecked = S.on(this@SettingsActivity, ft)
                 setOnCheckedChangeListener { _, c -> S.set(this@SettingsActivity, ft, c) }
             }
@@ -896,7 +896,7 @@ class SettingsActivity : Activity() {
         val views = ArrayList<View>()
         views += text("Games, clips, two phones and the friendship level are always there (long-press › More, or the app home). These switches cover the things Settai does by itself.", 12f, color = soft)
         for (f in com.combo.monkeycompanion.fun5.Fun5Store.Feature.entries.filter { !it.engagement }) {
-            views += CheckBox(this).apply {
+            views += Switch(this).apply {
                 text = f.title; setTextColor(brown); isChecked = S.on(this@SettingsActivity, f)
                 setOnCheckedChangeListener { _, c -> S.set(this@SettingsActivity, f, c) }
             }
@@ -910,7 +910,7 @@ class SettingsActivity : Activity() {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         for (g in CapGroup.entries) {
             val n = Capabilities.all.count { it.group == g }
-            box.addView(CheckBox(this).apply {
+            box.addView(Switch(this).apply {
                 text = "${g.label} ($n)"
                 setTextColor(brown); isChecked = s.groupEnabled(g)
                 setOnCheckedChangeListener { _, c -> s.setGroupEnabled(g, c) }
@@ -1022,7 +1022,7 @@ object GiveBrainDialog {
             orientation = LinearLayout.VERTICAL
             visibility = if (s.useOwnApiKey) View.VISIBLE else View.GONE
         }
-        root.addView(CheckBox(act).apply {
+        root.addView(Switch(act).apply {
             text = "Advanced: use my own API key / server"
             isChecked = s.useOwnApiKey
             setOnCheckedChangeListener { _, checked ->

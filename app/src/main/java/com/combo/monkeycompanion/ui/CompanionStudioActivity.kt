@@ -30,7 +30,7 @@ import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
-import android.widget.CheckBox
+import android.widget.Switch
 import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
@@ -943,12 +943,12 @@ class CompanionStudioActivity : Activity() {
         }
 
         col.addView(TextView(this).apply {
-            text = "📸 Photo-to-Look-Alike Studio"
+            text = "Character Creator Studio"
             textSize = 24f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
             gravity = Gravity.CENTER_HORIZONTAL
         })
         col.addView(TextView(this).apply {
-            text = "68-Point Face-ID Mesh & 320px Smooth-Contour Head Engine — pinch/zoom up to 5x or split-screen compare to verify your exact likeness!"
+            text = "Shape your companion in the live preview, then customize its appearance, movement and personality."
             textSize = 12.5f; setTextColor(soft); gravity = Gravity.CENTER_HORIZONTAL
             setPadding(0, dp(2), 0, dp(10))
         })
@@ -958,7 +958,17 @@ class CompanionStudioActivity : Activity() {
             it.uploadedPhotoThumb = lastUploadedPhoto
             stageView = it
         }
-        col.addView(stage, LinearLayout.LayoutParams(MATCH_PARENT, dp(360)).apply { bottomMargin = dp(8) })
+        val previewFrame = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            background = GradientDrawable().apply { cornerRadius = dp(24).toFloat(); setColor(Color.WHITE) }
+        }
+        previewFrame.addView(TextView(this).apply {
+            text = "LIVE PREVIEW"; textSize = 11f; setTypeface(typeface, Typeface.BOLD); setTextColor(accent)
+            setPadding(dp(8), dp(4), 0, dp(8))
+        })
+        previewFrame.addView(stage, LinearLayout.LayoutParams(MATCH_PARENT, dp(360)))
+        col.addView(previewFrame, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) })
 
         // Multi-Level Zoom Buttons: [1x Full] [2x Upper] [3.5x Face] [5x Ultra] [🎯 Reset]
         val zoomBtnRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(6)) }
@@ -1351,7 +1361,7 @@ class CompanionStudioActivity : Activity() {
         col.addView(lookCard)
 
         // 6. Flight / Movement Style & Multi-Select Superpowers Card
-        val powerCard = card("4. Flight Style & Selectable Superpowers (${draft.selectedPowers.size}/${CustomPowerCatalog.OPTIONS.size})")
+        val powerCard = card("Flight & superpowers (${draft.selectedPowers.size}/${CustomPowerCatalog.OPTIONS.size})")
         powerCard.addView(subHeader("Flight & Movement Style (Superboy Cape, Ironboy Jets, or All!):"))
         for (fl in FlightStyle.entries) {
             powerCard.addView(pillButton(fl.label, selected = draft.flightStyle == fl) {
@@ -1382,7 +1392,7 @@ class CompanionStudioActivity : Activity() {
         col.addView(powerCard)
 
         // 7. Per-Character Behaviour Sliders & Diary Limits Link
-        val behCard = card("5. Behaviour Sliders & Diary Limits")
+        val behCard = card("Personality & behaviour")
         behCard.addView(sliderRow("🎉 Playfulness (dances & gags)", draft.playfulness) { updateDraft(draft.copy(playfulness = it)) })
         behCard.addView(sliderRow("💬 Chattiness (how often they speak)", draft.chattiness) { updateDraft(draft.copy(chattiness = it)) })
         behCard.addView(sliderRow("🧭 Curiosity (explores new apps)", draft.curiosity) { updateDraft(draft.copy(curiosity = it)) })
@@ -1395,7 +1405,7 @@ class CompanionStudioActivity : Activity() {
         col.addView(behCard)
 
         // 8. Save, Put on Screen, Export & Import .settai Character
-        val saveCard = card("6. Save to Screen & Share / Import (.settai)")
+        val saveCard = card("Save & share your character")
         saveCard.addView(actionButton("✅ Save & Put ${draft.name} on Screen Now!", primary = true) {
             val finalName = topNameEdit.text?.toString()?.trim().orEmpty()
                 .ifBlank { nameInput.text?.toString()?.trim().orEmpty() }
@@ -1595,7 +1605,7 @@ class CompanionStudioActivity : Activity() {
         setOnClickListener { onClick() }
     }
 
-    private fun checkRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) = CheckBox(this).apply {
+    private fun checkRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) = Switch(this).apply {
         text = label; isChecked = checked; textSize = 13.5f; setTextColor(brown)
         setOnCheckedChangeListener { _, isChecked -> onChange(isChecked) }
     }
