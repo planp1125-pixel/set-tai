@@ -547,7 +547,8 @@ class SettaiDesignActivity : ComponentActivity() {
                                     Heading(when(settingsPanel) {
                                         "appearance" -> "Appearance"
                                         "permissions" -> "Permissions & battery"
-                                        "brain" -> "Brain & AI"
+                                        "brain" -> "Brain & chat"
+                                        "wallpaper" -> "Wallpaper"
                                         else -> "Companion settings"
                                     }, ink)
                                 }
@@ -555,7 +556,13 @@ class SettaiDesignActivity : ComponentActivity() {
                             if (settingsPanel == "main") {
                                 item { Feature("Appearance", "Theme and display preferences", "◐", surface, ink, muted) { settingsPanel = "appearance" } }
                                 item { Feature("Companions & behaviour", "Choose companions and configure your crew", "♡", surface, ink, muted) { page = 1 } }
-                                item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { settingsPanel = "brain" } }
+                                item { Feature("Brain & chat", "Cloud, own key, offline models and voice", "✧", surface, ink, muted) { settingsPanel = "brain" } }
+                                item { Feature("How they feel & move", "Touch feel, flick, rest and animation", "♡", surface, ink, muted) { settings("feel") } }
+                                item { Feature("Buddy & moments", "Proactive behaviour, quiet hours and nudges", "☼", surface, ink, muted) { settings("buddy") } }
+                                item { Feature("Engagement & fun", "Friendship, challenges and daily moments", "✦", surface, ink, muted) { settings("engagement") } }
+                                item { Feature("Superpowers", "Choose and use companion powers", "✧", surface, ink, muted) { settings("superpowers") } }
+                                item { Feature("Phone powers", "Phone abilities, skills and activity log", "▤", surface, ink, muted) { settings("phone") } }
+                                item { Feature("Wallpaper", "Live wallpaper, spots and background", "☼", surface, ink, muted) { settingsPanel = "wallpaper" } }
                                 item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
                                 item { Feature("Creative tools", "Shows and character studio", "✦", surface, ink, muted) { page = 2 } }
                                 item { Text("Set-Tai v10.38.11", color = muted, fontSize = 12.sp) }
@@ -566,12 +573,17 @@ class SettaiDesignActivity : ComponentActivity() {
                                         Heading("Brain & AI", ink)
                                         Text("Set-Tai can run without optional AI. Your companion's existing animations and interactions work independently.", color = muted)
                                         Spacer(Modifier.height(12.dp))
-                                        Button(onClick = { open(SettingsActivity::class.java) }, modifier = Modifier.fillMaxWidth()) {
-                                            Text("Open AI configuration")
+                                        Button(onClick = { settings("brain") }, modifier = Modifier.fillMaxWidth()) {
+                                            Text("Brain, voice and models")
                                         }
-                                        Text("AI configuration is being migrated into this screen. The existing controls remain available meanwhile.", color = muted, fontSize = 12.sp)
+                                        Text("Opens the existing detailed brain controls directly; all model and voice settings remain available.", color = muted, fontSize = 12.sp)
                                     }
                                 }
+                            }
+                            if (settingsPanel == "wallpaper") {
+                                item { Feature("Set as Live Wallpaper", "Move your companion into the wallpaper", "☼", surface, ink, muted) { wallpaper() } }
+                                item { Feature("Edit Climbing Spots", "Where your companion climbs", "✿", surface, ink, muted) { open(SpotsEditorActivity::class.java) } }
+                                item { Feature("Wallpaper Background", "Choose colours or your own picture", "◐", surface, ink, muted) { wallpaperBackground() } }
                             }
                             if (settingsPanel == "permissions") {
                                 item {
@@ -591,6 +603,33 @@ class SettaiDesignActivity : ComponentActivity() {
                                         OutlinedButton(onClick = {
                                             startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
                                         }) { Text("Notification settings") }
+                                    }
+                                }
+                                item {
+                                    Panel(surface) {
+                                        Heading("Notification summary access", ink)
+                                        Text("Allow notification listener access for What You Missed.", color = muted)
+                                        OutlinedButton(onClick = { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }) { Text("Notification access") }
+                                    }
+                                }
+                                if (Build.VERSION.SDK_INT >= 33) {
+                                    item {
+                                        Panel(surface) {
+                                            Heading("Post notifications", ink)
+                                            OutlinedButton(onClick = {
+                                                if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                                                    requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
+                                            }) { Text("Allow notifications") }
+                                        }
+                                    }
+                                }
+                                item {
+                                    Panel(surface) {
+                                        Heading("Keep Set-Tai awake", ink)
+                                        OutlinedButton(onClick = {
+                                            runCatching { startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName"))) }
+                                                .onFailure { startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
+                                        }) { Text("Request battery exemption") }
                                     }
                                 }
                                 item {
