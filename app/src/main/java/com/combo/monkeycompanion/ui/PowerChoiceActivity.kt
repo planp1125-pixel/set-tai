@@ -30,6 +30,7 @@ class PowerChoiceActivity : Activity() {
                     LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(12) })
             })
         })
+        MaterialScreenPolish.apply(this, dark = true, preserveCustomButtons = true)
     }
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 

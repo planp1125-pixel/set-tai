@@ -1442,6 +1442,7 @@ class CompanionStudioActivity : Activity() {
             insets
         }
         setContentView(scroll)
+        MaterialScreenPolish.apply(this, preserveCustomButtons = true)
     }
 
     private fun runAiBrainPhotoModeling() {

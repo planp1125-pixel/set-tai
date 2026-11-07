@@ -51,6 +51,7 @@ class MenuSettingsActivity : Activity() {
         who = CharacterRegistry.current
         load()
         setContentView(build())
+        MaterialScreenPolish.apply(this)
     }
 
     private fun load() {

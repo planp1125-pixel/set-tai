@@ -30,7 +30,7 @@ class CapabilitiesActivity : Activity() {
     private val warn = com.combo.monkeycompanion.theme.Th.rgb(0xC6, 0x28, 0x28)
 
     override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); ChatHub.init(this) }
-    override fun onResume() { super.onResume(); setContentView(build()) }
+    override fun onResume() { super.onResume(); setContentView(build()); MaterialScreenPolish.apply(this) }
 
     private fun text(t: String, size: Float = 14f, bold: Boolean = false, color: Int = brown) = TextView(this).apply {
         text = t; textSize = size; setTextColor(color); if (bold) setTypeface(typeface, Typeface.BOLD); setPadding(0, dp(2), 0, dp(2))
@@ -111,7 +111,7 @@ class CapabilitiesActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        setContentView(build())
+        setContentView(build()); MaterialScreenPolish.apply(this)
     }
 
     private fun agentCard(g: CapGroup): View {
@@ -121,7 +121,7 @@ class CapabilitiesActivity : Activity() {
             setOnCheckedChangeListener { _, c ->
                 s.setGroupEnabled(g, c)
                 if (g == CapGroup.ROUTINES) com.combo.monkeycompanion.agent.RoutineScheduler.refresh(this@CapabilitiesActivity)
-                setContentView(build())
+                setContentView(build()); MaterialScreenPolish.apply(this)
             }
         }
         val views = ArrayList<View>()

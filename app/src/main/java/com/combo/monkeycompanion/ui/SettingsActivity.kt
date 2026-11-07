@@ -74,6 +74,7 @@ class SettingsActivity : Activity() {
         super.onCreate(savedInstanceState)
         ChatHub.init(this)
         setContentView(build())
+        MaterialScreenPolish.apply(this)
     }
 
     override fun onResume() { super.onResume(); refreshOffline(); pollDownload(); energyWindow.clear(); refreshEnergy() }

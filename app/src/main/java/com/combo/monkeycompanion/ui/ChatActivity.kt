@@ -24,6 +24,7 @@ class ChatActivity : Activity() {
             insets
         }
         setContentView(panel)
+        MaterialScreenPolish.apply(this, preserveCustomButtons = true)
         panel.focusInput()
     }
 }

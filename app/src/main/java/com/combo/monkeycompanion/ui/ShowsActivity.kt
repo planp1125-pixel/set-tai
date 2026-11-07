@@ -76,6 +76,7 @@ class ShowsActivity : Activity() {
                 .onFailure { say("No file picker on this phone") }
         })
         setContentView(ScrollView(this).apply { setBackgroundColor(Th.INK); addView(col) })
+        MaterialScreenPolish.apply(this, dark = true)
         refresh()
     }
 

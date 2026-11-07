@@ -396,6 +396,7 @@ class DiaryActivity : Activity() {
             insets
         }
         setContentView(scroll)
+        MaterialScreenPolish.apply(this, preserveCustomButtons = true)
     }
 
     private fun promptAddCustomNote(diary: com.combo.monkeycompanion.mind.Diary) {
