@@ -11,6 +11,7 @@ import com.combo.monkeycompanion.overlay.MonkeyOverlayService
 import com.combo.monkeycompanion.theme.ThemeSkin
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -56,12 +57,15 @@ class SettaiDesignActivity : ComponentActivity() {
         var exploreCategory by remember { mutableStateOf("All") }
         var settingsPanel by remember { mutableStateOf("main") }
         var overlayRunning by remember { mutableStateOf(MonkeyOverlayService.running) }
+        var launchPending by remember { mutableStateOf(false) }
+        var launchMessage by remember { mutableStateOf("") }
         var overlayAllowed by remember { mutableStateOf(Settings.canDrawOverlays(this)) }
         val lifecycleOwner = LocalLifecycleOwner.current
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
                     overlayRunning = MonkeyOverlayService.running
+                    if (overlayRunning) { launchPending = false; launchMessage = "Companion is active" }
                     overlayAllowed = Settings.canDrawOverlays(this@SettaiDesignActivity)
                     selectedCharacter = CharacterRegistry.current.id
                 }
@@ -82,6 +86,14 @@ class SettaiDesignActivity : ComponentActivity() {
         val ink = if (dark) Color(0xFFF4F4FA) else Color(0xFF20233B)
         val muted = if (dark) Color(0xFFB6B9CA) else Color(0xFF646B80)
         val primary = Color(0xFF7160E8)
+        LaunchedEffect(launchPending) {
+            if (launchPending) {
+                kotlinx.coroutines.delay(1800)
+                overlayRunning = MonkeyOverlayService.running
+                launchPending = false
+                launchMessage = if (overlayRunning) "Companion started" else "Could not confirm startup. Check permissions."
+            }
+        }
         MaterialTheme(colorScheme = if (dark) darkColorScheme(primary = Color(0xFFB4A8FF), background = bg, surface = surface, onSurface = ink) else lightColorScheme(primary = primary, background = bg, surface = surface, onSurface = ink)) {
             Scaffold(containerColor = bg, bottomBar = {
                 NavigationBar(containerColor = surface) {
@@ -129,10 +141,29 @@ class SettaiDesignActivity : ComponentActivity() {
                                     Text(if (overlayRunning) "Your companion is active on screen." else "Bring your companion onto the screen.", color = muted)
                                     Spacer(Modifier.height(8.dp))
                                     Text(if (overlayAllowed) "Overlay permission ready" else "Overlay permission needed to start", color = muted, fontSize = 12.sp)
-                                    Spacer(Modifier.height(18.dp))
-                                    Button(onClick = { summon(); overlayRunning = MonkeyOverlayService.running; overlayAllowed = Settings.canDrawOverlays(this@SettaiDesignActivity) }, modifier = Modifier.fillMaxWidth()) {
-                                        Text(if (overlayRunning) "Stop companion" else if (!overlayAllowed) "Enable overlay permission" else "Start companion")
+                                    Spacer(Modifier.height(12.dp))
+                                    AndroidView(
+                                        factory = { ctx -> CharacterPreviewView(ctx, CharacterRegistry.current) },
+                                        update = { it.who = CharacterRegistry.byId(selectedCharacter) ?: CharacterRegistry.current },
+                                        modifier = Modifier.fillMaxWidth().height(190.dp)
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    Button(onClick = {
+                                        if (!overlayRunning && overlayAllowed) {
+                                            launchPending = true
+                                            launchMessage = "Starting companion…"
+                                        }
+                                        summon()
+                                        overlayAllowed = Settings.canDrawOverlays(this@SettaiDesignActivity)
+                                        if (overlayRunning) {
+                                            overlayRunning = false
+                                            launchMessage = "Companion stopped"
+                                        }
+                                    }, enabled = !launchPending, modifier = Modifier.fillMaxWidth()) {
+                                        if (launchPending) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                        else Text(if (overlayRunning) "Stop companion" else if (!overlayAllowed) "Enable overlay permission" else "Start companion")
                                     }
+                                    if (launchMessage.isNotBlank()) Text(launchMessage, color = muted, fontSize = 13.sp)
                                     TextButton(onClick = { advanced() }) { Text("Companion controls & preview") }
                                 }
                             }
@@ -150,6 +181,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                     onClick = {
                                         ChatHub.settings.characterId = character.id
                                         ChatHub.settings.applyCharacter()
+                                        MonkeyOverlayService.syncCrew(this@SettaiDesignActivity)
                                         selectedCharacter = character.id
                                     },
                                     color = if (selectedCharacter == character.id) MaterialTheme.colorScheme.primaryContainer else surface,
@@ -157,8 +189,12 @@ class SettaiDesignActivity : ComponentActivity() {
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Row(modifier = Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text("✿", fontSize = 28.sp, color = MaterialTheme.colorScheme.primary)
-                                        Spacer(Modifier.width(16.dp))
+                                        AndroidView(
+                                            factory = { ctx -> CharacterPreviewView(ctx, character) },
+                                            update = { it.who = character; it.picked = selectedCharacter == character.id },
+                                            modifier = Modifier.size(width = 88.dp, height = 112.dp)
+                                        )
+                                        Spacer(Modifier.width(12.dp))
                                         Column(Modifier.weight(1f)) {
                                             Text(character.name, fontWeight = FontWeight.Bold, color = ink)
                                             Text(character.tagline, color = muted, fontSize = 12.sp)
@@ -267,7 +303,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
                                 item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
                                 item { Feature("Advanced settings", "Full original settings during migration", "⚙", surface, ink, muted) { advanced("settings") } }
-                                item { Text("Set-Tai v10.38.6", color = muted, fontSize = 12.sp) }
+                                item { Text("Set-Tai v10.38.7", color = muted, fontSize = 12.sp) }
                             }
                             if (settingsPanel == "permissions") {
                                 item {
