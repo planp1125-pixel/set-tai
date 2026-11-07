@@ -936,6 +936,8 @@ class CompanionStudioActivity : Activity() {
         runCatching { dlg.show() }
     }
 
+    private var studioTabIndex = 0
+
     private fun rebuildUI() {
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -967,7 +969,7 @@ class CompanionStudioActivity : Activity() {
             text = "LIVE PREVIEW"; textSize = 11f; setTypeface(typeface, Typeface.BOLD); setTextColor(accent)
             setPadding(dp(8), dp(4), 0, dp(8))
         })
-        previewFrame.addView(stage, LinearLayout.LayoutParams(MATCH_PARENT, dp(360)))
+        previewFrame.addView(stage, LinearLayout.LayoutParams(MATCH_PARENT, dp(220)))
         col.addView(previewFrame, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) })
 
         // Multi-Level Zoom Buttons: [1x Full] [2x Upper] [3.5x Face] [5x Ultra] [🎯 Reset]
@@ -1441,17 +1443,60 @@ class CompanionStudioActivity : Activity() {
         saveCard.addView(ioRow)
         col.addView(saveCard)
 
+        // Keep the live stage visible while the user edits one focused group at a time.
+        // Reparent existing controls: callbacks, draft persistence and custom mesh stay intact.
+        val allSections = (0 until col.childCount).map { col.getChildAt(it) }
+        val preview = allSections[2]
+        val saveActions = allSections[16]
+        val tabNames = listOf("Face", "Body", "Style", "Motion", "Behaviour", "Powers")
+        val tabMembers = listOf(
+            listOf(3, 4, 5, 6, 10),
+            listOf(8, 11, 12),
+            listOf(13),
+            listOf(7),
+            listOf(9, 15),
+            listOf(14)
+        )
+        for (child in allSections.drop(3)) col.removeView(child)
+        col.removeView(preview)
+        val tabScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
+        val tabRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        tabScroll.addView(tabRow)
+        col.addView(tabScroll, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) })
+        val tabContent = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(tabContent)
+        col.addView(saveActions)
+        fun displayTab(index: Int) {
+            studioTabIndex = index
+            tabContent.removeAllViews()
+            tabRow.removeAllViews()
+            tabNames.forEachIndexed { i, name ->
+                tabRow.addView(pillButton(name, selected = i == studioTabIndex) {
+                    displayTab(i)
+                }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { rightMargin = dp(6) })
+            }
+            tabMembers[studioTabIndex].forEach { originalIndex ->
+                val view = allSections[originalIndex]
+                (view.parent as? android.view.ViewGroup)?.removeView(view)
+                tabContent.addView(view)
+            }
+        }
+        displayTab(studioTabIndex.coerceIn(tabNames.indices))
+
         val scroll = ScrollView(this).apply {
             setBackgroundColor(cream)
             isFillViewport = true
             addView(col)
         }
+        val studioRoot = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(cream) }
+        studioRoot.addView(preview, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        studioRoot.addView(scroll, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
         scroll.setOnApplyWindowInsetsListener { v, insets ->
             @Suppress("DEPRECATION")
             v.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
             insets
         }
-        setContentView(scroll)
+        setContentView(studioRoot)
         MaterialScreenPolish.apply(this, preserveCustomButtons = true)
     }
 
