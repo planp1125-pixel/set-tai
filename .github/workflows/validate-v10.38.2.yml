@@ -1,5 +1,10 @@
 name: Validate and release v10.38.11 UI test
 on:
+  push:
+    branches:
+      - codex/settai-v10.38.2-compose-redesign
+    paths:
+      - '.github/workflows/validate-v10.38.2.yml'
   workflow_dispatch:
 permissions:
   contents: write
@@ -35,6 +40,7 @@ jobs:
         run: |
           set -e
           if [ -z "$GH_TOKEN" ]; then echo "Missing GitHub release token"; exit 1; fi
+          gh api repos/"$GITHUB_REPOSITORY" --jq '.permissions' || true
           APK=$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)
           test -n "$APK"
           mkdir -p out
