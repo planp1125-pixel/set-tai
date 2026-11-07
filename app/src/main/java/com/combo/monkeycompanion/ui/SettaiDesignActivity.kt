@@ -314,7 +314,7 @@ class SettaiDesignActivity : ComponentActivity() {
                             item { Feature("Show me tricks", "Watch the companion's interactive demonstration", "✦", surface, ink, muted) { v5("onboard") } }
                             item { Feature("What You Missed", "See your notification summary", "▤", surface, ink, muted) { v5("notif_card_demo") } }
                             item { Feature("Make a show", "Create and play animated stories", "▶", surface, ink, muted) { page = 2 } }
-                            item { Feature("Give Brain", "Optional AI and personality settings", "✧", surface, ink, muted) { page = 4; settingsPanel = "brain" } }
+                            item { Feature("Give Brain", "Optional AI and personality settings", "✧", surface, ink, muted) { settings("brain") } }
                         }
                         1 -> {
                             item {
@@ -518,11 +518,11 @@ class SettaiDesignActivity : ComponentActivity() {
                                         "Start a Skit" -> v5("skit")
                                         "Use Superpower" -> usePowerNow()
                                         "Appearance" -> { page = 4; settingsPanel = "appearance" }
-                                        "Brain & AI" -> { page = 4; settingsPanel = "brain" }
-                                        "Touch & Motion" -> { page = 4; settingsPanel = "touch" }
+                                        "Brain & AI" -> settings("brain")
+                                        "Touch & Motion" -> settings("touch")
                                         "Personality & Behaviour" -> { page = 4; settingsPanel = "personality" }
-                                        "Superpowers" -> { page = 4; settingsPanel = "superpowers" }
-                                        "Phone powers" -> { page = 4; settingsPanel = "phone" }
+                                        "Superpowers" -> settings("superpowers")
+                                        "Phone powers" -> settings("phone")
                                         "Wallpaper" -> { page = 4; settingsPanel = "wallpaper" }
                                         "Permissions & Battery" -> { page = 4; settingsPanel = "permissions" }
                                     }
@@ -551,19 +551,19 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             if (settingsPanel == "main") {
                                 item { Feature("Appearance", "Theme and display", "◐", surface, ink, muted) { settingsPanel = "appearance" } }
-                                item { Feature("Brain & AI", "Cloud, models and Background AI", "✧", surface, ink, muted) { settingsPanel = "brain" } }
-                                item { Feature("Touch & Motion", "Rest, flick, touch and animations", "♡", surface, ink, muted) { settingsPanel = "touch" } }
+                                item { Feature("Brain & AI", "Cloud, models and Background AI", "✧", surface, ink, muted) { settings("brain") } }
+                                item { Feature("Touch & Motion", "Rest, flick, touch and animations", "♡", surface, ink, muted) { settings("touch") } }
                                 item { Feature("Personality & Behaviour", "Memory, buddy moments and daily habits", "☼", surface, ink, muted) { settingsPanel = "personality" } }
-                                item { Feature("Superpowers", "Choose character powers", "✧", surface, ink, muted) { settingsPanel = "superpowers" } }
-                                item { Feature("Phone powers", "Phone capabilities and actions", "▤", surface, ink, muted) { settingsPanel = "phone" } }
+                                item { Feature("Superpowers", "Choose character powers", "✧", surface, ink, muted) { settings("superpowers") } }
+                                item { Feature("Phone powers", "Phone capabilities and actions", "▤", surface, ink, muted) { settings("phone") } }
                                 item { Feature("Wallpaper", "Live wallpaper and climbing spots", "☼", surface, ink, muted) { settingsPanel = "wallpaper" } }
                                 item { Feature("Permissions & Battery", "Overlay, notifications and battery", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
                                 item { Text("Set-Tai v10.38.11", color = muted, fontSize = 12.sp) }
                             }
                             if (settingsPanel == "personality") {
-                                item { Feature("Personality & memory", "Independence, memory and quips", "♡", surface, ink, muted) { settingsPanel = "personality-memory" } }
-                                item { Feature("Buddy & moments", "Quiet hours and proactive moments", "☼", surface, ink, muted) { settingsPanel = "buddy" } }
-                                item { Feature("Daily habits", "Greetings, sulking and self-actions", "✦", surface, ink, muted) { settingsPanel = "habits" } }
+                                item { Feature("Personality & memory", "Independence, memory and quips", "♡", surface, ink, muted) { settings("personality") } }
+                                item { Feature("Buddy & moments", "Quiet hours and proactive moments", "☼", surface, ink, muted) { settings("buddy") } }
+                                item { Feature("Daily habits", "Greetings, sulking and self-actions", "✦", surface, ink, muted) { settings("habits") } }
                             }
                             if (settingsPanel in listOf("touch", "personality-memory", "buddy", "habits", "superpowers", "phone")) {
                                 item {
