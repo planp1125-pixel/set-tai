@@ -1,8 +1,5 @@
 name: Validate and release v10.38.10 UI test
 on:
-  push:
-    branches:
-      - codex/settai-v10.38.2-compose-redesign
   workflow_dispatch:
 permissions:
   contents: write
