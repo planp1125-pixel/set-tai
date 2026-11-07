@@ -35,11 +35,12 @@ class SettaiDesignActivity : ComponentActivity() {
     }
 
     private fun open(type: Class<out Activity>) = startActivity(Intent(this, type))
-    private fun advanced() = startActivity(Intent(this, MainActivity::class.java).putExtra("settai_legacy_controls", true))
+    private fun advanced(tab: String? = null) = startActivity(Intent(this, MainActivity::class.java).putExtra("settai_legacy_controls", true).apply { if (tab != null) putExtra("settai_open_tab", tab) })
     private fun summon() {
         if (!Settings.canDrawOverlays(this)) {
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName")))
-        } else MonkeyOverlayService.start(this)
+        } else if (MonkeyOverlayService.running) MonkeyOverlayService.stop(this)
+        else MonkeyOverlayService.start(this)
     }
 
     @Composable
@@ -47,6 +48,8 @@ class SettaiDesignActivity : ComponentActivity() {
         var page by remember { mutableStateOf(0) }
         var theme by remember { mutableStateOf(ThemeSkin.mode(this)) }
         var search by remember { mutableStateOf("") }
+        var overlayRunning by remember { mutableStateOf(MonkeyOverlayService.running) }
+        var overlayAllowed by remember { mutableStateOf(Settings.canDrawOverlays(this)) }
         val dark = when (theme) {
             ThemeSkin.DARK -> true
             ThemeSkin.LIGHT -> false
@@ -84,23 +87,25 @@ class SettaiDesignActivity : ComponentActivity() {
                                     Text("✦  READY WHEN YOU ARE", color = primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     Spacer(Modifier.height(18.dp))
                                     Text(CharacterRegistry.current.name, color = ink, fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                                    Text("Bring your companion onto the screen.", color = muted)
+                                    Text(if (overlayRunning) "Your companion is active on screen." else "Bring your companion onto the screen.", color = muted)
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(if (overlayAllowed) "Overlay permission ready" else "Overlay permission needed to start", color = muted, fontSize = 12.sp)
                                     Spacer(Modifier.height(18.dp))
-                                    Button(onClick = { summon() }, modifier = Modifier.fillMaxWidth()) {
-                                        Text(if (MonkeyOverlayService.running) "Companion is running" else "Start companion")
+                                    Button(onClick = { summon(); overlayRunning = MonkeyOverlayService.running; overlayAllowed = Settings.canDrawOverlays(this@SettaiDesignActivity) }, modifier = Modifier.fillMaxWidth()) {
+                                        Text(if (overlayRunning) "Stop companion" else if (!overlayAllowed) "Enable overlay permission" else "Start companion")
                                     }
                                     TextButton(onClick = { advanced() }) { Text("Companion controls & preview") }
                                 }
                             }
                             item { Heading("Quick actions", ink) }
-                            item { Feature("Choose a character", "Meet your characters and change who appears", "✿", surface, ink, muted) { advanced() } }
+                            item { Feature("Choose a character", "Meet your characters and change who appears", "✿", surface, ink, muted) { advanced("characters") } }
                             item { Feature("Make a show", "Create and play animated stories", "▶", surface, ink, muted) { open(ShowsActivity::class.java) } }
                             item { Feature("Give Brain", "Optional AI and personality settings", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
                         }
                         1 -> {
                             item { Feature("Create a show", "Build scenes and tell a story", "▶", surface, ink, muted) { open(ShowsActivity::class.java) } }
                             item { Feature("Character studio", "Create a custom companion", "✿", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
-                            item { Feature("Choose characters", "Characters, sizes and combinations", "♡", surface, ink, muted) { advanced() } }
+                            item { Feature("Choose characters", "Characters, sizes and combinations", "♡", surface, ink, muted) { advanced("characters") } }
                         }
                         2 -> {
                             item {
@@ -116,7 +121,7 @@ class SettaiDesignActivity : ComponentActivity() {
                             item { if ("chat".contains(search, ignoreCase = true) || "talk".contains(search, ignoreCase = true)) Feature("Chat", "Talk with your companion", "◉", surface, ink, muted) { open(ChatActivity::class.java) } }
                             item { if ("skills".contains(search, ignoreCase = true) || "abilities".contains(search, ignoreCase = true)) Feature("Skills", "Discover abilities and actions", "✦", surface, ink, muted) { open(SkillsActivity::class.java) } }
                             item { if ("diary".contains(search, ignoreCase = true) || "memories".contains(search, ignoreCase = true)) Feature("Diary", "Moments and memories", "▤", surface, ink, muted) { open(DiaryActivity::class.java) } }
-                            item { if ("world".contains(search, ignoreCase = true) || "care".contains(search, ignoreCase = true)) Feature("World & Care", "Activities, mood and companion world", "☼", surface, ink, muted) { advanced() } }
+                            item { if ("world".contains(search, ignoreCase = true) || "care".contains(search, ignoreCase = true)) Feature("World & Care", "Activities, mood and companion world", "☼", surface, ink, muted) { advanced("world") } }
                             item { if (search.isBlank() || "all original features advanced controls".contains(search, ignoreCase = true)) Feature("All original features", "Access every existing control during migration", "☷", surface, ink, muted) { advanced() } }
                         }
                         else -> {
@@ -138,7 +143,7 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             item { Feature("Companion & behaviour", "Motion, personality and preferences", "♡", surface, ink, muted) { open(SettingsActivity::class.java) } }
                             item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
-                            item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { advanced() } }
+                            item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { advanced("settings") } }
                             item { Feature("Advanced settings", "Full existing settings while migration continues", "⚙", surface, ink, muted) { advanced() } }
                             item { Text("Set-Tai v10.38.2 • UI preview", color = muted, fontSize = 12.sp) }
                         }
