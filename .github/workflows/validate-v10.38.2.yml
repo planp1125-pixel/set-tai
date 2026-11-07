@@ -1,5 +1,5 @@
 name: Validate and release v10.38.11 UI test
-# Full feature-restoration validation: compile, unit tests, signed APK, GitHub Release.
+# Validate missing-import fix and latest Compose feature restoration commit.
 on:
   push:
     branches:
