@@ -1,5 +1,6 @@
 plugins {
     id("com.android.application")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -12,8 +13,8 @@ android {
         applicationId = "com.combo.monkeycompanion"
         minSdk = 26
         targetSdk = 35
-        versionCode = 77
-        versionName = "10.38.1"
+        versionCode = 78
+        versionName = "10.38.2"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
     signingConfigs {
@@ -49,6 +50,7 @@ android {
     // Platform-neutral code (rig, animations, IK climber, mood brain, lines, prompt, action tags,
     // online brains) lives in ../shared and is also compiled by the desktop app.
     sourceSets.getByName("main").kotlin.directories.add("../shared/src/main/kotlin")
+    buildFeatures { compose = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -61,6 +63,11 @@ kotlin {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.19.1")
+    implementation(platform("androidx.compose:compose-bom:2025.05.01"))
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.foundation:foundation")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.18.1")
