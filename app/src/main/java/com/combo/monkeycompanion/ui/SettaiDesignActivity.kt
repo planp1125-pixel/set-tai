@@ -11,6 +11,9 @@ import com.combo.monkeycompanion.overlay.MonkeyOverlayService
 import com.combo.monkeycompanion.theme.ThemeSkin
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -53,6 +56,21 @@ class SettaiDesignActivity : ComponentActivity() {
         var settingsPanel by remember { mutableStateOf("main") }
         var overlayRunning by remember { mutableStateOf(MonkeyOverlayService.running) }
         var overlayAllowed by remember { mutableStateOf(Settings.canDrawOverlays(this)) }
+        val lifecycleOwner = LocalLifecycleOwner.current
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    overlayRunning = MonkeyOverlayService.running
+                    overlayAllowed = Settings.canDrawOverlays(this@SettaiDesignActivity)
+                    selectedCharacter = CharacterRegistry.current.id
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        }
+        var welcomeDismissed by remember {
+            mutableStateOf(getSharedPreferences("settai_v3", 0).getBoolean("compose_welcome_dismissed", false))
+        }
         val dark = when (theme) {
             ThemeSkin.DARK -> true
             ThemeSkin.LIGHT -> false
@@ -85,11 +103,28 @@ class SettaiDesignActivity : ComponentActivity() {
                     }
                     when (page) {
                         0 -> {
+                            if (!welcomeDismissed) {
+                                item {
+                                    Panel(surface) {
+                                        Text("Welcome to Set-Tai", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = ink)
+                                        Spacer(Modifier.height(6.dp))
+                                        Text("Choose a companion, allow it to appear over other apps, then bring it to life.", color = muted)
+                                        Spacer(Modifier.height(14.dp))
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            OutlinedButton(onClick = { page = 1 }) { Text("Choose character") }
+                                            TextButton(onClick = {
+                                                getSharedPreferences("settai_v3", 0).edit().putBoolean("compose_welcome_dismissed", true).apply()
+                                                welcomeDismissed = true
+                                            }) { Text("Got it") }
+                                        }
+                                    }
+                                }
+                            }
                             item {
                                 Panel(surface) {
-                                    Text("✦  READY WHEN YOU ARE", color = primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Text(if (overlayRunning) "●  ACTIVE ON YOUR SCREEN" else "✦  READY WHEN YOU ARE", color = primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     Spacer(Modifier.height(18.dp))
-                                    Text(CharacterRegistry.current.name, color = ink, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                                    Text(CharacterRegistry.byId(selectedCharacter)?.name ?: CharacterRegistry.current.name, color = ink, fontSize = 25.sp, fontWeight = FontWeight.Bold)
                                     Text(if (overlayRunning) "Your companion is active on screen." else "Bring your companion onto the screen.", color = muted)
                                     Spacer(Modifier.height(8.dp))
                                     Text(if (overlayAllowed) "Overlay permission ready" else "Overlay permission needed to start", color = muted, fontSize = 12.sp)
@@ -101,7 +136,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 }
                             }
                             item { Heading("Quick actions", ink) }
-                            item { Feature("Choose a character", "Meet your characters and change who appears", "✿", surface, ink, muted) { advanced("characters") } }
+                            item { Feature("Choose a character", "Meet your characters and change who appears", "✿", surface, ink, muted) { page = 1 } }
                             item { Feature("Make a show", "Create and play animated stories", "▶", surface, ink, muted) { open(ShowsActivity::class.java) } }
                             item { Feature("Give Brain", "Optional AI and personality settings", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
                         }
@@ -172,7 +207,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
                                 item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
                                 item { Feature("Advanced settings", "Full original settings during migration", "⚙", surface, ink, muted) { advanced("settings") } }
-                                item { Text("Set-Tai v10.38.4", color = muted, fontSize = 12.sp) }
+                                item { Text("Set-Tai v10.38.5", color = muted, fontSize = 12.sp) }
                             }
                             if (settingsPanel == "permissions") {
                                 item {
