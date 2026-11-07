@@ -1,0 +1,27 @@
+name: Validate v10.38.1 usability
+
+on:
+  push:
+    branches:
+      - codex/settai-v10.38.1-usability
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TZ: Asia/Kolkata
+
+jobs:
+  android-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile and run unit tests (no APK publication)
+        run: ./gradlew :app:compileFullDebugKotlin :app:testFullDebugUnitTest --stacktrace
