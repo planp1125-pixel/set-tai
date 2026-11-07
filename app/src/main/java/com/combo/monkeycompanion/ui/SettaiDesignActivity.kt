@@ -7,6 +7,8 @@ import android.provider.Settings
 import com.combo.monkeycompanion.MainActivity
 import com.combo.monkeycompanion.character.CharacterRegistry
 import com.combo.monkeycompanion.ai.ChatHub
+import com.combo.monkeycompanion.mind.MindHub
+import com.combo.monkeycompanion.world.Population
 import com.combo.monkeycompanion.overlay.MonkeyOverlayService
 import com.combo.monkeycompanion.theme.ThemeSkin
 import androidx.activity.ComponentActivity
@@ -52,6 +54,7 @@ class SettaiDesignActivity : ComponentActivity() {
     private fun DesignApp() {
         var page by remember { mutableStateOf(0) }
         var selectedCharacter by remember { mutableStateOf(CharacterRegistry.current.id) }
+        var crewMode by remember { mutableStateOf(Population.Mode.of(MindHub.neighbourMode)) }
         var theme by remember { mutableStateOf(ThemeSkin.mode(this)) }
         var search by remember { mutableStateOf("") }
         var exploreCategory by remember { mutableStateOf("All") }
@@ -68,6 +71,7 @@ class SettaiDesignActivity : ComponentActivity() {
                     if (overlayRunning) { launchPending = false; launchMessage = "Companion is active" }
                     overlayAllowed = Settings.canDrawOverlays(this@SettaiDesignActivity)
                     selectedCharacter = CharacterRegistry.current.id
+                    crewMode = Population.Mode.of(MindHub.neighbourMode)
                 }
             }
             lifecycleOwner.lifecycle.addObserver(observer)
@@ -176,6 +180,38 @@ class SettaiDesignActivity : ComponentActivity() {
                             item {
                                 Text("Choose who lives on your screen. Your memories and settings stay with you.", color = muted, fontSize = 14.sp)
                             }
+                            item {
+                                Panel(surface) {
+                                    Heading("Companions on screen", ink)
+                                    Text("Select the number of active companions", color = muted)
+                                    Spacer(Modifier.height(10.dp))
+                                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                                        Population.Mode.entries.forEachIndexed { index, mode ->
+                                            SegmentedButton(
+                                                selected = crewMode == mode,
+                                                onClick = {
+                                                    MindHub.setNeighbourMode(this@SettaiDesignActivity, mode)
+                                                    MonkeyOverlayService.syncCrew(this@SettaiDesignActivity)
+                                                    crewMode = mode
+                                                },
+                                                shape = SegmentedButtonDefaults.itemShape(index, Population.Mode.entries.size)
+                                            ) {
+                                                Text(when (mode) {
+                                                    Population.Mode.SOLO -> "Solo"
+                                                    Population.Mode.DUO -> "Duo"
+                                                    Population.Mode.TRIO -> "Trio"
+                                                })
+                                            }
+                                        }
+                                    }
+                                    Text("Lead: " + CharacterRegistry.current.name, color = ink)
+                                    if (crewMode != Population.Mode.SOLO) {
+                                        Text("Partners use your saved crew configuration. Customize partners in the crew picker.", color = muted, fontSize = 12.sp)
+                                        TextButton(onClick = { advanced("characters") }) { Text("Configure partners") }
+                                    }
+                                }
+                            }
+                            item { Heading("Character gallery", ink) }
                             items(CharacterRegistry.allWithCustom, key = { it.id }) { character ->
                                 Surface(
                                     onClick = {
@@ -303,7 +339,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
                                 item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
                                 item { Feature("Advanced settings", "Full original settings during migration", "⚙", surface, ink, muted) { advanced("settings") } }
-                                item { Text("Set-Tai v10.38.7", color = muted, fontSize = 12.sp) }
+                                item { Text("Set-Tai v10.38.8", color = muted, fontSize = 12.sp) }
                             }
                             if (settingsPanel == "permissions") {
                                 item {
