@@ -53,6 +53,7 @@ class SettaiDesignActivity : ComponentActivity() {
         var selectedCharacter by remember { mutableStateOf(CharacterRegistry.current.id) }
         var theme by remember { mutableStateOf(ThemeSkin.mode(this)) }
         var search by remember { mutableStateOf("") }
+        var exploreCategory by remember { mutableStateOf("All") }
         var settingsPanel by remember { mutableStateOf("main") }
         var overlayRunning by remember { mutableStateOf(MonkeyOverlayService.running) }
         var overlayAllowed by remember { mutableStateOf(Settings.canDrawOverlays(this)) }
@@ -169,9 +170,21 @@ class SettaiDesignActivity : ComponentActivity() {
                             item { Feature("Custom character studio", "Make your own companion", "✦", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
                         }
                         2 -> {
-                            item { Feature("Create a show", "Build scenes and tell a story", "▶", surface, ink, muted) { open(ShowsActivity::class.java) } }
-                            item { Feature("Character studio", "Create a custom companion", "✿", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
-                            item { Feature("Choose characters", "Characters, sizes and combinations", "♡", surface, ink, muted) { advanced("characters") } }
+                            item {
+                                Panel(surface) {
+                                    Text("Make Set-Tai your own", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = ink)
+                                    Spacer(Modifier.height(6.dp))
+                                    Text("Start with a story or design a new companion. Your creations use the existing Set-Tai engines.", color = muted)
+                                    Spacer(Modifier.height(16.dp))
+                                    Button(onClick = { open(ShowsActivity::class.java) }, modifier = Modifier.fillMaxWidth()) {
+                                        Text("Create a show")
+                                    }
+                                }
+                            }
+                            item { Heading("Creative tools", ink) }
+                            item { Feature("Shows & scenes", "Create, edit and play your animated stories", "▶", surface, ink, muted) { open(ShowsActivity::class.java) } }
+                            item { Feature("Character studio", "Design a custom companion", "✿", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
+                            item { Feature("Character collection", "Choose your active character", "♡", surface, ink, muted) { page = 1 } }
                         }
                         3 -> {
                             item {
@@ -179,16 +192,63 @@ class SettaiDesignActivity : ComponentActivity() {
                                     value = search,
                                     onValueChange = { search = it },
                                     label = { Text("Search features") },
+                                    placeholder = { Text("Try chat, skills or care") },
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(18.dp)
                                 )
                             }
-                            item { if ("chat".contains(search, ignoreCase = true) || "talk".contains(search, ignoreCase = true)) Feature("Chat", "Talk with your companion", "◉", surface, ink, muted) { open(ChatActivity::class.java) } }
-                            item { if ("skills".contains(search, ignoreCase = true) || "abilities".contains(search, ignoreCase = true)) Feature("Skills", "Discover abilities and actions", "✦", surface, ink, muted) { open(SkillsActivity::class.java) } }
-                            item { if ("diary".contains(search, ignoreCase = true) || "memories".contains(search, ignoreCase = true)) Feature("Diary", "Moments and memories", "▤", surface, ink, muted) { open(DiaryActivity::class.java) } }
-                            item { if ("world".contains(search, ignoreCase = true) || "care".contains(search, ignoreCase = true)) Feature("World & Care", "Activities, mood and companion world", "☼", surface, ink, muted) { advanced("world") } }
-                            item { if (search.isBlank() || "all original features advanced controls".contains(search, ignoreCase = true)) Feature("All original features", "Access every existing control during migration", "☷", surface, ink, muted) { advanced() } }
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                                    listOf("All", "Connect", "Discover", "Care", "Tools").forEach { category ->
+                                        FilterChip(
+                                            selected = exploreCategory == category,
+                                            onClick = { exploreCategory = category },
+                                            label = { Text(category) }
+                                        )
+                                    }
+                                }
+                            }
+                            val features = listOf(
+                                Triple("Chat", "Connect", "Talk with your companion"),
+                                Triple("Skills", "Discover", "Discover abilities and actions"),
+                                Triple("Diary", "Care", "Moments and memories"),
+                                Triple("World & Care", "Care", "Activities, mood and companion world"),
+                                Triple("Shows", "Discover", "Watch and create animated shows"),
+                                Triple("Advanced controls", "Tools", "All original Set-Tai controls")
+                            )
+                            val matching = features.filter { (title, category, description) ->
+                                (exploreCategory == "All" || exploreCategory == category) &&
+                                    (search.isBlank() || listOf(title, category, description).any { it.contains(search.trim(), ignoreCase = true) })
+                            }
+                            if (matching.isEmpty()) {
+                                item {
+                                    Panel(surface) {
+                                        Text("No matching features", fontWeight = FontWeight.SemiBold, color = ink)
+                                        Text("Try another keyword or choose All.", color = muted)
+                                        TextButton(onClick = { search = ""; exploreCategory = "All" }) { Text("Clear filters") }
+                                    }
+                                }
+                            }
+                            items(matching, key = { it.first }) { (title, _, description) ->
+                                Feature(title, description, when(title) {
+                                    "Chat" -> "◉"
+                                    "Skills" -> "✦"
+                                    "Diary" -> "▤"
+                                    "World & Care" -> "☼"
+                                    "Shows" -> "▶"
+                                    else -> "☷"
+                                }, surface, ink, muted) {
+                                    when (title) {
+                                        "Chat" -> open(ChatActivity::class.java)
+                                        "Skills" -> open(SkillsActivity::class.java)
+                                        "Diary" -> open(DiaryActivity::class.java)
+                                        "World & Care" -> advanced("world")
+                                        "Shows" -> open(ShowsActivity::class.java)
+                                        else -> advanced()
+                                    }
+                                }
+                            }
                         }
                         else -> {
                             if (settingsPanel != "main") {
@@ -207,7 +267,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
                                 item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
                                 item { Feature("Advanced settings", "Full original settings during migration", "⚙", surface, ink, muted) { advanced("settings") } }
-                                item { Text("Set-Tai v10.38.5", color = muted, fontSize = 12.sp) }
+                                item { Text("Set-Tai v10.38.6", color = muted, fontSize = 12.sp) }
                             }
                             if (settingsPanel == "permissions") {
                                 item {
