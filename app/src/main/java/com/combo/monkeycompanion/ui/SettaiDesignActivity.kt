@@ -168,7 +168,7 @@ class SettaiDesignActivity : ComponentActivity() {
             when {
                 characterDetails != null -> characterDetails = null
                 partnerPicker != 0 -> partnerPicker = 0
-                page == 4 && settingsPanel in listOf("personality-memory", "buddy", "habits") -> settingsPanel = "personality"
+                page == 4 && settingsPanel in listOf("appearance", "wallpaper") -> settingsPanel = "display"
                 page == 4 && settingsPanel != "main" -> settingsPanel = "main"
                 else -> { page = if (page == lastPage) 0 else lastPage; lastPage = 0; settingsPanel = "main" }
             }
@@ -519,7 +519,7 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             item {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                                    listOf("All", "Connect", "Care", "Play").forEach { category ->
+                                    listOf("All", "Connect", "Play & Shows", "Focus & Care", "Skills & Powers").forEach { category ->
                                         FilterChip(
                                             selected = exploreCategory == category,
                                             onClick = { exploreCategory = category },
@@ -530,34 +530,24 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             val activities = listOf(
                                 Triple("Chat", "Connect", "Talk with your companion"),
-                                Triple("Skills", "Connect", "Discover abilities and actions"),
-                                Triple("Diary", "Care", "Moments and memories"),
-                                Triple("Focus / Study Buddy", "Care", "Focus companion for study"),
-                                Triple("Calm Breathing", "Care", "Breathe with your companion"),
-                                Triple("Night Campfire", "Care", "A calm evening together"),
-                                Triple("Screen Hug", "Care", "Glass knock and comfort hug"),
-                                Triple("Cheer-up Sign", "Care", "A little encouragement"),
-                                Triple("Filter Coffee", "Care", "Coffee with your companion"),
-                                Triple("Mini-games", "Play", "Play together"),
-                                Triple("Screen Smash", "Play", "Smash the previous screen"),
-                                Triple("Record a 5s Clip", "Play", "Capture a shareable clip"),
+                                Triple("Skills", "Skills & Powers", "Discover abilities and actions"),
+                                Triple("Diary", "Focus & Care", "Moments and memories"),
+                                Triple("Focus / Study Buddy", "Focus & Care", "Focus companion for study"),
+                                Triple("Calm Breathing", "Focus & Care", "Breathe with your companion"),
+                                Triple("Night Campfire", "Focus & Care", "A calm evening together"),
+                                Triple("Screen Hug", "Focus & Care", "Glass knock and comfort hug"),
+                                Triple("Cheer-up Sign", "Focus & Care", "A little encouragement"),
+                                Triple("Filter Coffee", "Focus & Care", "Coffee with your companion"),
+                                Triple("Mini-games", "Play & Shows", "Play together"),
+                                Triple("Screen Smash", "Play & Shows", "Smash the previous screen"),
+                                Triple("Record a 5s Clip", "Play & Shows", "Capture a shareable clip"),
                                 Triple("Two Phones", "Connect", "Connect companions on Wi-Fi"),
-                                Triple("Start a Skit", "Play", "Watch an improvised skit"),
-                                Triple("Use Superpower", "Play", "Trigger your chosen power")
+                                Triple("Shows", "Play & Shows", "Create and watch companion stories"),
+                                Triple("Start a Skit", "Play & Shows", "Watch an improvised skit"),
+                                Triple("Use Superpower", "Skills & Powers", "Trigger your chosen power")
                             )
-                            val settingsSearch = listOf(
-                                Triple("Appearance", "Settings", "theme colour dark light"),
-                                Triple("Brain & AI", "Settings", "brain cloud model key background AI"),
-                                Triple("Touch & Motion", "Settings", "rest flick touch animation sound double tap"),
-                                Triple("Personality & Behaviour", "Settings", "personality memory buddy moments daily habits"),
-                                Triple("Superpowers", "Settings", "choose enable character power"),
-                                Triple("Phone powers", "Settings", "phone capabilities clock"),
-                                Triple("Wallpaper", "Settings", "wallpaper background climbing spots"),
-                                Triple("Permissions & Battery", "Settings", "overlay notification access battery")
-                            )
-                            val features = activities + if (search.isNotBlank()) settingsSearch else emptyList()
-                            val matching = features.filter { (title, category, description) ->
-                                (exploreCategory == "All" || exploreCategory == category || category == "Settings") &&
+                            val matching = activities.filter { (title, category, description) ->
+                                (exploreCategory == "All" || exploreCategory == category) &&
                                     (search.isBlank() || listOf(title, category, description).any { it.contains(search.trim(), ignoreCase = true) })
                             }
                             if (matching.isEmpty()) {
@@ -581,7 +571,8 @@ class SettaiDesignActivity : ComponentActivity() {
                                     when (title) {
                                         "Chat" -> open(ChatActivity::class.java)
                                         "Skills" -> open(SkillsActivity::class.java)
-                                        "Diary" -> open(DiaryActivity::class.java)
+                                        "Shows" -> open(ShowsActivity::class.java)
+                                        "Diary" -> characterDiary(selectedCharacter)
                                         "Focus / Study Buddy" -> v5("focus")
                                         "Calm Breathing" -> v5("breathe")
                                         "Night Campfire" -> v5("campfire")
@@ -594,14 +585,6 @@ class SettaiDesignActivity : ComponentActivity() {
                                         "Two Phones" -> open(PairActivity::class.java)
                                         "Start a Skit" -> v5("skit")
                                         "Use Superpower" -> usePowerNow()
-                                        "Appearance" -> { page = 4; settingsPanel = "appearance" }
-                                        "Brain & AI" -> settings("brain")
-                                        "Touch & Motion" -> settings("touch")
-                                        "Personality & Behaviour" -> { page = 4; settingsPanel = "personality" }
-                                        "Superpowers" -> settings("superpowers")
-                                        "Phone powers" -> settings("phone")
-                                        "Wallpaper" -> { page = 4; settingsPanel = "wallpaper" }
-                                        "Permissions & Battery" -> { page = 4; settingsPanel = "permissions" }
                                     }
                                 }
                             }
@@ -609,9 +592,11 @@ class SettaiDesignActivity : ComponentActivity() {
                         else -> {
                             if (settingsPanel != "main") {
                                 item {
-                                    TextButton(onClick = { settingsPanel = if (settingsPanel in listOf("personality-memory", "buddy", "habits")) "personality" else "main" }) { Text("‹ Back") }
+                                    TextButton(onClick = { settingsPanel = if (settingsPanel in listOf("appearance", "wallpaper")) "display" else "main" }) { Text("‹ Back") }
                                     Heading(when(settingsPanel) {
                                         "appearance" -> "Appearance"
+                                        "display" -> "Display & Overlay"
+                                        "about" -> "About Set-Tai"
                                         "brain" -> "Brain & AI"
                                         "touch" -> "Touch & Motion"
                                         "personality" -> "Personality & Behaviour"
@@ -627,41 +612,26 @@ class SettaiDesignActivity : ComponentActivity() {
                                 }
                             }
                             if (settingsPanel == "main") {
-                                item { Feature("Appearance", "Theme and display", "◐", surface, ink, muted) { settingsPanel = "appearance" } }
-                                item { Feature("Brain & AI", "Cloud, models and Background AI", "✧", surface, ink, muted) { settings("brain") } }
-                                item { Feature("Touch & Motion", "Rest, flick, touch and animations", "♡", surface, ink, muted) { settings("touch") } }
-                                item { Feature("Character behaviour & diary", "Select a character to edit its personality and memories", "☼", surface, ink, muted) { page = 1; characterDetails = selectedCharacter; characterTab = 1 } }
-                                item { Feature("Superpowers", "Choose character powers", "✧", surface, ink, muted) { settings("superpowers") } }
-                                item { Feature("Phone powers", "Phone capabilities and actions", "▤", surface, ink, muted) { settings("phone") } }
-                                item { Feature("Wallpaper", "Live wallpaper and climbing spots", "☼", surface, ink, muted) { settingsPanel = "wallpaper" } }
-                                item { Feature("Permissions & Battery", "Overlay, notifications and battery", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
-                                item { Text("Set-Tai v10.38.11", color = muted, fontSize = 12.sp) }
+                                item { Heading("App-wide preferences", ink) }
+                                item { Text("Character personality, memories and appearance are managed under Characters.", color = muted, fontSize = 13.sp) }
+                                item { Feature("AI Engine & Providers", "Shared AI model, cloud connections and offline brain", "✧", surface, ink, muted) { settings("brain") } }
+                                item { Feature("Display & Overlay", "App theme, live wallpaper and climbing spots", "◐", surface, ink, muted) { settingsPanel = "display" } }
+                                item { Feature("Touch & Physics", "App-wide touch, motion and reaction defaults", "♡", surface, ink, muted) { settings("touch") } }
+                                item { Feature("Performance & Battery", "Rest behaviour and battery saver", "◉", surface, ink, muted) { settings("touch") } }
+                                item { Feature("Permissions & Privacy", "Overlay, notifications and phone access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
+                                item { Feature("Phone integrations", "Shared phone capabilities and actions", "▤", surface, ink, muted) { settings("phone") } }
+                                item { Feature("About Set-Tai", "Version and application information", "ⓘ", surface, ink, muted) { settingsPanel = "about" } }
                             }
-                            if (settingsPanel == "personality") {
-                                item { Feature("Personality & memory", "Independence, memory and quips", "♡", surface, ink, muted) { settings("personality") } }
-                                item { Feature("Buddy & moments", "Quiet hours and proactive moments", "☼", surface, ink, muted) { settings("buddy") } }
-                                item { Feature("Daily habits", "Greetings, sulking and self-actions", "✦", surface, ink, muted) { settings("habits") } }
+                            if (settingsPanel == "display") {
+                                item { Feature("App appearance", "Theme and display colours", "◐", surface, ink, muted) { settingsPanel = "appearance" } }
+                                item { Feature("Live wallpaper", "Wallpaper and climbing spots", "☼", surface, ink, muted) { settingsPanel = "wallpaper" } }
                             }
-                            if (settingsPanel in listOf("touch", "personality-memory", "buddy", "habits", "superpowers", "phone")) {
-                                item {
-                                    Panel(surface) {
-                                        Text("Open the existing controls for this topic only.", color = muted)
-                                        Button(onClick = { settings(if (settingsPanel == "personality-memory") "personality" else settingsPanel) }, modifier = Modifier.fillMaxWidth()) { Text("Open controls") }
-                                    }
-                                }
-                            }
-                            if (settingsPanel == "brain") {
-                                item {
-                                    Panel(surface) {
-                                        Heading("Brain & AI", ink)
-                                        Text("Set-Tai can run without optional AI. Your companion's existing animations and interactions work independently.", color = muted)
-                                        Spacer(Modifier.height(12.dp))
-                                        Button(onClick = { settings("brain") }, modifier = Modifier.fillMaxWidth()) {
-                                            Text("Open Brain & AI controls")
-                                        }
-                                        Text("Opens the existing detailed brain controls directly; all model and voice settings remain available.", color = muted, fontSize = 12.sp)
-                                    }
-                                }
+                            if (settingsPanel == "about") {
+                                item { Panel(surface) {
+                                    Heading("Set-Tai v10.38.11", ink)
+                                    Text("Living companions for your screen", color = muted)
+                                    Text("Character preferences are under Characters; shared app controls are here.", color = muted, fontSize = 12.sp)
+                                } }
                             }
                             if (settingsPanel == "wallpaper") {
                                 item { Feature("Set as Live Wallpaper", "Move your companion into the wallpaper", "☼", surface, ink, muted) { wallpaper() } }

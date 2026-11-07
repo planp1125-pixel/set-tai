@@ -1,5 +1,5 @@
 name: Validate and release v10.38.11 UI test
-# Validate pinned Creator Studio preview and grouped editor tabs.
+# Validate app-wide Settings and activity-based Explore navigation.
 on:
   push:
     branches:
