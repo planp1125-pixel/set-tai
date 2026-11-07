@@ -1,5 +1,5 @@
 name: Validate and release v10.38.11 UI test
-# Validate shared Material visual styling of the legacy feature screens.
+# Validate the corrected Activity receiver in the Material screen styling pass.
 on:
   push:
     branches:
