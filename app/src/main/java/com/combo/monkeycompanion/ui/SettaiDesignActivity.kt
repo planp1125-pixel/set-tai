@@ -13,6 +13,7 @@ import com.combo.monkeycompanion.overlay.MonkeyOverlayService
 import com.combo.monkeycompanion.theme.ThemeSkin
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -62,6 +63,13 @@ class SettaiDesignActivity : ComponentActivity() {
         var search by remember { mutableStateOf("") }
         var exploreCategory by remember { mutableStateOf("All") }
         var settingsPanel by remember { mutableStateOf("main") }
+        BackHandler(enabled = settingsPanel != "main" || partnerPicker != 0 || page != 0) {
+            when {
+                partnerPicker != 0 -> partnerPicker = 0
+                page == 4 && settingsPanel != "main" -> settingsPanel = "main"
+                else -> { page = 0; settingsPanel = "main" }
+            }
+        }
         var overlayRunning by remember { mutableStateOf(MonkeyOverlayService.running) }
         var launchPending by remember { mutableStateOf(false) }
         var launchMessage by remember { mutableStateOf("") }
@@ -107,7 +115,7 @@ class SettaiDesignActivity : ComponentActivity() {
             Scaffold(containerColor = bg, bottomBar = {
                 NavigationBar(containerColor = surface) {
                     listOf("Home", "Characters", "Create", "Explore", "Settings").forEachIndexed { index, label ->
-                        NavigationBarItem(selected = page == index, onClick = { page = index },
+                        NavigationBarItem(selected = page == index, onClick = { page = index; partnerPicker = 0; settingsPanel = "main" },
                             icon = { Text(listOf("⌂", "♡", "✦", "◎", "⚙")[index], fontSize = 23.sp) },
                             label = { Text(label) })
                     }
@@ -376,7 +384,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
                                 item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
                                 item { Feature("Creative tools", "Shows and character studio", "✦", surface, ink, muted) { page = 2 } }
-                                item { Text("Set-Tai v10.38.9", color = muted, fontSize = 12.sp) }
+                                item { Text("Set-Tai v10.38.10", color = muted, fontSize = 12.sp) }
                             }
                             if (settingsPanel == "permissions") {
                                 item {
@@ -396,14 +404,13 @@ class SettaiDesignActivity : ComponentActivity() {
                                 Panel(surface) {
                                     Heading("Appearance", ink)
                                     Text("App theme", color = muted, fontSize = 13.sp)
-                                    listOf(ThemeSkin.SYSTEM to "Use device settings", ThemeSkin.LIGHT to "Light", ThemeSkin.DARK to "Dark").forEach { (value, label) ->
-                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable {
-                                            ThemeSkin.setMode(this@SettaiDesignActivity, value); theme = value
-                                        }.padding(vertical = 7.dp)) {
-                                            RadioButton(selected = theme == value, onClick = {
-                                                ThemeSkin.setMode(this@SettaiDesignActivity, value); theme = value
-                                            })
-                                            Text(label, color = ink)
+                                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                                        listOf(ThemeSkin.SYSTEM to "System", ThemeSkin.LIGHT to "Light", ThemeSkin.DARK to "Dark").forEachIndexed { index, choice ->
+                                            SegmentedButton(
+                                                selected = theme == choice.first,
+                                                onClick = { ThemeSkin.setMode(this@SettaiDesignActivity, choice.first); theme = choice.first },
+                                                shape = SegmentedButtonDefaults.itemShape(index, 3)
+                                            ) { Text(choice.second) }
                                         }
                                     }
                                 }
