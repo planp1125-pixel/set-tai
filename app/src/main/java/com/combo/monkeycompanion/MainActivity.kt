@@ -22,6 +22,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.text.TextWatcher
 import android.text.Editable
+import com.combo.monkeycompanion.theme.ThemeSkin
 import com.combo.monkeycompanion.agent.DailyUtilityEngine
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -115,6 +116,8 @@ class MainActivity : Activity() {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
             (if (Build.VERSION.SDK_INT >= 26) View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0)
         setContentView(buildUi())
+        ThemeSkin.attach(this)
+        showWelcomeIfNeeded()
         handleBringBack(intent)
     }
 
@@ -462,6 +465,31 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(12), dp(16), dp(24))
         }
+
+        // v10.38.1: Easy-to-find entry points; existing feature cards remain below.
+        col.addView(TextView(this).apply {
+            text = "Your living companion"
+            textSize = 23f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(brown)
+        })
+        col.addView(TextView(this).apply {
+            text = "Start your companion, make a show or explore its abilities."
+            textSize = 13f
+            setTextColor(soft)
+        })
+        col.addView(button("🎬 Create or play a show", primary = true) {
+            startActivity(Intent(this, com.combo.monkeycompanion.ui.ShowsActivity::class.java))
+        }, btnLp())
+        col.addView(button("🧭 Explore all features") { selectTab(Tab.EXPLORE) }, btnLp())
+        col.addView(button("🦸 Choose a character") { selectTab(Tab.CHARACTERS) }, btnLp())
+        col.addView(TextView(this).apply {
+            text = "More companion controls"
+            textSize = 17f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(brown)
+            setPadding(0, dp(20), 0, dp(8))
+        })
 
         // 1. Featured Photo-to-Look-Alike Studio Hero Card
         val studioCard = LinearLayout(this).apply {
@@ -1042,6 +1070,25 @@ class MainActivity : Activity() {
             l.addView(button("Wallpaper Background") { pickBackground() }, btnLp())
         })
         return col
+    }
+
+    /** Fresh installs get a skippable welcome; upgrades keep their existing flow. */
+    private fun showWelcomeIfNeeded() {
+        val prefs = getSharedPreferences("settai_v10381_ui", MODE_PRIVATE)
+        if (prefs.getBoolean("welcome_seen", false)) return
+        val fresh = runCatching {
+            val info = packageManager.getPackageInfo(packageName, 0)
+            info.firstInstallTime == info.lastUpdateTime
+        }.getOrDefault(false)
+        prefs.edit().putBoolean("welcome_seen", true).apply()
+        if (!fresh) return
+        AlertDialog.Builder(this)
+            .setTitle("Welcome to Set-Tai!")
+            .setMessage("Choose your character, then tap Start Set-Tai. Android will ask for floating overlay permission when needed. Explore contains every feature.")
+            .setPositiveButton("Choose character") { _, _ -> selectTab(Tab.CHARACTERS) }
+            .setNeutralButton("Explore") { _, _ -> selectTab(Tab.EXPLORE) }
+            .setNegativeButton("Not now", null)
+            .show()
     }
 
     private fun status() = TextView(this).apply { textSize = 13.8f; setTextColor(brown); setPadding(0, dp(2), 0, dp(4)) }
