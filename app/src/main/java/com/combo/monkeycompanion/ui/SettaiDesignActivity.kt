@@ -3,6 +3,14 @@ package com.combo.monkeycompanion.ui
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.app.AlertDialog
+import android.app.TimePickerDialog
+import com.combo.monkeycompanion.brain.CareTools
+import com.combo.monkeycompanion.agent.ToolStore
+import com.combo.monkeycompanion.overlay.CompanionSize
+import com.combo.monkeycompanion.wallpaper.SettaiWallpaperService
+import com.combo.monkeycompanion.wallpaper.SpotsEditorActivity
+import com.combo.monkeycompanion.wallpaper.WallpaperPrefs
 import android.widget.Toast
 import android.os.Handler
 import android.os.Looper
@@ -54,6 +62,57 @@ class SettaiDesignActivity : ComponentActivity() {
     }
 
     private fun open(type: Class<out Activity>) = startActivity(Intent(this, type))
+    private fun settings(section: String) = startActivity(Intent(this, SettingsActivity::class.java).putExtra("settai_settings_section", section))
+    private fun wardrobe() = startActivity(Intent(this, WardrobeActivity::class.java).putExtra("character", CharacterRegistry.current.id))
+    private fun setSize(size: Float) {
+        CompanionSize.set(this, CharacterRegistry.current.id, size)
+        if (MonkeyOverlayService.running) {
+            MonkeyOverlayService.stop(this)
+            Handler(mainLooper).postDelayed({ MonkeyOverlayService.start(this) }, 600L)
+        }
+    }
+    private fun wallpaper() {
+        if (MonkeyOverlayService.running) MonkeyOverlayService.stop(this)
+        runCatching { startActivity(SettaiWallpaperService.chooserIntent(this)) }
+            .onFailure { runCatching { startActivity(Intent(android.app.WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)) } }
+    }
+    private fun wallpaperBackground() {
+        val colors = intArrayOf(0xFF2E5E4E.toInt(), 0xFF1E2A44.toInt(), 0xFFE9D8B4.toInt(), 0xFF3A2A4A.toInt())
+        AlertDialog.Builder(this).setTitle("Wallpaper background").setItems(arrayOf("Soft jungle", "Deep green", "Night blue", "Warm sand", "Dusk purple", "My own image…")) { _, index ->
+            when(index) {
+                0 -> WallpaperPrefs.setBackground(this, WallpaperPrefs.BG_JUNGLE)
+                in 1..4 -> WallpaperPrefs.setBackground(this, WallpaperPrefs.BG_COLOR, color = colors[index - 1])
+                else -> {
+                    @Suppress("DEPRECATION")
+                    startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*"), 52)
+                }
+            }
+        }.show()
+    }
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        @Suppress("DEPRECATION") super.onActivityResult(requestCode, resultCode, data)
+        val uri = data?.data ?: return
+        if (requestCode == 52 && resultCode == RESULT_OK) {
+            runCatching { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            WallpaperPrefs.setBackground(this, WallpaperPrefs.BG_IMAGE, image = uri.toString())
+        }
+    }
+    private fun editTool(tool: CareTools.Tool, refresh: () -> Unit) {
+        val st = ToolStore.get(this, tool)
+        when (tool.kind) {
+            CareTools.Kind.INTERVAL -> {
+                val opts = listOf(30, 60, 90, 120)
+                AlertDialog.Builder(this).setTitle(tool.label).setItems(opts.map { "Every $it min" }.toTypedArray()) { _, i ->
+                    ToolStore.put(this, tool, st.copy(value = opts[i], lastFiredMs = System.currentTimeMillis())); refresh()
+                }.show()
+            }
+            CareTools.Kind.DAILY -> TimePickerDialog(this, { _, h, m ->
+                ToolStore.put(this, tool, st.copy(value = h * 60 + m)); refresh()
+            }, st.value / 60, st.value % 60, false).show()
+            else -> Toast.makeText(this, CareTools.describe(tool, st), Toast.LENGTH_SHORT).show()
+        }
+    }
     private fun advanced(tab: String? = null) = startActivity(Intent(this, MainActivity::class.java).putExtra("settai_legacy_controls", true).apply { if (tab != null) putExtra("settai_open_tab", tab) })
     private fun syncActiveCrew() { if (MonkeyOverlayService.running) MonkeyOverlayService.syncCrew(this) }
     private fun v5(cmd: String) {
@@ -85,6 +144,8 @@ class SettaiDesignActivity : ComponentActivity() {
         var partnerTwo by remember { mutableStateOf(MindHub.customPartner2Id) }
         var theme by remember { mutableStateOf(ThemeSkin.mode(this)) }
         var search by remember { mutableStateOf("") }
+        var size by remember(selectedCharacter) { mutableFloatStateOf(CompanionSize.get(this, selectedCharacter)) }
+        var toolRefresh by remember { mutableIntStateOf(0) }
         var exploreCategory by remember { mutableStateOf("All") }
         var settingsPanel by remember { mutableStateOf("main") }
         var lastPage by remember { mutableIntStateOf(0) }
