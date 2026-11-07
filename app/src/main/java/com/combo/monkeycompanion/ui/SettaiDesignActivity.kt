@@ -251,6 +251,14 @@ class SettaiDesignActivity : ComponentActivity() {
                                         modifier = Modifier.fillMaxWidth().height(190.dp)
                                     )
                                     Spacer(Modifier.height(12.dp))
+                                    Text("Companion size", color = muted, fontSize = 13.sp)
+                                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                                        CompanionSize.CHOICES.forEachIndexed { index, choice ->
+                                            SegmentedButton(selected = size == choice.first, onClick = { setSize(choice.first); size = choice.first },
+                                                shape = SegmentedButtonDefaults.itemShape(index, 3)) { Text(choice.second) }
+                                        }
+                                    }
+                                    Spacer(Modifier.height(12.dp))
                                     Button(onClick = {
                                         if (!overlayRunning && overlayAllowed) {
                                             launchPending = true
@@ -268,6 +276,24 @@ class SettaiDesignActivity : ComponentActivity() {
                                     }
                                     if (launchMessage.isNotBlank()) Text(launchMessage, color = muted, fontSize = 13.sp)
                                     TextButton(onClick = { page = 1 }) { Text("Manage companions") }
+                                }
+                            }
+                            item { Heading("Care tools", ink) }
+                            item {
+                                Panel(surface) {
+                                    CareTools.Tool.entries.forEach { tool ->
+                                        val st = ToolStore.get(this@SettaiDesignActivity, tool)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(tool.icon + " " + tool.label, modifier = Modifier.weight(1f), color = ink)
+                                            Switch(checked = st.on, onCheckedChange = { on ->
+                                                ToolStore.put(this@SettaiDesignActivity, tool, CareTools.toggle(tool, st, on, System.currentTimeMillis()))
+                                                toolRefresh++
+                                            })
+                                        }
+                                        TextButton(onClick = { editTool(tool) { toolRefresh++ } }) {
+                                            Text(CareTools.describe(tool, st))
+                                        }
+                                    }
                                 }
                             }
                             item { Heading("Quick actions", ink) }
@@ -380,6 +406,9 @@ class SettaiDesignActivity : ComponentActivity() {
                                     }
                                 }
                             }
+                            if (CharacterRegistry.current.wardrobe.isNotEmpty()) {
+                                item { Feature("Wardrobe", "Dress your current companion", "✿", surface, ink, muted) { wardrobe() } }
+                            }
                             item { Feature("Custom character studio", "Make your own companion", "✦", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
                         }
                         2 -> {
@@ -413,7 +442,7 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             item {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                                    listOf("All", "Connect", "Discover", "Care", "Play", "Tools").forEach { category ->
+                                    listOf("All", "Connect", "Discover", "Care", "Play", "Tools", "Phone").forEach { category ->
                                         FilterChip(
                                             selected = exploreCategory == category,
                                             onClick = { exploreCategory = category },
@@ -441,7 +470,18 @@ class SettaiDesignActivity : ComponentActivity() {
                                 Triple("Character Studio", "Discover", "Design a companion"),
                                 Triple("Brain & Chat", "Tools", "AI models and voice settings"),
                                 Triple("Permissions", "Tools", "Overlay and notification access"),
-                                Triple("Appearance", "Tools", "Theme and display settings")
+                                Triple("Appearance", "Tools", "Theme and display settings"),
+                                Triple("Care Tools", "Tools", "Water, tablet, eye, neck and reminders"),
+                                Triple("Wardrobe", "Discover", "Outfits for your character"),
+                                Triple("Wallpaper", "Phone", "Set as live wallpaper"),
+                                Triple("Climbing Spots", "Phone", "Edit wallpaper climbing spots"),
+                                Triple("Wallpaper Background", "Phone", "Wallpaper colours and images"),
+                                Triple("Touch Feel", "Tools", "Flick, reactions, rest and animation"),
+                                Triple("Buddy & Moments", "Care", "Quiet hours and proactive companion"),
+                                Triple("Engagement", "Play", "Friendship, greetings and challenges"),
+                                Triple("Superpowers", "Play", "Use companion powers"),
+                                Triple("Phone Powers", "Phone", "Permissions and phone abilities"),
+                                Triple("Background AI", "Tools", "Background intelligence settings")
                             )
                             val matching = features.filter { (title, category, description) ->
                                 (exploreCategory == "All" || exploreCategory == category) &&
@@ -483,6 +523,17 @@ class SettaiDesignActivity : ComponentActivity() {
                                         "Character Studio" -> open(CompanionStudioActivity::class.java)
                                         "Brain & Chat" -> { page = 4; settingsPanel = "brain" }
                                         "Permissions" -> { page = 4; settingsPanel = "permissions" }
+                                        "Care Tools" -> page = 0
+                                        "Wardrobe" -> if (CharacterRegistry.current.wardrobe.isNotEmpty()) wardrobe() else page = 1
+                                        "Wallpaper" -> wallpaper()
+                                        "Climbing Spots" -> open(SpotsEditorActivity::class.java)
+                                        "Wallpaper Background" -> wallpaperBackground()
+                                        "Touch Feel" -> settings("feel")
+                                        "Buddy & Moments" -> settings("buddy")
+                                        "Engagement" -> settings("engagement")
+                                        "Superpowers" -> settings("superpowers")
+                                        "Phone Powers" -> settings("phone")
+                                        "Background AI" -> settings("brain")
                                         "Shows" -> open(ShowsActivity::class.java)
                                         else -> { page = 4; settingsPanel = "appearance" }
                                     }
