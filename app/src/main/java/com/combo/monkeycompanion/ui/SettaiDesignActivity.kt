@@ -14,6 +14,12 @@ import com.combo.monkeycompanion.theme.ThemeSkin
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -63,11 +69,12 @@ class SettaiDesignActivity : ComponentActivity() {
         var search by remember { mutableStateOf("") }
         var exploreCategory by remember { mutableStateOf("All") }
         var settingsPanel by remember { mutableStateOf("main") }
+        var lastPage by remember { mutableIntStateOf(0) }
         BackHandler(enabled = settingsPanel != "main" || partnerPicker != 0 || page != 0) {
             when {
                 partnerPicker != 0 -> partnerPicker = 0
                 page == 4 && settingsPanel != "main" -> settingsPanel = "main"
-                else -> { page = 0; settingsPanel = "main" }
+                else -> { page = if (page == lastPage) 0 else lastPage; lastPage = 0; settingsPanel = "main" }
             }
         }
         var overlayRunning by remember { mutableStateOf(MonkeyOverlayService.running) }
@@ -115,8 +122,8 @@ class SettaiDesignActivity : ComponentActivity() {
             Scaffold(containerColor = bg, bottomBar = {
                 NavigationBar(containerColor = surface) {
                     listOf("Home", "Characters", "Create", "Explore", "Settings").forEachIndexed { index, label ->
-                        NavigationBarItem(selected = page == index, onClick = { page = index; partnerPicker = 0; settingsPanel = "main" },
-                            icon = { Text(listOf("⌂", "♡", "✦", "◎", "⚙")[index], fontSize = 23.sp) },
+                        NavigationBarItem(selected = page == index, onClick = { lastPage = page; page = index; partnerPicker = 0; settingsPanel = "main" },
+                            icon = { Icon(listOf(Icons.Filled.Home, Icons.Filled.Face, Icons.Filled.AddCircle, Icons.Filled.Search, Icons.Filled.Settings)[index], contentDescription = label) },
                             label = { Text(label) })
                     }
                 }
@@ -374,6 +381,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                     Heading(when(settingsPanel) {
                                         "appearance" -> "Appearance"
                                         "permissions" -> "Permissions & battery"
+                                        "brain" -> "Brain & AI"
                                         else -> "Companion settings"
                                     }, ink)
                                 }
@@ -381,10 +389,23 @@ class SettaiDesignActivity : ComponentActivity() {
                             if (settingsPanel == "main") {
                                 item { Feature("Appearance", "Theme and display preferences", "◐", surface, ink, muted) { settingsPanel = "appearance" } }
                                 item { Feature("Companions & behaviour", "Choose companions and configure your crew", "♡", surface, ink, muted) { page = 1 } }
-                                item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
+                                item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { settingsPanel = "brain" } }
                                 item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
                                 item { Feature("Creative tools", "Shows and character studio", "✦", surface, ink, muted) { page = 2 } }
-                                item { Text("Set-Tai v10.38.10", color = muted, fontSize = 12.sp) }
+                                item { Text("Set-Tai v10.38.11", color = muted, fontSize = 12.sp) }
+                            }
+                            if (settingsPanel == "brain") {
+                                item {
+                                    Panel(surface) {
+                                        Heading("Brain & AI", ink)
+                                        Text("Set-Tai can run without optional AI. Your companion's existing animations and interactions work independently.", color = muted)
+                                        Spacer(Modifier.height(12.dp))
+                                        Button(onClick = { open(SettingsActivity::class.java) }, modifier = Modifier.fillMaxWidth()) {
+                                            Text("Open AI configuration")
+                                        }
+                                        Text("AI configuration is being migrated into this screen. The existing controls remain available meanwhile.", color = muted, fontSize = 12.sp)
+                                    }
+                                }
                             }
                             if (settingsPanel == "permissions") {
                                 item {
@@ -397,7 +418,24 @@ class SettaiDesignActivity : ComponentActivity() {
                                         }) { Text("Manage overlay permission") }
                                     }
                                 }
-                                item { Feature("Companion settings", "Open companion and behaviour controls", "♡", surface, ink, muted) { page = 1 } }
+                                item {
+                                    Panel(surface) {
+                                        Heading("Notifications", ink)
+                                        Text("Manage notifications for the running companion.", color = muted)
+                                        OutlinedButton(onClick = {
+                                            startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+                                        }) { Text("Notification settings") }
+                                    }
+                                }
+                                item {
+                                    Panel(surface) {
+                                        Heading("Battery", ink)
+                                        Text("Manage battery restrictions if the companion stops unexpectedly.", color = muted)
+                                        OutlinedButton(onClick = {
+                                            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName")))
+                                        }) { Text("App battery settings") }
+                                    }
+                                }
                             }
                             if (settingsPanel == "appearance") {
                             item {
