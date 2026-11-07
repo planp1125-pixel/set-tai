@@ -1,5 +1,5 @@
 name: Validate and release v10.38.11 UI test
-# Validate consolidated five-tab navigation and scoped Settings architecture.
+# Validate direct Settings routing and the complete five-tab navigation revision.
 on:
   push:
     branches:
