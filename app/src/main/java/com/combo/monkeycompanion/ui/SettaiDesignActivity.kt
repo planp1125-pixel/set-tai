@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.provider.Settings
 import com.combo.monkeycompanion.MainActivity
 import com.combo.monkeycompanion.character.CharacterRegistry
+import com.combo.monkeycompanion.ai.ChatHub
 import com.combo.monkeycompanion.overlay.MonkeyOverlayService
 import com.combo.monkeycompanion.theme.ThemeSkin
 import androidx.activity.ComponentActivity
@@ -46,6 +47,7 @@ class SettaiDesignActivity : ComponentActivity() {
     @Composable
     private fun DesignApp() {
         var page by remember { mutableStateOf(0) }
+        var selectedCharacter by remember { mutableStateOf(CharacterRegistry.current.id) }
         var theme by remember { mutableStateOf(ThemeSkin.mode(this)) }
         var search by remember { mutableStateOf("") }
         var overlayRunning by remember { mutableStateOf(MonkeyOverlayService.running) }
@@ -63,9 +65,9 @@ class SettaiDesignActivity : ComponentActivity() {
         MaterialTheme(colorScheme = if (dark) darkColorScheme(primary = Color(0xFFB4A8FF), background = bg, surface = surface, onSurface = ink) else lightColorScheme(primary = primary, background = bg, surface = surface, onSurface = ink)) {
             Scaffold(containerColor = bg, bottomBar = {
                 NavigationBar(containerColor = surface) {
-                    listOf("Home", "Create", "Explore", "Settings").forEachIndexed { index, label ->
+                    listOf("Home", "Characters", "Create", "Explore", "Settings").forEachIndexed { index, label ->
                         NavigationBarItem(selected = page == index, onClick = { page = index },
-                            icon = { Text(listOf("⌂", "✦", "◎", "⚙")[index], fontSize = 23.sp) },
+                            icon = { Text(listOf("⌂", "♡", "✦", "◎", "⚙")[index], fontSize = 23.sp) },
                             label = { Text(label) })
                     }
                 }
@@ -74,10 +76,10 @@ class SettaiDesignActivity : ComponentActivity() {
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 22.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     item {
-                        Text(when(page) { 0 -> "Your companion"; 1 -> "Create something"; 2 -> "Explore Set-Tai"; else -> "Settings" },
+                        Text(when(page) { 0 -> "Your companion"; 1 -> "Characters"; 2 -> "Create something"; 3 -> "Explore Set-Tai"; else -> "Settings" },
                             fontSize = 29.sp, fontWeight = FontWeight.Bold, color = ink)
                         Spacer(Modifier.height(4.dp))
-                        Text(when(page) { 0 -> "A little life on your screen"; 1 -> "Stories, looks and characters"; 2 -> "Everything, easy to find"; else -> "Make Set-Tai yours" },
+                        Text(when(page) { 0 -> "A little life on your screen"; 1 -> "Find your perfect companion"; 2 -> "Stories, looks and characters"; 3 -> "Everything, easy to find"; else -> "Make Set-Tai yours" },
                             color = muted, fontSize = 14.sp)
                     }
                     when (page) {
@@ -103,11 +105,39 @@ class SettaiDesignActivity : ComponentActivity() {
                             item { Feature("Give Brain", "Optional AI and personality settings", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
                         }
                         1 -> {
+                            item {
+                                Text("Choose who lives on your screen. Your memories and settings stay with you.", color = muted, fontSize = 14.sp)
+                            }
+                            items(CharacterRegistry.allWithCustom, key = { it.id }) { character ->
+                                Surface(
+                                    onClick = {
+                                        ChatHub.settings.characterId = character.id
+                                        ChatHub.settings.applyCharacter()
+                                        selectedCharacter = character.id
+                                    },
+                                    color = if (selectedCharacter == character.id) MaterialTheme.colorScheme.primaryContainer else surface,
+                                    shape = RoundedCornerShape(20.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(modifier = Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text("✿", fontSize = 28.sp, color = MaterialTheme.colorScheme.primary)
+                                        Spacer(Modifier.width(16.dp))
+                                        Column(Modifier.weight(1f)) {
+                                            Text(character.name, fontWeight = FontWeight.Bold, color = ink)
+                                            Text(character.tagline, color = muted, fontSize = 12.sp)
+                                        }
+                                        if (selectedCharacter == character.id) Text("✓", color = MaterialTheme.colorScheme.primary, fontSize = 22.sp)
+                                    }
+                                }
+                            }
+                            item { Feature("Custom character studio", "Make your own companion", "✦", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
+                        }
+                        2 -> {
                             item { Feature("Create a show", "Build scenes and tell a story", "▶", surface, ink, muted) { open(ShowsActivity::class.java) } }
                             item { Feature("Character studio", "Create a custom companion", "✿", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
                             item { Feature("Choose characters", "Characters, sizes and combinations", "♡", surface, ink, muted) { advanced("characters") } }
                         }
-                        2 -> {
+                        3 -> {
                             item {
                                 OutlinedTextField(
                                     value = search,
