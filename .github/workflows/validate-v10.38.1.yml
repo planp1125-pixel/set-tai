@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   TZ: Asia/Kolkata
@@ -23,5 +23,30 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Compile and run unit tests (no APK publication)
+      - name: Compile and run unit tests
         run: ./gradlew :app:compileFullDebugKotlin :app:testFullDebugUnitTest --stacktrace
+      - name: Decode signing keystore
+        env:
+          KS_B64: ${{ secrets.SETTAI_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KS_B64" ]; then echo "Missing release signing keystore"; exit 1; fi
+          echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/settai.keystore"
+          echo "SETTAI_KEYSTORE_PATH=$RUNNER_TEMP/settai.keystore" >> "$GITHUB_ENV"
+      - name: Build signed full release APK only
+        env:
+          SETTAI_KEYSTORE_PASSWORD: ${{ secrets.SETTAI_KEYSTORE_PASSWORD }}
+          SETTAI_KEY_ALIAS: ${{ secrets.SETTAI_KEY_ALIAS }}
+          SETTAI_KEY_PASSWORD: ${{ secrets.SETTAI_KEY_PASSWORD }}
+        run: ./gradlew :app:assembleFullRelease --stacktrace
+      - name: Publish isolated v10.38.1 test APK to GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          APK=$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)
+          test -n "$APK"
+          mkdir -p out
+          cp "$APK" out/Set-Tai-v10.38.1-ui-test.apk
+          gh release create "v10.38.1-ui-test" out/Set-Tai-v10.38.1-ui-test.apk --prerelease --title "Set-Tai v10.38.1 UI test" --notes "Independent usability test build from codex/settai-v10.38.1-usability. Main v10.38 is unchanged." --target "$GITHUB_SHA" || {
+            gh release upload "v10.38.1-ui-test" out/Set-Tai-v10.38.1-ui-test.apk --clobber
+          }
