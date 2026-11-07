@@ -1,4 +1,4 @@
-name: Validate and release v10.38.6 UI test
+name: Validate and release v10.38.7 UI test
 on:
   push:
     branches:
@@ -32,7 +32,7 @@ jobs:
           SETTAI_KEY_ALIAS: ${{ secrets.SETTAI_KEY_ALIAS }}
           SETTAI_KEY_PASSWORD: ${{ secrets.SETTAI_KEY_PASSWORD }}
         run: ./gradlew :app:assembleFullRelease --stacktrace
-      - name: Publish v10.38.6 APK to GitHub Releases without Actions artifacts
+      - name: Publish v10.38.7 APK to GitHub Releases without Actions artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -40,9 +40,9 @@ jobs:
           APK=$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)
           test -n "$APK"
           mkdir -p out
-          cp "$APK" out/Set-Tai-v10.38.6-ui-test.apk
-          if gh release view "ui-v10.38.6-test" >/dev/null 2>&1; then
-            gh release upload "ui-v10.38.6-test" out/Set-Tai-v10.38.6-ui-test.apk --clobber
+          cp "$APK" out/Set-Tai-v10.38.7-ui-test.apk
+          if gh release view "ui-v10.38.7-test" >/dev/null 2>&1; then
+            gh release upload "ui-v10.38.7-test" out/Set-Tai-v10.38.7-ui-test.apk --clobber
           else
-            gh release create "ui-v10.38.6-test" out/Set-Tai-v10.38.6-ui-test.apk --prerelease --title "Set-Tai v10.38.6 UI test" --notes "Compose redesign test APK; main branch unchanged. Install to evaluate the Home, Characters, Create, Explore and Settings redesign." --target "$GITHUB_SHA"
+            gh release create "ui-v10.38.7-test" out/Set-Tai-v10.38.7-ui-test.apk --prerelease --title "Set-Tai v10.38.7 UI test" --notes "Compose redesign test APK; main branch unchanged. Install to evaluate the Home, Characters, Create, Explore and Settings redesign." --target "$GITHUB_SHA"
           fi
