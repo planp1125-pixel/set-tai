@@ -998,6 +998,52 @@ class MainActivity : Activity() {
             setPadding(dp(16), dp(12), dp(16), dp(24))
         }
 
+        col.addView(TextView(this).apply {
+            text = "Settings"
+            textSize = 24f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(brown)
+        })
+        col.addView(TextView(this).apply {
+            text = "Choose your preferences. Advanced options are below."
+            textSize = 13f
+            setTextColor(soft)
+        })
+        val themeOptions = arrayOf("Follow phone", "Light", "Dark")
+        val themeModes = arrayOf(ThemeSkin.SYSTEM, ThemeSkin.LIGHT, ThemeSkin.DARK)
+        val themeCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(18).toFloat()
+                setColor(Color.WHITE)
+            }
+        }
+        themeCard.addView(TextView(this).apply {
+            text = "🎨 Appearance"
+            textSize = 18f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(brown)
+        })
+        themeCard.addView(TextView(this).apply {
+            text = "Set the app's light or dark theme."
+            textSize = 13f
+            setTextColor(soft)
+        })
+        themeCard.addView(button("Theme: " + themeOptions[themeModes.indexOf(ThemeSkin.mode(this)).coerceAtLeast(0)]) {
+            AlertDialog.Builder(this)
+                .setTitle("App theme")
+                .setSingleChoiceItems(themeOptions, themeModes.indexOf(ThemeSkin.mode(this)).coerceAtLeast(0)) { dialog, which ->
+                    ThemeSkin.setMode(this, themeModes[which])
+                    dialog.dismiss()
+                    recreate()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }, btnLp())
+        col.addView(themeCard, btnLp())
+        col.addView(button("🧭 Search all features") { selectTab(Tab.EXPLORE) }, btnLp())
+
         // 0. Pinned #1 Highlighted "🧠 Give Brain (Connect AI Model)" Card at the very top of Settings!
         val giveBrainSettingsCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
