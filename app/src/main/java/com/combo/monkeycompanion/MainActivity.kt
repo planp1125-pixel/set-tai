@@ -116,6 +116,11 @@ class MainActivity : Activity() {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
             (if (Build.VERSION.SDK_INT >= 26) View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0)
         setContentView(buildUi())
+        when (intent.getStringExtra("settai_open_tab")) {
+            "characters" -> selectTab(Tab.CHARACTERS)
+            "world" -> selectTab(Tab.WORLD_CARE)
+            "settings" -> selectTab(Tab.SETTINGS)
+        }
         ThemeSkin.attach(this)
         showWelcomeIfNeeded()
         handleBringBack(intent)
