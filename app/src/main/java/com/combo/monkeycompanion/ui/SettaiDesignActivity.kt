@@ -3,6 +3,11 @@ package com.combo.monkeycompanion.ui
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
+import android.os.Handler
+import android.os.Looper
+import com.combo.monkeycompanion.fun5.PairActivity
+import com.combo.monkeycompanion.smash.SmashActivity
 import android.provider.Settings
 import com.combo.monkeycompanion.MainActivity
 import com.combo.monkeycompanion.character.CharacterRegistry
@@ -51,6 +56,18 @@ class SettaiDesignActivity : ComponentActivity() {
     private fun open(type: Class<out Activity>) = startActivity(Intent(this, type))
     private fun advanced(tab: String? = null) = startActivity(Intent(this, MainActivity::class.java).putExtra("settai_legacy_controls", true).apply { if (tab != null) putExtra("settai_open_tab", tab) })
     private fun syncActiveCrew() { if (MonkeyOverlayService.running) MonkeyOverlayService.syncCrew(this) }
+    private fun v5(cmd: String) {
+        if (!MonkeyOverlayService.running) {
+            Toast.makeText(this, "Start your companion first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        startService(Intent(this, MonkeyOverlayService::class.java)
+            .setAction(MonkeyOverlayService.ACTION_V5).putExtra("cmd", cmd))
+    }
+    private fun screenSmash() {
+        moveTaskToBack(true)
+        Handler(Looper.getMainLooper()).postDelayed({ SmashActivity.launch(applicationContext) }, 450L)
+    }
     private fun summon() {
         if (!Settings.canDrawOverlays(this)) {
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName")))
@@ -194,6 +211,8 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             item { Heading("Quick actions", ink) }
                             item { Feature("Choose a character", "Meet your characters and change who appears", "✿", surface, ink, muted) { page = 1 } }
+                            item { Feature("Show me tricks", "Watch the companion's interactive demonstration", "✦", surface, ink, muted) { v5("onboard") } }
+                            item { Feature("What You Missed", "See your notification summary", "▤", surface, ink, muted) { v5("notif_card_demo") } }
                             item { Feature("Make a show", "Create and play animated stories", "▶", surface, ink, muted) { page = 2 } }
                             item { Feature("Give Brain", "Optional AI and personality settings", "✧", surface, ink, muted) { page = 4; settingsPanel = "brain" } }
                         }
@@ -265,11 +284,19 @@ class SettaiDesignActivity : ComponentActivity() {
                                 }
                             }
                             item { Heading("Character gallery", ink) }
-                            items(CharacterRegistry.allWithCustom, key = { it.id }) { character ->
+                            items(CharacterRegistry.allWithCustom.filter { it.id != "chittu" }, key = { it.id }) { character ->
                                 Surface(
                                     onClick = {
                                         ChatHub.settings.characterId = character.id
                                         ChatHub.settings.applyCharacter()
+                                        if (character.id == "billa") {
+                                            val mode = if (crewMode == Population.Mode.TRIO) Population.Mode.TRIO else Population.Mode.DUO
+                                            val third = partnerTwo?.takeIf { it != "billa" && it != "chittu" }
+                                            MindHub.setCrew(this@SettaiDesignActivity, "billa", mode, "chittu", third)
+                                            crewMode = mode
+                                            partnerOne = "chittu"
+                                            partnerTwo = if (mode == Population.Mode.TRIO) third else null
+                                        }
                                         syncActiveCrew()
                                         selectedCharacter = character.id
                                     },
@@ -285,7 +312,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                         )
                                         Spacer(Modifier.width(12.dp))
                                         Column(Modifier.weight(1f)) {
-                                            Text(character.name, fontWeight = FontWeight.Bold, color = ink)
+                                            Text(if (character.id == "billa") "Billa & Chittu" else character.name, fontWeight = FontWeight.Bold, color = ink)
                                             Text(character.tagline, color = muted, fontSize = 12.sp)
                                         }
                                         if (selectedCharacter == character.id) Text("✓", color = MaterialTheme.colorScheme.primary, fontSize = 22.sp)
@@ -325,7 +352,7 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             item {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                                    listOf("All", "Connect", "Discover", "Care", "Tools").forEach { category ->
+                                    listOf("All", "Connect", "Discover", "Care", "Play", "Tools").forEach { category ->
                                         FilterChip(
                                             selected = exploreCategory == category,
                                             onClick = { exploreCategory = category },
@@ -338,8 +365,21 @@ class SettaiDesignActivity : ComponentActivity() {
                                 Triple("Chat", "Connect", "Talk with your companion"),
                                 Triple("Skills", "Discover", "Discover abilities and actions"),
                                 Triple("Diary", "Care", "Moments and memories"),
-                                Triple("World & Care", "Care", "Activities, mood and companion world"),
+                                Triple("Focus / Study Buddy", "Care", "Focus companion for study"),
+                                Triple("Calm Breathing", "Care", "Breathe with your companion"),
+                                Triple("Night Campfire", "Care", "A calm evening together"),
+                                Triple("Screen Hug", "Care", "Glass knock and comfort hug"),
+                                Triple("Cheer-up Sign", "Care", "A little encouragement"),
+                                Triple("Filter Coffee", "Care", "Coffee with your companion"),
+                                Triple("Mini-games", "Play", "Play together"),
+                                Triple("Screen Smash", "Play", "Smash the previous screen"),
+                                Triple("Record a 5s Clip", "Play", "Capture a shareable clip"),
+                                Triple("Two Phones", "Play", "Connect companions on Wi-Fi"),
+                                Triple("Start a Skit", "Play", "Watch an improvised skit"),
                                 Triple("Shows", "Discover", "Watch and create animated shows"),
+                                Triple("Character Studio", "Discover", "Design a companion"),
+                                Triple("Brain & Chat", "Tools", "AI models and voice settings"),
+                                Triple("Permissions", "Tools", "Overlay and notification access"),
                                 Triple("Appearance", "Tools", "Theme and display settings")
                             )
                             val matching = features.filter { (title, category, description) ->
@@ -368,7 +408,20 @@ class SettaiDesignActivity : ComponentActivity() {
                                         "Chat" -> open(ChatActivity::class.java)
                                         "Skills" -> open(SkillsActivity::class.java)
                                         "Diary" -> open(DiaryActivity::class.java)
-                                        "World & Care" -> advanced("world")
+                                        "Focus / Study Buddy" -> v5("focus")
+                                        "Calm Breathing" -> v5("breathe")
+                                        "Night Campfire" -> v5("campfire")
+                                        "Screen Hug" -> v5("comfort_hug")
+                                        "Cheer-up Sign" -> v5("comfort_sign")
+                                        "Filter Coffee" -> v5("comfort_coffee")
+                                        "Mini-games" -> v5("games")
+                                        "Screen Smash" -> screenSmash()
+                                        "Record a 5s Clip" -> v5("clip")
+                                        "Two Phones" -> open(PairActivity::class.java)
+                                        "Start a Skit" -> v5("skit")
+                                        "Character Studio" -> open(CompanionStudioActivity::class.java)
+                                        "Brain & Chat" -> { page = 4; settingsPanel = "brain" }
+                                        "Permissions" -> { page = 4; settingsPanel = "permissions" }
                                         "Shows" -> open(ShowsActivity::class.java)
                                         else -> { page = 4; settingsPanel = "appearance" }
                                     }
