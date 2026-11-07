@@ -128,8 +128,12 @@ class SettingsActivity : Activity() {
 
     private fun build(): View {
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(28)) }
-        col.addView(text("Set-Tai brain & settings", 26f, true).apply { gravity = Gravity.CENTER_HORIZONTAL })
-        col.addView(text("Set-Tai Cloud is ready by default: no API key or Gmail sign-in. You can still turn Brain off. 40 cloud requests per UTC day; messages go to Gemini. Local jokes and commands stay on your phone.", 14f, color = soft))
+        val target = intent.getStringExtra("settai_settings_section")
+        val titles = mapOf("brain" to "Brain & AI", "touch" to "Touch & Motion", "personality" to "Personality & memory", "buddy" to "Buddy & moments", "habits" to "Daily habits", "superpowers" to "Superpowers", "phone" to "Phone powers", "appearance" to "Appearance")
+        if (target != null) col.addView(button("‹ Back") { finish() })
+        col.addView(text(titles[target] ?: "Set-Tai brain & settings", 26f, true).apply { gravity = Gravity.CENTER_HORIZONTAL })
+        val cloudIntro = text("Set-Tai Cloud is ready by default: no API key or Gmail sign-in. You can still turn Brain off. 40 cloud requests per UTC day; messages go to Gemini. Local jokes and commands stay on your phone.", 14f, color = soft)
+        if (target == null || target == "brain") col.addView(cloudIntro)
 
         // Brain type
         val group = RadioGroup(this)
@@ -146,19 +150,33 @@ class SettingsActivity : Activity() {
             updateCards()
             if (s.brainType == BrainType.OFFLINE) ChatHub.preloadOffline()
         }
-        col.addView(card("Settai's brain", group))
+        val brainTypeCard = card("Settai's brain", group)
+        if (target == null || target == "brain") col.addView(brainTypeCard)
         brainGroup = group
         pickerBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        col.addView(card("🧠 Active brain (tap to switch)", text("Every downloaded model and every API you've set up. Tap one to use it; switch any time.", 12f, color = soft), pickerBox!!))
+        val brainPickerCard = card("🧠 Active brain (tap to switch)", text("Every downloaded model and every API you've set up. Tap one to use it; switch any time.", 12f, color = soft), pickerBox!!))
+        if (target == null || target == "brain") col.addView(brainPickerCard)
         refreshPicker()
         mainCol = col
         val sectionViews = linkedMapOf<String, View>()
-        fun section(id: String, view: View) { sectionViews[id] = view; col.addView(view) }
+        fun section(id: String, view: View) {
+            sectionViews[id] = view
+            val visible = when (target) {
+                null -> true
+                "brain" -> id in listOf("brain", "offline", "background")
+                "touch" -> id == "rest"
+                "personality" -> id == "feel"
+                "habits" -> id in listOf("engagement", "fun")
+                else -> id == target
+            }
+            if (visible) col.addView(view)
+        }
         section("character", buildCharacter())
 
         section("brain", buildOnline().also { onlineCard = it })
         section("offline", buildOffline().also { offlineCard = it })
         section("feel", buildPersonality())
+        section("background", buildBackgroundAi())
         section("buddy", buildBuddy())
         section("appearance", buildAppearance())
         section("rest", buildRest())
@@ -174,9 +192,6 @@ class SettingsActivity : Activity() {
             v.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
             insets
         }
-        val target = intent.getStringExtra("settai_settings_section")
-        val anchor = sectionViews[target] ?: if (target == "brain") sectionViews["brain"] else null
-        if (anchor != null) scroll.post { scroll.smoothScrollTo(0, anchor.top) }
         return scroll
     }
 
@@ -727,9 +742,16 @@ class SettingsActivity : Activity() {
         }
         return card(
             "Superpowers",
-            sp, blurb, use, status,
+            sp, blurb,
             text("Settai also uses its power when you ask in chat (\"fly!\", \"show your power\") and now and then on its own while you're around (never with Battery saver on or while resting). Flights last about 6-9 seconds; the extra effects only run during the flight.", 12f, color = soft),
         )
+    }
+
+    private fun buildBackgroundAi(): View {
+        val modes = listOf("off", "gentle", "fast")
+        val picker = spinner(listOf("Off — only when you interact", "Gentle — occasional background reactions", "Fast — more frequent, more battery"),
+            modes.indexOf(s.backgroundAi).coerceAtLeast(0)) { s.backgroundAi = modes[it] }
+        return card("Background AI", text("Optional background intelligence, independent of character animations.", 12f, color = soft), picker)
     }
 
     // ---------------- personality & memory ----------------
@@ -756,10 +778,6 @@ class SettingsActivity : Activity() {
         }
         val mins = listOf(5, 10, 15, 30, 60)
         val quipSp = spinner(mins.map { "About every $it minutes" }, mins.indexOf(s.quipMinutes).coerceAtLeast(2)) { s.quipMinutes = mins[it] }
-        // v10.18.1: how much the brain may run in the background (idle lines + preparing touch reactions)
-        val bgModes = listOf("off", "gentle", "fast")
-        val bgSp = spinner(listOf("Background AI: Off (only when you talk or touch)", "Background AI: Gentle (when the phone rests)", "Background AI: Fast (more often, uses more battery)"),
-            bgModes.indexOf(s.backgroundAi).coerceAtLeast(0)) { s.backgroundAi = bgModes[it] }
         val turns = listOf(0, 4, 8, 15)
         val memSp = spinner(turns.map { if (it == 0) "Remember nothing" else "Remember last $it exchanges" }, turns.indexOf(s.memoryTurns).coerceAtLeast(2)) { s.memoryTurns = turns[it] }
         val cleared = text("", 12f, color = soft)
@@ -776,8 +794,6 @@ class SettingsActivity : Activity() {
             text("Off: Settai only walks along the edge it's on and stays where you drop it (it still grabs an edge if you drop it near one).", 12f, color = soft),
             quips, quipSp,
             text("Quips only happen when a real brain is set up (they use a little data/battery).", 12f, color = soft),
-            bgSp,
-            text("With Give Brain on, Settai prepares touch reactions and says little things on his own in the background. Gentle keeps the phone smooth; your chat always goes first.", 12f, color = soft),
             text("Conversation memory", 13f, color = soft), memSp,
             button("Clear chat history") { ChatHub.clearMemory(); cleared.text = "Forgotten! 🍌" }, cleared,
         )
