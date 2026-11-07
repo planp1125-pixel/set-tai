@@ -282,7 +282,8 @@ class SettaiDesignActivity : ComponentActivity() {
                             item { Heading("Care tools", ink) }
                             item {
                                 Panel(surface) {
-                                    CareTools.Tool.entries.forEach { tool ->
+                                    val currentRevision = toolRefresh
+                                    key(currentRevision) { CareTools.Tool.entries.forEach { tool ->
                                         val st = ToolStore.get(this@SettaiDesignActivity, tool)
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(tool.icon + " " + tool.label, modifier = Modifier.weight(1f), color = ink)
@@ -294,7 +295,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                         TextButton(onClick = { editTool(tool) { toolRefresh++ } }) {
                                             Text(CareTools.describe(tool, st))
                                         }
-                                    }
+                                    } }
                                 }
                             }
                             item { Heading("Quick actions", ink) }
