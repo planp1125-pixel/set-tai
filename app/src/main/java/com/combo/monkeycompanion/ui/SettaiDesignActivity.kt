@@ -127,6 +127,13 @@ class SettaiDesignActivity : ComponentActivity() {
         startService(Intent(this, MonkeyOverlayService::class.java)
             .setAction(MonkeyOverlayService.ACTION_V5).putExtra("cmd", cmd))
     }
+    private fun usePowerNow() {
+        if (!MonkeyOverlayService.running) {
+            Toast.makeText(this, "Start your companion first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        startService(Intent(this, MonkeyOverlayService::class.java).setAction(MonkeyOverlayService.ACTION_POWER))
+    }
     private fun screenSmash() {
         moveTaskToBack(true)
         Handler(Looper.getMainLooper()).postDelayed({ SmashActivity.launch(applicationContext) }, 450L)
@@ -414,24 +421,11 @@ class SettaiDesignActivity : ComponentActivity() {
                             if (CharacterRegistry.current.wardrobe.isNotEmpty()) {
                                 item { Feature("Wardrobe", "Dress your current companion", "✿", surface, ink, muted) { wardrobe() } }
                             }
-                            item { Feature("Custom character studio", "Make your own companion", "✦", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
+                            item { Feature("Make your own", "Create a companion in Character Studio", "✦", surface, ink, muted) { page = 2 } }
                         }
                         2 -> {
-                            item {
-                                Panel(surface) {
-                                    Text("Make Set-Tai your own", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = ink)
-                                    Spacer(Modifier.height(6.dp))
-                                    Text("Start with a story or design a new companion. Your creations use the existing Set-Tai engines.", color = muted)
-                                    Spacer(Modifier.height(16.dp))
-                                    Button(onClick = { open(ShowsActivity::class.java) }, modifier = Modifier.fillMaxWidth()) {
-                                        Text("Create a show")
-                                    }
-                                }
-                            }
-                            item { Heading("Creative tools", ink) }
-                            item { Feature("Shows & scenes", "Create, edit and play your animated stories", "▶", surface, ink, muted) { open(ShowsActivity::class.java) } }
-                            item { Feature("Character studio", "Design a custom companion", "✿", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
-                            item { Feature("Character collection", "Choose your active character", "♡", surface, ink, muted) { page = 1 } }
+                            item { Feature("Character Studio", "Design and customise a companion", "✿", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
+                            item { Feature("Shows", "Create, edit and play your stories", "▶", surface, ink, muted) { open(ShowsActivity::class.java) } }
                         }
                         3 -> {
                             item {
@@ -447,7 +441,7 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             item {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                                    listOf("All", "Connect", "Discover", "Care", "Play", "Tools", "Phone").forEach { category ->
+                                    listOf("All", "Connect", "Care", "Play").forEach { category ->
                                         FilterChip(
                                             selected = exploreCategory == category,
                                             onClick = { exploreCategory = category },
