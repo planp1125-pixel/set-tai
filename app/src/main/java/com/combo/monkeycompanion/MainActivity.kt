@@ -108,12 +108,6 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // v10.38.2: new Compose presentation; legacy controls remain available on demand.
-        if (intent?.action != ACTION_BRING_BACK && !intent.getBooleanExtra("settai_legacy_controls", false)) {
-            startActivity(Intent(this, com.combo.monkeycompanion.ui.SettaiDesignActivity::class.java))
-            finish()
-            return
-        }
         CustomCompanionStore.init(this)
         ChatHub.init(this)
         com.combo.monkeycompanion.mind.MindHub.init(this)
