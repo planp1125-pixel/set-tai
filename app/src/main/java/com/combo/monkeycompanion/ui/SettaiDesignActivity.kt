@@ -46,6 +46,7 @@ class SettaiDesignActivity : ComponentActivity() {
     private fun DesignApp() {
         var page by remember { mutableStateOf(0) }
         var theme by remember { mutableStateOf(ThemeSkin.mode(this)) }
+        var search by remember { mutableStateOf("") }
         val dark = when (theme) {
             ThemeSkin.DARK -> true
             ThemeSkin.LIGHT -> false
@@ -102,11 +103,21 @@ class SettaiDesignActivity : ComponentActivity() {
                             item { Feature("Choose characters", "Characters, sizes and combinations", "♡", surface, ink, muted) { advanced() } }
                         }
                         2 -> {
-                            item { Feature("Chat", "Talk with your companion", "◉", surface, ink, muted) { open(ChatActivity::class.java) } }
-                            item { Feature("Skills", "Discover abilities and actions", "✦", surface, ink, muted) { open(SkillsActivity::class.java) } }
-                            item { Feature("Diary", "Moments and memories", "▤", surface, ink, muted) { open(DiaryActivity::class.java) } }
-                            item { Feature("World & Care", "Activities, mood and companion world", "☼", surface, ink, muted) { advanced() } }
-                            item { Feature("All original features", "Access every existing control during migration", "☷", surface, ink, muted) { advanced() } }
+                            item {
+                                OutlinedTextField(
+                                    value = search,
+                                    onValueChange = { search = it },
+                                    label = { Text("Search features") },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(18.dp)
+                                )
+                            }
+                            item { if ("chat".contains(search, ignoreCase = true) || "talk".contains(search, ignoreCase = true)) Feature("Chat", "Talk with your companion", "◉", surface, ink, muted) { open(ChatActivity::class.java) } }
+                            item { if ("skills".contains(search, ignoreCase = true) || "abilities".contains(search, ignoreCase = true)) Feature("Skills", "Discover abilities and actions", "✦", surface, ink, muted) { open(SkillsActivity::class.java) } }
+                            item { if ("diary".contains(search, ignoreCase = true) || "memories".contains(search, ignoreCase = true)) Feature("Diary", "Moments and memories", "▤", surface, ink, muted) { open(DiaryActivity::class.java) } }
+                            item { if ("world".contains(search, ignoreCase = true) || "care".contains(search, ignoreCase = true)) Feature("World & Care", "Activities, mood and companion world", "☼", surface, ink, muted) { advanced() } }
+                            item { if (search.isBlank() || "all original features advanced controls".contains(search, ignoreCase = true)) Feature("All original features", "Access every existing control during migration", "☷", surface, ink, muted) { advanced() } }
                         }
                         else -> {
                             item {
