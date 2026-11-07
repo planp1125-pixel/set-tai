@@ -1,5 +1,5 @@
 name: Validate and release v10.38.11 UI test
-# Validate missing-import fix and latest Compose feature restoration commit.
+# Validate consolidated five-tab navigation and scoped Settings architecture.
 on:
   push:
     branches:
