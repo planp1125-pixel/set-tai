@@ -20,6 +20,8 @@ import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
 import android.widget.EditText
+import android.text.TextWatcher
+import android.text.Editable
 import com.combo.monkeycompanion.agent.DailyUtilityEngine
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -58,7 +60,8 @@ class MainActivity : Activity() {
     enum class Tab(val icon: String, val label: String) {
         HOME("🏠", "Home"),
         CHARACTERS("🦸", "Characters"),
-        WORLD_CARE("🌍", "World & Care"),
+        WORLD_CARE("🌍", "World"),
+        EXPLORE("🧭", "Explore"),
         SETTINGS("⚙️", "Settings"),
     }
 
@@ -286,11 +289,13 @@ class MainActivity : Activity() {
         val charsTab = buildCharactersTab()
         val worldTab = buildWorldAndCareTab()
         val settingsTab = buildSettingsTab()
+        val exploreTab = buildExploreTab()
 
         tabViews[Tab.HOME] = homeTab
         tabViews[Tab.CHARACTERS] = charsTab
         tabViews[Tab.WORLD_CARE] = worldTab
         tabViews[Tab.SETTINGS] = settingsTab
+        tabViews[Tab.EXPLORE] = exploreTab
 
         for (v in tabViews.values) {
             contentFrame.addView(v, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
@@ -338,6 +343,118 @@ class MainActivity : Activity() {
 
         selectTab(Tab.HOME)
         return root
+    }
+
+    /**
+     * v10.38.1: A searchable directory of existing features. This adds navigation only:
+     * all destinations are the original screens and all engines remain untouched.
+     */
+    private fun buildExploreTab(): View {
+        val col = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(16), dp(16), dp(24))
+        }
+        col.addView(TextView(this).apply {
+            text = "Explore Set-Tai"
+            textSize = 24f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(brown)
+        })
+        col.addView(TextView(this).apply {
+            text = "Find shows, characters, tools and settings in one place."
+            textSize = 13f
+            setTextColor(soft)
+            setPadding(0, dp(4), 0, dp(14))
+        })
+        val search = EditText(this).apply {
+            hint = "Search features (e.g. wallpaper, brain, show)"
+            textSize = 15f
+            setSingleLine(true)
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(16).toFloat()
+                setColor(Color.WHITE)
+                setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
+            }
+            contentDescription = "Search Set-Tai features"
+        }
+        col.addView(search, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(14) })
+        val results = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(results)
+
+        data class Destination(val title: String, val description: String, val keywords: String, val open: () -> Unit)
+        val destinations = listOf(
+            Destination("🎬 Shows & Stories", "Play and create cartoon shows", "show script story episode cartoon") {
+                startActivity(Intent(this, com.combo.monkeycompanion.ui.ShowsActivity::class.java))
+            },
+            Destination("🦸 Characters", "Choose and preview companions", "character companion roster angel devil gajju") { selectTab(Tab.CHARACTERS) },
+            Destination("📸 Character Studio", "Make your own look-alike", "photo studio custom create") {
+                startActivity(Intent(this, CompanionStudioActivity::class.java))
+            },
+            Destination("💬 Talk to Set-Tai", "Open chat and conversation", "chat talk message voice") {
+                startActivity(Intent(this, ChatActivity::class.java))
+            },
+            Destination("🧠 Brain & Preferences", "AI, personality, behaviour and rest", "brain ai settings preference dark theme appearance sleep rest") {
+                startActivity(Intent(this, SettingsActivity::class.java))
+            },
+            Destination("⚡ Skills & Powers", "Explore the companion's abilities", "skills power action games tools") {
+                startActivity(Intent(this, SkillsActivity::class.java))
+            },
+            Destination("📖 Diary & Behaviour", "Adjust daily behaviour and limits", "diary behaviour memory reminder") {
+                startActivity(Intent(this, DiaryActivity::class.java))
+            },
+            Destination("🌍 World & Care", "Discover the living world and care tools", "world care weather focus relax") { selectTab(Tab.WORLD_CARE) },
+            Destination("🌴 Wallpaper", "Set and customize your live wallpaper", "wallpaper background climbing spots") { selectTab(Tab.SETTINGS) },
+            Destination("🔐 Permissions", "Overlay, notifications and device access", "permission overlay notification access battery") { selectTab(Tab.SETTINGS) }
+        )
+        fun render(query: String) {
+            results.removeAllViews()
+            val matches = destinations.filter {
+                query.isBlank() || (it.title + " " + it.description + " " + it.keywords).contains(query.trim(), ignoreCase = true)
+            }
+            if (matches.isEmpty()) {
+                results.addView(TextView(this).apply {
+                    text = "No matching feature. Try a different word."
+                    textSize = 14f
+                    setTextColor(soft)
+                    setPadding(0, dp(12), 0, dp(12))
+                })
+            }
+            for (item in matches) {
+                val card = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(16), dp(12), dp(16), dp(12))
+                    background = GradientDrawable().apply {
+                        cornerRadius = dp(16).toFloat()
+                        setColor(Color.WHITE)
+                        setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
+                    }
+                    isClickable = true
+                    isFocusable = true
+                    contentDescription = item.title + ". " + item.description
+                    setOnClickListener { item.open() }
+                }
+                card.addView(TextView(this).apply {
+                    text = item.title
+                    textSize = 16f
+                    setTypeface(typeface, Typeface.BOLD)
+                    setTextColor(brown)
+                })
+                card.addView(TextView(this).apply {
+                    text = item.description
+                    textSize = 13f
+                    setTextColor(soft)
+                })
+                results.addView(card, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(8) })
+            }
+        }
+        search.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = render(s?.toString().orEmpty())
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
+        render("")
+        return col
     }
 
     private fun buildHomeTab(): View {
