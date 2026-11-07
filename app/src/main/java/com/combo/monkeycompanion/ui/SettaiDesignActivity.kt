@@ -163,6 +163,7 @@ class SettaiDesignActivity : ComponentActivity() {
         BackHandler(enabled = settingsPanel != "main" || partnerPicker != 0 || page != 0) {
             when {
                 partnerPicker != 0 -> partnerPicker = 0
+                page == 4 && settingsPanel in listOf("personality-memory", "buddy", "habits") -> settingsPanel = "personality"
                 page == 4 && settingsPanel != "main" -> settingsPanel = "main"
                 else -> { page = if (page == lastPage) 0 else lastPage; lastPage = 0; settingsPanel = "main" }
             }
@@ -542,7 +543,7 @@ class SettaiDesignActivity : ComponentActivity() {
                         else -> {
                             if (settingsPanel != "main") {
                                 item {
-                                    TextButton(onClick = { settingsPanel = "main" }) { Text("‹ All settings") }
+                                    TextButton(onClick = { settingsPanel = if (settingsPanel in listOf("personality-memory", "buddy", "habits")) "personality" else "main" }) { Text("‹ Back") }
                                     Heading(when(settingsPanel) {
                                         "appearance" -> "Appearance"
                                         "permissions" -> "Permissions & battery"
@@ -573,7 +574,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                         Text("Set-Tai can run without optional AI. Your companion's existing animations and interactions work independently.", color = muted)
                                         Spacer(Modifier.height(12.dp))
                                         Button(onClick = { settings("brain") }, modifier = Modifier.fillMaxWidth()) {
-                                            Text("Brain, voice and models")
+                                            Text("Open Brain & AI controls")
                                         }
                                         Text("Opens the existing detailed brain controls directly; all model and voice settings remain available.", color = muted, fontSize = 12.sp)
                                     }
