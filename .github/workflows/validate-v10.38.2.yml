@@ -1,5 +1,5 @@
 name: Validate and release v10.38.11 UI test
-# Validate direct Settings routing and the complete five-tab navigation revision.
+# Validate the fixed Touch and Motion roaming scope and five-tab navigation.
 on:
   push:
     branches:
