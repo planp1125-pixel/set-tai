@@ -106,11 +106,11 @@ class SettaiDesignActivity : ComponentActivity() {
             ThemeSkin.LIGHT -> false
             else -> ThemeSkin.isDark(this)
         }
-        val bg = if (dark) Color(0xFF10121A) else Color(0xFFF8F9FD)
-        val surface = if (dark) Color(0xFF202331) else Color.White
-        val ink = if (dark) Color(0xFFF4F4FA) else Color(0xFF20233B)
-        val muted = if (dark) Color(0xFFB6B9CA) else Color(0xFF646B80)
-        val primary = Color(0xFF7160E8)
+        val bg = if (dark) Color(0xFF171719) else Color(0xFFF1F1F1)
+        val surface = if (dark) Color(0xFF27272A) else Color.White
+        val ink = if (dark) Color(0xFFF3F3F3) else Color(0xFF282828)
+        val muted = if (dark) Color(0xFFB0B0B0) else Color(0xFF777777)
+        val primary = if (dark) Color(0xFFE05A64) else Color(0xFFB73540)
         LaunchedEffect(launchPending) {
             if (launchPending) {
                 kotlinx.coroutines.delay(1800)
@@ -119,7 +119,7 @@ class SettaiDesignActivity : ComponentActivity() {
                 launchMessage = if (overlayRunning) "Companion started" else "Could not confirm startup. Check permissions."
             }
         }
-        MaterialTheme(colorScheme = if (dark) darkColorScheme(primary = Color(0xFFB4A8FF), background = bg, surface = surface, onSurface = ink) else lightColorScheme(primary = primary, background = bg, surface = surface, onSurface = ink)) {
+        MaterialTheme(colorScheme = if (dark) darkColorScheme(primary = primary, onPrimary = Color(0xFF171719), background = bg, surface = surface, onSurface = ink) else lightColorScheme(primary = primary, onPrimary = Color.White, background = bg, surface = surface, onSurface = ink)) {
             Scaffold(containerColor = bg, bottomBar = {
                 NavigationBar(containerColor = surface) {
                     listOf("Home", "Characters", "Create", "Explore", "Settings").forEachIndexed { index, label ->
