@@ -50,6 +50,7 @@ class SettaiDesignActivity : ComponentActivity() {
         var selectedCharacter by remember { mutableStateOf(CharacterRegistry.current.id) }
         var theme by remember { mutableStateOf(ThemeSkin.mode(this)) }
         var search by remember { mutableStateOf("") }
+        var settingsPanel by remember { mutableStateOf("main") }
         var overlayRunning by remember { mutableStateOf(MonkeyOverlayService.running) }
         var overlayAllowed by remember { mutableStateOf(Settings.canDrawOverlays(this)) }
         val dark = when (theme) {
@@ -155,6 +156,38 @@ class SettaiDesignActivity : ComponentActivity() {
                             item { if (search.isBlank() || "all original features advanced controls".contains(search, ignoreCase = true)) Feature("All original features", "Access every existing control during migration", "☷", surface, ink, muted) { advanced() } }
                         }
                         else -> {
+                            if (settingsPanel != "main") {
+                                item {
+                                    TextButton(onClick = { settingsPanel = "main" }) { Text("‹ All settings") }
+                                    Heading(when(settingsPanel) {
+                                        "appearance" -> "Appearance"
+                                        "permissions" -> "Permissions & battery"
+                                        else -> "Companion settings"
+                                    }, ink)
+                                }
+                            }
+                            if (settingsPanel == "main") {
+                                item { Feature("Appearance", "Theme and display preferences", "◐", surface, ink, muted) { settingsPanel = "appearance" } }
+                                item { Feature("Companion & behaviour", "Motion, personality and preferences", "♡", surface, ink, muted) { advanced("settings") } }
+                                item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
+                                item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
+                                item { Feature("Advanced settings", "Full original settings during migration", "⚙", surface, ink, muted) { advanced("settings") } }
+                                item { Text("Set-Tai v10.38.4", color = muted, fontSize = 12.sp) }
+                            }
+                            if (settingsPanel == "permissions") {
+                                item {
+                                    Panel(surface) {
+                                        Heading("Display over other apps", ink)
+                                        Text(if (Settings.canDrawOverlays(this@SettaiDesignActivity)) "Allowed" else "Permission required to show your companion", color = muted)
+                                        Spacer(Modifier.height(12.dp))
+                                        OutlinedButton(onClick = {
+                                            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName")))
+                                        }) { Text("Manage overlay permission") }
+                                    }
+                                }
+                                item { Feature("Battery and other permissions", "Open the original guided permission controls", "♢", surface, ink, muted) { advanced("settings") } }
+                            }
+                            if (settingsPanel == "appearance") {
                             item {
                                 Panel(surface) {
                                     Heading("Appearance", ink)
@@ -171,11 +204,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                     }
                                 }
                             }
-                            item { Feature("Companion & behaviour", "Motion, personality and preferences", "♡", surface, ink, muted) { open(SettingsActivity::class.java) } }
-                            item { Feature("Brain & AI", "Optional intelligence features", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
-                            item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { advanced("settings") } }
-                            item { Feature("Advanced settings", "Full existing settings while migration continues", "⚙", surface, ink, muted) { advanced() } }
-                            item { Text("Set-Tai v10.38.2 • UI preview", color = muted, fontSize = 12.sp) }
+                            }
                         }
                     }
                 }
