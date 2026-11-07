@@ -50,6 +50,7 @@ class SettaiDesignActivity : ComponentActivity() {
 
     private fun open(type: Class<out Activity>) = startActivity(Intent(this, type))
     private fun advanced(tab: String? = null) = startActivity(Intent(this, MainActivity::class.java).putExtra("settai_legacy_controls", true).apply { if (tab != null) putExtra("settai_open_tab", tab) })
+    private fun syncActiveCrew() { if (MonkeyOverlayService.running) MonkeyOverlayService.syncCrew(this) }
     private fun summon() {
         if (!Settings.canDrawOverlays(this)) {
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName")))
@@ -168,7 +169,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                     Spacer(Modifier.height(12.dp))
                                     AndroidView(
                                         factory = { ctx -> CharacterPreviewView(ctx, CharacterRegistry.current) },
-                                        update = { it.who = CharacterRegistry.byId(selectedCharacter) ?: CharacterRegistry.current },
+                                        update = { val target = CharacterRegistry.byId(selectedCharacter) ?: CharacterRegistry.current; if (it.who.id != target.id) it.who = target },
                                         modifier = Modifier.fillMaxWidth().height(190.dp)
                                     )
                                     Spacer(Modifier.height(12.dp))
@@ -193,8 +194,8 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             item { Heading("Quick actions", ink) }
                             item { Feature("Choose a character", "Meet your characters and change who appears", "✿", surface, ink, muted) { page = 1 } }
-                            item { Feature("Make a show", "Create and play animated stories", "▶", surface, ink, muted) { open(ShowsActivity::class.java) } }
-                            item { Feature("Give Brain", "Optional AI and personality settings", "✧", surface, ink, muted) { open(SettingsActivity::class.java) } }
+                            item { Feature("Make a show", "Create and play animated stories", "▶", surface, ink, muted) { page = 2 } }
+                            item { Feature("Give Brain", "Optional AI and personality settings", "✧", surface, ink, muted) { page = 4; settingsPanel = "brain" } }
                         }
                         1 -> {
                             item {
@@ -211,7 +212,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                                 selected = crewMode == mode,
                                                 onClick = {
                                                     MindHub.setNeighbourMode(this@SettaiDesignActivity, mode)
-                                                    MonkeyOverlayService.syncCrew(this@SettaiDesignActivity)
+                                                    syncActiveCrew()
                                                     crewMode = mode
                                                 },
                                                 shape = SegmentedButtonDefaults.itemShape(index, Population.Mode.entries.size)
@@ -226,7 +227,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                     }
                                     Text("Lead: " + CharacterRegistry.current.name, color = ink)
                                     if (crewMode != Population.Mode.SOLO) {
-                                        Text("Partners use your saved crew configuration. Customize partners in the crew picker.", color = muted, fontSize = 12.sp)
+                                        Text("Choose each partner below. Auto selects from your saved characters.", color = muted, fontSize = 12.sp)
                                         OutlinedButton(onClick = { partnerPicker = 1 }, modifier = Modifier.fillMaxWidth()) {
                                             Text("Partner 1: " + (CharacterRegistry.byId(partnerOne)?.name ?: "Auto"))
                                         }
@@ -250,11 +251,11 @@ class SettaiDesignActivity : ComponentActivity() {
                                             TextButton(onClick = {
                                                 val chosen = candidate?.id
                                                 val p1 = if (partnerPicker == 1) chosen else partnerOne
-                                                val p2 = if (partnerPicker == 2) chosen else partnerTwo?.takeIf { it != p1 }
+                                                val p2 = (if (partnerPicker == 2) chosen else partnerTwo)?.takeIf { it != p1 }
                                                 MindHub.setCrew(this@SettaiDesignActivity, selectedCharacter, crewMode, p1, p2)
                                                 partnerOne = p1
                                                 partnerTwo = p2
-                                                MonkeyOverlayService.syncCrew(this@SettaiDesignActivity)
+                                                syncActiveCrew()
                                                 partnerPicker = 0
                                             }, modifier = Modifier.fillMaxWidth()) {
                                                 Text(candidate?.name ?: "Auto", color = ink)
@@ -269,7 +270,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                     onClick = {
                                         ChatHub.settings.characterId = character.id
                                         ChatHub.settings.applyCharacter()
-                                        MonkeyOverlayService.syncCrew(this@SettaiDesignActivity)
+                                        syncActiveCrew()
                                         selectedCharacter = character.id
                                     },
                                     color = if (selectedCharacter == character.id) MaterialTheme.colorScheme.primaryContainer else surface,
@@ -279,7 +280,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                     Row(modifier = Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                                         AndroidView(
                                             factory = { ctx -> CharacterPreviewView(ctx, character) },
-                                            update = { it.who = character; it.picked = selectedCharacter == character.id },
+                                            update = { if (it.who.id != character.id) it.who = character; it.picked = selectedCharacter == character.id },
                                             modifier = Modifier.size(width = 88.dp, height = 112.dp)
                                         )
                                         Spacer(Modifier.width(12.dp))
