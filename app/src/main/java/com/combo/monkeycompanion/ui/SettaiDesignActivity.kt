@@ -45,6 +45,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -67,6 +68,7 @@ class SettaiDesignActivity : ComponentActivity() {
 
     private fun open(type: Class<out Activity>) = startActivity(Intent(this, type))
     private fun settings(section: String) = startActivity(Intent(this, SettingsActivity::class.java).putExtra("settai_settings_section", section))
+    private fun characterDiary(id: String) = startActivity(Intent(this, DiaryActivity::class.java).putExtra("character", id))
     private fun wardrobe() = startActivity(Intent(this, WardrobeActivity::class.java).putExtra("character", CharacterRegistry.current.id))
     private fun setSize(size: Float) {
         CompanionSize.set(this, CharacterRegistry.current.id, size)
@@ -159,9 +161,12 @@ class SettaiDesignActivity : ComponentActivity() {
         var toolRefresh by remember { mutableIntStateOf(0) }
         var exploreCategory by remember { mutableStateOf("All") }
         var settingsPanel by remember { mutableStateOf("main") }
+        var characterDetails by remember { mutableStateOf<String?>(null) }
+        var characterTab by remember { mutableIntStateOf(0) }
         var lastPage by remember { mutableIntStateOf(0) }
-        BackHandler(enabled = settingsPanel != "main" || partnerPicker != 0 || page != 0) {
+        BackHandler(enabled = characterDetails != null || settingsPanel != "main" || partnerPicker != 0 || page != 0) {
             when {
+                characterDetails != null -> characterDetails = null
                 partnerPicker != 0 -> partnerPicker = 0
                 page == 4 && settingsPanel in listOf("personality-memory", "buddy", "habits") -> settingsPanel = "personality"
                 page == 4 && settingsPanel != "main" -> settingsPanel = "main"
@@ -213,7 +218,7 @@ class SettaiDesignActivity : ComponentActivity() {
             Scaffold(containerColor = bg, bottomBar = {
                 NavigationBar(containerColor = surface) {
                     listOf("Home", "Characters", "Create", "Explore", "Settings").forEachIndexed { index, label ->
-                        NavigationBarItem(selected = page == index, onClick = { lastPage = page; page = index; partnerPicker = 0; settingsPanel = "main" },
+                        NavigationBarItem(selected = page == index, onClick = { lastPage = page; page = index; partnerPicker = 0; settingsPanel = "main"; characterDetails = null },
                             icon = { Icon(listOf(Icons.Filled.Home, Icons.Filled.Face, Icons.Filled.AddCircle, Icons.Filled.Search, Icons.Filled.Settings)[index], contentDescription = label) },
                             label = { Text(label) })
                     }
@@ -383,6 +388,75 @@ class SettaiDesignActivity : ComponentActivity() {
                                     }
                                 }
                             }
+                            if (characterDetails != null) {
+                                item {
+                                    val selected = CharacterRegistry.allWithCustom.firstOrNull { it.id == characterDetails }
+                                    if (selected != null) {
+                                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            TextButton(onClick = { characterDetails = null }) { Text("‹ All characters") }
+                                            Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                                                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                    AndroidView(factory = { ctx -> CharacterPreviewView(ctx, selected) },
+                                                        modifier = Modifier.size(100.dp, 124.dp))
+                                                    Spacer(Modifier.width(16.dp))
+                                                    Column {
+                                                        Text(selected.name, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                                                        Text(selected.tagline, fontSize = 12.sp)
+                                                        if (selected.id == selectedCharacter) Text("Active companion", color = MaterialTheme.colorScheme.primary)
+                                                    }
+                                                }
+                                            }
+                                            val tabs = listOf("Profile", "Behaviour", "Brain & AI", "Diary", "Appearance", "Skills")
+                                            ScrollableTabRow(selectedTabIndex = characterTab, edgePadding = 0.dp) {
+                                                tabs.forEachIndexed { index, title ->
+                                                    Tab(selected = characterTab == index, onClick = { characterTab = index },
+                                                        text = { Text(title) })
+                                                }
+                                            }
+                                            when (characterTab) {
+                                                0 -> {
+                                                    Text("Companion profile", fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                                                    Text("Choose a companion to show on your screen, or adjust their own personality and memories.", color = muted)
+                                                    Button(onClick = {
+                                                        ChatHub.settings.characterId = selected.id
+                                                        ChatHub.settings.applyCharacter()
+                                                        selectedCharacter = selected.id
+                                                        syncActiveCrew()
+                                                    }, modifier = Modifier.fillMaxWidth()) { Text(if (selectedCharacter == selected.id) "Currently active" else "Make active companion") }
+                                                }
+                                                1 -> {
+                                                    Text("Behaviour & personality", fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                                                    Text("Each character has its own behaviour sliders. Changes are saved for this character.", color = muted)
+                                                    Button(onClick = { characterDiary(selected.id) }, modifier = Modifier.fillMaxWidth()) { Text("Adjust behaviour sliders") }
+                                                    OutlinedButton(onClick = { characterTab = 3 }, modifier = Modifier.fillMaxWidth()) { Text("View character memories") }
+                                                }
+                                                2 -> {
+                                                    Text("Brain & AI", fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                                                    Text("AI provider, model and connection settings are currently shared across companions. Character-specific brain profiles are not yet implemented.", color = muted)
+                                                    Button(onClick = { settings("brain") }, modifier = Modifier.fillMaxWidth()) { Text("Open shared Brain & AI settings") }
+                                                }
+                                                3 -> {
+                                                    Text("Diary & memories", fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                                                    Text("Open this character's saved memories, diary limits and pinned notes.", color = muted)
+                                                    Button(onClick = { characterDiary(selected.id) }, modifier = Modifier.fillMaxWidth()) { Text("Open diary") }
+                                                }
+                                                4 -> {
+                                                    Text("Appearance", fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                                                    Text("Choose how this companion looks. Wardrobe options depend on the character.", color = muted)
+                                                    Button(onClick = { startActivity(Intent(this@SettaiDesignActivity, WardrobeActivity::class.java).putExtra("character", selected.id)) }, modifier = Modifier.fillMaxWidth()) { Text("Open wardrobe") }
+                                                    OutlinedButton(onClick = { open(CompanionStudioActivity::class.java) }, modifier = Modifier.fillMaxWidth()) { Text("Open Creator Studio") }
+                                                }
+                                                5 -> {
+                                                    Text("Skills & powers", fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                                                    Text("Manage abilities and permissions. Some power settings currently apply to the whole app.", color = muted)
+                                                    Button(onClick = { open(SkillsActivity::class.java) }, modifier = Modifier.fillMaxWidth()) { Text("Open skills") }
+                                                    OutlinedButton(onClick = { settings("superpowers") }, modifier = Modifier.fillMaxWidth()) { Text("Shared power settings") }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
                             item { Heading("Character gallery", ink) }
                             items(CharacterRegistry.allWithCustom.filter { it.id != "chittu" }, key = { it.id }) { character ->
                                 Surface(
@@ -399,6 +473,8 @@ class SettaiDesignActivity : ComponentActivity() {
                                         }
                                         syncActiveCrew()
                                         selectedCharacter = character.id
+                                        characterDetails = character.id
+                                        characterTab = 0
                                     },
                                     color = if (selectedCharacter == character.id) MaterialTheme.colorScheme.primaryContainer else surface,
                                     shape = RoundedCornerShape(20.dp),
@@ -423,6 +499,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 item { Feature("Wardrobe", "Dress your current companion", "✿", surface, ink, muted) { wardrobe() } }
                             }
                             item { Feature("Make your own", "Create a companion in Character Studio", "✦", surface, ink, muted) { page = 2 } }
+                            }
                         }
                         2 -> {
                             item { Feature("Character Studio", "Design and customise a companion", "✿", surface, ink, muted) { open(CompanionStudioActivity::class.java) } }
@@ -553,7 +630,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 item { Feature("Appearance", "Theme and display", "◐", surface, ink, muted) { settingsPanel = "appearance" } }
                                 item { Feature("Brain & AI", "Cloud, models and Background AI", "✧", surface, ink, muted) { settings("brain") } }
                                 item { Feature("Touch & Motion", "Rest, flick, touch and animations", "♡", surface, ink, muted) { settings("touch") } }
-                                item { Feature("Personality & Behaviour", "Memory, buddy moments and daily habits", "☼", surface, ink, muted) { settingsPanel = "personality" } }
+                                item { Feature("Character behaviour & diary", "Select a character to edit its personality and memories", "☼", surface, ink, muted) { page = 1; characterDetails = selectedCharacter; characterTab = 1 } }
                                 item { Feature("Superpowers", "Choose character powers", "✧", surface, ink, muted) { settings("superpowers") } }
                                 item { Feature("Phone powers", "Phone capabilities and actions", "▤", surface, ink, muted) { settings("phone") } }
                                 item { Feature("Wallpaper", "Live wallpaper and climbing spots", "☼", surface, ink, muted) { settingsPanel = "wallpaper" } }
