@@ -1,0 +1,20 @@
+name: Validate v10.38.2 Compose redesign
+on:
+  push:
+    branches:
+      - codex/settai-v10.38.2-compose-redesign
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :app:compileFullDebugKotlin :app:testFullDebugUnitTest --stacktrace
