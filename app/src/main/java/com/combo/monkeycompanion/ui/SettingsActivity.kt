@@ -152,18 +152,20 @@ class SettingsActivity : Activity() {
         col.addView(card("🧠 Active brain (tap to switch)", text("Every downloaded model and every API you've set up. Tap one to use it; switch any time.", 12f, color = soft), pickerBox!!))
         refreshPicker()
         mainCol = col
-        col.addView(buildCharacter())
+        val sectionViews = linkedMapOf<String, View>()
+        fun section(id: String, view: View) { sectionViews[id] = view; col.addView(view) }
+        section("character", buildCharacter())
 
-        col.addView(buildOnline().also { onlineCard = it })
-        col.addView(buildOffline().also { offlineCard = it })
-        col.addView(buildPersonality())
-        col.addView(buildBuddy())
-        col.addView(buildAppearance())
-        col.addView(buildRest())
-        col.addView(buildSuperpowers().also { powersCard = it })
-        col.addView(buildPowers())
-        col.addView(buildFun5())
-        col.addView(buildEngagement())   // v10.19
+        section("brain", buildOnline().also { onlineCard = it })
+        section("offline", buildOffline().also { offlineCard = it })
+        section("feel", buildPersonality())
+        section("buddy", buildBuddy())
+        section("appearance", buildAppearance())
+        section("rest", buildRest())
+        section("superpowers", buildSuperpowers().also { powersCard = it })
+        section("phone", buildPowers())
+        section("fun", buildFun5())
+        section("engagement", buildEngagement())   // v10.19
         updateCards()
 
         val scroll = ScrollView(this).apply { setBackgroundColor(cream); addView(col) }
@@ -172,6 +174,9 @@ class SettingsActivity : Activity() {
             v.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
             insets
         }
+        val target = intent.getStringExtra("settai_settings_section")
+        val anchor = sectionViews[target] ?: if (target == "brain") sectionViews["brain"] else null
+        if (anchor != null) scroll.post { scroll.smoothScrollTo(0, anchor.top) }
         return scroll
     }
 
