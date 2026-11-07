@@ -31,9 +31,10 @@ jobs:
         run: ./gradlew :app:assembleFullRelease --stacktrace
       - name: Publish v10.38.11 APK to GitHub Releases without Actions artifacts
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.SETTAI_RELEASE_TOKEN || github.token }}
         run: |
           set -e
+          if [ -z "$GH_TOKEN" ]; then echo "Missing GitHub release token"; exit 1; fi
           APK=$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)
           test -n "$APK"
           mkdir -p out
