@@ -1,11 +1,11 @@
-name: Validate v10.38.2 Compose redesign
+name: Validate and release v10.38.6 UI test
 on:
   push:
     branches:
       - codex/settai-v10.38.2-compose-redesign
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -18,3 +18,31 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew :app:compileFullDebugKotlin :app:testFullDebugUnitTest --stacktrace
+
+      - name: Decode signing keystore
+        env:
+          KS_B64: ${{ secrets.SETTAI_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KS_B64" ]; then echo "Missing release signing keystore"; exit 1; fi
+          echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/settai.keystore"
+          echo "SETTAI_KEYSTORE_PATH=$RUNNER_TEMP/settai.keystore" >> "$GITHUB_ENV"
+      - name: Build signed full release APK
+        env:
+          SETTAI_KEYSTORE_PASSWORD: ${{ secrets.SETTAI_KEYSTORE_PASSWORD }}
+          SETTAI_KEY_ALIAS: ${{ secrets.SETTAI_KEY_ALIAS }}
+          SETTAI_KEY_PASSWORD: ${{ secrets.SETTAI_KEY_PASSWORD }}
+        run: ./gradlew :app:assembleFullRelease --stacktrace
+      - name: Publish v10.38.6 APK to GitHub Releases without Actions artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          APK=$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)
+          test -n "$APK"
+          mkdir -p out
+          cp "$APK" out/Set-Tai-v10.38.6-ui-test.apk
+          if gh release view "ui-v10.38.6-test" >/dev/null 2>&1; then
+            gh release upload "ui-v10.38.6-test" out/Set-Tai-v10.38.6-ui-test.apk --clobber
+          else
+            gh release create "ui-v10.38.6-test" out/Set-Tai-v10.38.6-ui-test.apk --prerelease --title "Set-Tai v10.38.6 UI test" --notes "Compose redesign test APK; main branch unchanged. Install to evaluate the Home, Characters, Create, Explore and Settings redesign." --target "$GITHUB_SHA"
+          fi
