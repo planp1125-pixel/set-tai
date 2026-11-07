@@ -451,9 +451,9 @@ class SettaiDesignActivity : ComponentActivity() {
                                     }
                                 }
                             }
-                            val features = listOf(
+                            val activities = listOf(
                                 Triple("Chat", "Connect", "Talk with your companion"),
-                                Triple("Skills", "Discover", "Discover abilities and actions"),
+                                Triple("Skills", "Connect", "Discover abilities and actions"),
                                 Triple("Diary", "Care", "Moments and memories"),
                                 Triple("Focus / Study Buddy", "Care", "Focus companion for study"),
                                 Triple("Calm Breathing", "Care", "Breathe with your companion"),
@@ -464,27 +464,23 @@ class SettaiDesignActivity : ComponentActivity() {
                                 Triple("Mini-games", "Play", "Play together"),
                                 Triple("Screen Smash", "Play", "Smash the previous screen"),
                                 Triple("Record a 5s Clip", "Play", "Capture a shareable clip"),
-                                Triple("Two Phones", "Play", "Connect companions on Wi-Fi"),
+                                Triple("Two Phones", "Connect", "Connect companions on Wi-Fi"),
                                 Triple("Start a Skit", "Play", "Watch an improvised skit"),
-                                Triple("Shows", "Discover", "Watch and create animated shows"),
-                                Triple("Character Studio", "Discover", "Design a companion"),
-                                Triple("Brain & Chat", "Tools", "AI models and voice settings"),
-                                Triple("Permissions", "Tools", "Overlay and notification access"),
-                                Triple("Appearance", "Tools", "Theme and display settings"),
-                                Triple("Care Tools", "Tools", "Water, tablet, eye, neck and reminders"),
-                                Triple("Wardrobe", "Discover", "Outfits for your character"),
-                                Triple("Wallpaper", "Phone", "Set as live wallpaper"),
-                                Triple("Climbing Spots", "Phone", "Edit wallpaper climbing spots"),
-                                Triple("Wallpaper Background", "Phone", "Wallpaper colours and images"),
-                                Triple("Touch Feel", "Tools", "Flick, reactions, rest and animation"),
-                                Triple("Buddy & Moments", "Care", "Quiet hours and proactive companion"),
-                                Triple("Engagement", "Play", "Friendship, greetings and challenges"),
-                                Triple("Superpowers", "Play", "Use companion powers"),
-                                Triple("Phone Powers", "Phone", "Permissions and phone abilities"),
-                                Triple("Background AI", "Tools", "Background intelligence settings")
+                                Triple("Use Superpower", "Play", "Trigger your chosen power")
                             )
+                            val settingsSearch = listOf(
+                                Triple("Appearance", "Settings", "theme colour dark light"),
+                                Triple("Brain & AI", "Settings", "brain cloud model key background AI"),
+                                Triple("Touch & Motion", "Settings", "rest flick touch animation sound double tap"),
+                                Triple("Personality & Behaviour", "Settings", "personality memory buddy moments daily habits"),
+                                Triple("Superpowers", "Settings", "choose enable character power"),
+                                Triple("Phone powers", "Settings", "phone capabilities clock"),
+                                Triple("Wallpaper", "Settings", "wallpaper background climbing spots"),
+                                Triple("Permissions & Battery", "Settings", "overlay notification access battery")
+                            )
+                            val features = activities + if (search.isNotBlank()) settingsSearch else emptyList()
                             val matching = features.filter { (title, category, description) ->
-                                (exploreCategory == "All" || exploreCategory == category) &&
+                                (exploreCategory == "All" || exploreCategory == category || category == "Settings") &&
                                     (search.isBlank() || listOf(title, category, description).any { it.contains(search.trim(), ignoreCase = true) })
                             }
                             if (matching.isEmpty()) {
@@ -520,22 +516,15 @@ class SettaiDesignActivity : ComponentActivity() {
                                         "Record a 5s Clip" -> v5("clip")
                                         "Two Phones" -> open(PairActivity::class.java)
                                         "Start a Skit" -> v5("skit")
-                                        "Character Studio" -> open(CompanionStudioActivity::class.java)
-                                        "Brain & Chat" -> { page = 4; settingsPanel = "brain" }
-                                        "Permissions" -> { page = 4; settingsPanel = "permissions" }
-                                        "Care Tools" -> page = 0
-                                        "Wardrobe" -> if (CharacterRegistry.current.wardrobe.isNotEmpty()) wardrobe() else page = 1
-                                        "Wallpaper" -> wallpaper()
-                                        "Climbing Spots" -> open(SpotsEditorActivity::class.java)
-                                        "Wallpaper Background" -> wallpaperBackground()
-                                        "Touch Feel" -> settings("feel")
-                                        "Buddy & Moments" -> settings("buddy")
-                                        "Engagement" -> settings("engagement")
-                                        "Superpowers" -> settings("superpowers")
-                                        "Phone Powers" -> settings("phone")
-                                        "Background AI" -> settings("brain")
-                                        "Shows" -> open(ShowsActivity::class.java)
-                                        else -> { page = 4; settingsPanel = "appearance" }
+                                        "Use Superpower" -> usePowerNow()
+                                        "Appearance" -> { page = 4; settingsPanel = "appearance" }
+                                        "Brain & AI" -> { page = 4; settingsPanel = "brain" }
+                                        "Touch & Motion" -> { page = 4; settingsPanel = "touch" }
+                                        "Personality & Behaviour" -> { page = 4; settingsPanel = "personality" }
+                                        "Superpowers" -> { page = 4; settingsPanel = "superpowers" }
+                                        "Phone powers" -> { page = 4; settingsPanel = "phone" }
+                                        "Wallpaper" -> { page = 4; settingsPanel = "wallpaper" }
+                                        "Permissions & Battery" -> { page = 4; settingsPanel = "permissions" }
                                     }
                                 }
                             }
