@@ -107,6 +107,7 @@ class DiaryActivity : Activity() {
     private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
     private val accent = com.combo.monkeycompanion.theme.Th.rgb(0x6C, 0x5C, 0xE7)
     private lateinit var who: Character
+    private var diaryTabIndex = 0
 
     private fun dp(v: Int) = (v * d).toInt()
 
@@ -391,6 +392,42 @@ class DiaryActivity : Activity() {
                 }
             }
             col.addView(diaryCard)
+        }
+
+        // Keep per-character persistence and the existing controls, but group them
+        // into focused tabs rather than one long configuration form.
+        val sections = (0 until col.childCount).map { col.getChildAt(it) }
+        val panels = listOfNotNull(sections.getOrNull(3), sections.getOrNull(5),
+            sections.getOrNull(7), sections.getOrNull(9))
+        if (panels.size == 4) {
+            val names = listOf("Overview", "Behaviour", "Memory", "Diary")
+            val tabStrip = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
+            val tabRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            tabStrip.addView(tabRow)
+            val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            for (v in sections.drop(3)) col.removeView(v)
+            col.addView(tabStrip, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) })
+            col.addView(content)
+            fun showTab(index: Int) {
+                diaryTabIndex = index
+                tabRow.removeAllViews()
+                content.removeAllViews()
+                names.forEachIndexed { i, name ->
+                    tabRow.addView(Button(this).apply {
+                        text = name; isAllCaps = false; textSize = 13f
+                        setTextColor(if (i == diaryTabIndex) Color.WHITE else brown)
+                        background = GradientDrawable().apply {
+                            cornerRadius = dp(20).toFloat()
+                            setColor(if (i == diaryTabIndex) accent else Color.WHITE)
+                        }
+                        setOnClickListener { showTab(i) }
+                    }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { rightMargin = dp(6) })
+                }
+                val panel = panels[diaryTabIndex]
+                (panel.parent as? android.view.ViewGroup)?.removeView(panel)
+                content.addView(panel)
+            }
+            showTab(diaryTabIndex.coerceIn(names.indices))
         }
 
         val scroll = ScrollView(this).apply {

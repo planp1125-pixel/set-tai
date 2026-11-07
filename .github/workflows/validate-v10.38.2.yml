@@ -1,5 +1,5 @@
 name: Validate and release v10.38.11 UI test
-# Validate app-wide Settings and activity-based Explore navigation.
+# Validate per-character Diary dashboard tabs and behaviour controls.
 on:
   push:
     branches:
