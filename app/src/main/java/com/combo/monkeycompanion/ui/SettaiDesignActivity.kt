@@ -546,26 +546,43 @@ class SettaiDesignActivity : ComponentActivity() {
                                     TextButton(onClick = { settingsPanel = if (settingsPanel in listOf("personality-memory", "buddy", "habits")) "personality" else "main" }) { Text("‹ Back") }
                                     Heading(when(settingsPanel) {
                                         "appearance" -> "Appearance"
-                                        "permissions" -> "Permissions & battery"
-                                        "brain" -> "Brain & chat"
+                                        "brain" -> "Brain & AI"
+                                        "touch" -> "Touch & Motion"
+                                        "personality" -> "Personality & Behaviour"
+                                        "personality-memory" -> "Personality & memory"
+                                        "buddy" -> "Buddy & moments"
+                                        "habits" -> "Daily habits"
+                                        "superpowers" -> "Superpowers"
+                                        "phone" -> "Phone powers"
                                         "wallpaper" -> "Wallpaper"
-                                        else -> "Companion settings"
+                                        "permissions" -> "Permissions & Battery"
+                                        else -> "Settings"
                                     }, ink)
                                 }
                             }
                             if (settingsPanel == "main") {
-                                item { Feature("Appearance", "Theme and display preferences", "◐", surface, ink, muted) { settingsPanel = "appearance" } }
-                                item { Feature("Companions & behaviour", "Choose companions and configure your crew", "♡", surface, ink, muted) { page = 1 } }
-                                item { Feature("Brain & chat", "Cloud, own key, offline models and voice", "✧", surface, ink, muted) { settingsPanel = "brain" } }
-                                item { Feature("How they feel & move", "Touch feel, flick, rest and animation", "♡", surface, ink, muted) { settings("feel") } }
-                                item { Feature("Buddy & moments", "Proactive behaviour, quiet hours and nudges", "☼", surface, ink, muted) { settings("buddy") } }
-                                item { Feature("Engagement & fun", "Friendship, challenges and daily moments", "✦", surface, ink, muted) { settings("engagement") } }
-                                item { Feature("Superpowers", "Choose and use companion powers", "✧", surface, ink, muted) { settings("superpowers") } }
-                                item { Feature("Phone powers", "Phone abilities, skills and activity log", "▤", surface, ink, muted) { settings("phone") } }
-                                item { Feature("Wallpaper", "Live wallpaper, spots and background", "☼", surface, ink, muted) { settingsPanel = "wallpaper" } }
-                                item { Feature("Permissions & battery", "Control what Set-Tai can access", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
-                                item { Feature("Creative tools", "Shows and character studio", "✦", surface, ink, muted) { page = 2 } }
+                                item { Feature("Appearance", "Theme and display", "◐", surface, ink, muted) { settingsPanel = "appearance" } }
+                                item { Feature("Brain & AI", "Cloud, models and Background AI", "✧", surface, ink, muted) { settingsPanel = "brain" } }
+                                item { Feature("Touch & Motion", "Rest, flick, touch and animations", "♡", surface, ink, muted) { settingsPanel = "touch" } }
+                                item { Feature("Personality & Behaviour", "Memory, buddy moments and daily habits", "☼", surface, ink, muted) { settingsPanel = "personality" } }
+                                item { Feature("Superpowers", "Choose character powers", "✧", surface, ink, muted) { settingsPanel = "superpowers" } }
+                                item { Feature("Phone powers", "Phone capabilities and actions", "▤", surface, ink, muted) { settingsPanel = "phone" } }
+                                item { Feature("Wallpaper", "Live wallpaper and climbing spots", "☼", surface, ink, muted) { settingsPanel = "wallpaper" } }
+                                item { Feature("Permissions & Battery", "Overlay, notifications and battery", "♢", surface, ink, muted) { settingsPanel = "permissions" } }
                                 item { Text("Set-Tai v10.38.11", color = muted, fontSize = 12.sp) }
+                            }
+                            if (settingsPanel == "personality") {
+                                item { Feature("Personality & memory", "Independence, memory and quips", "♡", surface, ink, muted) { settingsPanel = "personality-memory" } }
+                                item { Feature("Buddy & moments", "Quiet hours and proactive moments", "☼", surface, ink, muted) { settingsPanel = "buddy" } }
+                                item { Feature("Daily habits", "Greetings, sulking and self-actions", "✦", surface, ink, muted) { settingsPanel = "habits" } }
+                            }
+                            if (settingsPanel in listOf("touch", "personality-memory", "buddy", "habits", "superpowers", "phone")) {
+                                item {
+                                    Panel(surface) {
+                                        Text("Open the existing controls for this topic only.", color = muted)
+                                        Button(onClick = { settings(if (settingsPanel == "personality-memory") "personality" else settingsPanel) }, modifier = Modifier.fillMaxWidth()) { Text("Open controls") }
+                                    }
+                                }
                             }
                             if (settingsPanel == "brain") {
                                 item {
