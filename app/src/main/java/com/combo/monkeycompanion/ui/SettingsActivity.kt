@@ -154,7 +154,7 @@ class SettingsActivity : Activity() {
         if (target == null || target == "brain") col.addView(brainTypeCard)
         brainGroup = group
         pickerBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val brainPickerCard = card("🧠 Active brain (tap to switch)", text("Every downloaded model and every API you've set up. Tap one to use it; switch any time.", 12f, color = soft), pickerBox!!))
+        val brainPickerCard = card("🧠 Active brain (tap to switch)", text("Every downloaded model and every API you've set up. Tap one to use it; switch any time.", 12f, color = soft), pickerBox!!)
         if (target == null || target == "brain") col.addView(brainPickerCard)
         refreshPicker()
         mainCol = col
@@ -667,10 +667,14 @@ class SettingsActivity : Activity() {
             setOnCheckedChangeListener { _, c -> s.chatButton = c }
         }
         val energy = text("Measuring…", 12f, color = soft).also { energyText = it }
+        val roam = CheckBox(this).apply {
+            text = "Let Settai roam (climb the sides, hang from the top, drop down)"; setTextColor(brown); isChecked = s.roam
+            setOnCheckedChangeListener { _, c -> s.roam = c }
+        }
         return card(
             "Rest & battery",
             text("Auto-rest: if you don't play with Settai for a while, it hides behind the nearest edge (just a tab). Tap the tab to call it back, double-tap to chat. It also pops out for low battery, overheating and timers.", 12f, color = soft),
-            restSp, unlock, saver, gags, smooth, living, sfx, touchFeel, flickThrow, dtPower, chatBtn,
+            restSp, unlock, saver, roam, gags, smooth, living, sfx, touchFeel, flickThrow, dtPower, chatBtn,
             text("Energy", 13f, bold = true), energy,
             text("Changes apply within a minute.", 12f, color = soft),
         )
@@ -781,10 +785,6 @@ class SettingsActivity : Activity() {
         val turns = listOf(0, 4, 8, 15)
         val memSp = spinner(turns.map { if (it == 0) "Remember nothing" else "Remember last $it exchanges" }, turns.indexOf(s.memoryTurns).coerceAtLeast(2)) { s.memoryTurns = turns[it] }
         val cleared = text("", 12f, color = soft)
-        val roam = CheckBox(this).apply {
-            text = "Let Settai roam (climb the sides, hang from the top, drop down)"; setTextColor(brown); isChecked = s.roam
-            setOnCheckedChangeListener { _, c -> s.roam = c }
-        }
         return card(
             "Personality & memory",
             indepLabel, indepSeek,
