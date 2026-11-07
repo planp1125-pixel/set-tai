@@ -790,8 +790,6 @@ class SettingsActivity : Activity() {
             indepLabel, indepSeek,
             text("Controls how often Settai acts on its own (exploring new apps, habits, gags, powers) and how strongly its traits show. High focus (typing, calls, meetings, banking, DND, quiet hours) always overrides.", 12f, color = soft),
             diaryBtn,
-            roam,
-            text("Off: Settai only walks along the edge it's on and stays where you drop it (it still grabs an edge if you drop it near one).", 12f, color = soft),
             quips, quipSp,
             text("Quips only happen when a real brain is set up (they use a little data/battery).", 12f, color = soft),
             text("Conversation memory", 13f, color = soft), memSp,
