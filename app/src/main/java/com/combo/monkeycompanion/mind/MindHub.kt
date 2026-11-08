@@ -52,7 +52,8 @@ object MindHub {
     val campfire = CampfireScene()
     private val recentSwitches = ArrayDeque<Long>()
     private var lastRhythmComfortAt = 0L
-    @Volatile var neighbourMode: String = "DUO"
+    /** v10.38.24: a fresh install starts Solo (one companion); a saved Duo / Trio choice is always kept. */
+    @Volatile var neighbourMode: String = "SOLO"
     @Volatile var customPartner1Id: String? = null
     @Volatile var customPartner2Id: String? = null
     @Volatile var lastNightTrace: NightTrace? = null

@@ -79,6 +79,9 @@ import java.util.Locale
  */
 @SuppressLint("SetTextI18n")
 class SettingsActivity : androidx.activity.ComponentActivity() {
+    /** v10.38.24: texts use the main character's name instead of "Settai". */
+    private val nm: String get() = com.combo.monkeycompanion.character.CharacterRegistry.current.name
+
 
     private val s get() = ChatHub.settings
     private val ui = Handler(Looper.getMainLooper())
@@ -135,10 +138,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     @Composable
     private fun SettingsScreen(target: String?, @Suppress("UNUSED_PARAMETER") r: Int) {
         SettaiScreen(title = titles[target] ?: "Settings", onBack = { finish() }, rev = r) {
-            if (visible(target, "brainType")) {
-                SNote("Set-Tai Cloud is ready by default: no API key or Gmail sign-in. You can still turn Brain off. 40 cloud requests per UTC day; messages go to Gemini. Local jokes and commands stay on your phone.")
-                BrainTypeCard(r); BrainPickerCard(r)
-            }
+            if (visible(target, "brainType")) BrainPickerCard(r)
             if (visible(target, "character")) CharacterCard(r)
             if (visible(target, "brain") && s.brainType == BrainType.ONLINE) OnlineCard(r)
             if (visible(target, "offline") && s.brainType == BrainType.OFFLINE) OfflineCard(r)
@@ -183,49 +183,39 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
         bump()
     }
 
-    @Composable
-    private fun BrainTypeCard(@Suppress("UNUSED_PARAMETER") r: Int) {
-        SCard("Settai's brain") {
-            val opts = listOf(
-                BrainType.NONE to "No brain (canned Settai lines)",
-                BrainType.OFFLINE to "On-device AI (offline, private)",
-                BrainType.ONLINE to "Set-Tai Cloud (optional own-key override)",
-            )
-            for ((bt, label) in opts) SRadio(label, s.brainType == bt) {
-                s.brainType = bt
-                if (bt == BrainType.OFFLINE) ChatHub.preloadOffline()
-                bump()
-            }
-        }
-    }
-
-    /** Every downloaded model and every API you've set up; tap one to use it. */
+    /** v10.38.24: ONE brain list. Tapping a row switches everything together; the matching details show below. */
     @Composable
     private fun BrainPickerCard(@Suppress("UNUSED_PARAMETER") r: Int) {
-        SCard("Active brain", "Every downloaded model and every API you've set up. Tap one to use it; switch any time.") {
-            val on = s.aiBrainEnabled
-            SRadio("No AI (canned lines)", !on || s.brainType == BrainType.NONE) { s.brainType = BrainType.NONE; ChatHub.setBrainEnabled(false); bump() }
-            SRadio("☁️ Set-Tai Cloud · no key / sign-in", on && s.brainType == BrainType.ONLINE && !s.useOwnApiKey) { s.useOwnApiKey = false; activate(BrainType.ONLINE) }
+        val on = s.aiBrainEnabled && s.brainType != BrainType.NONE
+        val now = when {
+            !on -> "Off: canned lines only"
+            s.brainType == BrainType.OFFLINE -> "On-device: " + (File(s.offlineModelPath).name.ifBlank { "no model yet (download one below)" })
+            s.useOwnApiKey -> "${s.provider.label} with your own key (${s.modelFor(s.provider)})"
+            else -> "Set-Tai Cloud (built in, no key)"
+        }
+        SCard("Brain", "Pick one. Jokes, dance and phone commands always work on your phone, even with the brain off.") {
+            Text("Using: $now  ✓", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            SRadio("☁️ Set-Tai Cloud (recommended)", on && s.brainType == BrainType.ONLINE && !s.useOwnApiKey,
+                "Ready now, no key or sign-in. 40 requests a day.") { s.useOwnApiKey = false; activate(BrainType.ONLINE) }
             for (f in ModelStore.installed(this@SettingsActivity)) {
                 val title = ModelStore.CATALOG.firstOrNull { it.file == f.name }?.title?.substringBefore(" (") ?: f.name
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.weight(1f)) {
-                        SRadio("📱 $title · ${mb(f.length())}", on && s.brainType == BrainType.OFFLINE && s.offlineModelPath == f.path) {
-                            s.offlineModelPath = f.path; activate(BrainType.OFFLINE)
-                        }
-                    }
-                    TextButton(onClick = {
-                        if (s.offlineModelPath == f.path) s.offlineModelPath = ""
-                        f.delete(); ChatHub.setBrainEnabled(s.aiBrainEnabled); bump()
-                    }) { Text("Delete") }
-                }
+                SRadio("📱 $title (on this phone)", on && s.brainType == BrainType.OFFLINE && s.offlineModelPath == f.path,
+                    "${mb(f.length())} · private, works offline") { s.offlineModelPath = f.path; activate(BrainType.OFFLINE) }
             }
             for (pr in Provider.entries) {
                 val ok = if (pr == Provider.CUSTOM) s.customBaseUrl.isNotBlank() else s.apiKeyFor(pr).isNotBlank()
                 if (!ok) continue
-                SRadio("☁️ ${pr.label} (${s.modelFor(pr)})", on && s.brainType == BrainType.ONLINE && s.useOwnApiKey && s.provider == pr) {
-                    s.useOwnApiKey = true; s.provider = pr; activate(BrainType.ONLINE)
+                SRadio("🔑 ${pr.label} (your key)", on && s.brainType == BrainType.ONLINE && s.useOwnApiKey && s.provider == pr, s.modelFor(pr)) {
+                    s.useOwnApiKey = true; s.provider = pr; shownProvider = pr; loadOnline(); activate(BrainType.ONLINE)
                 }
+            }
+            SRadio("🚫 Off", !on, "Canned lines only, no AI.") { s.brainType = BrainType.NONE; ChatHub.setBrainEnabled(false); bump() }
+            SSubhead("Add another brain")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.OutlinedButton(onClick = { s.brainType = BrainType.OFFLINE; ChatHub.setBrainEnabled(true); bump() },
+                    modifier = Modifier.weight(1f)) { Text("📱 On-device model") }
+                androidx.compose.material3.OutlinedButton(onClick = { s.useOwnApiKey = true; s.brainType = BrainType.ONLINE; ChatHub.setBrainEnabled(true); bump() },
+                    modifier = Modifier.weight(1f)) { Text("🔑 My own key") }
             }
         }
     }
@@ -248,23 +238,28 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
 
     @Composable
     private fun OnlineCard(@Suppress("UNUSED_PARAMETER") r: Int) {
-        SCard("Set-Tai Cloud", "Built in. No key or Gmail needed. 40 requests per UTC day (including background AI). Local commands cost no chats. Your messages and character context go to Gemini; the gateway keeps only anonymous quota counts.") {
-            SSwitch("Advanced: use my own API key / server", s.useOwnApiKey) { s.useOwnApiKey = it; bump() }
-            if (s.useOwnApiKey) {
-                val providers = Provider.entries
-                SChoice("Provider", providers.map { it.label }, providers.indexOf(shownProvider)) { pos ->
-                    saveOnline(); shownProvider = providers[pos]; s.provider = shownProvider; loadOnline(); bump()
-                }
-                val saved = s.apiKeyFor(shownProvider)
-                SField(keyText, { keyText = it }, "API key (stored encrypted on this phone)",
-                    placeholder = if (saved.isNotEmpty()) "Saved ••••${saved.takeLast(4)} (type to replace)" else "Paste API key", secret = true)
-                SNote("Get a key: ${shownProvider.keyHint}")
-                SField(modelText, { modelText = it }, "Model", placeholder = shownProvider.defaultModel.ifEmpty { "e.g. llama3.1" })
-                if (shownProvider == Provider.CUSTOM) SField(urlText, { urlText = it }, "Server base URL", placeholder = "https://my-server/v1")
-                SSecondary("Pick model from my account") { saveOnline(); pickModel(auto = false) }
-                SPrimary("Save & test") { saveOnline(); pickModel(auto = true) }
+        if (!s.useOwnApiKey) {
+            SCard("Set-Tai Cloud", "Built in. No key or Gmail needed. 40 requests per UTC day (including background AI); local commands cost nothing. Your messages and character context go to Gemini; the gateway keeps only anonymous quota counts.") {
+                SSecondary("Test the brain") { runTest { onlineResult = it } }
                 if (onlineResult.isNotBlank()) Text(onlineResult)
             }
+            return
+        }
+        SCard("Your own API key", "Advanced. Your key is stored encrypted on this phone and used instead of Set-Tai Cloud.") {
+            val providers = Provider.entries
+            SChoice("Provider", providers.map { it.label }, providers.indexOf(shownProvider).coerceAtLeast(0)) { pos ->
+                saveOnline(); shownProvider = providers[pos]; s.provider = shownProvider; loadOnline(); bump()
+            }
+            val saved = s.apiKeyFor(shownProvider)
+            SField(keyText, { keyText = it }, "API key",
+                placeholder = if (saved.isNotEmpty()) "Saved ••••${saved.takeLast(4)} (type to replace)" else "Paste API key", secret = true)
+            SNote("Get a key: ${shownProvider.keyHint}")
+            SField(modelText, { modelText = it }, "Model", placeholder = shownProvider.defaultModel.ifEmpty { "e.g. llama3.1" })
+            if (shownProvider == Provider.CUSTOM) SField(urlText, { urlText = it }, "Server base URL", placeholder = "https://my-server/v1")
+            SSecondary("Pick model from my account") { saveOnline(); pickModel(auto = false) }
+            SPrimary("Save & test") { saveOnline(); s.provider = shownProvider; pickModel(auto = true); bump() }
+            if (onlineResult.isNotBlank()) Text(onlineResult)
+            androidx.compose.material3.TextButton(onClick = { saveOnline(); s.useOwnApiKey = false; bump() }) { Text("← Back to Set-Tai Cloud") }
         }
     }
 
@@ -527,11 +522,11 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     private fun RestCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         val secs = listOf(30, 60, 120, 300, 600, 0)
         val names = listOf("After 30 seconds", "After 1 minute", "After 2 minutes", "After 5 minutes", "After 10 minutes", "Never")
-        SCard("Touch, motion & battery", "Auto-rest: if you don't play with Settai for a while, it hides behind the nearest edge (just a tab). Tap the tab to call it back, double-tap to chat. It also pops out for low battery, overheating and timers.") {
+        SCard("Touch, motion & battery", "Auto-rest: if you don't play with ${nm} for a while, it hides behind the nearest edge (just a tab). Tap the tab to call it back, double-tap to chat. It also pops out for low battery, overheating and timers.") {
             SChoice("Auto-rest", names, secs.indexOf(s.restSeconds).let { if (it < 0) 2 else it }) { s.restSeconds = secs[it]; bump() }
             SSwitch("Come back out after I unlock the phone", s.comeOutOnUnlock) { s.comeOutOnUnlock = it; bump() }
             SSwitch("Battery saver", s.batterySaver, "Lower frame rate, fewer random moves and quips, rests within 1 minute.") { s.batterySaver = it; bump() }
-            SSwitch("Let Settai roam", s.roam, "Climb the sides, hang from the top, drop down.") { s.roam = it; bump() }
+            SSwitch("Let ${nm} roam", s.roam, "Climb the sides, hang from the top, drop down.") { s.roam = it; bump() }
             SSwitch("Random comedy bits", s.gags, "Sneezes, juggling, air guitar…") { s.gags = it; bump() }
             SSwitch("Smooth animation (beta)", s.smoothAnimation, "Squishy landings, tails, ears, hair and capes that swing and settle.") { s.smoothAnimation = it; bump() }
             SSwitch("Living reactions (beta)", s.livingReactions, "Every touch gets a fresh reaction, never the same one twice in a row.") { s.livingReactions = it; bump() }
@@ -615,8 +610,8 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     private fun PersonalityCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         SCard("Personality & memory") {
             SSlider("How independent", s.mindIndependence, 0..100) { s.mindIndependence = it; bump() }
-            SNote("Controls how often Settai acts on its own (exploring new apps, habits, gags, powers) and how strongly its traits show. High focus (typing, calls, meetings, banking, DND, quiet hours) always overrides.")
-            SSecondary("Open Settai's diary") { startActivity(Intent(this@SettingsActivity, DiaryActivity::class.java)) }
+            SNote("Controls how often ${nm} acts on its own (exploring new apps, habits, gags, powers) and how strongly its traits show. High focus (typing, calls, meetings, banking, DND, quiet hours) always overrides.")
+            SSecondary("Open ${nm}'s diary") { startActivity(Intent(this@SettingsActivity, DiaryActivity::class.java)) }
             SSwitch("Random AI quips", s.quipsEnabled, "Only when a real brain is set up (uses a little data and battery).") { s.quipsEnabled = it; bump() }
             val mins = listOf(5, 10, 15, 30, 60)
             SChoice("How often", mins.map { "About every $it minutes" }, mins.indexOf(s.quipMinutes).coerceAtLeast(2)) { s.quipMinutes = mins[it]; bump() }
@@ -636,7 +631,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
         var qStart by remember { mutableStateOf(QH.fmt(s.quietStart)) }
         var qEnd by remember { mutableStateOf(QH.fmt(s.quietEnd)) }
         var usage by remember { mutableStateOf(s.usageApps) }
-        SCard("Buddy mode", "Settai pipes up for moments that matter (a burst of messages, someone important, a delivery, an OTP, a long scroll session, full battery, good morning). Never while you type, call, game or watch fullscreen, in Do Not Disturb or in quiet hours.") {
+        SCard("Buddy mode", "${nm} pipes up for moments that matter (a burst of messages, someone important, a delivery, an OTP, a long scroll session, full battery, good morning). Never while you type, call, game or watch fullscreen, in Do Not Disturb or in quiet hours.") {
             SChoice("How often it pipes up", levels.map { "${it.label}" + if (it.perHour > 0) " (max ${it.perHour}/hour)" else "" }, levels.indexOf(PL.of(s.proactiveLevel))) {
                 s.proactiveLevel = levels[it].name; bump()
             }
@@ -693,23 +688,23 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     @Composable
     private fun Fun5Card(@Suppress("UNUSED_PARAMETER") r: Int) {
         val S = com.combo.monkeycompanion.fun5.Fun5Store
-        SCard("Things Settai does by itself", "Games, clips, two phones and the friendship level are always there. These switches cover what Settai does on its own.") {
+        SCard("Things ${nm} does by itself", "Games, clips, two phones and the friendship level are always there. These switches cover what ${nm} does on its own.") {
             for (ft in com.combo.monkeycompanion.fun5.Fun5Store.Feature.entries.filter { !it.engagement }) SSwitch(ft.title, S.on(this@SettingsActivity, ft), ft.help) { S.set(this@SettingsActivity, ft, it); bump() }
-            SNote("Weather uses your coarse location only if you already allowed location for Settai, and asks Open-Meteo at most every 3 hours. Cricket scores are fetched only when you ask.")
+            SNote("Weather uses your coarse location only if you already allowed location for ${nm}, and asks Open-Meteo at most every 3 hours. Cricket scores are fetched only when you ask.")
         }
     }
 
     @Composable
     private fun PhonePowersCard(@Suppress("UNUSED_PARAMETER") r: Int) {
-        SCard("Phone powers", "What Settai may do, for every brain. Anything that opens or changes something asks Yes/No first.") {
-            SSecondary("Settai's skills (errands, senses & daily habits)") { startActivity(Intent(this@SettingsActivity, SkillsActivity::class.java)) }
-            SSecondary("What can Settai do? (powers & permissions)") { startActivity(Intent(this@SettingsActivity, CapabilitiesActivity::class.java)) }
+        SCard("Phone powers", "What ${nm} may do, for every brain. Anything that opens or changes something asks Yes/No first.") {
+            SSecondary("${nm}'s skills (errands, senses & daily habits)") { startActivity(Intent(this@SettingsActivity, SkillsActivity::class.java)) }
+            SSecondary("What can ${nm} do? (powers & permissions)") { startActivity(Intent(this@SettingsActivity, CapabilitiesActivity::class.java)) }
             for (g in CapGroup.entries) {
                 val n = Capabilities.all.count { it.group == g }
                 SSwitch("${g.label} ($n)", s.groupEnabled(g)) { s.setGroupEnabled(g, it); bump() }
             }
             val modes = listOf("auto", "clock", "settai")
-            SChoice("Timers & alarms", listOf("Clock app when possible, else Settai's own", "Always the Clock app", "Always Settai's own (rings with Settai)"),
+            SChoice("Timers & alarms", listOf("Clock app when possible, else ${nm}'s own", "Always the Clock app", "Always ${nm}'s own (rings with ${nm})"),
                 modes.indexOf(s.clockMode).coerceAtLeast(0)) { s.clockMode = modes[it]; bump() }
             SSecondary("Recent actions log") { showLog = true }
         }

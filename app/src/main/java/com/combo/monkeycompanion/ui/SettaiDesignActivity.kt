@@ -152,19 +152,23 @@ class SettaiDesignActivity : ComponentActivity() {
         }
     }
     private fun syncActiveCrew() { if (MonkeyOverlayService.running) MonkeyOverlayService.syncCrew(this) }
-    private fun v5(cmd: String) {
-        if (!MonkeyOverlayService.running) {
-            Toast.makeText(this, "Start your companion first", Toast.LENGTH_SHORT).show()
+    /** v10.38.24: a Home shortcut that needs the companion starts it first, then does the thing. */
+    private fun withCompanion(then: () -> Unit) {
+        if (MonkeyOverlayService.running) { then(); return }
+        if (!Settings.canDrawOverlays(this)) {
+            Toast.makeText(this, "Allow \"Display over other apps\" first", Toast.LENGTH_LONG).show()
+            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName")))
             return
         }
+        MonkeyOverlayService.start(this)
+        Toast.makeText(this, "Starting your companion…", Toast.LENGTH_SHORT).show()
+        Handler(Looper.getMainLooper()).postDelayed({ if (MonkeyOverlayService.running) then() }, 1800L)
+    }
+    private fun v5(cmd: String) = withCompanion {
         startService(Intent(this, MonkeyOverlayService::class.java)
             .setAction(MonkeyOverlayService.ACTION_V5).putExtra("cmd", cmd))
     }
-    private fun usePowerNow() {
-        if (!MonkeyOverlayService.running) {
-            Toast.makeText(this, "Start your companion first", Toast.LENGTH_SHORT).show()
-            return
-        }
+    private fun usePowerNow() = withCompanion {
         startService(Intent(this, MonkeyOverlayService::class.java).setAction(MonkeyOverlayService.ACTION_POWER))
     }
     private fun screenSmash() {
@@ -335,7 +339,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                     val tiles = listOf<Triple<String, String, () -> Unit>>(
                                         Triple("✿", "Characters") { page = 1 },
                                         Triple("✦", "Show tricks") { v5("onboard") },
-                                        Triple("▤", "What you missed") { v5("notif_card_demo") },
+                                        Triple("▤", "What you missed") { v5("notif_card") },
                                         Triple("▶", "Make a show") { page = 2 },
                                         Triple("✧", "Give Brain") { settings("brain") },
                                         Triple("⚡", "Use a power") { usePowerNow() },

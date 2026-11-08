@@ -5429,7 +5429,11 @@ class MonkeyView(
                 )
                 return false
             }
+            // v10.38.24: access is on but nothing new: say so (no fake card)
+            say("📭 Nothing new. You're all caught up!", 3500L)
+            return false
         }
+        val preview = useDemoIfEmpty && liveItems.size < 5
         val items = when {
             useDemoIfEmpty && liveItems.size < 5 -> liveItems + com.combo.monkeycompanion.agent.NotifSummary.richDemoItems()
             liveItems.isNotEmpty() -> liveItems
@@ -5445,7 +5449,8 @@ class MonkeyView(
         }.getOrNull()
         val greet = com.combo.monkeycompanion.agent.NotifSummary.greeting(hour, userName)
         val maxW = ((host?.screenWidth() ?: width.takeIf { it > 0 } ?: 1080) - (24 * d).toInt()).coerceAtLeast((260 * d).toInt())
-        notifCard.setData(groups, greet, "Here's what you missed...", maxW)
+        notifCard.setData(groups, if (preview) "✨ Preview (sample messages)" else greet,
+            if (preview) "This is how the card looks. Real ones show your own notifications." else "Here's what you missed...", maxW)
         endTyping()
         bubbleOn = false; arcOn = false; bubbleChips = emptyList(); pages.clear(); beats.clear()
         notifCardOpen = true

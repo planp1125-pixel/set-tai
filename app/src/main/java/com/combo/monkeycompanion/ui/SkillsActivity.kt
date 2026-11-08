@@ -39,6 +39,9 @@ import com.combo.monkeycompanion.powers.Capabilities
  * taught daily habits and memory. Every capability and permission helper is kept.
  */
 class SkillsActivity : androidx.activity.ComponentActivity() {
+    /** v10.38.24: texts use the main character's name instead of "Settai". */
+    private val nm: String get() = com.combo.monkeycompanion.character.CharacterRegistry.current.name
+
     private var rev by androidx.compose.runtime.mutableIntStateOf(0)
     private var showLog by androidx.compose.runtime.mutableStateOf(false)
 
@@ -53,15 +56,15 @@ class SkillsActivity : androidx.activity.ComponentActivity() {
     private fun a11yLine(): String {
         if (com.combo.monkeycompanion.agent.ForegroundAppTracker.isPlayStoreBuild(this)) {
             val usage = com.combo.monkeycompanion.agent.ForegroundAppTracker.hasUsageAccess(this)
-            return if (usage) "✅ Usage Access granted: Settai senses which app you're in and respects your focus."
-            else "Optional: grant Usage Access so Settai knows when you open WhatsApp, YouTube or Swiggy."
+            return if (usage) "✅ Usage Access granted: ${nm} senses which app you're in and respects your focus."
+            else "Optional: grant Usage Access so ${nm} knows when you open WhatsApp, YouTube or Swiggy."
         }
         val on = SettaiAccessibilityService.enabled(this)
         val scr = ChatHub.settings.groupEnabled(CapGroup.SCREEN)
         return when {
-            on && scr -> "✅ Ready for errands: Settai can read screens and run errands when you ask (every tap or type asks Yes/No first)."
+            on && scr -> "✅ Ready for errands: ${nm} can read screens and run errands when you ask (every tap or type asks Yes/No first)."
             on -> "⚠️ Accessibility is allowed, but 'Screen errands' is switched off below."
-            else -> "Off by default. Turn on 'Settai screen agent' in Android Accessibility only if you want Settai to run errands inside other apps."
+            else -> "Off by default. Turn on 'Settai screen agent' in Android Accessibility only if you want ${nm} to run errands inside other apps."
         }
     }
 
@@ -91,12 +94,12 @@ class SkillsActivity : androidx.activity.ComponentActivity() {
                     SSwitch("${g.label} ($n)", s.groupEnabled(g)) { s.setGroupEnabled(g, it); rev++ }
                 }
                 val modes = listOf("auto", "clock", "settai")
-                SChoice("Wake-up alarm", listOf("Clock app when possible, else Settai drums on the glass", "Always the Clock app", "Always Settai drumming on the glass"),
+                SChoice("Wake-up alarm", listOf("Clock app when possible, else ${nm} drums on the glass", "Always the Clock app", "Always ${nm} drumming on the glass"),
                     modes.indexOf(s.clockMode).coerceAtLeast(0)) { s.clockMode = modes[it]; rev++ }
             }
             SCard("Habits & memory", "Teach $who daily habits (morning briefing, reminders, event triggers) or see what it remembers about you.") {
                 SPrimary("Daily habits & routines") { startActivity(Intent(this@SkillsActivity, RoutinesActivity::class.java)) }
-                SSecondary("What Settai remembers about you") { startActivity(Intent(this@SkillsActivity, MemoryActivity::class.java)) }
+                SSecondary("What ${nm} remembers about you") { startActivity(Intent(this@SkillsActivity, MemoryActivity::class.java)) }
                 SSecondary("Settai's own diary") { startActivity(Intent(this@SkillsActivity, DiaryActivity::class.java)) }
                 SSecondary("Reported replies") { startActivity(Intent(this@SkillsActivity, ReportsActivity::class.java)) }
             }

@@ -1123,14 +1123,17 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                     draft.bodyBuild == BodyBuild.SLIM && draft.gender == CompanionGender.MALE && draft.ageGroup == AgeGroup.ADULT_REGULAR
                 ),
                 onSelect = { index ->
-                    when (index) {
-                        0 -> runPhotoGenerationWithProgress(createSampleAdult35MidBodyBitmap())
-                        1 -> runPhotoGenerationWithProgress(createSampleBulkyPersonBitmap())
-                        2 -> updateDraft(CustomCompanionPresets.womanAdult(draft))
-                        3 -> runPhotoGenerationWithProgress(createSamplePortraitBitmap())
-                        4 -> updateDraft(CustomCompanionPresets.child5YrBoy(draft))
-                        5 -> runPhotoGenerationWithProgress(createSampleSlimPersonBitmap())
+                    // v10.38.24: quick looks apply straight away (no sample photo) and keep the name you typed
+                    val keepName = draft.name
+                    val look = when (index) {
+                        0 -> CustomCompanionPresets.adult35MidBody(draft)
+                        1 -> CustomCompanionPresets.bulkyHeavyPerson(draft)
+                        2 -> CustomCompanionPresets.womanAdult(draft)
+                        3 -> CustomCompanionPresets.child5YrDaughter(draft)
+                        4 -> CustomCompanionPresets.child5YrBoy(draft)
+                        else -> CustomCompanionPresets.slimPerson(draft)
                     }
+                    updateDraft(look.copy(name = keepName, id = draft.id))
                 }
             )
         }

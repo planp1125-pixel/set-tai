@@ -50,9 +50,9 @@ object WorldStore {
     private fun str(json: String, key: String): String? =
         Regex(""""$key"\s*:\s*"((?:\\.|[^"\\])*)"""").find(json)?.groupValues?.get(1)?.let { unesc(it) }
 
-    /** Restores [clock] from a JSON string; returns the stored `neighbourMode` (default `"DUO"`). */
+    /** Restores [clock] from a JSON string; returns the stored `neighbourMode` (nothing saved yet = `"SOLO"`; an old save without the field = `"DUO"`). */
     fun decodeJson(clock: WorldClock, json: String?): String {
-        if (json.isNullOrBlank()) return "DUO"
+        if (json.isNullOrBlank()) return "SOLO"   // v10.38.24: new install = Solo; older saves without a mode keep Duo (below)
         val st = clock.state
         num(json, "energy")?.toFloatOrNull()?.let { st.energy = it }
         num(json, "heat")?.toFloatOrNull()?.let { st.heat = it }
