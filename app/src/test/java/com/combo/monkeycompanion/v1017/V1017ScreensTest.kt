@@ -38,20 +38,19 @@ class V1017ScreensTest {
     @Test fun lightAndDark() {
         val ctx = org.robolectric.RuntimeEnvironment.getApplication()
         com.combo.monkeycompanion.theme.ThemeSkin.setMode(ctx, com.combo.monkeycompanion.theme.ThemeSkin.LIGHT)
-        shot(com.combo.monkeycompanion.MainActivity::class.java, "v10171-light.png")
+        shot(com.combo.monkeycompanion.ui.SettaiDesignActivity::class.java, "v10171-light.png")
         shot(com.combo.monkeycompanion.ui.SettingsActivity::class.java, "v10171-light-settings.png")
         com.combo.monkeycompanion.theme.ThemeSkin.setMode(ctx, com.combo.monkeycompanion.theme.ThemeSkin.DARK)
-        shot(com.combo.monkeycompanion.MainActivity::class.java, "v10171-dark.png")
+        shot(com.combo.monkeycompanion.ui.SettaiDesignActivity::class.java, "v10171-dark.png")
         shot(com.combo.monkeycompanion.ui.SettingsActivity::class.java, "v10171-dark-settings.png")
         com.combo.monkeycompanion.theme.ThemeSkin.setMode(ctx, com.combo.monkeycompanion.theme.ThemeSkin.SYSTEM)
     }
 
     @Test fun screens() {
-        shot(com.combo.monkeycompanion.MainActivity::class.java, "v1017-home.png")
+        shot(com.combo.monkeycompanion.ui.SettaiDesignActivity::class.java, "v1017-home.png")
         shot(com.combo.monkeycompanion.ui.SettingsActivity::class.java, "v1017-settings.png")
-        shot(com.combo.monkeycompanion.ui.MenuSettingsActivity::class.java, "v1017-menu.png")
         // the Characters-tab power picker card for Kutti Satan
-        val a = Robolectric.buildActivity(com.combo.monkeycompanion.MainActivity::class.java).setup().get()
+        val a = Robolectric.buildActivity(android.app.Activity::class.java).setup().get()
         val card = com.combo.monkeycompanion.ui.PowerChoiceActivity.card(a, com.combo.monkeycompanion.character.CharacterRegistry.byId("devil")!!) {}
         val frame = android.widget.FrameLayout(a).apply { setBackgroundColor(com.combo.monkeycompanion.theme.Th.INK); setPadding(36, 36, 36, 36); addView(card) }
         val w = 1233

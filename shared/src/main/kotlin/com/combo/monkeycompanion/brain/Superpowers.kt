@@ -270,6 +270,8 @@ object Superpowers {
     @Volatile var requested: Superpower? = null
     const val OFF = "off"
     const val RANDOM = "random"
+    /** v10.38.23: own powers about twice as often. */
+    const val OFTEN = "often"
 
     fun byId(id: String?): Superpower? = all.firstOrNull { it.id == id } ?: everything.firstOrNull { it.id == id }
 

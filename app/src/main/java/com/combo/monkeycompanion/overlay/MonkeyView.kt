@@ -1421,7 +1421,7 @@ class MonkeyView(
                 if (ringKind == RingKind.POWERS) LongPressMenu.powerRing(com.combo.monkeycompanion.brain.PowerPrefs.enabled(character)) else menuLayout().more, ringPage))
             id == LongPressMenu.RANDOM -> firePower(null)
             id.startsWith("force:") -> {
-                val pw = Superpowers.byId(id.removePrefix("force:")) ?: Superpowers.choose(Superpowers.RANDOM)
+                val pw = Superpowers.byId(id.removePrefix("force:")) ?: ownPower(Superpowers.RANDOM)
                 if (pw != null) usePower(explicit = true, force = pw)
             }
             LongPressMenu.isPower(id) -> firePower(Superpowers.byId(LongPressMenu.powerId(id)))
@@ -1471,7 +1471,7 @@ class MonkeyView(
 
     /** A power from the menu: greyed while recharging; with battery saver on, warn once, then allow. */
     private fun firePower(pw0: Superpower?) {
-        val pw = pw0 ?: Superpowers.choose(Superpowers.RANDOM) ?: character.powers.firstOrNull() ?: return
+        val pw = pw0 ?: ownPower(Superpowers.RANDOM) ?: character.powers.firstOrNull() ?: return
         if (LongPressMenu.saverWarn(saver, prefs.getBoolean("saverPowerWarned", false))) {
             prefs.edit().putBoolean("saverPowerWarned", true).apply()
             showBubble("🔋 Battery saver is on. Powers use a little extra battery. Do it anyway?", 9f,
@@ -6551,13 +6551,29 @@ class MonkeyView(
     private fun powerSetting() = runCatching { ChatHub.settings.power }.getOrDefault(Superpowers.RANDOM)
 
     /**
+     * v10.38.23: a power of THIS character (its ticked / enabled powers, main power included), so a partner in
+     * Duo / Trio never borrows the lead's powers. Off = none. A power named in chat wins if this character has it.
+     * Exactly one Random call on the random path, like [Superpowers.choose] (frame-loop Random order unchanged).
+     */
+    private fun ownPower(setting: String): Superpower? {
+        val asked = Superpowers.requested; Superpowers.requested = null
+        if (setting == Superpowers.OFF) return null
+        val mine = com.combo.monkeycompanion.brain.PowerPrefs.enabled(character)
+        asked?.let { a -> mine.firstOrNull { it.id == a.id }?.let { return it } }
+        mine.firstOrNull { it.id == setting }?.let { return it }   // an old "this power only" setting
+        val pool = mine.filter { it.randomPick }.ifEmpty { mine }
+        if (pool.isEmpty()) return null
+        return pool.random()
+    }
+
+    /**
      * Use a superpower now. [explicit] = the user (chat keyword, AI tag, Settings "Use power") asked:
      * answers with a line when powers are Off or still recharging. [force] = this power.
      */
     fun usePower(explicit: Boolean, force: Superpower? = null): Boolean {
         if (explicit && powerOn && !exiting && !quitAsk && host != null && !wp) {
             // v10.9: no cooldown, whenever you want: chain straight into the next power from where she is now
-            val pw = force ?: Superpowers.choose(powerSetting()) ?: character.powers.firstOrNull() ?: return false
+            val pw = force ?: ownPower(powerSetting()) ?: character.powers.firstOrNull() ?: return false
             powerOn = false; flight.cancel()
             com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.POWER_USED, pw.title)
             beginPower(pw)
@@ -6566,7 +6582,7 @@ class MonkeyView(
         // v10.26.2: a queued power that never got its landing (a swipe trip / throw cleared it) must not block powers forever
         if (powerQueued && SystemClock.elapsedRealtime() - powerQueuedAt > 8_000L) powerQueued = false
         if (exiting || quitAsk || powerOn || powerQueued) return false
-        val pw = force ?: Superpowers.choose(powerSetting())
+        val pw = force ?: ownPower(powerSetting())
         if (pw == null) { if (explicit) say(Lines.pick(Lines.POWER_OFF), 4000L); return false }
         if (autoPowerGap > 0f && !explicit) return false
         if (host == null) { say(Lines.pick(pw.startLines), 2500L); controller.play(MonkeyState.JUMP, 0.75f); return true }   // in-app preview
@@ -7116,7 +7132,7 @@ class MonkeyView(
         particles.clear()
         surf = screenSurf(SK.FLOOR); my = ground(); clampToSurf()
         controller.idleNow(2f)
-        autoPowerGap = 25f
+        autoPowerGap = if (powerSetting() == Superpowers.OFTEN) 12f else 25f   // v10.38.23: "Often" = about twice as often
         powerIn = nextRandomPower()
         updateGeometry()
         // v4.2: a power entrance has landed: now the message, with its chips (the finger can tap again).

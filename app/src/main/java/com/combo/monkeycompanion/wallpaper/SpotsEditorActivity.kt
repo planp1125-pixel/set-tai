@@ -23,6 +23,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import kotlin.math.abs
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import kotlin.math.max
 import kotlin.math.min
 
@@ -31,7 +34,7 @@ import kotlin.math.min
  * resizes rectangles to line up with their home-screen widgets. A screenshot of the home screen
  * can be shown as a semi-transparent guide. Saved per orientation, as fractions of the screen.
  */
-class SpotsEditorActivity : Activity() {
+class SpotsEditorActivity : androidx.activity.ComponentActivity() {
     private lateinit var editor: SpotsEditorView
     private val landscape get() = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
@@ -52,38 +55,40 @@ class SpotsEditorActivity : Activity() {
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
-    private fun toolbar(): View {
-        val bar = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            background = GradientDrawable().apply { cornerRadius = dp(20).toFloat(); setColor(Color.argb(225, 0x2B, 0x1A, 0x10)) }
+    /** v10.38.23: Material 3 tool panel over the full-screen canvas. */
+    private fun toolbar(): View = androidx.compose.ui.platform.ComposeView(this).apply {
+        setContent {
+            androidx.compose.material3.MaterialTheme(colorScheme = com.combo.monkeycompanion.ui.SettaiDesignTokens.scheme(true)) {
+                androidx.compose.material3.Surface(
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                    modifier = androidx.compose.ui.Modifier.padding(horizontal = 12.dp).fillMaxWidth()
+                ) {
+                    androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(14.dp),
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material3.Text("Line up boxes with your widgets. Drag to move, drag a corner dot to resize. Tip: take a screenshot of your home screen and pick it as a guide.",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                        androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                            androidx.compose.material3.FilledTonalButton(onClick = { editor.addSpot() }, modifier = androidx.compose.ui.Modifier.weight(1f)) { androidx.compose.material3.Text("+ Add spot") }
+                            androidx.compose.material3.OutlinedButton(onClick = { editor.deleteSelected() }, modifier = androidx.compose.ui.Modifier.weight(1f)) { androidx.compose.material3.Text("Delete") }
+                        }
+                        androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                            androidx.compose.material3.OutlinedButton(onClick = { pickGuide() }, modifier = androidx.compose.ui.Modifier.weight(1f)) { androidx.compose.material3.Text("Guide image") }
+                            androidx.compose.material3.OutlinedButton(onClick = { editor.setGuide(null); WallpaperPrefs.setGuideImage(this@SpotsEditorActivity, landscape, null) },
+                                modifier = androidx.compose.ui.Modifier.weight(1f)) { androidx.compose.material3.Text("No guide") }
+                        }
+                        androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                            androidx.compose.material3.TextButton(onClick = { finish() }, modifier = androidx.compose.ui.Modifier.weight(1f)) { androidx.compose.material3.Text("Cancel") }
+                            androidx.compose.material3.Button(onClick = {
+                                WallpaperPrefs.saveSpotFractions(this@SpotsEditorActivity, landscape, editor.fractions())
+                                Toast.makeText(this@SpotsEditorActivity, "Saved ${editor.count()} climbing spot(s)", Toast.LENGTH_SHORT).show()
+                                finish()
+                            }, modifier = androidx.compose.ui.Modifier.weight(1f)) { androidx.compose.material3.Text("✔ Save") }
+                        }
+                    }
+                }
+            }
         }
-        bar.addView(TextView(this).apply {
-            text = "Line up boxes with your widgets. Drag to move, drag a corner dot to resize. Tip: take a screenshot of your home screen and pick it as a guide."
-            setTextColor(Color.WHITE); textSize = 12.5f
-        })
-        val row1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val row2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        fun b(label: String, row: LinearLayout, f: () -> Unit) = row.addView(Button(this).apply {
-            text = label; isAllCaps = false; textSize = 13f; setTextColor(Color.rgb(0x5A, 0x36, 0x18))
-            background = GradientDrawable().apply { cornerRadius = dp(16).toFloat(); setColor(Color.rgb(0xFF, 0xF4, 0xE2)) }
-            setPadding(dp(6), 0, dp(6), 0); minHeight = dp(38); minimumHeight = dp(38)
-            setOnClickListener { f() }
-        }, LinearLayout.LayoutParams(0, dp(40), 1f).apply { setMargins(dp(3), dp(6), dp(3), 0) })
-        b("+ Add spot", row1) { editor.addSpot() }
-        b("Delete", row1) { editor.deleteSelected() }
-        b("Guide image", row1) { pickGuide() }
-        b("No guide", row2) { editor.setGuide(null); WallpaperPrefs.setGuideImage(this, landscape, null) }
-        b("Cancel", row2) { finish() }
-        b("\u2714 Save", row2) {
-            WallpaperPrefs.saveSpotFractions(this, landscape, editor.fractions())
-            Toast.makeText(this, "Saved ${editor.count()} climbing spot(s)", Toast.LENGTH_SHORT).show()
-            finish()
-        }
-        bar.addView(row1); bar.addView(row2)
-        val wrap = FrameLayout(this).apply { setPadding(dp(10), 0, dp(10), 0) }
-        wrap.addView(bar)
-        return wrap
     }
 
     private fun pickGuide() {

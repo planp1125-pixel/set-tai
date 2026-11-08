@@ -79,10 +79,8 @@
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop" />
+
+        <activity android:name=".ui.CareToolsActivity" android:exported="false" android:label="Care tools" />
 
         <activity
             android:name=".ui.ChatActivity"
@@ -186,7 +184,6 @@
         <activity android:name=".ui.MemoryActivity" android:exported="false" android:label="Settai's memory" />
         <activity android:name=".ui.ReportsActivity" android:exported="false" android:label="Reported replies" />
         <activity android:name=".ui.WardrobeActivity" android:exported="false" android:label="Wardrobe" />
-        <activity android:name=".ui.MenuSettingsActivity" android:exported="false" android:label="Long-press menu" />
         <activity android:name=".fun5.PairActivity" android:exported="false" android:label="Two phones" />
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -21,7 +21,6 @@ import android.os.Looper
 import com.combo.monkeycompanion.fun5.PairActivity
 import com.combo.monkeycompanion.smash.SmashActivity
 import android.provider.Settings
-import com.combo.monkeycompanion.MainActivity
 import com.combo.monkeycompanion.character.CharacterRegistry
 import com.combo.monkeycompanion.ai.ChatHub
 import com.combo.monkeycompanion.mind.MindHub
@@ -61,6 +60,10 @@ import androidx.compose.ui.unit.sp
  * Routes launch existing feature activities until each screen is migrated.
  */
 class SettaiDesignActivity : ComponentActivity() {
+    companion object {
+        /** Home-screen "Bring back" shortcut (moved here from the removed old main screen in v10.38.23). */
+        const val ACTION_BRING_BACK = "com.combo.monkeycompanion.BRING_BACK"
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { DesignApp() }
@@ -74,7 +77,7 @@ class SettaiDesignActivity : ComponentActivity() {
 
     /** v10.38.20: the home-screen "Bring back" shortcut opens this new home and calls the companion out. */
     private fun bringBack(i: Intent?) {
-        if (i?.action != com.combo.monkeycompanion.MainActivity.ACTION_BRING_BACK || MonkeyOverlayService.running) return
+        if (i?.action != ACTION_BRING_BACK || MonkeyOverlayService.running) return
         if (com.combo.monkeycompanion.wallpaper.SettaiWallpaperService.isActive(this)) return   // lives in the wallpaper: just open home
         if (Settings.canDrawOverlays(this)) MonkeyOverlayService.start(this)
         else startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName")))
@@ -96,18 +99,33 @@ class SettaiDesignActivity : ComponentActivity() {
         runCatching { startActivity(SettaiWallpaperService.chooserIntent(this)) }
             .onFailure { runCatching { startActivity(Intent(android.app.WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)) } }
     }
-    private fun wallpaperBackground() {
+    private var bgPickerOpen by mutableStateOf(false)
+    private fun wallpaperBackground() { bgPickerOpen = true }
+
+    @Composable
+    private fun WallpaperBackgroundDialog() {
         val colors = intArrayOf(0xFF2E5E4E.toInt(), 0xFF1E2A44.toInt(), 0xFFE9D8B4.toInt(), 0xFF3A2A4A.toInt())
-        AlertDialog.Builder(this).setTitle("Wallpaper background").setItems(arrayOf("Soft jungle", "Deep green", "Night blue", "Warm sand", "Dusk purple", "My own image…")) { _, index ->
-            when(index) {
-                0 -> WallpaperPrefs.setBackground(this, WallpaperPrefs.BG_JUNGLE)
-                in 1..4 -> WallpaperPrefs.setBackground(this, WallpaperPrefs.BG_COLOR, color = colors[index - 1])
-                else -> {
-                    @Suppress("DEPRECATION")
-                    startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*"), 52)
+        val names = listOf("Soft jungle", "Deep green", "Night blue", "Warm sand", "Dusk purple", "My own image…")
+        androidx.compose.material3.AlertDialog(onDismissRequest = { bgPickerOpen = false },
+            title = { Text("Wallpaper background") },
+            text = {
+                Column {
+                    names.forEachIndexed { index, n ->
+                        TextButton(onClick = {
+                            bgPickerOpen = false
+                            when (index) {
+                                0 -> WallpaperPrefs.setBackground(this@SettaiDesignActivity, WallpaperPrefs.BG_JUNGLE)
+                                in 1..4 -> WallpaperPrefs.setBackground(this@SettaiDesignActivity, WallpaperPrefs.BG_COLOR, color = colors[index - 1])
+                                else -> {
+                                    @Suppress("DEPRECATION")
+                                    startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*"), 52)
+                                }
+                            }
+                        }, modifier = Modifier.fillMaxWidth()) { Text(n, modifier = Modifier.fillMaxWidth()) }
+                    }
                 }
-            }
-        }.show()
+            },
+            confirmButton = {}, dismissButton = { TextButton(onClick = { bgPickerOpen = false }) { Text("Cancel") } })
     }
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -133,7 +151,6 @@ class SettaiDesignActivity : ComponentActivity() {
             else -> Toast.makeText(this, CareTools.describe(tool, st), Toast.LENGTH_SHORT).show()
         }
     }
-    private fun advanced(tab: String? = null) = startActivity(Intent(this, MainActivity::class.java).putExtra("settai_legacy_controls", true).apply { if (tab != null) putExtra("settai_open_tab", tab) })
     private fun syncActiveCrew() { if (MonkeyOverlayService.running) MonkeyOverlayService.syncCrew(this) }
     private fun v5(cmd: String) {
         if (!MonkeyOverlayService.running) {
@@ -197,6 +214,7 @@ class SettaiDesignActivity : ComponentActivity() {
                 if (event == Lifecycle.Event.ON_RESUME) {
                     overlayRunning = MonkeyOverlayService.running
                     if (overlayRunning) { launchPending = false; launchMessage = "Companion is active" }
+                    toolRefresh++
                     overlayAllowed = Settings.canDrawOverlays(this@SettaiDesignActivity)
                     selectedCharacter = CharacterRegistry.current.id
                     crewMode = Population.Mode.of(MindHub.neighbourMode)
@@ -229,6 +247,7 @@ class SettaiDesignActivity : ComponentActivity() {
             }
         }
         MaterialTheme(colorScheme = if (dark) darkColorScheme(primary = primary, onPrimary = Color(0xFF171719), background = bg, surface = surface, onSurface = ink) else lightColorScheme(primary = primary, onPrimary = Color.White, background = bg, surface = surface, onSurface = ink)) {
+            if (bgPickerOpen) WallpaperBackgroundDialog()
             Scaffold(containerColor = bg, bottomBar = {
                 NavigationBar(containerColor = surface) {
                     listOf("Home", "Characters", "Create", "Explore", "Settings").forEachIndexed { index, label ->
@@ -309,31 +328,37 @@ class SettaiDesignActivity : ComponentActivity() {
                                     TextButton(onClick = { page = 1 }) { Text("Manage companions") }
                                 }
                             }
-                            item { Heading("Care tools", ink) }
+                            // v10.38.23: one swipeable row of shortcuts (add a tile for each new feature) + a small Care tools card.
+                            item { Heading("Quick actions", ink) }
                             item {
-                                Panel(surface) {
-                                    val currentRevision = toolRefresh
-                                    key(currentRevision) { CareTools.Tool.entries.forEach { tool ->
-                                        val st = ToolStore.get(this@SettaiDesignActivity, tool)
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(tool.icon + " " + tool.label, modifier = Modifier.weight(1f), color = ink)
-                                            Switch(checked = st.on, onCheckedChange = { on ->
-                                                ToolStore.put(this@SettaiDesignActivity, tool, CareTools.toggle(tool, st, on, System.currentTimeMillis()))
-                                                toolRefresh++
-                                            })
+                                androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    val tiles = listOf<Triple<String, String, () -> Unit>>(
+                                        Triple("✿", "Characters") { page = 1 },
+                                        Triple("✦", "Show tricks") { v5("onboard") },
+                                        Triple("▤", "What you missed") { v5("notif_card_demo") },
+                                        Triple("▶", "Make a show") { page = 2 },
+                                        Triple("✧", "Give Brain") { settings("brain") },
+                                        Triple("⚡", "Use a power") { usePowerNow() },
+                                    )
+                                    items(tiles.size) { k ->
+                                        val (sym, label, act) = tiles[k]
+                                        Surface(onClick = act, color = surface, shape = RoundedCornerShape(22.dp), modifier = Modifier.size(width = 104.dp, height = 104.dp)) {
+                                            Column(Modifier.fillMaxSize().padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                                Text(sym, fontSize = 28.sp, color = MaterialTheme.colorScheme.primary)
+                                                Spacer(Modifier.height(6.dp))
+                                                Text(label, fontSize = 12.sp, color = ink, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2)
+                                            }
                                         }
-                                        TextButton(onClick = { editTool(tool) { toolRefresh++ } }) {
-                                            Text(CareTools.describe(tool, st))
-                                        }
-                                    } }
+                                    }
                                 }
                             }
-                            item { Heading("Quick actions", ink) }
-                            item { Feature("Choose a character", "Meet your characters and change who appears", "✿", surface, ink, muted) { page = 1 } }
-                            item { Feature("Show me tricks", "Watch the companion's interactive demonstration", "✦", surface, ink, muted) { v5("onboard") } }
-                            item { Feature("What You Missed", "See your notification summary", "▤", surface, ink, muted) { v5("notif_card_demo") } }
-                            item { Feature("Make a show", "Create and play animated stories", "▶", surface, ink, muted) { page = 2 } }
-                            item { Feature("Give Brain", "Optional AI and personality settings", "✧", surface, ink, muted) { settings("brain") } }
+                            item {
+                                @Suppress("UNUSED_VARIABLE") val currentRevision = toolRefresh
+                                val on = CareTools.Tool.entries.filter { ToolStore.get(this@SettaiDesignActivity, it).on }
+                                Feature("Care tools", if (on.isEmpty()) "Water, tablet, eye break and more reminders. All off."
+                                    else on.joinToString(" · ") { it.icon + " " + it.label } + " · ${on.size} on",
+                                    "♥", surface, ink, muted) { startActivity(Intent(this@SettaiDesignActivity, CareToolsActivity::class.java)) }
+                            }
                         }
                         1 -> {
                             item {

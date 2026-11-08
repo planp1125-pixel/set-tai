@@ -577,21 +577,26 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
         }
     }
 
+    /** v10.38.23: how often characters use their OWN powers by themselves (which powers = each character's own list). */
     @Composable
     private fun SuperpowersCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         val powers = com.combo.monkeycompanion.brain.Superpowers
-        val ids = listOf(powers.OFF, powers.RANDOM) + powers.all.map { it.id }
-        val names = listOf("Off", "Random (surprise me)") + powers.all.map { it.title }
-        val sel = ids.indexOf(s.power).let { if (it < 0) 1 else it }
+        val ids = listOf(powers.OFF, powers.RANDOM, powers.OFTEN)
+        val sel = when (s.power) { powers.OFF -> 0; powers.OFTEN -> 2; else -> 1 }
         val who = com.combo.monkeycompanion.character.CharacterRegistry.current
-        SCard("Superpowers") {
-            SChoice(null, names, sel) { s.power = ids[it]; bump() }
-            SNote(when (ids[sel]) {
-                powers.OFF -> "No superpowers: ${who.name} stays a regular genius ${who.noun}."
-                powers.RANDOM -> "A random power each time: " + powers.all.joinToString("; ") { "${it.title}: ${it.blurb}" } + "."
-                else -> powers.byId(ids[sel])?.blurb ?: ""
+        SCard("Superpowers", "Each character only ever uses its own powers. Double-tap and the long-press ⚡ menu fire one any time.") {
+            SChoice("Use powers by themselves", listOf("Off", "Sometimes", "Often"), sel) { s.power = ids[it]; bump() }
+            SNote(when (sel) {
+                0 -> "Off: characters never use a power on their own (double-tap and the menu still work)."
+                2 -> "Often: about every 12 seconds of play, never with Battery saver on or while resting."
+                else -> "Sometimes: now and then while you're around, never with Battery saver on or while resting."
             })
-            SNote("Settai also uses its power when you ask in chat (\"fly!\", \"show your power\") and now and then on its own while you're around (never with Battery saver on or while resting).")
+            SNote("${who.name}'s powers: " + com.combo.monkeycompanion.brain.PowerPrefs.enabled(who).joinToString { it.title } + ".")
+            if (who.id.startsWith("custom_")) SSecondary("Choose ${who.name}'s powers (Creator Studio)") {
+                startActivity(Intent(this@SettingsActivity, CompanionStudioActivity::class.java).putExtra("character", who.id))
+            } else if (com.combo.monkeycompanion.brain.PowerPrefs.choosable(who)) SSecondary("Choose ${who.name}'s powers") {
+                startActivity(Intent(this@SettingsActivity, PowerChoiceActivity::class.java).putExtra("id", who.id))
+            }
         }
     }
 

@@ -10,7 +10,6 @@ import android.graphics.Shader
 import android.graphics.Typeface
 import android.view.MotionEvent
 import androidx.test.core.app.ApplicationProvider
-import com.combo.monkeycompanion.MainActivity
 import com.combo.monkeycompanion.agent.NotifItem
 import com.combo.monkeycompanion.agent.NotifStore
 import com.combo.monkeycompanion.agent.NotifSummary
@@ -252,17 +251,6 @@ class CustomCompanionStudioTest {
         v.debugFrames(30)
         assertEquals("FLOOR", v.debugSurfKind)
         Stage.resetImeForTest()
-    }
-
-    @Test
-    fun mainActivityFourTabBottomNavigationAndCompanionSizeSelectorWorkCleanly() {
-        val ctl = Robolectric.buildActivity(MainActivity::class.java).setup()
-        val act = ctl.get()
-        assertEquals(MainActivity.Tab.HOME, act.activeTab)
-        for (tab in MainActivity.Tab.entries) {
-            act.selectTab(tab)
-            assertEquals(tab, act.activeTab)
-        }
     }
 
     @Test

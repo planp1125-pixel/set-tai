@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
-import com.combo.monkeycompanion.MainActivity
 import com.combo.monkeycompanion.R
 import com.combo.monkeycompanion.mind.MindHub
 

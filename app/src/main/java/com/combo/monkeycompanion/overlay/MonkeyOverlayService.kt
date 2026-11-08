@@ -26,7 +26,6 @@ import androidx.core.app.NotificationCompat
 import com.combo.monkeycompanion.powers.LaunchGate
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
-import com.combo.monkeycompanion.MainActivity
 import com.combo.monkeycompanion.R
 
 /**

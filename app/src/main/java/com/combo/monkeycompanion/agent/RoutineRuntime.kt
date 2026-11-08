@@ -13,7 +13,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.combo.monkeycompanion.MainActivity
 import com.combo.monkeycompanion.R
 import com.combo.monkeycompanion.ai.AppSettings
 import com.combo.monkeycompanion.ai.BodyAction
