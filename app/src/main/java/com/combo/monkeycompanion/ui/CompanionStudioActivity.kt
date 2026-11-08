@@ -2,6 +2,16 @@ package com.combo.monkeycompanion.ui
 
 import android.annotation.SuppressLint
 import androidx.compose.runtime.getValue
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.setValue
 import android.app.Activity
 import android.app.AlertDialog
@@ -545,7 +555,11 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
     private val purple = com.combo.monkeycompanion.theme.Th.rgb(0x09, 0x84, 0xE3)
     private val uiHandler = Handler(Looper.getMainLooper())
 
-    private lateinit var draft: CustomCompanionSpec
+    // Compose state: every screen part that reads the draft updates by itself when it changes.
+    private val draftState = androidx.compose.runtime.mutableStateOf<CustomCompanionSpec?>(null)
+    private var draft: CustomCompanionSpec
+        get() = draftState.value!!
+        set(v) { draftState.value = v }
     // Snapshot state invalidates Compose controls when an edit saves without rebuilding the screen.
     private var draftRevision by androidx.compose.runtime.mutableIntStateOf(0)
     private lateinit var previewChar: CustomCharacter
@@ -941,510 +955,334 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
         runCatching { dlg.show() }
     }
 
-    private var studioTabIndex = 0
+    // ---------------- v10.38.12 Studio: one Material 3 screen ----------------
+    // Live preview stays pinned on top; six tabs below; Save bar at the bottom. Every change saves and the
+    // preview updates at once (no screen rebuild, no jump back to the top).
+    private var studioTab by androidx.compose.runtime.mutableIntStateOf(0)
+    private var studioComposed = false
+    private val studioTabs = listOf("Basics", "Face", "Body", "Style", "Powers", "Personality")
 
-    private fun rebuildUI() {
-        val col = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(12), dp(16), dp(32))
-        }
-
-        col.addView(TextView(this).apply {
-            text = "Character Creator Studio"
-            textSize = 24f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
-            gravity = Gravity.CENTER_HORIZONTAL
-        })
-        col.addView(TextView(this).apply {
-            text = "Shape your companion in the live preview, then customize its appearance, movement and personality."
-            textSize = 12.5f; setTextColor(soft); gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(0, dp(2), 0, dp(10))
-        })
-
-        // 1. HUGE 360dp Live 60fps Stage + 1x..5x Zoom Bar + Split-Screen Compare + Face-ID Mesh Toggle
-        val stage = StudioLiveStageView(this, previewChar).also {
+    private fun ensureStage(): StudioLiveStageView {
+        stageView?.let { return it }
+        val st = StudioLiveStageView(this, previewChar).also {
             it.uploadedPhotoThumb = lastUploadedPhoto
-            stageView = it
-        }
-        val previewFrame = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(8), dp(8), dp(8), dp(8))
-            background = GradientDrawable().apply { cornerRadius = dp(24).toFloat(); setColor(Color.WHITE) }
-        }
-        previewFrame.addView(TextView(this).apply {
-            text = "LIVE PREVIEW"; textSize = 11f; setTypeface(typeface, Typeface.BOLD); setTextColor(accent)
-            setPadding(dp(8), dp(4), 0, dp(8))
-        })
-        previewFrame.addView(stage, LinearLayout.LayoutParams(MATCH_PARENT, dp(220)))
-        col.addView(previewFrame, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) })
-
-        // Multi-Level Zoom Buttons: [1x Full] [2x Upper] [3.5x Face] [5x Ultra] [🎯 Reset]
-        val zoomControls = androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(
-                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
-            )
-            setContent {
-                androidx.compose.material3.MaterialTheme {
-                    StudioPreviewControls(stage)
-                }
+            it.onMeshAdjusted = { nextMesh ->
+                draft = draft.copy(faceMesh = nextMesh)
+                CustomCompanionStore.save(this@CompanionStudioActivity, draft)
+            }
+            it.onResampledSpec = { nextSpec ->
+                draft = nextSpec
+                CustomCompanionStore.save(this@CompanionStudioActivity, draft)
             }
         }
-        col.addView(zoomControls)
+        stageView = st
+        return st
+    }
 
-        stage.onMeshAdjusted = { nextMesh ->
-            draft = draft.copy(faceMesh = nextMesh)
-            CustomCompanionStore.save(this@CompanionStudioActivity, draft)
-        }
-        stage.onResampledSpec = { nextSpec ->
-            draft = nextSpec
-            CustomCompanionStore.save(this@CompanionStudioActivity, draft)
-        }
-
-        // Split-Screen Compare + 68-Pt Face-ID Mesh + Trackpad Drag + Fullscreen Inspector Row
-        val inspectionControls = androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(
-                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
-            )
-            setContent {
-                androidx.compose.material3.MaterialTheme {
-                    StudioInspectionControls(stage, ::openFullscreenZoomInspector)
-                }
+    /** Old name kept: callers now just refresh the Compose screen (it re-reads [draft]). */
+    private fun rebuildUI() {
+        if (studioComposed) { draftRevision++; return }
+        studioComposed = true
+        ensureStage()
+        setContent {
+            val dark = com.combo.monkeycompanion.theme.ThemeSkin.isDark(this@CompanionStudioActivity)
+            androidx.compose.material3.MaterialTheme(colorScheme = SettaiDesignTokens.scheme(dark)) {
+                StudioScreen()
             }
         }
-        col.addView(inspectionControls)
+    }
 
-        // Interactive 10-Feature Mesh Selector + Precision D-Pad (◀ ▲ ▼ ▶ ➖ ➕ 🎨 Copy) right on the main screen!
-        col.addView(buildMeshFeatureControls(stage, darkTheme = false),
-            LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(8) })
-
-        // Concise Visual Guide: "How 68-Pt Mesh Copying Works"
-        val guideBox = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(8), dp(12), dp(8))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(12).toFloat()
-                setColor(com.combo.monkeycompanion.theme.Th.rgb(0xE8, 0xF5, 0xE9))
-                setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0x43, 0xA0, 0x47))
-            }
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(8) }
-        }
-        guideBox.addView(TextView(this).apply {
-            text = "🕸️ How 68-Pt Mesh Copying Works (Zero Tiny-Dot Poking Required!):"
-            textSize = 12.2f; setTypeface(typeface, Typeface.BOLD); setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0x1B, 0x5E, 0x20))
-        })
-        guideBox.addView(TextView(this).apply {
-            text = "1️⃣ Tap a feature chip above (💇 Hairline, 🤨 Brows, 👁️ Eyes, 👃 Nose, 👄 Mouth, 🧔 Jaw, or 🧔 Chin). " +
-                "2️⃣ Swipe anywhere on the preview like a trackpad (with a 2.5x Magnifier Loupe above your finger!) OR tap ◀ ▲ ▼ ▶ ➖ ➕. " +
-                "3️⃣ Watch the 2D character on the right reshape 1:1 in real time & tap [🎨 Copy] to sample your exact skin, hair & lip colors!"
-            textSize = 11.4f; setTextColor(brown); setPadding(0, dp(2), 0, 0)
-        })
-        col.addView(guideBox)
-
-        val demoControls = androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(
-                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
-            )
-            setContent {
-                androidx.compose.material3.MaterialTheme {
-                    StudioDemoControls(stage)
-                }
-            }
-        }
-        col.addView(demoControls, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-            bottomMargin = dp(10)
-        })
-
-        // 1B. Prominent Companion Name + 1-Tap Person Type (Girl / Boy / Woman / Man) & Age Selector Bar right below the stage!
-        val personCard = card("👤 Companion Name, Sex & Age (1-Tap Selector)")
-        val topNameRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 0, 0, dp(8))
-        }
-        topNameRow.addView(TextView(this).apply {
-            text = "✏️ Name:"
-            textSize = 13.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
-            setPadding(0, 0, dp(8), 0)
-        })
-        val topNameEdit = EditText(this).apply {
-            setText(draft.name)
-            hint = "Enter Name (e.g. Priya, Kuttyma, Manik)"
-            textSize = 15f; setTextColor(brown)
-            setSingleLine(true)
-        }
-        activeNameInput = topNameEdit
-        topNameEdit.addTextChangedListener(object : android.text.TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: android.text.Editable?) {
-                if (suppressNameWatcher) return
-                val typed = s?.toString()?.trim().orEmpty()
-                if (typed.isNotBlank() && typed != draft.name) {
-                    draft = draft.copy(name = typed)
-                    previewChar.updateSpec(draft)
-                    CustomCompanionStore.save(this@CompanionStudioActivity, draft)
-                    stageView?.invalidate()
-                }
-            }
-        })
-        topNameRow.addView(topNameEdit, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
-        topNameRow.addView(pillButton("➕ New Slot", selected = false) {
-            val typed = topNameEdit.text?.toString()?.trim().orEmpty().ifBlank { "Companion ${CustomCompanionRegistry.allCharacters().size + 1}" }
-            val newCh = CustomCompanionStore.saveAsNewCompanion(this, draft.copy(name = typed))
+    private fun saveAndUse(asNew: Boolean) {
+        val spec = draft.copy(name = draft.name.trim().ifBlank { "Companion" })
+        if (asNew) {
+            val newCh = CustomCompanionStore.saveAsNewCompanion(this, spec)
             ChatHub.settings.characterId = newCh.id
-            ChatHub.settings.applyCharacter()
-            updateDraft(newCh.spec, rebuild = true)
-            Toast.makeText(this, "➕ Created new companion '${newCh.name}' in Characters list!", Toast.LENGTH_SHORT).show()
-        })
-        personCard.addView(topNameRow)
-        personCard.addView(TextView(this).apply {
-            text = "Switch anytime in 1 tap — Girl, Boy, Woman, or Man (never stuck on 35yr man!):"
-            textSize = 12f; setTextColor(soft); setPadding(0, 0, 0, dp(6))
-        })
-        // Material 3 selector; keep the existing spec transformation, save and rebuild.
-        val genderControls = androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(
-                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
-            )
-            setContent {
-                androidx.compose.material3.MaterialTheme {
-                    StudioGenderControls(draft.gender, onSelect = { gender ->
-                        val updated = draft.applyGenderAndAge(newGender = gender)
-                        CustomCompanionStore.save(this@CompanionStudioActivity, updated)
-                        updateDraft(updated, rebuild = true)
-                    })
-                }
-            }
+            Toast.makeText(this, "Added ${newCh.name} to your characters", Toast.LENGTH_SHORT).show()
+        } else {
+            CustomCompanionStore.save(this, spec)
+            ChatHub.settings.characterId = spec.id
+            Toast.makeText(this, "${spec.name} is now on your screen", Toast.LENGTH_SHORT).show()
         }
-        personCard.addView(genderControls)
+        ChatHub.settings.applyCharacter()
+        MindHub.flush()
+        com.combo.monkeycompanion.overlay.MonkeyOverlayService.syncCrew(this)
+        finish()
+    }
 
-        val ageControls = androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(
-                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
-            )
-            setContent {
-                androidx.compose.material3.MaterialTheme {
-                    StudioAgeControls(draft.ageGroup, onSelect = { age ->
-                        val nextGender = when {
-                            age == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.FEMALE -> CompanionGender.GIRL_CHILD
-                            age == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.MALE -> CompanionGender.BOY_CHILD
-                            age != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.GIRL_CHILD -> CompanionGender.FEMALE
-                            age != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.BOY_CHILD -> CompanionGender.MALE
-                            else -> draft.gender
-                        }
-                        val updated = draft.applyGenderAndAge(newGender = nextGender, newAge = age)
-                        CustomCompanionStore.save(this@CompanionStudioActivity, updated)
-                        updateDraft(updated, rebuild = true)
-                    })
-                }
-            }
-        }
-        personCard.addView(ageControls)
-        col.addView(personCard)
-
-        // Brain controls are shared settings, not stored in the character draft.
-        val brainCard = androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                StudioBrainControls(
-                    enabled = ChatHub.isBrainEnabled(),
-                    status = ChatHub.giveBrainStatusLine(),
-                    onConfigure = {
-                        GiveBrainDialog.show(
-                            act = this@CompanionStudioActivity,
-                            onChanged = { rebuildUI() },
-                            onRunAiPhotoModel = { runAiBrainPhotoModeling() }
-                        )
-                    },
-                    onToggle = {
-                        ChatHub.setBrainEnabled(!ChatHub.isBrainEnabled())
-                        rebuildUI()
-                    },
-                    onModel = { runAiBrainPhotoModeling() }
-                )
-            }
-        }
-        col.addView(brainCard)
-
-        // Compose photo and face editor: existing updateDraft path preserves persistence and preview.
-        val photoCard = card("1. Upload Photo, Face Mode & Fine-Tune Alignment")
-        photoCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                StudioPhotoFaceControls(
-                    analysisSummary = draft.analysisSummary,
-                    suggestionPrompt = draft.suggestionPrompt,
-                    bodyDetectedClearly = draft.bodyDetectedClearly,
-                    faceModes = FaceMode.entries.map { it.label },
-                    selectedFaceMode = draft.faceMode.label,
-                    offsetX = draft.faceOffsetX,
-                    offsetY = draft.faceOffsetY,
-                    zoom = draft.faceZoomScale,
-                    onPickPhoto = { pickPhotoFromGallery() },
-                    onBodyTemplate = { template -> updateDraft(draft.applyBodyTemplate(template), rebuild = true) },
-                    onFaceMode = { label ->
-                        FaceMode.entries.firstOrNull { it.label == label }?.let { mode ->
-                            updateDraft(draft.copy(faceMode = mode), rebuild = true)
+    @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+    @androidx.compose.runtime.Composable
+    private fun StudioScreen() {
+        @Suppress("UNUSED_VARIABLE") val rev = draftRevision   // re-read draft after every edit
+        val stage = ensureStage()
+        var menuOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+        androidx.compose.material3.Scaffold(
+            topBar = {
+                androidx.compose.material3.TopAppBar(
+                    title = {
+                        androidx.compose.foundation.layout.Column {
+                            androidx.compose.material3.Text("Character Studio", style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
+                            androidx.compose.material3.Text(draft.name.ifBlank { "New character" },
+                                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     },
-                    onNudge = { dx, dy ->
-                        updateDraft(draft.copy(
-                            faceOffsetX = (draft.faceOffsetX + dx).coerceIn(-20f, 20f),
-                            faceOffsetY = (draft.faceOffsetY + dy).coerceIn(-20f, 20f)
-                        ), rebuild = true)
+                    navigationIcon = {
+                        androidx.compose.material3.TextButton(onClick = { finish() }) { androidx.compose.material3.Text("←", fontSize = 22.sp) }
                     },
-                    onZoom = { delta -> updateDraft(draft.copy(faceZoomScale = (draft.faceZoomScale + delta).coerceIn(0.80f, 1.35f)), rebuild = true) },
-                    onReset = { updateDraft(draft.copy(faceOffsetX = 0f, faceOffsetY = 0f, faceZoomScale = 1.0f), rebuild = true) }
-                )
-            }
-        })
-        col.addView(photoCard)
-
-        // Quick sample presets keep the existing generation and persistence callbacks.
-        val presetCard = card("⚡ 1-Tap Look-Alike Sample Archetypes")
-        presetCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                draftRevision
-                StudioPresetControls(
-                    selected = listOf(
-                        draft.bodyBuild == BodyBuild.MID_BODY && draft.ageGroup == AgeGroup.ADULT_REGULAR,
-                        draft.bodyBuild == BodyBuild.BULKY_HEAVY,
-                        draft.gender == CompanionGender.FEMALE,
-                        draft.gender == CompanionGender.GIRL_CHILD,
-                        draft.gender == CompanionGender.BOY_CHILD,
-                        draft.bodyBuild == BodyBuild.SLIM && draft.gender == CompanionGender.MALE && draft.ageGroup == AgeGroup.ADULT_REGULAR
-                    ),
-                    onSelect = { index ->
-                        when (index) {
-                            0 -> runPhotoGenerationWithProgress(createSampleAdult35MidBodyBitmap())
-                            1 -> runPhotoGenerationWithProgress(createSampleBulkyPersonBitmap())
-                            2 -> updateDraft(CustomCompanionPresets.womanAdult(draft), rebuild = true)
-                            3 -> runPhotoGenerationWithProgress(createSamplePortraitBitmap())
-                            4 -> updateDraft(CustomCompanionPresets.child5YrBoy(draft), rebuild = true)
-                            5 -> runPhotoGenerationWithProgress(createSampleSlimPersonBitmap())
+                    actions = {
+                        androidx.compose.foundation.layout.Box {
+                            androidx.compose.material3.TextButton(onClick = { menuOpen = true }) { androidx.compose.material3.Text("⋮", fontSize = 22.sp) }
+                            androidx.compose.material3.DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                androidx.compose.material3.DropdownMenuItem(text = { androidx.compose.material3.Text("Export character") }, onClick = { menuOpen = false; exportCharacter() })
+                                androidx.compose.material3.DropdownMenuItem(text = { androidx.compose.material3.Text("Import character") }, onClick = { menuOpen = false; promptImportCharacter() })
+                                androidx.compose.material3.DropdownMenuItem(text = { androidx.compose.material3.Text("Open diary") }, onClick = {
+                                    menuOpen = false
+                                    CustomCompanionStore.save(this@CompanionStudioActivity, draft)
+                                    startActivity(Intent(this@CompanionStudioActivity, DiaryActivity::class.java).putExtra("character", draft.id))
+                                })
+                            }
                         }
                     }
                 )
-            }
-        })
-        col.addView(presetCard)
-
-        // 4. Body Build, Proportions & Age Card
-        val bodyCard = card("2. Body Build, Age Proportions & Width Sliders")
-        bodyCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                draftRevision // Observe edits that do not rebuild the Studio.
-                StudioBodyControls(draft.bodyBuild, draft.bodyWidthScale, draft.shoulderScale, draft.ageGroup,
-                    onBuild = { bb -> updateDraft(draft.copy(bodyBuild = bb, bodyWidthScale = bb.defaultWidthScale, shoulderScale = bb.defaultShoulderScale), rebuild = true) },
-                    onWidth = { updateDraft(draft.copy(bodyWidthScale = it)) },
-                    onShoulders = { updateDraft(draft.copy(shoulderScale = it)) },
-                    onAge = { ag -> updateDraft(draft.applyGenderAndAge(newGender = draft.gender, newAge = ag), rebuild = true) })
-            }
-        })
-        col.addView(bodyCard)
-
-        // 5. Facial Hair, Hair Style & Outfit Card
-        val lookCard = card("3. Facial Hair (Beard/Moustache), Hair Style & Outfit")
-        val nameRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val nameInput = EditText(this).apply {
-            setText(draft.name)
-            hint = "Name (e.g. Priya, Kuttyma, Manik)"
-            textSize = 15f; setTextColor(brown)
-            setSingleLine(true)
-        }
-        nameInput.addTextChangedListener(object : android.text.TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: android.text.Editable?) {
-                if (suppressNameWatcher) return
-                val typed = s?.toString()?.trim().orEmpty()
-                if (typed.isNotBlank() && typed != draft.name) {
-                    draft = draft.copy(name = typed)
-                    previewChar.updateSpec(draft)
-                    CustomCompanionStore.save(this@CompanionStudioActivity, draft)
-                    suppressNameWatcher = true
-                    topNameEdit.setText(typed)
-                    suppressNameWatcher = false
-                    stageView?.invalidate()
+            },
+            bottomBar = {
+                androidx.compose.material3.Surface(tonalElevation = 3.dp) {
+                    androidx.compose.foundation.layout.Row(
+                        androidx.compose.ui.Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+                    ) {
+                        androidx.compose.material3.OutlinedButton(onClick = { saveAndUse(asNew = true) },
+                            modifier = androidx.compose.ui.Modifier.weight(1f).heightIn(min = 48.dp)) { androidx.compose.material3.Text("Save as new") }
+                        androidx.compose.material3.Button(onClick = { saveAndUse(asNew = false) },
+                            modifier = androidx.compose.ui.Modifier.weight(1.4f).heightIn(min = 48.dp)) { androidx.compose.material3.Text("Save & use") }
+                    }
                 }
             }
-        })
-        nameRow.addView(nameInput, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        nameRow.addView(pillButton("Set Name ✓", selected = true) {
-            val n = nameInput.text?.toString()?.trim().orEmpty().ifBlank { topNameEdit.text?.toString()?.trim().orEmpty().ifBlank { draft.name } }
-            updateDraft(draft.copy(name = n), rebuild = true)
-            Toast.makeText(this, "✏️ Name set to '$n'!", Toast.LENGTH_SHORT).show()
-        })
-        lookCard.addView(nameRow)
-
-        lookCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                draftRevision // Observe edits that do not rebuild the Studio.
-                StudioAppearanceControls(
-                    draft.facialHair, draft.hairStyle, draft.outfitStyle,
-                    draft.glasses, draft.cape, draft.hasBindi, draft.hairBow, draft.jasmine, draft.wings,
-                    onFacialHair = { updateDraft(draft.copy(facialHair = it), rebuild = true) },
-                    onHairStyle = { updateDraft(draft.copy(hairStyle = it), rebuild = true) },
-                    onOutfit = { updateDraft(draft.copy(outfitStyle = it), rebuild = true) },
-                    onGlasses = { updateDraft(draft.copy(glasses = it)) },
-                    onCape = { updateDraft(draft.copy(cape = it)) },
-                    onBindi = { updateDraft(draft.copy(hasBindi = it)) },
-                    onBow = { updateDraft(draft.copy(hairBow = it)) },
-                    onJasmine = { updateDraft(draft.copy(jasmine = it)) },
-                    onWings = { updateDraft(draft.copy(wings = it)) })
+        ) { pad ->
+            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().padding(pad)) {
+                // Pinned live preview: always visible while you change things.
+                androidx.compose.material3.Card(
+                    modifier = androidx.compose.ui.Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(SettaiDesignTokens.cornerCardDp.dp)
+                ) {
+                    androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { (stage.parent as? android.view.ViewGroup)?.removeView(stage); stage },
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth().height(220.dp)
+                    )
+                    StudioDemoControls(stage, androidx.compose.ui.Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
+                }
+                androidx.compose.material3.ScrollableTabRow(selectedTabIndex = studioTab, edgePadding = 12.dp) {
+                    studioTabs.forEachIndexed { i, label ->
+                        androidx.compose.material3.Tab(selected = studioTab == i, onClick = { studioTab = i },
+                            text = { androidx.compose.material3.Text(label) })
+                    }
+                }
+                androidx.compose.foundation.layout.Column(
+                    androidx.compose.ui.Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(SettaiDesignTokens.sectionSpacingDp.dp)
+                ) {
+                    when (studioTab) {
+                        0 -> BasicsTab()
+                        1 -> FaceTab(stage)
+                        2 -> Section("Body shape") {
+                            StudioBodyControls(draft.bodyBuild, draft.bodyWidthScale, draft.shoulderScale, draft.ageGroup,
+                                onBuild = { bb -> updateDraft(draft.copy(bodyBuild = bb, bodyWidthScale = bb.defaultWidthScale, shoulderScale = bb.defaultShoulderScale)) },
+                                onWidth = { updateDraft(draft.copy(bodyWidthScale = it)) },
+                                onShoulders = { updateDraft(draft.copy(shoulderScale = it)) },
+                                onAge = { ag -> updateDraft(draft.applyGenderAndAge(newGender = draft.gender, newAge = ag)) })
+                        }
+                        3 -> Section("Hair, outfit & extras") {
+                            StudioAppearanceControls(
+                                draft.facialHair, draft.hairStyle, draft.outfitStyle,
+                                draft.glasses, draft.cape, draft.hasBindi, draft.hairBow, draft.jasmine, draft.wings,
+                                onFacialHair = { updateDraft(draft.copy(facialHair = it)) },
+                                onHairStyle = { updateDraft(draft.copy(hairStyle = it)) },
+                                onOutfit = { updateDraft(draft.copy(outfitStyle = it)) },
+                                onGlasses = { updateDraft(draft.copy(glasses = it)) },
+                                onCape = { updateDraft(draft.copy(cape = it)) },
+                                onBindi = { updateDraft(draft.copy(hasBindi = it)) },
+                                onBow = { updateDraft(draft.copy(hairBow = it)) },
+                                onJasmine = { updateDraft(draft.copy(jasmine = it)) },
+                                onWings = { updateDraft(draft.copy(wings = it)) })
+                        }
+                        4 -> Section("How it moves & its powers (${draft.selectedPowers.size}/${CustomPowerCatalog.OPTIONS.size})") {
+                            StudioPowerControls(draft.flightStyle, draft.selectedPowers,
+                                onFlight = { fl ->
+                                    updateDraft(draft.copy(flightStyle = fl))
+                                    if (fl != FlightStyle.WALK_AND_HOP) stage.demoMode = StudioLiveStageView.DemoMode.FLIGHT_LOOP
+                                },
+                                onAll = {
+                                    updateDraft(draft.copy(selectedPowers = CustomPowerCatalog.selectAllPowers()))
+                                    stage.demoMode = StudioLiveStageView.DemoMode.CYCLE_POWERS
+                                },
+                                onTop = { updateDraft(draft.copy(selectedPowers = setOf("ninja", "kovam", "superboy_flight", "ironboy_flight"))) },
+                                onToggle = { id, enabled ->
+                                    val next = draft.selectedPowers.toMutableSet()
+                                    if (enabled) next.add(id) else if (next.size > 1) next.remove(id)
+                                    updateDraft(draft.copy(selectedPowers = next))
+                                })
+                        }
+                        else -> PersonalityTab(draftRevision)
+                    }
+                    androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(8.dp))
+                }
             }
-        })
-        col.addView(lookCard)
+        }
+    }
 
-        // 6. Flight / Movement Style & Multi-Select Superpowers Card
-        val powerCard = card("Flight & superpowers (${draft.selectedPowers.size}/${CustomPowerCatalog.OPTIONS.size})")
-        powerCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                draftRevision // Observe edits that do not rebuild the Studio.
-                StudioPowerControls(draft.flightStyle, draft.selectedPowers,
-                    onFlight = { fl ->
-                        updateDraft(draft.copy(flightStyle = fl), rebuild = true)
-                        if (fl != FlightStyle.WALK_AND_HOP) stageView?.demoMode = StudioLiveStageView.DemoMode.FLIGHT_LOOP
-                    },
-                    onAll = {
-                        updateDraft(draft.copy(selectedPowers = CustomPowerCatalog.selectAllPowers()), rebuild = true)
-                        stageView?.demoMode = StudioLiveStageView.DemoMode.CYCLE_POWERS
-                    },
-                    onTop = { updateDraft(draft.copy(selectedPowers = setOf("ninja", "kovam", "superboy_flight", "ironboy_flight")), rebuild = true) },
-                    onToggle = { id, enabled ->
-                        val next = draft.selectedPowers.toMutableSet()
-                        if (enabled) next.add(id) else if (next.size > 1) next.remove(id)
-                        updateDraft(draft.copy(selectedPowers = next), rebuild = false)
-                    })
+    @androidx.compose.runtime.Composable
+    private fun Section(title: String, hint: String? = null, content: @androidx.compose.runtime.Composable () -> Unit) {
+        androidx.compose.material3.Card(
+            modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(SettaiDesignTokens.cornerCardDp.dp)
+        ) {
+            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                androidx.compose.material3.Text(title, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                if (hint != null) androidx.compose.material3.Text(hint, style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+                content()
             }
-        })
-        col.addView(powerCard)
+        }
+    }
 
-        // 7. Per-Character Behaviour Sliders & Diary Limits Link
-        val behCard = card("Personality & behaviour")
-        behCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                draftRevision // Observe edits that do not rebuild the Studio.
-                StudioBehaviourControls(draft.playfulness, draft.chattiness, draft.curiosity, draft.energy, draft.boldness,
-                    onPlayfulness = { updateDraft(draft.copy(playfulness = it)) },
-                    onChattiness = { updateDraft(draft.copy(chattiness = it)) },
-                    onCuriosity = { updateDraft(draft.copy(curiosity = it)) },
-                    onEnergy = { updateDraft(draft.copy(energy = it)) },
-                    onBoldness = { updateDraft(draft.copy(boldness = it)) },
-                    onDiary = {
+    @androidx.compose.runtime.Composable
+    private fun BasicsTab() {
+        var name by androidx.compose.runtime.remember(draft.id) { androidx.compose.runtime.mutableStateOf(draft.name) }
+        Section("Name") {
+            androidx.compose.material3.OutlinedTextField(
+                value = name,
+                onValueChange = { v ->
+                    name = v
+                    val t = v.trim()
+                    if (t.isNotBlank() && t != draft.name) {
+                        draft = draft.copy(name = t)
+                        previewChar.updateSpec(draft)
                         CustomCompanionStore.save(this@CompanionStudioActivity, draft)
-                        startActivity(Intent(this@CompanionStudioActivity, DiaryActivity::class.java).putExtra("character", draft.id))
-                    })
-            }
-        })
-        col.addView(behCard)
-
-        // 8. Save, Put on Screen, Export & Import .settai Character
-        val saveCard = card("Save & share your character")
-        saveCard.addView(actionButton("✅ Save & Put ${draft.name} on Screen Now!", primary = true) {
-            val finalName = topNameEdit.text?.toString()?.trim().orEmpty()
-                .ifBlank { nameInput.text?.toString()?.trim().orEmpty() }
-                .ifBlank { draft.name }
-            val savedSpec = draft.copy(name = finalName)
-            CustomCompanionStore.save(this, savedSpec)
-            ChatHub.settings.characterId = savedSpec.id
-            ChatHub.settings.applyCharacter()
-            MindHub.flush()
-            com.combo.monkeycompanion.overlay.MonkeyOverlayService.syncCrew(this)
-            Toast.makeText(this, "✨ ${savedSpec.name} is now your active companion!", Toast.LENGTH_SHORT).show()
-            finish()
-        }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(6) })
-
-        saveCard.addView(actionButton("➕ Save as New Companion in Roster (Keep Previous Too!)", primary = false) {
-            val finalName = topNameEdit.text?.toString()?.trim().orEmpty()
-                .ifBlank { nameInput.text?.toString()?.trim().orEmpty() }
-                .ifBlank { draft.name }
-            val newCh = CustomCompanionStore.saveAsNewCompanion(this, draft.copy(name = finalName))
-            ChatHub.settings.characterId = newCh.id
-            ChatHub.settings.applyCharacter()
-            MindHub.flush()
-            com.combo.monkeycompanion.overlay.MonkeyOverlayService.syncCrew(this)
-            Toast.makeText(this, "➕ Added ${newCh.name} to your Characters Roster!", Toast.LENGTH_SHORT).show()
-            finish()
-        }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(8) })
-
-        val ioRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        ioRow.addView(actionButton("📤 Export .settai", primary = false) { exportCharacter() },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
-        ioRow.addView(actionButton("📥 Import .settai", primary = false) { promptImportCharacter() },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        saveCard.addView(ioRow)
-        col.addView(saveCard)
-
-        // Keep the live stage visible while the user edits one focused group at a time.
-        // Reparent existing controls: callbacks, draft persistence and custom mesh stay intact.
-        val allSections = (0 until col.childCount).map { col.getChildAt(it) }
-        require(allSections.size == 17) {
-            "Studio layout changed: expected 17 sections, found ${allSections.size}"
-        }
-        val preview = allSections[2]
-        val saveActions = allSections[16]
-        val tabNames = listOf("Face", "Body", "Style", "Motion", "Behaviour", "Powers")
-        val tabMembers = listOf(
-            listOf(3, 4, 5, 6, 10),
-            listOf(8, 11, 12),
-            listOf(13),
-            listOf(7),
-            listOf(9, 15),
-            listOf(14)
-        )
-        for (child in allSections.drop(3)) col.removeView(child)
-        col.removeView(preview)
-        // Compose owns navigation; the native stage and editing views remain intact.
-        val tabContent = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val selectedTab = androidx.compose.runtime.mutableIntStateOf(studioTabIndex.coerceIn(tabNames.indices))
-        fun displayTab(index: Int) {
-            val next = index.coerceIn(tabNames.indices)
-            studioTabIndex = next
-            selectedTab.intValue = next
-            tabContent.removeAllViews()
-            tabMembers[next].forEach { originalIndex ->
-                val view = allSections[originalIndex]
-                (view.parent as? android.view.ViewGroup)?.removeView(view)
-                tabContent.addView(view)
-            }
-        }
-        val tabCompose = androidx.compose.ui.platform.ComposeView(this).apply {
-            setViewCompositionStrategy(
-                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                        stageView?.invalidate()
+                    }
+                },
+                singleLine = true,
+                placeholder = { androidx.compose.material3.Text("e.g. Priya, Kuttyma, Manik") },
+                modifier = androidx.compose.ui.Modifier.fillMaxWidth()
             )
-            setContent {
-                androidx.compose.material3.MaterialTheme {
-                    StudioMaterialTabs(selectedTab.intValue, ::displayTab)
+        }
+        Section("Who is it?") {
+            StudioGenderControls(draft.gender, onSelect = { g -> updateDraft(draft.applyGenderAndAge(newGender = g)) })
+            StudioAgeControls(draft.ageGroup, onSelect = { age ->
+                val nextGender = when {
+                    age == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.FEMALE -> CompanionGender.GIRL_CHILD
+                    age == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.MALE -> CompanionGender.BOY_CHILD
+                    age != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.GIRL_CHILD -> CompanionGender.FEMALE
+                    age != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.BOY_CHILD -> CompanionGender.MALE
+                    else -> draft.gender
                 }
+                updateDraft(draft.applyGenderAndAge(newGender = nextGender, newAge = age))
+            })
+        }
+        Section("Quick start", "Pick a starting look, then change anything in the other tabs.") {
+            StudioPresetControls(
+                selected = listOf(
+                    draft.bodyBuild == BodyBuild.MID_BODY && draft.ageGroup == AgeGroup.ADULT_REGULAR,
+                    draft.bodyBuild == BodyBuild.BULKY_HEAVY,
+                    draft.gender == CompanionGender.FEMALE,
+                    draft.gender == CompanionGender.GIRL_CHILD,
+                    draft.gender == CompanionGender.BOY_CHILD,
+                    draft.bodyBuild == BodyBuild.SLIM && draft.gender == CompanionGender.MALE && draft.ageGroup == AgeGroup.ADULT_REGULAR
+                ),
+                onSelect = { index ->
+                    when (index) {
+                        0 -> runPhotoGenerationWithProgress(createSampleAdult35MidBodyBitmap())
+                        1 -> runPhotoGenerationWithProgress(createSampleBulkyPersonBitmap())
+                        2 -> updateDraft(CustomCompanionPresets.womanAdult(draft))
+                        3 -> runPhotoGenerationWithProgress(createSamplePortraitBitmap())
+                        4 -> updateDraft(CustomCompanionPresets.child5YrBoy(draft))
+                        5 -> runPhotoGenerationWithProgress(createSampleSlimPersonBitmap())
+                    }
+                }
+            )
+        }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun FaceTab(stage: StudioLiveStageView) {
+        var advanced by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+        Section("Photo & face", "Upload a photo to make a look-alike, or adjust the face by hand.") {
+            StudioPhotoFaceControls(
+                analysisSummary = draft.analysisSummary,
+                suggestionPrompt = draft.suggestionPrompt,
+                bodyDetectedClearly = draft.bodyDetectedClearly,
+                faceModes = FaceMode.entries.map { it.label },
+                selectedFaceMode = draft.faceMode.label,
+                offsetX = draft.faceOffsetX,
+                offsetY = draft.faceOffsetY,
+                zoom = draft.faceZoomScale,
+                onPickPhoto = { pickPhotoFromGallery() },
+                onBodyTemplate = { template -> updateDraft(draft.applyBodyTemplate(template)) },
+                onFaceMode = { label -> FaceMode.entries.firstOrNull { it.label == label }?.let { updateDraft(draft.copy(faceMode = it)) } },
+                onNudge = { dx, dy ->
+                    updateDraft(draft.copy(
+                        faceOffsetX = (draft.faceOffsetX + dx).coerceIn(-20f, 20f),
+                        faceOffsetY = (draft.faceOffsetY + dy).coerceIn(-20f, 20f)
+                    ))
+                },
+                onZoom = { delta -> updateDraft(draft.copy(faceZoomScale = (draft.faceZoomScale + delta).coerceIn(0.80f, 1.35f))) },
+                onReset = { updateDraft(draft.copy(faceOffsetX = 0f, faceOffsetY = 0f, faceZoomScale = 1.0f)) }
+            )
+        }
+        Section("Preview zoom") { StudioPreviewControls(stage) }
+        Section("Fine-tune face (advanced)", "Match eyes, nose, mouth and jaw to the photo.") {
+            androidx.compose.material3.OutlinedButton(onClick = { advanced = !advanced }, modifier = androidx.compose.ui.Modifier.fillMaxWidth()) {
+                androidx.compose.material3.Text(if (advanced) "Hide face tools" else "Show face tools")
+            }
+            if (advanced) {
+                StudioInspectionControls(stage, ::openFullscreenZoomInspector)
+                androidx.compose.ui.viewinterop.AndroidView(
+                    factory = { buildMeshFeatureControls(stage, darkTheme = false) },
+                    modifier = androidx.compose.ui.Modifier.fillMaxWidth()
+                )
+                androidx.compose.material3.Text(
+                    "1. Tap a feature (hairline, brows, eyes, nose, mouth, jaw, chin).\n" +
+                        "2. Swipe on the preview like a trackpad, or tap the arrows.\n" +
+                        "3. Tap Copy to take skin, hair and lip colours from the photo.",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
-        col.addView(tabCompose, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-            bottomMargin = dp(12)
-        })
-        col.addView(tabContent)
-        col.addView(saveActions)
-        displayTab(selectedTab.intValue)
+    }
 
-        val scroll = ScrollView(this).apply {
-            setBackgroundColor(cream)
-            isFillViewport = true
-            addView(col)
+    @androidx.compose.runtime.Composable
+    private fun PersonalityTab(@Suppress("UNUSED_PARAMETER") rev: Int) {
+        Section("Personality", "How it behaves on your screen.") {
+            StudioBehaviourControls(draft.playfulness, draft.chattiness, draft.curiosity, draft.energy, draft.boldness,
+                onPlayfulness = { updateDraft(draft.copy(playfulness = it)) },
+                onChattiness = { updateDraft(draft.copy(chattiness = it)) },
+                onCuriosity = { updateDraft(draft.copy(curiosity = it)) },
+                onEnergy = { updateDraft(draft.copy(energy = it)) },
+                onBoldness = { updateDraft(draft.copy(boldness = it)) },
+                onDiary = {
+                    CustomCompanionStore.save(this@CompanionStudioActivity, draft)
+                    startActivity(Intent(this@CompanionStudioActivity, DiaryActivity::class.java).putExtra("character", draft.id))
+                })
         }
-        val studioRoot = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(cream) }
-        studioRoot.addView(preview, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-        studioRoot.addView(scroll, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
-        scroll.setOnApplyWindowInsetsListener { v, insets ->
-            @Suppress("DEPRECATION")
-            v.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
-            insets
-        }
-        setContentView(studioRoot)
-        MaterialScreenPolish.apply(this, preserveCustomButtons = true)
+        StudioBrainControls(
+            enabled = ChatHub.isBrainEnabled(),
+            status = ChatHub.giveBrainStatusLine(),
+            onConfigure = {
+                GiveBrainDialog.show(
+                    act = this@CompanionStudioActivity,
+                    onChanged = { rebuildUI() },
+                    onRunAiPhotoModel = { runAiBrainPhotoModeling() }
+                )
+            },
+            onToggle = {
+                ChatHub.setBrainEnabled(!ChatHub.isBrainEnabled())
+                rebuildUI()
+            },
+            onModel = { runAiBrainPhotoModeling() }
+        )
     }
 
     private fun runAiBrainPhotoModeling() {

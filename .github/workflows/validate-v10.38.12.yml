@@ -32,14 +32,14 @@ jobs:
           SETTAI_KEY_ALIAS: ${{ secrets.SETTAI_KEY_ALIAS }}
           SETTAI_KEY_PASSWORD: ${{ secrets.SETTAI_KEY_PASSWORD }}
         run: ./gradlew :app:assembleFullRelease --stacktrace
-      - name: Publish v10.38.12 test APK (prerelease)
+      - name: Publish test APK (prerelease)
         env:
           GH_TOKEN: ${{ secrets.SETTAI_RELEASE_TOKEN || github.token }}
         run: |
           set -e
           APK=$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)
           test -n "$APK"
+          VN=$(grep -o "versionName = \"[^\"]*\"" app/build.gradle.kts | cut -d\" -f2); TAG="ui-v${VN}-test-${GITHUB_RUN_NUMBER}"
           mkdir -p out
-          cp "$APK" out/Set-Tai-v10.38.12-ui-test.apk
-          TAG="ui-v10.38.12-test-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" out/Set-Tai-v10.38.12-ui-test.apk --prerelease --title "Set-Tai v10.38.12 UI test (run ${GITHUB_RUN_NUMBER})" --notes "Phase 2 Compose Studio controls (Codex checkpoint). main unchanged." --target "$GITHUB_SHA"
+          cp "$APK" out/Set-Tai-${VN}-ui-test.apk
+          gh release create "$TAG" out/Set-Tai-${VN}-ui-test.apk --prerelease --title "Set-Tai v${VN} UI test (run ${GITHUB_RUN_NUMBER})" --notes "Material 3 UI test build. main unchanged." --target "$GITHUB_SHA"
