@@ -1,6 +1,29 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.38 (versionCode 76)**, 6 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.39 (versionCode 102)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.39 current handoff (Material 3 app screens)
+
+- Every app screen is Jetpack Compose Material 3: new home `ui/SettaiDesignActivity` (launcher, Bring-back shortcut,
+  `ACTION_BRING_BACK` lives here), Character Studio, Diary (one page + ⚙ sheet), Settings (one Brain list),
+  Give Brain (Compose on ComponentActivity callers), Shows, Powers choice, Skills, Capabilities, Memory, Routines,
+  Reports, Wardrobe, Two phones, Ring, Care tools (`ui/CareToolsActivity`), wallpaper picker, spots editor panel.
+- Shared kit: `ui/SettaiM3.kt` (SettaiScreen / SCard / SSwitch / SRadio / SChoice / SField…). Settings live in
+  SharedPreferences, so every screen passes its change counter as `SettaiScreen(rev = r)`; `SCard` keys its
+  content on `LocalSettingsRev` so values redraw after a change (Compose strong skipping would skip the card).
+- Studio: `draft` is Compose state (`draftState`); pinned live preview (AndroidView of StudioLiveStageView);
+  6 tabs; Undo stack, Discard all, Cancel in the full-screen face editor; opens the character from the
+  `character` extra; editing never changes the main character (only Save & use).
+- Settings apply instantly: `MonkeyOverlayService` listens to `monkey_settings` and calls
+  `MonkeyView.applySettingsNow()` (re-reads cached settings, never wakes a resting loop); character / wardrobe
+  changes also re-sync the crew.
+- Powers: `MonkeyView.ownPower()` picks from the view's own `PowerPrefs.enabled(character)` (one Random call on
+  the random path, like `Superpowers.choose`). Settings › Superpowers = Off / Sometimes / Often (`Superpowers.OFTEN`).
+- Fresh install starts Solo (`MindHub.neighbourMode` / `WorldStore.decodeJson` blank = SOLO; old saves keep DUO).
+- Removed: old `MainActivity` and `MenuSettingsActivity` (nothing opened them). Floating chat panel and the
+  overlay drawing stay View-based on purpose.
+- Known flaky tests: `RealOverlayPathTest.swipeDownMovesTheRealWindowAlongACurve` (hover settle) and
+  `RestAndScreenTest.autoRestHidesAndStopsTheFrameLoop` (Random stream); both pass on re-run.
 
 ## v10.38 current handoff
 

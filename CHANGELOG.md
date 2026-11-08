@@ -280,3 +280,16 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Deployment caveat: health is green, but the single live Gemini test returned upstream HTTP 400 (gateway 502). Model metadata is reachable; no model was substituted. Android falls back locally while upstream is unavailable.
 - Validation: 528 Android tests passed locally (including all 13 GoldenTrace tests); 6 mocked-Gemini Worker runtime tests passed. Owner then approved PRIVATE publication; v10.28 is tagged at 68f6eb3 and its verified Android APK was uploaded to the release. Historical tag CI is not green (hover setup assertion).
 - Test-only follow-up: RealOverlayPathTest waits for the real hover state with a bounded frame budget and useful diagnostics instead of a fixed 30-frame setup delay. Real swipe/flight assertions and all v10.27 app behaviour are unchanged. Version stays 10.28 / 66; no replacement tag. Focused regression passed twice and the full 528-test local suite passed, including all 13 GoldenTrace tests.
+
+
+## v10.39 (code 102): every app screen in Material 3
+- New home (Codex) with bottom tabs; Quick actions tiles; Care tools page; real "What you missed".
+- Character Studio: one screen with the live character pinned on top, 6 tabs (Basics, Face, Body, Style, Powers,
+  Personality), Save & use / Save as new, Undo, Discard all changes, photo look-alike with the 68-point mesh.
+- Diary on one page (moments + Add memory; Behaviour and Memory under ⚙).
+- Settings: one Brain list (Set-Tai Cloud / on-device / own key / Off), all topics in cards; texts use your
+  character's name; every change applies to the companion right away (no Save, no restart).
+- Each character uses only its own powers; "Use powers by themselves: Off / Sometimes / Often"; "Only this" power.
+- Fresh installs start Solo; Duo / Trio choices are kept.
+- Shows, Skills, What can Set-Tai do?, Notebook, Routines, Reports, Wardrobe, Two phones, alarm screen, wallpaper
+  picker and spots editor all redesigned. Old main screen and long-press menu settings removed.
