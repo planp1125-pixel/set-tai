@@ -70,7 +70,7 @@ class SkillsActivity : androidx.activity.ComponentActivity() {
         val s = ChatHub.settings
         val who = CharacterRegistry.current.name
         val playBuild = com.combo.monkeycompanion.agent.ForegroundAppTracker.isPlayStoreBuild(this)
-        SettaiScreen("Skills", onBack = { finish() }, subtitle = "Optional errands, senses and habits for $who") {
+        SettaiScreen("Skills", onBack = { finish() }, subtitle = "Optional errands, senses and habits for $who", rev = r) {
             if (playBuild) {
                 SCard("Guided errands", "$who opens the right app or screen for you (alarms, timers, maps, dialer, messages, settings) and guides you step by step from its speech bubble.") {
                     SNote(a11yLine())

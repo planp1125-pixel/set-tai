@@ -633,6 +633,7 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                 stageView?.uploadedPhotoThumb = res.portraitBitmap
                 stageView?.splitCompareMode = true
                 stageView?.zoomLevel = 3.0f
+                showPhotoMatch()
                 Toast.makeText(this, res.spec.analysisSummary, Toast.LENGTH_SHORT).show()
                 if (askPersonTypeAfterUpload) {
                     askPersonTypeAfterUpload = false
@@ -817,13 +818,23 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
     // Live preview stays pinned on top; six tabs below; Save bar at the bottom. Every change saves and the
     // preview updates at once (no screen rebuild, no jump back to the top).
     private var studioTab by androidx.compose.runtime.mutableIntStateOf(0)
+    /** v10.38.21: face tools (68-point mesh) open by themselves once there is a photo. */
+    private var faceToolsOpen by androidx.compose.runtime.mutableStateOf(false)
+    private fun hasPhoto() = stageView?.uploadedPhotoThumb != null || lastUploadedPhoto != null || draft.facePortraitBase64.isNotBlank()
+
+    /** After a photo is turned into a look-alike: go to the Face tab with the photo beside the character and the mesh on. */
+    private fun showPhotoMatch() {
+        studioTab = 1
+        faceToolsOpen = true
+        stageView?.let { it.showFaceMesh = true; it.moveMeshMode = true; it.splitCompareMode = true; if (it.zoomLevel < 2.2f) it.zoomLevel = 3.0f }
+    }
     private var studioComposed = false
     private val studioTabs = listOf("Basics", "Face", "Body", "Style", "Powers", "Personality")
 
     private fun ensureStage(): StudioLiveStageView {
         stageView?.let { return it }
         val st = StudioLiveStageView(this, previewChar).also {
-            it.uploadedPhotoThumb = lastUploadedPhoto
+            it.uploadedPhotoThumb = lastUploadedPhoto ?: runCatching { CustomCompanionStore.getOrDecodeBitmap(draft.id, draft.facePortraitBase64) }.getOrNull()
             it.onMeshAdjusted = { nextMesh ->
                 draft = draft.copy(faceMesh = nextMesh)
                 CustomCompanionStore.save(this@CompanionStudioActivity, draft)
@@ -1052,6 +1063,10 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                 updateDraft(draft.applyGenderAndAge(newGender = nextGender, newAge = age))
             })
         }
+        Section("Make it look like someone", "Upload a photo and get a cartoon look-alike.") {
+            androidx.compose.material3.Button(onClick = { pickPhotoFromGallery() },
+                modifier = androidx.compose.ui.Modifier.fillMaxWidth().heightIn(min = 52.dp)) { androidx.compose.material3.Text("Upload a photo") }
+        }
         Section("Quick start", "Pick a starting look, then change anything in the other tabs.") {
             StudioPresetControls(
                 selected = listOf(
@@ -1078,8 +1093,31 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
 
     @androidx.compose.runtime.Composable
     private fun FaceTab(stage: StudioLiveStageView) {
-        var advanced by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-        Section("Photo & face", "Upload a photo to make a look-alike, or adjust the face by hand.") {
+        val photo = hasPhoto()
+        Section("Look-alike from a photo", if (photo) "Your photo is on the left of the preview, the character on the right. Match them with the face tools below."
+            else "Pick a clear photo of a face. Set-Tai turns it into a cartoon look-alike, then you can match eyes, nose, mouth and jaw.") {
+            androidx.compose.material3.Button(onClick = { pickPhotoFromGallery() },
+                modifier = androidx.compose.ui.Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                androidx.compose.material3.Text(if (photo) "Use a different photo" else "Upload a photo")
+            }
+            if (photo) androidx.compose.material3.OutlinedButton(onClick = { showPhotoMatch(); draftRevision++ },
+                modifier = androidx.compose.ui.Modifier.fillMaxWidth()) { androidx.compose.material3.Text("Show photo beside the character") }
+        }
+        Section("Face tools (68-point mesh)", "1. Tap a feature (hairline, brows, eyes, nose, mouth, jaw, chin).  2. Swipe on the preview like a trackpad, or tap the arrows.  3. Tap Copy to take skin, hair and lip colours from the photo.") {
+            if (!photo) SNote("Upload a photo first to see the mesh over it.")
+            androidx.compose.material3.OutlinedButton(onClick = {
+                faceToolsOpen = !faceToolsOpen
+                if (faceToolsOpen) { stage.showFaceMesh = true; stage.moveMeshMode = true; if (!stage.splitCompareMode) { stage.splitCompareMode = true; stage.zoomLevel = 3.0f } }
+            }, modifier = androidx.compose.ui.Modifier.fillMaxWidth()) {
+                androidx.compose.material3.Text(if (faceToolsOpen) "Hide face tools" else "Show face tools")
+            }
+            if (faceToolsOpen) {
+                androidx.compose.runtime.key(faceToolsOpen) { StudioInspectionControls(stage, ::openFullscreenZoomInspector) }
+                MeshFeatureControls(stage)
+            }
+        }
+        Section("Preview zoom") { StudioPreviewControls(stage) }
+        Section("Face shape & position") {
             StudioPhotoFaceControls(
                 analysisSummary = draft.analysisSummary,
                 suggestionPrompt = draft.suggestionPrompt,
@@ -1101,23 +1139,6 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                 onZoom = { delta -> updateDraft(draft.copy(faceZoomScale = (draft.faceZoomScale + delta).coerceIn(0.80f, 1.35f))) },
                 onReset = { updateDraft(draft.copy(faceOffsetX = 0f, faceOffsetY = 0f, faceZoomScale = 1.0f)) }
             )
-        }
-        Section("Preview zoom") { StudioPreviewControls(stage) }
-        Section("Fine-tune face (advanced)", "Match eyes, nose, mouth and jaw to the photo.") {
-            androidx.compose.material3.OutlinedButton(onClick = { advanced = !advanced }, modifier = androidx.compose.ui.Modifier.fillMaxWidth()) {
-                androidx.compose.material3.Text(if (advanced) "Hide face tools" else "Show face tools")
-            }
-            if (advanced) {
-                StudioInspectionControls(stage, ::openFullscreenZoomInspector)
-                MeshFeatureControls(stage)
-                androidx.compose.material3.Text(
-                    "1. Tap a feature (hairline, brows, eyes, nose, mouth, jaw, chin).\n" +
-                        "2. Swipe on the preview like a trackpad, or tap the arrows.\n" +
-                        "3. Tap Copy to take skin, hair and lip colours from the photo.",
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     }
 

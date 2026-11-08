@@ -127,7 +127,7 @@ class WardrobeActivity : androidx.activity.ComponentActivity() {
         val wear = androidx.compose.runtime.remember { CharacterRegistry.wear(who) }
         fun save() { s.setWardrobeFor(who.id, wear.encode()); rev++ }
         var preview by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<CharacterPreviewView?>(null) }
-        SettaiScreen("${who.name}'s wardrobe", onBack = { finish() }) {
+        SettaiScreen("${who.name}'s wardrobe", onBack = { finish() }, rev = r) {
             androidx.compose.material3.Card(androidx.compose.ui.Modifier.fillMaxWidth()) {
                 androidx.compose.ui.viewinterop.AndroidView(
                     factory = { ctx -> CharacterPreviewView(ctx, who, demo = true).also { v -> v.onMove = { m -> v.post { caption = "Now: $m" } }; preview = v } },

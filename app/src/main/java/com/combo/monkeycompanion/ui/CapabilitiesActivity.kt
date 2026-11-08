@@ -51,7 +51,7 @@ class CapabilitiesActivity : androidx.activity.ComponentActivity() {
     @androidx.compose.runtime.Composable
     private fun Screen(@Suppress("UNUSED_PARAMETER") r: Int) {
         val s = ChatHub.settings
-        SettaiScreen("What can Set-Tai do?", onBack = { finish() }) {
+        SettaiScreen("What can Set-Tai do?", onBack = { finish() }, rev = r) {
             SNote("Every brain (online, on-device or none) can use these. Anything that changes or opens something asks Yes/No in Settai's bubble first. Just ask in your own words: \"volume 40\", \"brightness up\", \"silent mode\", \"wake me at 6\", \"next song\", \"turn on wifi\".")
             SCard("Special access") {
                 for (p in Perm.entries.filter { it != Perm.NONE }) PermRow(p.label, p.granted(this@CapabilitiesActivity)) {

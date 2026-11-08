@@ -74,7 +74,7 @@ class MemoryActivity : androidx.activity.ComponentActivity() {
         var input by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
         var confirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
         val all = st.all().sortedByDescending { it.at }
-        SettaiScreen("Settai's notebook", onBack = { finish() }) {
+        SettaiScreen("Settai's notebook", onBack = { finish() }, rev = r) {
             SNote("Things you told Settai to remember. Kept only in a file on this phone and used to make chats (and jokes) personal. Passwords, PINs and codes are never stored.")
             if (!ChatHub.settings.groupEnabled(CapGroup.MEMORY)) SNote("Memory is OFF: switch it on in Phone powers so Settai learns and uses these.")
             SCard("Add") {
@@ -115,7 +115,7 @@ class RoutinesActivity : androidx.activity.ComponentActivity() {
     private fun Screen(@Suppress("UNUSED_PARAMETER") r: Int) {
         var input by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
         var preview by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
-        SettaiScreen("Settai's routines", onBack = { finish() }) {
+        SettaiScreen("Settai's routines", onBack = { finish() }, rev = r) {
             SNote("Time routines run even when Settai is asleep (alarm-clock style). Event routines (charger, battery low, Wi-Fi, headphones) run while Settai is on screen or in the wallpaper. Anything that changes the phone still asks Yes/No when it runs.")
             if (!ChatHub.settings.groupEnabled(CapGroup.ROUTINES)) SNote("Routines are OFF: switch them on in Phone powers.")
             SCard("Add a routine", "Examples: \"weekdays at 7:30 say good morning\" · \"every night at 10 turn on do not disturb\" · \"when headphones are plugged in say music time\" · \"every sunday at 6 pm remind me to water the plants\"") {
@@ -199,7 +199,7 @@ class ReportsActivity : androidx.activity.ComponentActivity() {
     private fun Screen(@Suppress("UNUSED_PARAMETER") r: Int) {
         val st = com.combo.monkeycompanion.agent.ReplyReports.store(this)
         val all = st.all().sortedByDescending { it.at }
-        SettaiScreen("Reported replies", onBack = { finish() }) {
+        SettaiScreen("Reported replies", onBack = { finish() }, rev = r) {
             SNote("Replies you flagged with ⚑ Report. They stay in a file on this phone; nothing is uploaded. Use Share to send one yourself.")
             if (all.isEmpty()) SNote("Nothing reported. Tap ⚑ on a reply in the bubble or the chat if Settai says something wrong or not OK.")
             for (rp in all) SCard("Settai: " + rp.reply) {

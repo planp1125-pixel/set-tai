@@ -134,7 +134,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
 
     @Composable
     private fun SettingsScreen(target: String?, @Suppress("UNUSED_PARAMETER") r: Int) {
-        SettaiScreen(title = titles[target] ?: "Settings", onBack = { finish() }) {
+        SettaiScreen(title = titles[target] ?: "Settings", onBack = { finish() }, rev = r) {
             if (visible(target, "brainType")) {
                 SNote("Set-Tai Cloud is ready by default: no API key or Gmail sign-in. You can still turn Brain off. 40 cloud requests per UTC day; messages go to Gemini. Local jokes and commands stay on your phone.")
                 BrainTypeCard(r); BrainPickerCard(r)
@@ -952,6 +952,7 @@ object GiveBrainDialog {
         fun saveKey() { val k = key.trim(); if (k.isNotEmpty()) { s.setApiKeyFor(provider, k); key = "" } }
         androidx.compose.material3.Card(androidx.compose.ui.Modifier.fillMaxWidth(),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(SettaiDesignTokens.cornerCardDp.dp)) {
+            androidx.compose.runtime.key(rev) {
             androidx.compose.foundation.layout.Column(
                 androidx.compose.ui.Modifier.heightIn(max = 620.dp).verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(20.dp),
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
@@ -995,6 +996,7 @@ object GiveBrainDialog {
                         onChanged?.invoke(); close()
                     }) { androidx.compose.material3.Text("Done") }
                 }
+            }
             }
         }
     }

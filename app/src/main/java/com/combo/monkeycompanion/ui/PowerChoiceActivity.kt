@@ -33,7 +33,7 @@ class PowerChoiceActivity : androidx.activity.ComponentActivity() {
     private fun Screen(c: Character, @Suppress("UNUSED_PARAMETER") r: Int) {
         val st = AppSettings(this)
         val sig = c.signaturePower
-        SettaiScreen("${c.name}'s powers", onBack = { finish() }) {
+        SettaiScreen("${c.name}'s powers", onBack = { finish() }, rev = r) {
             SCard("Which powers are on", "Double-tap fires a random power from the ones switched on. The main power ★ is always on and comes first.") {
                 for (pw in PowerPrefs.available(c)) {
                     val isSig = pw == sig

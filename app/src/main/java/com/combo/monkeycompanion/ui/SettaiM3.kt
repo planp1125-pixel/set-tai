@@ -54,15 +54,23 @@ internal fun SettaiTheme(activity: Activity, content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = SettaiDesignTokens.scheme(dark), content = content)
 }
 
+/**
+ * v10.38.21: settings live in SharedPreferences (not Compose state). Each screen passes its change counter as
+ * [SettaiScreen]'s `rev`; every [SCard] re-reads its content when it changes, so a switch / radio / choice
+ * always shows the value you just picked (without this, Compose could skip the card and keep the old one).
+ */
+internal val LocalSettingsRev = androidx.compose.runtime.compositionLocalOf { 0 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettaiScreen(
     title: String,
     onBack: (() -> Unit)?,
     subtitle: String? = null,
+    rev: Int = 0,
     actions: @Composable () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
-) {
+) = androidx.compose.runtime.CompositionLocalProvider(LocalSettingsRev provides rev) {
     Scaffold(topBar = {
         TopAppBar(
             title = {
@@ -86,11 +94,14 @@ internal fun SettaiScreen(
 
 @Composable
 internal fun SCard(title: String, subtitle: String? = null, content: @Composable ColumnScope.() -> Unit) {
+    val rev = LocalSettingsRev.current
     Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(SettaiDesignTokens.cornerCardDp.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            if (subtitle != null) SNote(subtitle)
-            content()
+        androidx.compose.runtime.key(rev) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                if (subtitle != null) SNote(subtitle)
+                content()
+            }
         }
     }
 }

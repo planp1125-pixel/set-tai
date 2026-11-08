@@ -57,7 +57,7 @@ class ShowsActivity : androidx.activity.ComponentActivity() {
 
     @androidx.compose.runtime.Composable
     private fun Screen(@Suppress("UNUSED_PARAMETER") r: Int) {
-        SettaiScreen("Shows", onBack = { finish() }, subtitle = "Tap ▶ to play. Tap the screen during a show to stop it.") {
+        SettaiScreen("Shows", onBack = { finish() }, subtitle = "Tap ▶ to play. Tap the screen during a show to stop it.", rev = r) {
             SCard("Your shows") {
                 for (e in UserShows.all(this@ShowsActivity)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
