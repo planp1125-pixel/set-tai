@@ -32,14 +32,20 @@ jobs:
           SETTAI_KEY_ALIAS: ${{ secrets.SETTAI_KEY_ALIAS }}
           SETTAI_KEY_PASSWORD: ${{ secrets.SETTAI_KEY_PASSWORD }}
         run: ./gradlew :app:assembleFullRelease --stacktrace
-      - name: Publish test APK (prerelease)
-        env:
-          GH_TOKEN: ${{ secrets.SETTAI_RELEASE_TOKEN || github.token }}
+      - name: Name the test APK
+        id: apk
         run: |
-          set -e
-          APK=$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)
-          test -n "$APK"
-          VN=$(grep -o "versionName = \"[^\"]*\"" app/build.gradle.kts | cut -d\" -f2); TAG="ui-v${VN}-test-${GITHUB_RUN_NUMBER}"
+          VN=$(grep -o 'versionName = "[^"]*"' app/build.gradle.kts | cut -d'"' -f2)
           mkdir -p out
-          cp "$APK" out/Set-Tai-${VN}-ui-test.apk
-          gh release create "$TAG" out/Set-Tai-${VN}-ui-test.apk --prerelease --title "Set-Tai v${VN} UI test (run ${GITHUB_RUN_NUMBER})" --notes "Material 3 UI test build. main unchanged." --target "$GITHUB_SHA"
+          cp "$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)" "out/Set-Tai-v${VN}-ui-test.apk"
+          echo "vn=$VN" >> "$GITHUB_OUTPUT"
+      - name: Publish test APK (prerelease)
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ github.token }}
+          tag_name: ui-v${{ steps.apk.outputs.vn }}-test-${{ github.run_number }}
+          name: Set-Tai v${{ steps.apk.outputs.vn }} UI test (run ${{ github.run_number }})
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          body: Material 3 UI test build. main is unchanged.
+          files: out/Set-Tai-v${{ steps.apk.outputs.vn }}-ui-test.apk

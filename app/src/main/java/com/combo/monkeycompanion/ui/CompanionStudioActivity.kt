@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.setValue
@@ -582,8 +583,6 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
         rebuildUI()
     }
 
-    private var activeNameInput: EditText? = null
-    private var suppressNameWatcher = false
 
     private fun updateDraft(newDraft: CustomCompanionSpec, rebuild: Boolean = false) {
         draft = newDraft
@@ -599,11 +598,6 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
     }
 
     override fun onPause() {
-        val typed = activeNameInput?.text?.toString()?.trim().orEmpty()
-        if (typed.isNotBlank() && typed != draft.name) {
-            draft = draft.copy(name = typed)
-            previewChar.updateSpec(draft)
-        }
         CustomCompanionStore.save(this, draft)
         if (ChatHub.settings.characterId.startsWith("custom_")) {
             ChatHub.settings.characterId = draft.id
@@ -613,53 +607,33 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
         super.onPause()
     }
 
+    /** Photo -> look-alike progress (shown as a Material 3 dialog). null = hidden. */
+    private var photoProgress by androidx.compose.runtime.mutableStateOf<Pair<Float, String>?>(null)
+
     private fun runPhotoGenerationWithProgress(bmp: Bitmap) {
         lastUploadedPhoto = bmp
         val steps = arrayOf(
-            "🕸️ Step 1/4: Scanning 68-Point Face-ID Landmark Mesh...",
-            "✂️ Step 2/4: Segmenting 320×320 Smooth-Contour Head, Hair & Beard...",
-            "🎨 Step 3/4: Bilateral Toon Polish + Skin & Shirt Colours...",
-            "⚡ Step 4/4: Rigging 60fps Look-Alike & Opening 3.5x Zoom Compare..."
+            "Finding the face…",
+            "Cutting out head, hair and beard…",
+            "Picking skin, hair and shirt colours…",
+            "Bringing your character to life…"
         )
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(18), dp(20), dp(18))
-            gravity = Gravity.CENTER_HORIZONTAL
-        }
-        val bar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = 100; progress = 15
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(10) }
-        }
-        val stepTv = TextView(this).apply {
-            text = steps[0]; textSize = 14f; setTextColor(brown); gravity = Gravity.CENTER_HORIZONTAL
-        }
-        box.addView(bar); box.addView(stepTv)
-
-        val dlg = AlertDialog.Builder(this)
-            .setTitle("✨ 68-Point Face-ID Look-Alike Engine")
-            .setView(box)
-            .setCancelable(false)
-            .create()
-        runCatching { dlg.show() }
-
+        photoProgress = 0.15f to steps[0]
         Thread {
             val res = PhotoCompanionAnalyzer.analyze(bmp, draft)
             for (i in 1..3) {
                 runCatching { Thread.sleep(220) }
-                uiHandler.post {
-                    bar.progress = (i + 1) * 25
-                    stepTv.text = steps[i]
-                }
+                uiHandler.post { photoProgress = (i + 1) * 0.25f to steps[i] }
             }
             uiHandler.post {
-                runCatching { if (dlg.isShowing) dlg.dismiss() }
+                photoProgress = null
                 CustomCompanionStore.save(this, res.spec)
                 lastUploadedPhoto = res.portraitBitmap
                 updateDraft(res.spec, rebuild = true)
                 stageView?.uploadedPhotoThumb = res.portraitBitmap
                 stageView?.splitCompareMode = true
                 stageView?.zoomLevel = 3.0f
-                Toast.makeText(this, "✨ ${res.spec.analysisSummary}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, res.spec.analysisSummary, Toast.LENGTH_SHORT).show()
                 if (askPersonTypeAfterUpload) {
                     askPersonTypeAfterUpload = false
                     showWhoIsInPhotoDialog()
@@ -674,96 +648,43 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
      * Friendly 1-Tap "Who is in this Photo?" confirmation dialog so uploaded photos NEVER default to a 35yr man
      * when the user uploaded a child, girl, boy, or woman!
      */
-    fun showWhoIsInPhotoDialog() {
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(12), dp(16), dp(12))
-        }
-        val dlgNameInput = EditText(this).apply {
-            setText(draft.name)
-            hint = "Enter companion name (e.g. Priya, Anu, Kuttyma, Manik)"
-            textSize = 15f; setTextColor(brown)
-            setSingleLine(true)
-        }
-        box.addView(TextView(this).apply {
-            text = "✏️ Companion Name:"
-            textSize = 12.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(soft)
-        })
-        box.addView(dlgNameInput, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(8) })
-        dlgNameInput.addTextChangedListener(object : android.text.TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: android.text.Editable?) {
-                val n = s?.toString()?.trim().orEmpty()
-                if (n.isNotBlank()) {
-                    draft = draft.copy(name = n)
-                    previewChar.updateSpec(draft)
-                    CustomCompanionStore.save(this@CompanionStudioActivity, draft)
-                    stageView?.invalidate()
+    private var whoDialogOpen by androidx.compose.runtime.mutableStateOf(false)
+    fun showWhoIsInPhotoDialog() { whoDialogOpen = true }
+
+    @androidx.compose.runtime.Composable
+    private fun WhoIsInPhotoDialog() {
+        var name by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(draft.name) }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { whoDialogOpen = false },
+            title = { androidx.compose.material3.Text("Who is in this photo?") },
+            text = {
+                androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                    androidx.compose.material3.OutlinedTextField(value = name, onValueChange = { v ->
+                        name = v
+                        val t = v.trim()
+                        if (t.isNotBlank()) { draft = draft.copy(name = t); previewChar.updateSpec(draft); CustomCompanionStore.save(this@CompanionStudioActivity, draft) }
+                    }, singleLine = true, label = { androidx.compose.material3.Text("Name") })
+                    androidx.compose.material3.Text("We guessed ${draft.gender.label}, ${draft.ageGroup.shortLabel}. Change it if it's wrong:",
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                    StudioGenderControls(draft.gender, onSelect = { g ->
+                        updateDraft(draft.applyGenderAndAge(newGender = g))
+                        stageView?.uploadedPhotoThumb = lastUploadedPhoto
+                    })
+                    StudioAgeControls(draft.ageGroup, onSelect = { ag ->
+                        val nextGender = when {
+                            ag == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.FEMALE -> CompanionGender.GIRL_CHILD
+                            ag == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.MALE -> CompanionGender.BOY_CHILD
+                            ag != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.GIRL_CHILD -> CompanionGender.FEMALE
+                            ag != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.BOY_CHILD -> CompanionGender.MALE
+                            else -> draft.gender
+                        }
+                        updateDraft(draft.applyGenderAndAge(newGender = nextGender, newAge = ag))
+                        stageView?.uploadedPhotoThumb = lastUploadedPhoto
+                    })
                 }
-            }
-        })
-
-        box.addView(TextView(this).apply {
-            text = "Auto-detected: ${draft.gender.label} · ${draft.ageGroup.shortLabel} — Tap below to confirm or switch Person Type & Age in 1 tap:"
-            textSize = 13.5f; setTextColor(brown)
-            setPadding(0, 0, 0, dp(10))
-        })
-
-        var dlgRef: AlertDialog? = null
-        val genderGrid = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val r1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(6)) }
-        val r2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(10)) }
-
-        for ((idx, g) in listOf(CompanionGender.GIRL_CHILD, CompanionGender.BOY_CHILD, CompanionGender.FEMALE, CompanionGender.MALE).withIndex()) {
-            val btn = pillButton(g.label, selected = draft.gender == g) {
-                val updated = draft.applyGenderAndAge(newGender = g)
-                CustomCompanionStore.save(this, updated)
-                updateDraft(updated, rebuild = true)
-                stageView?.uploadedPhotoThumb = lastUploadedPhoto
-                stageView?.splitCompareMode = true
-                stageView?.zoomLevel = 3.0f
-                runCatching { dlgRef?.dismiss() }
-            }
-            val targetRow = if (idx < 2) r1 else r2
-            targetRow.addView(btn, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply {
-                if (idx % 2 == 0) rightMargin = dp(6)
-            })
-        }
-        genderGrid.addView(r1)
-        genderGrid.addView(r2)
-        box.addView(genderGrid)
-
-        box.addView(TextView(this).apply {
-            text = "Or pick exact Age Range:"
-            textSize = 12.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(soft)
-            setPadding(0, dp(4), 0, dp(6))
-        })
-        val ageRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        for (ag in AgeGroup.entries) {
-            ageRow.addView(pillButton(ag.shortLabel, selected = draft.ageGroup == ag) {
-                val nextGender = when {
-                    ag == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.FEMALE -> CompanionGender.GIRL_CHILD
-                    ag == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.MALE -> CompanionGender.BOY_CHILD
-                    ag != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.GIRL_CHILD -> CompanionGender.FEMALE
-                    ag != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.BOY_CHILD -> CompanionGender.MALE
-                    else -> draft.gender
-                }
-                val updated = draft.applyGenderAndAge(newGender = nextGender, newAge = ag)
-                CustomCompanionStore.save(this, updated)
-                updateDraft(updated, rebuild = true)
-                stageView?.uploadedPhotoThumb = lastUploadedPhoto
-                runCatching { dlgRef?.dismiss() }
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-        }
-        box.addView(ageRow)
-
-        dlgRef = AlertDialog.Builder(this)
-            .setTitle("✨ Who is in this Photo?")
-            .setView(box)
-            .setPositiveButton("Keep ${draft.gender.shortLabel} ✓", null)
-            .create()
-        runCatching { dlgRef.show() }
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { whoDialogOpen = false }) { androidx.compose.material3.Text("Done") } }
+        )
     }
 
     /**
@@ -774,185 +695,122 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
      * Builds the ergonomic Feature Target Chip Selector + Precision D-Pad (`◀ ▲ ▼ ▶ ➖ ➕`)
      * so the user can align any of the 10 facial features WITHOUT needing to poke tiny dots!
      */
-    private fun buildMeshFeatureControls(stage: StudioLiveStageView, darkTheme: Boolean): LinearLayout {
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(8), dp(6), dp(8), dp(6))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(14).toFloat()
-                setColor(if (darkTheme) com.combo.monkeycompanion.theme.Th.rgb(0x1B, 0x18, 0x2E) else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF8, 0xEB))
-                setStroke(dp(1), if (darkTheme) com.combo.monkeycompanion.theme.Th.rgb(0x00, 0xE5, 0xFF) else accent)
-            }
+    /** Pick a face feature, then nudge / resize it; Copy takes colours from the photo; ↺ resets the mesh. */
+    @androidx.compose.runtime.Composable
+    private fun MeshFeatureControls(stage: StudioLiveStageView) {
+        var active by androidx.compose.runtime.remember(stage) { androidx.compose.runtime.mutableStateOf(stage.selectedMeshFeature) }
+        androidx.compose.runtime.DisposableEffect(stage) {
+            stage.onFeatureSelected = { active = it }
+            onDispose { stage.onFeatureSelected = null }
         }
-        val statusTv = TextView(this).apply {
-            text = "🎯 Active Mesh Target: ${stage.selectedMeshFeature.label} (Touch node, swipe trackpad, or tap ◀▲▼▶)"
-            textSize = 11.8f; setTypeface(typeface, Typeface.BOLD)
-            setTextColor(if (darkTheme) com.combo.monkeycompanion.theme.Th.rgb(0x80, 0xDE, 0xEA) else brown)
-            setPadding(0, 0, 0, dp(4))
-        }
-        box.addView(statusTv)
-
-        val chipButtons = ArrayList<Pair<MeshFeatureTarget, Button>>()
-        fun refreshChipHighlights(active: MeshFeatureTarget) {
-            statusTv.text = "🎯 Active Mesh Target: ${active.label} — ${active.hint}"
-            for ((t, btn) in chipButtons) {
-                val sel = t == active
-                btn.setTextColor(if (sel) Color.WHITE else brown)
-                btn.background = GradientDrawable().apply {
-                    cornerRadius = dp(16).toFloat()
-                    setColor(if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF9, 0xEE))
-                    setStroke(dp(1), if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
+        androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            androidx.compose.material3.Text(active.hint, style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+            androidx.compose.foundation.layout.Row(
+                androidx.compose.ui.Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+            ) {
+                for (target in listOf(
+                    MeshFeatureTarget.WHOLE_MESH, MeshFeatureTarget.HAIRLINE_TOP, MeshFeatureTarget.LEFT_BROW, MeshFeatureTarget.RIGHT_BROW,
+                    MeshFeatureTarget.LEFT_EYE, MeshFeatureTarget.RIGHT_EYE, MeshFeatureTarget.NOSE_TIP, MeshFeatureTarget.MOUTH,
+                    MeshFeatureTarget.JAW_LEFT, MeshFeatureTarget.JAW_RIGHT, MeshFeatureTarget.CHIN_BOTTOM,
+                )) {
+                    androidx.compose.material3.FilterChip(selected = active == target, onClick = {
+                        stage.showFaceMesh = true
+                        stage.moveMeshMode = true
+                        if (!stage.splitCompareMode && stage.zoomLevel < 2.0f) { stage.splitCompareMode = true; stage.zoomLevel = 3.0f }
+                        stage.selectedMeshFeature = target
+                        active = target
+                    }, label = { androidx.compose.material3.Text(target.shortLabel) })
                 }
             }
-        }
-        stage.onFeatureSelected = { refreshChipHighlights(it) }
-
-        val chipScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
-        val chipRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(5)) }
-        for (target in listOf(
-            MeshFeatureTarget.WHOLE_MESH,
-            MeshFeatureTarget.HAIRLINE_TOP,
-            MeshFeatureTarget.LEFT_BROW,
-            MeshFeatureTarget.RIGHT_BROW,
-            MeshFeatureTarget.LEFT_EYE,
-            MeshFeatureTarget.RIGHT_EYE,
-            MeshFeatureTarget.NOSE_TIP,
-            MeshFeatureTarget.MOUTH,
-            MeshFeatureTarget.JAW_LEFT,
-            MeshFeatureTarget.JAW_RIGHT,
-            MeshFeatureTarget.CHIN_BOTTOM,
-        )) {
-            val b = pillButton(target.shortLabel, selected = stage.selectedMeshFeature == target) {
-                stage.showFaceMesh = true
-                stage.moveMeshMode = true
-                if (!stage.splitCompareMode && stage.zoomLevel < 2.0f) {
-                    stage.splitCompareMode = true
-                    stage.zoomLevel = 3.0f
+            val step = 0.018f
+            androidx.compose.foundation.layout.Row(
+                androidx.compose.ui.Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+            ) {
+                for ((lbl, act) in listOf<Pair<String, () -> Unit>>(
+                    "◀" to { stage.nudgeSelectedFeature(-step, 0f, 0f) },
+                    "▲" to { stage.nudgeSelectedFeature(0f, -step, 0f) },
+                    "▼" to { stage.nudgeSelectedFeature(0f, step, 0f) },
+                    "▶" to { stage.nudgeSelectedFeature(step, 0f, 0f) },
+                    "Smaller" to { stage.nudgeSelectedFeature(0f, 0f, -0.05f) },
+                    "Bigger" to { stage.nudgeSelectedFeature(0f, 0f, +0.05f) },
+                )) {
+                    androidx.compose.material3.OutlinedButton(onClick = act, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp)) {
+                        androidx.compose.material3.Text(lbl)
+                    }
                 }
-                stage.selectedMeshFeature = target
-                refreshChipHighlights(target)
             }
-            chipButtons += target to b
-            chipRow.addView(b, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { rightMargin = dp(4) })
+            androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.Button(onClick = {
+                    val portraitBmp = stage.uploadedPhotoThumb ?: CustomCompanionStore.getOrDecodeBitmap(draft.id, draft.facePortraitBase64)
+                    if (portraitBmp != null) {
+                        val synced = PhotoCompanionAnalyzer.rescanFromAdjustedMesh(portraitBmp, previewChar.spec)
+                        CustomCompanionStore.save(this@CompanionStudioActivity, synced)
+                        updateDraft(synced)
+                        stage.refreshSpec()
+                        Toast.makeText(this@CompanionStudioActivity, "Copied face shape and colours", Toast.LENGTH_SHORT).show()
+                    } else Toast.makeText(this@CompanionStudioActivity, "Upload a photo first", Toast.LENGTH_SHORT).show()
+                }) { androidx.compose.material3.Text("Copy from photo") }
+                androidx.compose.material3.OutlinedButton(onClick = {
+                    val nextSpec = previewChar.spec.copy(faceMesh = com.combo.monkeycompanion.character.FaceLandmarkMesh())
+                    CustomCompanionStore.save(this@CompanionStudioActivity, nextSpec)
+                    updateDraft(nextSpec)
+                    stage.refreshSpec()
+                }) { androidx.compose.material3.Text("Reset face") }
+            }
         }
-        chipScroll.addView(chipRow)
-        box.addView(chipScroll)
-
-        // Precision D-Pad & Width/Size Nudge Row: [◀] [▲] [▼] [▶] [➖ Narrow] [➕ Wide] [🎨 Sync] [↺]
-        val dpadRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val step = 0.018f
-        dpadRow.addView(pillButton("◀", false) { stage.nudgeSelectedFeature(-step, 0f, 0f) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 0.85f).apply { rightMargin = dp(3) })
-        dpadRow.addView(pillButton("▲", false) { stage.nudgeSelectedFeature(0f, -step, 0f) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 0.85f).apply { rightMargin = dp(3) })
-        dpadRow.addView(pillButton("▼", false) { stage.nudgeSelectedFeature(0f, step, 0f) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 0.85f).apply { rightMargin = dp(3) })
-        dpadRow.addView(pillButton("▶", false) { stage.nudgeSelectedFeature(step, 0f, 0f) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 0.85f).apply { rightMargin = dp(3) })
-        dpadRow.addView(pillButton("➖ Size", false) { stage.nudgeSelectedFeature(0f, 0f, -0.05f) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.15f).apply { rightMargin = dp(3) })
-        dpadRow.addView(pillButton("➕ Size", false) { stage.nudgeSelectedFeature(0f, 0f, +0.05f) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.15f).apply { rightMargin = dp(3) })
-        dpadRow.addView(pillButton("🎨 Copy", true) {
-            val portraitBmp = stage.uploadedPhotoThumb ?: CustomCompanionStore.getOrDecodeBitmap(draft.id, draft.facePortraitBase64)
-            if (portraitBmp != null) {
-                val synced = PhotoCompanionAnalyzer.rescanFromAdjustedMesh(portraitBmp, previewChar.spec)
-                CustomCompanionStore.save(this, synced)
-                updateDraft(synced, rebuild = false)
-                stage.refreshSpec()
-                Toast.makeText(this, "✨ Copied mesh structure & colors to 2D character!", Toast.LENGTH_SHORT).show()
-            }
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.25f).apply { rightMargin = dp(3) })
-        dpadRow.addView(pillButton("↺", false) {
-            val resetMesh = com.combo.monkeycompanion.character.FaceLandmarkMesh()
-            val nextSpec = previewChar.spec.copy(faceMesh = resetMesh)
-            CustomCompanionStore.save(this, nextSpec)
-            updateDraft(nextSpec, rebuild = false)
-            stage.refreshSpec()
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 0.75f))
-        box.addView(dpadRow)
-        return box
     }
 
-    fun openFullscreenZoomInspector() {
-        val dlg = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        val stage = StudioLiveStageView(this, previewChar).apply {
-            uploadedPhotoThumb = lastUploadedPhoto
-            splitCompareMode = true
-            zoomLevel = 3.5f
-            showFaceMesh = true
-            moveMeshMode = true
-            selectedMeshFeature = stageView?.selectedMeshFeature ?: MeshFeatureTarget.WHOLE_MESH
-            onMeshAdjusted = { nextMesh ->
-                draft = draft.copy(faceMesh = nextMesh)
-                CustomCompanionStore.save(this@CompanionStudioActivity, draft)
-                stageView?.refreshSpec()
-            }
-            onResampledSpec = { nextSpec ->
-                draft = nextSpec
-                CustomCompanionStore.save(this@CompanionStudioActivity, draft)
-                stageView?.refreshSpec()
+    private var inspectorOpen by androidx.compose.runtime.mutableStateOf(false)
+    fun openFullscreenZoomInspector() { inspectorOpen = true }
+
+    /** Full-screen face editor: big preview + feature tools + zoom / split / mesh switches. */
+    @androidx.compose.runtime.Composable
+    private fun FullscreenFaceEditor() {
+        val big = androidx.compose.runtime.remember {
+            StudioLiveStageView(this, previewChar).apply {
+                uploadedPhotoThumb = lastUploadedPhoto
+                splitCompareMode = true; zoomLevel = 3.5f; showFaceMesh = true; moveMeshMode = true
+                selectedMeshFeature = stageView?.selectedMeshFeature ?: MeshFeatureTarget.WHOLE_MESH
+                onMeshAdjusted = { nextMesh -> draft = draft.copy(faceMesh = nextMesh); CustomCompanionStore.save(this@CompanionStudioActivity, draft); stageView?.refreshSpec() }
+                onResampledSpec = { nextSpec -> draft = nextSpec; CustomCompanionStore.save(this@CompanionStudioActivity, draft); stageView?.refreshSpec() }
             }
         }
-        val wrap = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(com.combo.monkeycompanion.theme.Th.rgb(0x0D, 0x0B, 0x18))
-            setPadding(dp(8), dp(8), dp(8), dp(8))
+        var split by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
+        var mesh by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
+        var drag by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
+        androidx.compose.ui.window.Dialog(onDismissRequest = { inspectorOpen = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+            androidx.compose.material3.Surface(androidx.compose.ui.Modifier.fillMaxSize(), color = androidx.compose.material3.MaterialTheme.colorScheme.background) {
+                androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().padding(12.dp),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        androidx.compose.material3.Text("Face editor", style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                            modifier = androidx.compose.ui.Modifier.weight(1f))
+                        androidx.compose.material3.TextButton(onClick = { showWhoIsInPhotoDialog() }) { androidx.compose.material3.Text(draft.gender.shortLabel) }
+                        androidx.compose.material3.Button(onClick = { inspectorOpen = false }) { androidx.compose.material3.Text("Done") }
+                    }
+                    androidx.compose.ui.viewinterop.AndroidView(factory = { big },
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth().weight(1f))
+                    MeshFeatureControls(big)
+                    androidx.compose.foundation.layout.Row(
+                        androidx.compose.ui.Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+                    ) {
+                        for ((z, lbl) in listOf(1f to "1×", 2f to "2×", 3.5f to "3.5×", 5f to "5×")) {
+                            androidx.compose.material3.AssistChip(onClick = { big.zoomLevel = z }, label = { androidx.compose.material3.Text(lbl) })
+                        }
+                        androidx.compose.material3.FilterChip(selected = split, onClick = { split = !split; big.splitCompareMode = split }, label = { androidx.compose.material3.Text("Side by side") })
+                        androidx.compose.material3.FilterChip(selected = mesh, onClick = { mesh = !mesh; big.showFaceMesh = mesh }, label = { androidx.compose.material3.Text("Show mesh") })
+                        androidx.compose.material3.FilterChip(selected = drag, onClick = {
+                            drag = !drag; big.moveMeshMode = drag; if (drag) { big.showFaceMesh = true; mesh = true }
+                        }, label = { androidx.compose.material3.Text(if (drag) "Drag: face" else "Drag: view") })
+                    }
+                }
+            }
         }
-
-        // 1. Compact Top Header Bar with Title + [👤 Sex/Age] + [✓ Done]
-        val topBar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(6), dp(2), dp(6), dp(4))
-        }
-        topBar.addView(TextView(this).apply {
-            text = "🔍 Fullscreen Mesh & Face Editor"
-            textSize = 15f; setTypeface(typeface, Typeface.BOLD); setTextColor(Color.WHITE)
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        topBar.addView(pillButton("👤 ${draft.gender.shortLabel}", selected = false) {
-            showWhoIsInPhotoDialog()
-        }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { rightMargin = dp(6) })
-        topBar.addView(pillButton("✓ Done", selected = true) {
-            dlg.dismiss()
-        }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
-        wrap.addView(topBar, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-
-        // 2. Massive Full-Screen Canvas (LayoutParams(MATCH_PARENT, 0, 1f))
-        wrap.addView(stage, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
-
-        // 3. Feature Target Chip Bar + Precision D-Pad (◀ ▲ ▼ ▶ ➖ ➕ 🎨 Copy)
-        wrap.addView(buildMeshFeatureControls(stage, darkTheme = true),
-            LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
-
-        // 4. Compact Bottom Control Dock (Zoom + Split + Mesh + Trackpad Mode Toggle)
-        val row1 = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(4), 0, 0)
-        }
-        for ((z, lbl) in listOf(1f to "1x", 2f to "2x", 3.5f to "3.5x", 5f to "5x")) {
-            row1.addView(pillButton(lbl, selected = false) { stage.zoomLevel = z },
-                LinearLayout.LayoutParams(0, WRAP_CONTENT, 0.85f).apply { rightMargin = dp(3) })
-        }
-        row1.addView(pillButton("🔍 Split", selected = true) { stage.splitCompareMode = !stage.splitCompareMode },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.05f).apply { rightMargin = dp(3) })
-        row1.addView(pillButton("🕸️ Mesh", selected = stage.showFaceMesh) { stage.showFaceMesh = !stage.showFaceMesh },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.05f).apply { rightMargin = dp(3) })
-        lateinit var moveMeshBtn: Button
-        moveMeshBtn = pillButton("✋ Drag Mesh: ON", selected = true) {
-            stage.moveMeshMode = !stage.moveMeshMode
-            if (stage.moveMeshMode) stage.showFaceMesh = true
-            moveMeshBtn.text = if (stage.moveMeshMode) "✋ Drag Mesh: ON" else "✋ Pan View"
-        }
-        row1.addView(moveMeshBtn, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.45f))
-        wrap.addView(row1)
-
-        dlg.setContentView(wrap)
-        dlg.window?.apply {
-            setBackgroundDrawable(ColorDrawable(com.combo.monkeycompanion.theme.Th.rgb(0x0D, 0x0B, 0x18)))
-            setLayout(MATCH_PARENT, MATCH_PARENT)
-        }
-        runCatching { dlg.show() }
     }
 
     // ---------------- v10.38.12 Studio: one Material 3 screen ----------------
@@ -1059,6 +917,19 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                 }
             }
         ) { pad ->
+            photoProgress?.let { (prog, step) ->
+                androidx.compose.material3.AlertDialog(onDismissRequest = {}, confirmButton = {},
+                    title = { androidx.compose.material3.Text("Making your look-alike") },
+                    text = {
+                        androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                            androidx.compose.material3.LinearProgressIndicator(progress = { prog }, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
+                            androidx.compose.material3.Text(step)
+                        }
+                    })
+            }
+            if (whoDialogOpen) WhoIsInPhotoDialog()
+            if (importOpen) ImportDialog()
+            if (inspectorOpen) FullscreenFaceEditor()
             androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().padding(pad)) {
                 // Pinned live preview: always visible while you change things.
                 androidx.compose.material3.Card(
@@ -1338,35 +1209,38 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
         startActivity(Intent.createChooser(send, "Export ${draft.name} (.settai)"))
     }
 
-    private fun promptImportCharacter() {
-        val input = EditText(this).apply {
-            hint = "Paste .settai.json text here, or tap 'Pick File' below"
-            minLines = 3
-        }
-        AlertDialog.Builder(this)
-            .setTitle("📥 Import .settai Companion")
-            .setView(input)
-            .setPositiveButton("Import JSON") { _, _ ->
-                val txt = input.text?.toString()?.trim().orEmpty()
-                val ch = CustomCompanionStore.importFromJson(this, txt)
-                if (ch != null) {
-                    updateDraft(ch.spec, rebuild = true)
-                    Toast.makeText(this, "Imported ${ch.name}!", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Could not parse .settai JSON", Toast.LENGTH_SHORT).show()
+    private var importOpen by androidx.compose.runtime.mutableStateOf(false)
+    private fun promptImportCharacter() { importOpen = true }
+
+    @androidx.compose.runtime.Composable
+    private fun ImportDialog() {
+        var txt by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { importOpen = false },
+            title = { androidx.compose.material3.Text("Import a character") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(value = txt, onValueChange = { txt = it }, minLines = 3,
+                    placeholder = { androidx.compose.material3.Text("Paste the .settai text here, or pick a file") })
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    val ch = CustomCompanionStore.importFromJson(this@CompanionStudioActivity, txt.trim())
+                    if (ch != null) { updateDraft(ch.spec, rebuild = true); Toast.makeText(this@CompanionStudioActivity, "Imported ${ch.name}", Toast.LENGTH_SHORT).show(); importOpen = false }
+                    else Toast.makeText(this@CompanionStudioActivity, "That text isn't a Set-Tai character", Toast.LENGTH_SHORT).show()
+                }) { androidx.compose.material3.Text("Import") }
+            },
+            dismissButton = {
+                androidx.compose.foundation.layout.Row {
+                    androidx.compose.material3.TextButton(onClick = {
+                        importOpen = false
+                        runCatching {
+                            startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }, REQ_IMPORT_SETTAI)
+                        }
+                    }) { androidx.compose.material3.Text("Pick file") }
+                    androidx.compose.material3.TextButton(onClick = { importOpen = false }) { androidx.compose.material3.Text("Cancel") }
                 }
             }
-            .setNeutralButton("Pick .settai File") { _, _ ->
-                runCatching {
-                    val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                        addCategory(Intent.CATEGORY_OPENABLE)
-                        type = "*/*"
-                    }
-                    startActivityForResult(i, REQ_IMPORT_SETTAI)
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+        )
     }
 
     @Deprecated("Deprecated in Java")
@@ -1394,73 +1268,6 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                 }
             }
         }
-    }
-
-    private fun card(title: String): LinearLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        setPadding(dp(14), dp(12), dp(14), dp(14))
-        background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.WHITE) }
-        layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
-        addView(TextView(context).apply {
-            text = title; textSize = 15.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
-            setPadding(0, 0, 0, dp(6))
-        })
-    }
-
-    private fun subHeader(text: String) = TextView(this).apply {
-        this.text = text; textSize = 12.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(soft)
-        setPadding(0, dp(8), 0, dp(4))
-    }
-
-    private fun pillButton(label: String, selected: Boolean, onClick: () -> Unit) = Button(this).apply {
-        text = label; isAllCaps = false; textSize = 11.8f
-        setTextColor(if (selected) Color.WHITE else brown)
-        background = GradientDrawable().apply {
-            cornerRadius = dp(18).toFloat()
-            setColor(if (selected) accent else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF9, 0xEE))
-            setStroke(dp(1), if (selected) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
-        }
-        setPadding(dp(8), dp(6), dp(8), dp(6))
-        setOnClickListener { onClick() }
-    }
-
-    private fun actionButton(label: String, primary: Boolean, onClick: () -> Unit) = Button(this).apply {
-        text = label; isAllCaps = false; textSize = 14f
-        setTextColor(if (primary) Color.WHITE else brown)
-        background = GradientDrawable().apply {
-            cornerRadius = dp(22).toFloat()
-            setColor(if (primary) purple else com.combo.monkeycompanion.theme.Th.rgb(0xF5, 0xE6, 0xD0))
-        }
-        setPadding(dp(14), dp(10), dp(14), dp(10))
-        setOnClickListener { onClick() }
-    }
-
-    private fun checkRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) = Switch(this).apply {
-        text = label; isChecked = checked; textSize = 13.5f; setTextColor(brown)
-        setOnCheckedChangeListener { _, isChecked -> onChange(isChecked) }
-    }
-
-    private fun sliderRow(label: String, value: Float, onChange: (Float) -> Unit): View {
-        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(4), 0, dp(4)) }
-        val tv = TextView(this).apply {
-            text = "$label: ${(value * 100).toInt()}%"
-            textSize = 12.8f; setTextColor(brown)
-        }
-        val sb = SeekBar(this).apply {
-            max = 100
-            progress = (value * 100).toInt().coerceIn(5, 100)
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    val v = (progress.coerceIn(5, 100)) / 100f
-                    tv.text = "$label: ${(v * 100).toInt()}%"
-                    if (fromUser) onChange(v)
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
-        }
-        wrap.addView(tv); wrap.addView(sb)
-        return wrap
     }
 
     companion object {
