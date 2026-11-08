@@ -126,7 +126,7 @@ object Landings {
         val why = buildList {
             add("own pick of ${opts.size}")
             if (!powersOn) add("powers Off: no power landings")
-            if (saver) add("Battery saver: simple variants")
+            if (saver) add("battery saver: simple variants")
             if (last != null && last != Style.SIMPLE && opts.size > 1) add("not ${label(last)} again")
             if (screenPx != Float.MAX_VALUE) add("drop ${(100f * dropPx / screenPx).toInt()}% of screen")
         }.joinToString(", ")
