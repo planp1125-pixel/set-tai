@@ -26,7 +26,7 @@ POST JSON `{userId, characterId, system, bodySense, message, history?}`;
 history entries `{fromUser: boolean, text: string}`. Success `{text, leftToday}`.
 Missing IDs/messages: 400; streamed bodies >8192 bytes: 413; over quota: 429
 `{error:"daily_limit",leftToday:0}`. Gemini failures: safe 502, no raw upstream
-body, key, URL, or request data in errors or console logs. Usual replies are about 30-40 words and are capped at 200 Unicode codepoints. If the user asks to explain more fully, the cap is 560 (about 90 words).
+body, key, URL, or request data in errors or console logs. Usual replies are about 30-40 words and are capped at 200 Unicode codepoints. If the user asks to explain more fully, the cap is 560 (about 90 words). v10.39.5: `task: "show"` (the app's "Describe a show") gets a story-lines guard instead of the character voice, 600 output tokens and a 1400-codepoint cap. **Needs a redeploy** to take effect; until then the app still works with the 200-character cap (shorter shows).
 
 40 **attempts** per anonymous install ID per UTC day, including background AI.
 Failures count conservatively. SQLite-backed `Quota` Durable Objects reserve

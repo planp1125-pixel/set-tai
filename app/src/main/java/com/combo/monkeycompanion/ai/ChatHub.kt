@@ -623,6 +623,47 @@ object ChatHub {
         }
     }
 
+    /** v10.39.5: the show writer is busy (separate from chat so a chat can't cancel it). */
+    @Volatile var writingShow = false; private set
+
+    /**
+     * v10.39.5 "✨ Describe a show": any brain (Set-Tai Cloud, own key, on-device Gemma) writes short story lines,
+     * [com.combo.monkeycompanion.engine.script.ShowWriter] turns them into a script; one retry with the problems,
+     * then a ready-made story with the named characters. [cb] (main thread) gets (script, note) or (null, reason).
+     * This is the user's own request, so it may use the cloud's daily requests (1 or 2).
+     */
+    fun writeShow(description: String, cb: (String?, String) -> Unit) {
+        val SW = com.combo.monkeycompanion.engine.script.ShowWriter
+        if (writingShow) return cb(null, "Already writing one…")
+        if (description.isBlank()) return cb(null, "Type what should happen first.")
+        if (!hasRealBrain()) return cb(null, "Turn on Give Brain (Brain & AI) so your character can write shows. The ready stories below work without it.")
+        writingShow = true
+        worker.execute {
+            var script: String? = null; var note = ""
+            try {
+                val b = brain()
+                val cloud = b is GatewayBrain
+                (b as? GatewayBrain)?.task = "show"
+                val cast = com.combo.monkeycompanion.character.CharacterRegistry.allWithCustom.map { it.id to it.name }
+                val sys = SW.rules(cast, if (cloud) 7 else 10)
+                val first = runCatching { b.chat(sys, emptyList(), SW.request(description), null) {} }.getOrDefault("")
+                var r = SW.compile(first)
+                if (!r.ok && first.isNotBlank()) {
+                    val again = runCatching { b.chat(sys, emptyList(), SW.fixRequest(description, first, r.problems), null) {} }.getOrDefault("")
+                    val r2 = SW.compile(again)
+                    if (r2.ok) r = r2
+                }
+                if (r.ok) { script = r.script; note = "Here it is! ▶ Preview it, then Save or Change it." }
+                else { script = SW.fallback(description); note = "I couldn't write that one, so here's the closest ready story with your characters." }
+            } catch (_: Exception) {
+                note = "Couldn't write the show right now. Try again in a moment."
+            } finally {
+                runCatching { (brain as? GatewayBrain)?.task = null }
+                main.post { writingShow = false; cb(script, note) }
+            }
+        }
+    }
+
     /** Ask a brain a quick test question (used by Settings). */
     fun test(b: Brain, cb: (Result<String>) -> Unit) {
         worker.execute {

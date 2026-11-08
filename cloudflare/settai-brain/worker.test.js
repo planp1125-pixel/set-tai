@@ -49,6 +49,17 @@ describe("Set-Tai gateway", () => {
     const r = await worker.fetch(req(data), env); const out = await r.json();
     expect(r.status).toBe(200); expect(Array.from(out.text)).toHaveLength(560); expect(out.text.endsWith("…")).toBe(true);
   });
+  it("a show request (task: show) gets the story-line guard and a longer reply", async () => {
+    const f = vi.fn(async (url, init) => {
+      const body = JSON.parse(init.body);
+      expect(body.generationConfig.maxOutputTokens).toBe(600);
+      expect(body.systemInstruction.parts[0].text).toContain("ONLY with the story lines");
+      expect(body.systemInstruction.parts[0].text).not.toContain("own voice");
+      return Response.json({ candidates: [{ content: { parts: [{ text: "a".repeat(1500) }] } }] });
+    }); vi.stubGlobal("fetch", f);
+    const out = await (await worker.fetch(req({ ...input(), task: "show", message: "Write a show: a chase" }), env)).json();
+    expect(Array.from(out.text)).toHaveLength(1400);
+  });
   it("40 atomic reservations hold even concurrently; next day resets; users are independent", async () => {
     const q = env.QUOTA_GATE.getByName(crypto.randomUUID());
     const results = await Promise.all(Array.from({ length: 60 }, () => q.reserve("2026-11-06")));

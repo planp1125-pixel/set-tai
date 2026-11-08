@@ -46,6 +46,13 @@ class ShowsActivity : androidx.activity.ComponentActivity() {
     private var advancedOpen by mutableStateOf(false)
     private var guideOpen by mutableStateOf(false)
     private var template by mutableStateOf<com.combo.monkeycompanion.engine.script.ShowTemplates.Template?>(null)
+    // v10.39.5 "✨ Describe a show" (kept in prefs, so ▶ Preview, which closes this screen, doesn't lose it)
+    private val draftPrefs by lazy { getSharedPreferences("shows_draft", MODE_PRIVATE) }
+    private var describe by mutableStateOf("")
+    private var change by mutableStateOf("")
+    private var written by mutableStateOf("")
+    private var writeNote by mutableStateOf("")
+    private var writing by mutableStateOf(false)
 
     companion object {
         const val PICK = 4711
@@ -69,6 +76,8 @@ class ShowsActivity : androidx.activity.ComponentActivity() {
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
+        describe = draftPrefs.getString("describe", "").orEmpty(); written = draftPrefs.getString("script", "").orEmpty()
+        if (written.isNotBlank()) writeNote = "Your last written show is still here."
         setContent { SettaiTheme(this) { Screen(rev) } }
     }
 
@@ -88,6 +97,7 @@ class ShowsActivity : androidx.activity.ComponentActivity() {
                 }
                 if (status.isNotBlank()) Text(status, color = MaterialTheme.colorScheme.primary)
             }
+            DescribeCard()
             SCard("Make a show", "Pick a story, choose who plays, type what they say. That's it.") {
                 for (t in com.combo.monkeycompanion.engine.script.ShowTemplates.all) {
                     androidx.compose.material3.OutlinedCard(onClick = { template = t }, modifier = Modifier.fillMaxWidth()) {
@@ -131,6 +141,48 @@ class ShowsActivity : androidx.activity.ComponentActivity() {
         }
         template?.let { TemplateSheet(it) }
     }
+
+    /** v10.39.5: type the show in normal words; the brain writes it; Preview / Save / Change it. */
+    @androidx.compose.runtime.Composable
+    private fun DescribeCard() {
+        SCard("✨ Describe a show", "Say what should happen in normal words. Your character's brain writes the show (Set-Tai Cloud, your own key or on-device Gemma). Each show uses 1 or 2 of the cloud's daily requests.") {
+            OutlinedTextField(value = describe, onValueChange = { describe = it.take(400) }, minLines = 2, modifier = Modifier.fillMaxWidth(),
+                label = { Text("What happens?") },
+                placeholder = { Text("Tutty plays a prank on Angel, Angel gets angry, then they laugh together") })
+            if (describe.isBlank()) {
+                for (ex in listOf("Billa chases Chittu for the last laddu", "Tutty pranks Angel and Angel forgives her", "Zoom and Bolt race, Bolt's jets win")) {
+                    androidx.compose.material3.AssistChip(onClick = { describe = ex }, label = { Text(ex) })
+                }
+            }
+            if (writing) {
+                androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
+                SNote("Writing your show…")
+            } else SPrimary(if (written.isBlank()) "✨ Write my show" else "✨ Write a new one") { writeShow(describe) }
+            if (writeNote.isNotBlank()) Text(writeNote, color = MaterialTheme.colorScheme.primary)
+            if (written.isNotBlank() && !writing) {
+                val title = Regex("(?m)^title:\\s*(.*)$").find(written)?.groupValues?.get(1).orEmpty()
+                if (title.isNotBlank()) Text("“$title”", style = MaterialTheme.typography.titleMedium)
+                SPrimary("▶ Preview") { playLater(written) }
+                SSecondary("Save to my shows") { if (addText(written, playNow = false)) { written = ""; writeNote = ""; keepDraft() } }
+                SField(change, { change = it.take(200) }, "Change it (for example: make Angel win)")
+                SSecondary("Change it") {
+                    if (change.isBlank()) say("Type what to change first") else { writeShow("$describe. Change: $change"); change = "" }
+                }
+                androidx.compose.material3.TextButton(onClick = { paste = written; advancedOpen = true }) { Text("Open in the script editor") }
+            }
+        }
+    }
+
+    private fun writeShow(text: String) {
+        writing = true; writeNote = ""
+        com.combo.monkeycompanion.ai.ChatHub.init(this)
+        com.combo.monkeycompanion.ai.ChatHub.writeShow(text) { script, note ->
+            writing = false; writeNote = note
+            if (script != null) { written = script; keepDraft() }
+        }
+    }
+
+    private fun keepDraft() { runCatching { draftPrefs.edit().putString("describe", describe).putString("script", written).apply() } }
 
     /** Fill in a template: characters as drop-downs, lines as text boxes. Preview plays it; Save keeps it. */
     @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)

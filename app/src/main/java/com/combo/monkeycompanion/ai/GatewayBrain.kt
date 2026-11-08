@@ -23,6 +23,8 @@ class GatewayBrain(
     @Volatile private var active: Call? = null
     @Volatile private var cancelled = false
     @Volatile var leftToday: Int? = null; private set
+    /** v10.39.5: a special job for the gateway ("show" = write show story lines: no character voice, longer reply). */
+    @Volatile var task: String? = null
     override fun cancel() { cancelled = true; active?.cancel() }
     override fun close() = cancel()
 
@@ -34,6 +36,7 @@ class GatewayBrain(
         while (true) {
             val json = JSONObject().put("userId", userId).put("characterId", CharacterRegistry.current.id)
                 .put("system", sys).put("bodySense", body).put("message", message)
+                .apply { task?.let { put("task", it) } }
                 .put("history", JSONArray(turns.map { JSONObject().put("fromUser", it.fromUser).put("text", it.text.take(400)) }))
                 .toString()
             if (json.toByteArray(Charsets.UTF_8).size <= 8192) return json
@@ -64,7 +67,7 @@ class GatewayBrain(
                 }
                 if (!response.isSuccessful) throw BrainException("Cloud unavailable.")
                 val raw = result?.optString("text")?.trim().orEmpty()
-                val text = raw.substring(0, raw.offsetByCodePoints(0, minOf(560, raw.codePointCount(0, raw.length))))
+                val text = raw.substring(0, raw.offsetByCodePoints(0, minOf(if (task == "show") 1400 else 560, raw.codePointCount(0, raw.length))))
                 if (text.isBlank()) throw BrainException("Empty cloud reply.")
                 if (!enabled() || cancelled) throw BrainException("Chat cancelled.")
                 onText(text); return text

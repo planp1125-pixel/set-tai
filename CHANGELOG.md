@@ -323,3 +323,10 @@ Every character now feels like a little body in your hand (the phone's vibration
 
 - From now on only the Play build is made and published (`set-tai-play-release.apk` on every ci-N release). The screen agent is off in it: Android's Accessibility service is not in the app at all (removed from the Play manifest) and every button, chip, switch and AI tool for it is hidden (v10.39.3).
 - `play` is now the default build flavor. The old `full` flavor stays in the source only so the existing unit tests keep running; it is never built for release or published.
+
+## v10.39.5 (code 107): ✨ Describe a show
+
+- Shows → **✨ Describe a show**: type what should happen in normal words ("Tutty pranks Angel and Angel forgives her"). Your brain writes it: Set-Tai Cloud, your own key or on-device Gemma. Then **▶ Preview**, **Save to my shows**, **Change it** ("make Angel win") or open it in the script editor. Example ideas are one tap away. The draft is kept, so Preview doesn't lose it.
+- The brain writes a few short story lines ("t throw fireball at a"); the app (`engine/script/ShowWriter`) adds the timings, places and endings, fixes small mistakes (misspelt faces, numbering, code fences, a cut-off last line), checks the result with the real player, asks the brain once more with the problems if needed, and otherwise falls back to the closest ready-made story with the characters you named. So you always get a show that plays.
+- Needs Give Brain. On Set-Tai Cloud each show uses 1 or 2 of the 40 daily requests. The gateway got a `task: "show"` mode (story-line guard, 600 tokens, 1400 characters); until the worker is redeployed the cloud writes shorter shows (200-character cap), which still play.
+- New ShowWriterTest; worker test for the show mode.

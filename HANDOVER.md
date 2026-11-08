@@ -1,6 +1,13 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.39.4 (versionCode 106)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.39.5 (versionCode 107)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.39.5 Describe a show
+
+- `engine/script/ShowWriter`: rules sheet (system prompt) + `compile(answer)` (story lines -> timed script; also checks a
+  full script) + `fallback(description)` (closest ShowTemplates story with the named characters).
+  `ChatHub.writeShow()` runs it on any real brain with one retry. GatewayBrain sends `task: "show"`; the worker
+  (cloudflare/settai-brain) has the show mode in source and tests but MUST BE REDEPLOYED by the owner.
 
 ## v10.39.4 Play only
 
