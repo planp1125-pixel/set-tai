@@ -17,6 +17,10 @@ import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
 import com.combo.monkeycompanion.agent.RoutineParse
 import com.combo.monkeycompanion.agent.RoutineStore
 import com.combo.monkeycompanion.ai.ChatHub
@@ -55,55 +59,87 @@ abstract class SimpleListActivity : Activity() {
     protected fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(28)) }
 }
 
-/** v4 Memory screen: everything Settai remembers, with delete. */
-@SuppressLint("SetTextI18n")
-class MemoryActivity : SimpleListActivity() {
-    override fun build(): View {
+/** v4 Memory screen (v10.38.17: Material 3): everything Settai remembers, with delete. */
+class MemoryActivity : androidx.activity.ComponentActivity() {
+    private var rev by androidx.compose.runtime.mutableIntStateOf(0)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState); ChatHub.init(this)
+        setContent { SettaiTheme(this) { Screen(rev) } }
+    }
+    override fun onResume() { super.onResume(); rev++ }
+
+    @androidx.compose.runtime.Composable
+    private fun Screen(@Suppress("UNUSED_PARAMETER") r: Int) {
         val st = ExtraCaps.memory(this)
-        val col = column()
-        col.addView(text("Settai's notebook 📒", 26f, true))
-        col.addView(text("Things you told Settai to remember. Kept only in a file on this phone. Used to make chats (and jokes) personal. Passwords, PINs and codes are never stored." +
-            if (!ChatHub.settings.groupEnabled(CapGroup.MEMORY)) "\n\nMemory is OFF: switch it on in Phone powers so Settai learns and uses these." else "", 13f, color = soft))
-        val input = EditText(this).apply { hint = "Add: e.g. I love filter coffee"; textSize = 14f }
-        col.addView(card(input, button("Remember this") {
-            val t = input.text.toString().trim()
-            if (t.isNotEmpty()) { st.add(com.combo.monkeycompanion.agent.MemoryParse.toYou(t)); refresh() }
-        }))
+        var input by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+        var confirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
         val all = st.all().sortedByDescending { it.at }
-        if (all.isEmpty()) col.addView(card(text("Nothing yet. Say “remember that my sister's birthday is 4 May” in chat.", 14f, color = soft)))
-        for (f in all) col.addView(card(row(text(f.text + "\n" + f.kind + " · " + DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(f.at)), 14f),
-            button("Delete") { st.remove(f.id); refresh() })))
-        if (all.isNotEmpty()) col.addView(card(button("Forget everything") {
-            android.app.AlertDialog.Builder(this).setMessage("Forget all ${all.size} things?").setPositiveButton("Forget all") { _, _ -> st.clear(); refresh() }.setNegativeButton("Cancel", null).show()
-        }))
-        return col
+        SettaiScreen("Settai's notebook", onBack = { finish() }) {
+            SNote("Things you told Settai to remember. Kept only in a file on this phone and used to make chats (and jokes) personal. Passwords, PINs and codes are never stored.")
+            if (!ChatHub.settings.groupEnabled(CapGroup.MEMORY)) SNote("Memory is OFF: switch it on in Phone powers so Settai learns and uses these.")
+            SCard("Add") {
+                SField(input, { input = it }, "Remember", "e.g. I love filter coffee")
+                SPrimary("Remember this") {
+                    val t = input.trim()
+                    if (t.isNotEmpty()) { st.add(com.combo.monkeycompanion.agent.MemoryParse.toYou(t)); input = ""; rev++ }
+                }
+            }
+            if (all.isEmpty()) SCard("Nothing yet", "Say \"remember that my sister's birthday is 4 May\" in chat.") {}
+            for (f in all) SCard(f.text) {
+                androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.weight(1f)) {
+                        SNote(f.kind.toString() + " · " + DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(f.at)))
+                    }
+                    androidx.compose.material3.TextButton(onClick = { st.remove(f.id); rev++ }) { androidx.compose.material3.Text("Delete") }
+                }
+            }
+            if (all.isNotEmpty()) SSecondary("Forget everything") { confirm = true }
+        }
+        if (confirm) androidx.compose.material3.AlertDialog(onDismissRequest = { confirm = false },
+            text = { androidx.compose.material3.Text("Forget all ${all.size} things?") },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { st.clear(); confirm = false; rev++ }) { androidx.compose.material3.Text("Forget all") } },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirm = false }) { androidx.compose.material3.Text("Cancel") } })
     }
 }
 
-/** v4 Routines screen: list, pause, delete, add from a sentence. */
-@SuppressLint("SetTextI18n", "UseSwitchCompatOrMaterialCode")
-class RoutinesActivity : SimpleListActivity() {
-    override fun build(): View {
-        val col = column()
-        col.addView(text("Settai's routines 🗓️", 26f, true))
-        col.addView(text("Time routines run even when Settai is asleep (alarm-clock style). Event routines (charger, battery low, Wi-Fi, headphones) run while Settai is on screen or in the wallpaper. Anything that changes the phone still asks Yes/No when it runs." +
-            if (!ChatHub.settings.groupEnabled(CapGroup.ROUTINES)) "\n\nRoutines are OFF: switch them on in Phone powers." else "", 13f, color = soft))
-        val input = EditText(this).apply { hint = "e.g. every day at 9 pm remind me to drink water"; textSize = 14f }
-        val preview = text("", 13f, color = soft)
-        col.addView(card(input, preview, row(button("Check") {
-            preview.text = RoutineParse.parse(input.text.toString(), ExtraCaps::routineCommand)?.describe() ?: "I don't understand that one yet. Start with “every day at …”, “weekdays at …” or “when the charger is connected …”."
-        }, button("Save") {
-            val r = RoutineParse.parse(input.text.toString(), ExtraCaps::routineCommand)
-            if (r == null) Toast.makeText(this, "Couldn't understand it", Toast.LENGTH_SHORT).show() else { RoutineStore.add(this, r); refresh() }
-        })))
-        col.addView(text("Examples: “weekdays at 7:30 say good morning machan” · “every night at 10 turn on do not disturb” · “when headphones are plugged in say music time” · “every sunday at 6 pm remind me to water the plants”", 12f, color = soft))
-        val l = RoutineStore.all(this)
-        if (l.isEmpty()) col.addView(card(text("No routines yet.", 14f, color = soft)))
-        for (r in l) {
-            val sw = Switch(this).apply { isChecked = r.enabled; setOnCheckedChangeListener { _, c -> RoutineStore.setEnabled(this@RoutinesActivity, r.id, c) } }
-            col.addView(card(row(text("#${r.id}  ${r.describe()}", 14f), sw), row(View(this), button("Delete") { RoutineStore.remove(this, r.id); refresh() })))
+/** v4 Routines screen (v10.38.17: Material 3): list, pause, delete, add from a sentence. */
+class RoutinesActivity : androidx.activity.ComponentActivity() {
+    private var rev by androidx.compose.runtime.mutableIntStateOf(0)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState); ChatHub.init(this)
+        setContent { SettaiTheme(this) { Screen(rev) } }
+    }
+    override fun onResume() { super.onResume(); rev++ }
+
+    @androidx.compose.runtime.Composable
+    private fun Screen(@Suppress("UNUSED_PARAMETER") r: Int) {
+        var input by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+        var preview by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+        SettaiScreen("Settai's routines", onBack = { finish() }) {
+            SNote("Time routines run even when Settai is asleep (alarm-clock style). Event routines (charger, battery low, Wi-Fi, headphones) run while Settai is on screen or in the wallpaper. Anything that changes the phone still asks Yes/No when it runs.")
+            if (!ChatHub.settings.groupEnabled(CapGroup.ROUTINES)) SNote("Routines are OFF: switch them on in Phone powers.")
+            SCard("Add a routine", "Examples: \"weekdays at 7:30 say good morning\" · \"every night at 10 turn on do not disturb\" · \"when headphones are plugged in say music time\" · \"every sunday at 6 pm remind me to water the plants\"") {
+                SField(input, { input = it }, "Routine", "every day at 9 pm remind me to drink water")
+                if (preview.isNotBlank()) SNote(preview)
+                androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.OutlinedButton(onClick = {
+                        preview = RoutineParse.parse(input, ExtraCaps::routineCommand)?.describe()
+                            ?: "I don't understand that one yet. Start with \"every day at …\", \"weekdays at …\" or \"when the charger is connected …\"."
+                    }, modifier = androidx.compose.ui.Modifier.weight(1f)) { androidx.compose.material3.Text("Check") }
+                    androidx.compose.material3.Button(onClick = {
+                        val rt = RoutineParse.parse(input, ExtraCaps::routineCommand)
+                        if (rt == null) Toast.makeText(this@RoutinesActivity, "Couldn't understand it", Toast.LENGTH_SHORT).show()
+                        else { RoutineStore.add(this@RoutinesActivity, rt); input = ""; preview = ""; rev++ }
+                    }, modifier = androidx.compose.ui.Modifier.weight(1f)) { androidx.compose.material3.Text("Save") }
+                }
+            }
+            val l = RoutineStore.all(this@RoutinesActivity)
+            if (l.isEmpty()) SNote("No routines yet.")
+            for (rt in l) SCard("#${rt.id}") {
+                SSwitch(rt.describe(), rt.enabled) { RoutineStore.setEnabled(this@RoutinesActivity, rt.id, it); rev++ }
+                androidx.compose.material3.TextButton(onClick = { RoutineStore.remove(this@RoutinesActivity, rt.id); rev++ }) { androidx.compose.material3.Text("Delete") }
+            }
         }
-        return col
     }
 }
 
@@ -151,24 +187,33 @@ object AgentScreensMore {
     }
 }
 
-/** v4 Reported replies: AI replies the user flagged. Stored on this phone only; Share is user-initiated. */
-class ReportsActivity : SimpleListActivity() {
-    override fun build(): View {
+/** v4 Reported replies (v10.38.17: Material 3): AI replies the user flagged. Stored on this phone only; Share is user-initiated. */
+class ReportsActivity : androidx.activity.ComponentActivity() {
+    private var rev by androidx.compose.runtime.mutableIntStateOf(0)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState); ChatHub.init(this)
+        setContent { SettaiTheme(this) { Screen(rev) } }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun Screen(@Suppress("UNUSED_PARAMETER") r: Int) {
         val st = com.combo.monkeycompanion.agent.ReplyReports.store(this)
-        val col = column()
-        col.addView(text("Reported replies ⚑", 26f, true))
-        col.addView(text("Replies you flagged with ⚑ Report. They stay in a file on this phone; nothing is uploaded. Use Share to send one yourself (e.g. to the developer or your AI provider's feedback form).", 13f, color = soft))
         val all = st.all().sortedByDescending { it.at }
-        if (all.isEmpty()) col.addView(card(text("Nothing reported. Tap ⚑ on a reply in the bubble or the chat if Settai says something wrong or not OK.", 14f, color = soft)))
-        for (r in all) col.addView(card(
-            text("You: " + r.prompt.ifBlank { "(not recorded)" }, 13f, color = soft),
-            text("Settai: " + r.reply, 14f),
-            text(r.brain + " · " + DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(r.at)), 12f, color = soft),
-            row(button("Share…") {
-                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, com.combo.monkeycompanion.agent.ReplyReportStore.shareText(r))
-                runCatching { startActivity(Intent.createChooser(send, "Share report")) }
-            }, button("Delete") { st.remove(r.id); refresh() })))
-        if (all.isNotEmpty()) col.addView(card(button("Delete all") { st.clear(); refresh() }))
-        return col
+        SettaiScreen("Reported replies", onBack = { finish() }) {
+            SNote("Replies you flagged with ⚑ Report. They stay in a file on this phone; nothing is uploaded. Use Share to send one yourself.")
+            if (all.isEmpty()) SNote("Nothing reported. Tap ⚑ on a reply in the bubble or the chat if Settai says something wrong or not OK.")
+            for (rp in all) SCard("Settai: " + rp.reply) {
+                SNote("You: " + rp.prompt.ifBlank { "(not recorded)" })
+                SNote(rp.brain + " · " + DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(rp.at)))
+                androidx.compose.foundation.layout.Row {
+                    androidx.compose.material3.TextButton(onClick = {
+                        val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, com.combo.monkeycompanion.agent.ReplyReportStore.shareText(rp))
+                        runCatching { startActivity(Intent.createChooser(send, "Share report")) }
+                    }) { androidx.compose.material3.Text("Share") }
+                    androidx.compose.material3.TextButton(onClick = { st.remove(rp.id); rev++ }) { androidx.compose.material3.Text("Delete") }
+                }
+            }
+            if (all.isNotEmpty()) SSecondary("Delete all") { st.clear(); rev++ }
+        }
     }
 }

@@ -1,6 +1,12 @@
 package com.combo.monkeycompanion.ui
 
 import android.app.Activity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -104,63 +110,51 @@ class CharacterPreviewView(ctx: Context, who: Character, private val demo: Boole
     }
 }
 
-/** Settings > Wardrobe: toggle each accessory of a character, pick styles, live preview. */
-class WardrobeActivity : Activity() {
-    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
-    private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+/** Settings > Wardrobe (v10.38.17: Material 3): toggle each accessory of a character, pick styles, live preview. */
+class WardrobeActivity : androidx.activity.ComponentActivity() {
+    private var rev by androidx.compose.runtime.mutableIntStateOf(0)
+    private var caption by androidx.compose.runtime.mutableStateOf("")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val s = AppSettings(this)
         val who = CharacterRegistry.byId(intent.getStringExtra("character")) ?: CharacterRegistry.current
-        val wear = CharacterRegistry.wear(who)
-        fun save() = s.setWardrobeFor(who.id, wear.encode())
+        setContent { SettaiTheme(this) { Screen(who, rev) } }
+    }
 
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(28)) }
-        col.addView(TextView(this).apply { text = "${who.name}'s wardrobe"; textSize = 24f; setTextColor(brown); setTypeface(typeface, Typeface.BOLD); gravity = Gravity.CENTER_HORIZONTAL })
-        val caption = TextView(this).apply { textSize = 12f; setTextColor(soft); gravity = Gravity.CENTER_HORIZONTAL }
-        val preview = CharacterPreviewView(this, who, demo = true).apply {
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, dp(260))
-            onMove = { m -> caption.post { caption.text = "Now: $m" } }
-            background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)) }
-        }
-        col.addView(preview); col.addView(caption)
-        col.addView(TextView(this).apply {
-            text = "Switch items on or off. Switched-off items vanish from the drawing and from the animations (no skateboard = he walks; no umbrella = he just falls). The AI is told what you picked."
-            textSize = 13f; setTextColor(soft); setPadding(0, dp(6), 0, dp(6))
-        })
-        val boxes = ArrayList<CheckBox>()
-        fun refresh() { boxes.forEach { b -> b.isChecked = wear.has(b.tag as String) }; preview.invalidate() }
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        fun small(label: String, f: () -> Unit) = Button(this).apply {
-            text = label; isAllCaps = false; setOnClickListener { f(); save(); refresh() }
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-        row.addView(small("All on") { wear.allOn() }); row.addView(small("Minimal") { wear.allOff() }); row.addView(small("Defaults") { wear.reset() })
-        col.addView(row)
-        for (item in who.wardrobe) {
-            val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            val cb = CheckBox(this).apply {
-                tag = item.id; text = item.title + (if (item.note.isNotBlank()) "  ·  ${item.note}" else ""); textSize = 15f; setTextColor(brown)
-                isChecked = wear.has(item.id)
-                setOnCheckedChangeListener { _, c -> wear.set(item.id, c); save(); preview.invalidate() }
-                layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
+    @androidx.compose.runtime.Composable
+    private fun Screen(who: com.combo.monkeycompanion.character.Character, @Suppress("UNUSED_PARAMETER") r: Int) {
+        val s = AppSettings(this)
+        val wear = androidx.compose.runtime.remember { CharacterRegistry.wear(who) }
+        fun save() { s.setWardrobeFor(who.id, wear.encode()); rev++ }
+        var preview by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<CharacterPreviewView?>(null) }
+        SettaiScreen("${who.name}'s wardrobe", onBack = { finish() }) {
+            androidx.compose.material3.Card(androidx.compose.ui.Modifier.fillMaxWidth()) {
+                androidx.compose.ui.viewinterop.AndroidView(
+                    factory = { ctx -> CharacterPreviewView(ctx, who, demo = true).also { v -> v.onMove = { m -> v.post { caption = "Now: $m" } }; preview = v } },
+                    update = { it.invalidate() },
+                    modifier = androidx.compose.ui.Modifier.fillMaxWidth().height(260.dp)
+                )
             }
-            boxes.add(cb); line.addView(cb)
-            if (item.options.isNotEmpty()) {
-                val labels = item.options.map { when (it) { "top" -> "Top hat"; "party" -> "Party hat"; "lungi" -> "Lungi turban"; else -> it } }
-                line.addView(Spinner(this).apply {
-                    adapter = ArrayAdapter(this@WardrobeActivity, android.R.layout.simple_spinner_dropdown_item, labels)
-                    setSelection(item.options.indexOf(wear.option(item.id)).coerceAtLeast(0))
-                    onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                        override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) { wear.setOption(item.id, item.options[pos]); save(); preview.invalidate() }
-                        override fun onNothingSelected(p: AdapterView<*>?) {}
+            if (caption.isNotBlank()) SNote(caption)
+            SNote("Switch items on or off. Switched-off items vanish from the drawing and the animations (no skateboard = he walks; no umbrella = he just falls). The AI is told what you picked.")
+            androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                for ((label, f) in listOf<Pair<String, () -> Unit>>("All on" to { wear.allOn() }, "Minimal" to { wear.allOff() }, "Defaults" to { wear.reset() })) {
+                    androidx.compose.material3.OutlinedButton(onClick = { f(); save(); preview?.invalidate() }, modifier = androidx.compose.ui.Modifier.weight(1f)) {
+                        androidx.compose.material3.Text(label)
                     }
-                })
+                }
             }
-            col.addView(line)
+            SCard("Items") {
+                for (item in who.wardrobe) {
+                    SSwitch(item.title, wear.has(item.id), item.note.ifBlank { null }) { wear.set(item.id, it); save(); preview?.invalidate() }
+                    if (item.options.isNotEmpty() && wear.has(item.id)) {
+                        val labels = item.options.map { when (it) { "top" -> "Top hat"; "party" -> "Party hat"; "lungi" -> "Lungi turban"; else -> it } }
+                        SChoice("Style", labels, item.options.indexOf(wear.option(item.id)).coerceAtLeast(0)) { pos ->
+                            wear.setOption(item.id, item.options[pos]); save(); preview?.invalidate()
+                        }
+                    }
+                }
+            }
         }
-        setContentView(ScrollView(this).apply { setBackgroundColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF8, 0xEE)); addView(col) })
     }
 }

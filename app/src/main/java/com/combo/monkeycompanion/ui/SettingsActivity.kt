@@ -41,6 +41,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -722,6 +725,8 @@ object GiveBrainDialog {
         onRunAiPhotoModel: (() -> Unit)? = null,
     ) {
         ChatHub.init(act)
+        // v10.38.17: Material 3 version on Compose screens (Studio, Settings, new home); old style elsewhere.
+        if (act is androidx.activity.ComponentActivity) { showCompose(act, onChanged, onRunAiPhotoModel); return }
         val s = ChatHub.settings
         val d = act.resources.displayMetrics.density
         fun dp(v: Int) = (v * d).toInt()
@@ -917,4 +922,81 @@ object GiveBrainDialog {
             }
             .show()
     }
+
+    private fun showCompose(act: androidx.activity.ComponentActivity, onChanged: (() -> Unit)?, onRunAiPhotoModel: (() -> Unit)?) {
+        val dlg = android.app.Dialog(act)
+        val cv = androidx.compose.ui.platform.ComposeView(act).apply {
+            setViewTreeLifecycleOwner(act)
+            setViewTreeSavedStateRegistryOwner(act)
+            setViewTreeViewModelStoreOwner(act)
+            setContent { SettaiTheme(act) { GiveBrainPanel(act, onChanged, onRunAiPhotoModel) { dlg.dismiss() } } }
+        }
+        dlg.setContentView(cv)
+        dlg.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        dlg.window?.decorView?.let {
+            it.setViewTreeLifecycleOwner(act); it.setViewTreeSavedStateRegistryOwner(act); it.setViewTreeViewModelStoreOwner(act)
+        }
+        runCatching { dlg.show() }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun GiveBrainPanel(act: Activity, onChanged: (() -> Unit)?, onRunAiPhotoModel: (() -> Unit)?, close: () -> Unit) {
+        val s = ChatHub.settings
+        var rev by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+        @Suppress("UNUSED_VARIABLE") val r = rev
+        var provider by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(s.provider) }
+        var key by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+        var model by androidx.compose.runtime.remember(provider) { androidx.compose.runtime.mutableStateOf(s.modelFor(provider)) }
+        var result by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+        fun changed() { rev++; onChanged?.invoke() }
+        fun saveKey() { val k = key.trim(); if (k.isNotEmpty()) { s.setApiKeyFor(provider, k); key = "" } }
+        androidx.compose.material3.Card(androidx.compose.ui.Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(SettaiDesignTokens.cornerCardDp.dp)) {
+            androidx.compose.foundation.layout.Column(
+                androidx.compose.ui.Modifier.heightIn(max = 620.dp).verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(20.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+            ) {
+                androidx.compose.material3.Text("Give Brain", style = androidx.compose.material3.MaterialTheme.typography.headlineSmall)
+                androidx.compose.material3.Text(ChatHub.giveBrainStatusLine(), style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
+                SSwitch("Brain on", ChatHub.isBrainEnabled(), "Off = local lines only. Jokes, dance and phone commands always stay on your phone.") {
+                    ChatHub.setBrainEnabled(it); changed()
+                }
+                SNote("Set-Tai Cloud is ready when Brain is on. No key or Gmail sign-in. 40 requests per UTC day, including background AI. Chats and character context go to Gemini; the gateway keeps only anonymous quota counts.")
+                SSwitch("Advanced: use my own API key / server", s.useOwnApiKey) { s.useOwnApiKey = it; changed() }
+                if (s.useOwnApiKey) {
+                    val providers = Provider.entries
+                    SChoice("Provider", providers.map { it.label }, providers.indexOf(provider).coerceAtLeast(0)) { provider = providers[it]; s.provider = provider; changed() }
+                    val saved = s.apiKeyFor(provider)
+                    SField(key, { key = it }, "API key", if (saved.isNotEmpty()) "Saved ••••${saved.takeLast(4)} (type to replace)" else "Paste ${provider.label} key", secret = true)
+                    SNote("Key from: ${provider.keyHint}")
+                    SField(model, { model = it }, "Model", provider.defaultModel)
+                    SPrimary("Save key, turn Brain on & test") {
+                        saveKey()
+                        val m = model.trim().ifBlank { provider.defaultModel }
+                        s.setModelFor(provider, m); s.provider = provider; s.useOwnApiKey = true; s.brainType = BrainType.ONLINE
+                        ChatHub.setBrainEnabled(true); changed()
+                        result = "Testing ${provider.label} ($m)…"
+                        val b = ChatHub.brain()
+                        ChatHub.test(b) { res -> res.onSuccess { result = "✅ Connected! ${b.label}: $it" }.onFailure { result = "❌ ${it.message}" } }
+                    }
+                    if (result.isNotBlank()) androidx.compose.material3.Text(result)
+                }
+                if (onRunAiPhotoModel != null) SSecondary("AI-model my companion now") {
+                    saveKey()
+                    if (!ChatHub.isBrainEnabled()) { ChatHub.setBrainEnabled(true); changed() }
+                    onRunAiPhotoModel()
+                }
+                androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End) {
+                    androidx.compose.material3.TextButton(onClick = { close(); act.startActivity(Intent(act, SettingsActivity::class.java).putExtra("settai_settings_section", "brain")) }) {
+                        androidx.compose.material3.Text("All brain settings")
+                    }
+                    androidx.compose.material3.TextButton(onClick = {
+                        if (s.useOwnApiKey && key.isNotBlank()) { saveKey(); s.provider = provider; s.brainType = BrainType.ONLINE; ChatHub.setBrainEnabled(true) }
+                        onChanged?.invoke(); close()
+                    }) { androidx.compose.material3.Text("Done") }
+                }
+            }
+        }
+    }
 }
+

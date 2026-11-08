@@ -1,6 +1,15 @@
 package com.combo.monkeycompanion.ui
 
 import android.app.Activity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import android.app.KeyguardManager
 import android.graphics.Color
 import android.os.Build
@@ -23,7 +32,7 @@ import com.combo.monkeycompanion.powers.SettaiClock
  * the alarm is stopped anywhere, auto-stops after [AUTO_STOP_MS], drops KEEP_SCREEN_ON as soon as
  * it's not in the foreground, and turns the screen on only for the first show.
  */
-class RingActivity : Activity() {
+class RingActivity : androidx.activity.ComponentActivity() {
     private var id = -1
     private val ui = android.os.Handler(android.os.Looper.getMainLooper())
     private val autoStop = Runnable { SettaiClock.stop(this, id); finish() }
@@ -49,30 +58,35 @@ class RingActivity : Activity() {
         id = intent.getIntExtra(SettaiClock.EXTRA_ID, -1)
         open.add(this)
         ui.postDelayed(autoStop, AUTO_STOP_MS)
-        val d = resources.displayMetrics.density
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            setBackgroundColor(com.combo.monkeycompanion.theme.Th.rgb(46, 92, 52)); setPadding((24 * d).toInt(), (48 * d).toInt(), (24 * d).toInt(), (48 * d).toInt())
-        }
-        root.addView(TextView(this).apply {
-            text = intent.getStringExtra("title") ?: "⏰"; textSize = 30f; setTextColor(Color.WHITE); gravity = Gravity.CENTER
-        })
+        val title = intent.getStringExtra("title") ?: "⏰"
         val rawLine = intent.getStringExtra("line").orEmpty()
-        root.addView(TextView(this).apply {
-            text = (if (rawLine.isNotBlank()) "$rawLine\n" else "") + "🥁 *Tap-tap-thump!* Settai is drumming on the glass from below to wake you up!"
-            textSize = 18f; setTextColor(com.combo.monkeycompanion.theme.Th.rgb(255, 240, 210)); gravity = Gravity.CENTER
-            setPadding(0, (12 * d).toInt(), 0, (12 * d).toInt())
-        })
-        val stage = FrameLayout(this)
-        val monkey = MonkeyView(this, null)
-        stage.addView(monkey, FrameLayout.LayoutParams((220 * d).toInt(), (240 * d).toInt(), Gravity.CENTER))
-        root.addView(stage, LinearLayout.LayoutParams(-1, 0, 1f))
-        root.addView(Button(this).apply {
-            text = "I'm awake! (Stop drumming)"; textSize = 20f
-            setOnClickListener { stopAndClose() }
-        }, LinearLayout.LayoutParams(-1, (64 * d).toInt()))
-        setContentView(root)
-        monkey.post { runCatching { monkey.onAction(com.combo.monkeycompanion.ai.BodyAction.DANCE) } }
+        // v10.38.17: Material 3 ring screen; the dancing character is the real overlay view.
+        setContent {
+            androidx.compose.material3.MaterialTheme(colorScheme = SettaiDesignTokens.scheme(true)) {
+                androidx.compose.material3.Surface(color = androidx.compose.ui.graphics.Color(0xFF2E5C34), modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
+                    androidx.compose.foundation.layout.Column(
+                        androidx.compose.ui.Modifier.fillMaxSize().systemBarsPadding().padding(24.dp),
+                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+                    ) {
+                        androidx.compose.material3.Text(title, fontSize = 30.sp, color = androidx.compose.ui.graphics.Color.White)
+                        androidx.compose.material3.Text((if (rawLine.isNotBlank()) "$rawLine\n" else "") + "🥁 Tap-tap-thump! Settai is drumming on the glass from below to wake you up!",
+                            fontSize = 18.sp, color = androidx.compose.ui.graphics.Color(0xFFFFF0D2),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxWidth().weight(1f), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                            androidx.compose.ui.viewinterop.AndroidView(
+                                factory = { ctx -> MonkeyView(ctx, null).also { m -> m.post { runCatching { m.onAction(com.combo.monkeycompanion.ai.BodyAction.DANCE) } } } },
+                                modifier = androidx.compose.ui.Modifier.size(220.dp, 240.dp)
+                            )
+                        }
+                        androidx.compose.material3.Button(onClick = { stopAndClose() },
+                            modifier = androidx.compose.ui.Modifier.fillMaxWidth().height(64.dp)) {
+                            androidx.compose.material3.Text("I'm awake! (Stop drumming)", fontSize = 20.sp)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun onResume() {
