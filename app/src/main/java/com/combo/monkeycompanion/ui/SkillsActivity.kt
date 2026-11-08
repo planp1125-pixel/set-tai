@@ -91,7 +91,7 @@ class SkillsActivity : androidx.activity.ComponentActivity() {
                 }
             }
             SCard("World senses & phone powers", "Switch on which errands and senses $who may use. Anything that opens an app or changes a setting asks Yes/No first.") {
-                for (g in CapGroup.entries) {
+                for (g in CapGroup.entries.filter { it != CapGroup.SCREEN || com.combo.monkeycompanion.brain.Distribution.screenAgent }) {
                     val n = Capabilities.all.count { it.group == g }
                     SSwitch("${g.label} ($n)", s.groupEnabled(g)) { s.setGroupEnabled(g, it); rev++ }
                 }

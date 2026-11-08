@@ -1,6 +1,12 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.39.2 (versionCode 104)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.39.3 (versionCode 105)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.39.3 Play build
+
+- `play` flavor = no screen agent. `brain/Distribution.screenAgent` (set in ChatHub.init from BuildConfig.FLAVOR) hides
+  the menu item, chat chips, CapGroup.SCREEN switches/cards, the Accessibility permission row, and forces
+  `AppSettings.groupEnabled(SCREEN)` false so no brain gets the tools. CI attaches both APKs to every ci-N release.
 
 ## v10.39.2 names and cloud saver
 

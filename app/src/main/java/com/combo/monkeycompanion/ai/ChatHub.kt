@@ -176,6 +176,8 @@ object ChatHub {
         if (::app.isInitialized) return
         app = ctx.applicationContext
         settings = AppSettings(app)
+        // v10.39.3: the Play build has no screen agent; hide it everywhere
+        com.combo.monkeycompanion.brain.Distribution.screenAgent = com.combo.monkeycompanion.BuildConfig.FLAVOR != "play"
         com.combo.monkeycompanion.mind.MindHub.init(app)
         AgentPromptMore.init(app)
         settings.cloudUserId() // persist once on first app initialisation, without enabling AI
@@ -408,6 +410,11 @@ object ChatHub {
     /** Reads the screen, builds a digest and answers in character (brain + few-shot, dump check, template fallback). */
     fun screenTalk(mode: com.combo.monkeycompanion.agent.ScreenTalk.Mode, said: String) {
         if (busy) return
+        if (!com.combo.monkeycompanion.brain.Distribution.screenAgent) {
+            memory.add(ChatMsg(true, said)); memory.add(ChatMsg(false, com.combo.monkeycompanion.brain.Distribution.NO_AGENT_LINE)); memory.commit()
+            fire { it.onHistoryChanged() }; fire { it.onReply(com.combo.monkeycompanion.brain.Distribution.NO_AGENT_LINE, true) }; spoke(com.combo.monkeycompanion.brain.Distribution.NO_AGENT_LINE)
+            return
+        }
         val ST = com.combo.monkeycompanion.agent.ScreenTalk
         fun quick(text: String) {
             memory.add(ChatMsg(true, said)); memory.add(ChatMsg(false, text)); memory.commit()

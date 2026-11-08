@@ -54,16 +54,16 @@ class CapabilitiesActivity : androidx.activity.ComponentActivity() {
         SettaiScreen("What can Set-Tai do?", onBack = { finish() }, rev = r) {
             SNote("Every brain (online, on-device or none) can use these. Anything that changes or opens something asks Yes/No in ${nm}'s bubble first. Just ask in your own words: \"volume 40\", \"brightness up\", \"silent mode\", \"wake me at 6\", \"next song\", \"turn on wifi\".")
             SCard("Special access") {
-                for (p in Perm.entries.filter { it != Perm.NONE }) PermRow(p.label, p.granted(this@CapabilitiesActivity)) {
+                for (p in Perm.entries.filter { it != Perm.NONE && (it != Perm.ACCESSIBILITY || com.combo.monkeycompanion.brain.Distribution.screenAgent) }) PermRow(p.label, p.granted(this@CapabilitiesActivity)) {
                     runCatching { startActivity(p.grantIntent(this@CapabilitiesActivity).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 }
             }
             SSubhead("Agent powers")
             SNote("Bigger powers that let ${nm} act more like a phone assistant. All are OFF until you switch them on. Anything that changes something in another app or sends anything asks Yes/No first. ${NM} never sends on its own.")
-            for (g in CapGroup.entries.filter { it.optIn }) AgentCard(g, r)
+            for (g in CapGroup.entries.filter { it.optIn && (it != CapGroup.SCREEN || com.combo.monkeycompanion.brain.Distribution.screenAgent) }) AgentCard(g, r)
             SSecondary("Reported replies") { startActivity(android.content.Intent(this@CapabilitiesActivity, ReportsActivity::class.java)) }
             SSubhead("Everyday powers")
-            for (g in CapGroup.entries.filter { !it.optIn }) {
+            for (g in CapGroup.entries.filter { !it.optIn && (it != CapGroup.SCREEN || com.combo.monkeycompanion.brain.Distribution.screenAgent) }) {
                 val caps = Capabilities.all.filter { it.group == g }
                 SCard(g.label) {
                     SSwitch("Allowed", s.groupEnabled(g)) { s.setGroupEnabled(g, it); rev++ }

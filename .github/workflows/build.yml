@@ -76,18 +76,21 @@ jobs:
           SETTAI_KEYSTORE_PASSWORD: ${{ secrets.SETTAI_KEYSTORE_PASSWORD }}
           SETTAI_KEY_ALIAS: ${{ secrets.SETTAI_KEY_ALIAS }}
           SETTAI_KEY_PASSWORD: ${{ secrets.SETTAI_KEY_PASSWORD }}
-          # v10.24: Play bundle OFF to save CI time/memory (only the full APK). Set to "true" to build the Play APK + AAB again.
+          # v10.39.3: the Play APK is built again on every main build so it can be tested on a phone.
+          # The Play AAB (for the store upload) is still off to save CI time; set to "true" to build it too.
           BUILD_PLAY_BUNDLE: "false"
         run: |
           if [ "$BUILD_PLAY_BUNDLE" = "true" ]; then ./gradlew :app:assembleFullRelease :app:assemblePlayRelease :app:bundlePlayRelease --stacktrace
-          else ./gradlew :app:assembleFullRelease --stacktrace; fi
+          else ./gradlew :app:assembleFullRelease :app:assemblePlayRelease --stacktrace; fi
       - name: Collect APKs + AAB
         run: |
           set -e
           mkdir -p out
           cp "$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)" out/set-tai-full-release.apk
-          if [ -d app/build/outputs/bundle/playRelease ]; then
+          if [ -d app/build/outputs/apk/play/release ]; then
             cp "$(find app/build/outputs/apk/play/release -name '*.apk' | head -1)" out/set-tai-play-release.apk
+          fi
+          if [ -d app/build/outputs/bundle/playRelease ]; then
             cp "$(find app/build/outputs/bundle/playRelease -name '*.aab' | head -1)" out/set-tai-play-release.aab
           fi
           ls -l out
@@ -103,7 +106,9 @@ jobs:
           # shown at the TOP of the Releases page as "Latest", so the newest build is always the first one you see
           prerelease: false
           make_latest: "true"
-          files: out/set-tai-full-release.apk
+          files: |
+            out/set-tai-full-release.apk
+            out/set-tai-play-release.apk
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3

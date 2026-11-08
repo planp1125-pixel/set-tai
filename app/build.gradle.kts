@@ -13,8 +13,8 @@ android {
         applicationId = "com.combo.monkeycompanion"
         minSdk = 26
         targetSdk = 35
-        versionCode = 104
-        versionName = "10.39.2"
+        versionCode = 105
+        versionName = "10.39.3"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
     signingConfigs {
@@ -50,7 +50,7 @@ android {
     // Platform-neutral code (rig, animations, IK climber, mood brain, lines, prompt, action tags,
     // online brains) lives in ../shared and is also compiled by the desktop app.
     sourceSets.getByName("main").kotlin.directories.add("../shared/src/main/kotlin")
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

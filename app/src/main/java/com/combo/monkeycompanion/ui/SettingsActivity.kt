@@ -701,7 +701,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
         SCard("Phone powers", "What ${nm} may do, for every brain. Anything that opens or changes something asks Yes/No first.") {
             SSecondary("${NM}'s skills (errands, senses & daily habits)") { startActivity(Intent(this@SettingsActivity, SkillsActivity::class.java)) }
             SSecondary("What can ${nm} do? (powers & permissions)") { startActivity(Intent(this@SettingsActivity, CapabilitiesActivity::class.java)) }
-            for (g in CapGroup.entries) {
+            for (g in CapGroup.entries.filter { it != CapGroup.SCREEN || com.combo.monkeycompanion.brain.Distribution.screenAgent }) {
                 val n = Capabilities.all.count { it.group == g }
                 SSwitch("${g.label} ($n)", s.groupEnabled(g)) { s.setGroupEnabled(g, it); bump() }
             }

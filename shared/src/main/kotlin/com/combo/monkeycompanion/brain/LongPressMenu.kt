@@ -100,7 +100,7 @@ object LongPressMenu {
         val order = c.order + pins.map { pin(it) }.filter { it !in c.order }   // new pins start at the end
         val on = order.filter { id ->
             if (isPower(id)) powerId(id) in pins && powerId(id) in powerIds
-            else id !in c.off && (id != Item.CONTEXT.id || context)
+            else id !in c.off && (id != Item.CONTEXT.id || context) && (Distribution.screenAgent || id !in Distribution.SCREEN_ITEMS)
         }
         val forced = if (Item.QUIT.id in on) emptyList() else listOf(Item.QUIT.id)
         return when {
@@ -168,7 +168,7 @@ object LongPressMenu {
         "g_show" -> listOf("show", "story", "clip", "selfie")
         "g_modes" -> listOf("sleep", "focus", "breathe", "comfort_hug", "comfort_sign", "comfort_coffee")
         "g_tools" -> CareTools.Tool.entries.map { it.id }
-        "g_access" -> listOf("chat", "talk", "screen", "missed")
+        "g_access" -> listOf("chat", "talk", "screen", "missed").filter { Distribution.screenAgent || it !in Distribution.SCREEN_ITEMS }
         else -> emptyList()
     }
     private val SUB = mapOf(

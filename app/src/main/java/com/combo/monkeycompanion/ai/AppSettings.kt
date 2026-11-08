@@ -271,7 +271,10 @@ class AppSettings(ctx: Context) {
         set(v) = p.edit().putString("clock_mode", v).apply()
 
     /** Phone-power groups (see [com.combo.monkeycompanion.powers.CapGroup]); all on by default. */
-    fun groupEnabled(g: com.combo.monkeycompanion.powers.CapGroup) = p.getBoolean("capgroup_${g.name}", !g.optIn)
+    fun groupEnabled(g: com.combo.monkeycompanion.powers.CapGroup) =
+        // v10.39.3: no screen agent in the Play build, so its tools are never offered to any brain
+        if (g == com.combo.monkeycompanion.powers.CapGroup.SCREEN && !com.combo.monkeycompanion.brain.Distribution.screenAgent) false
+        else p.getBoolean("capgroup_${g.name}", !g.optIn)
 
     // ---- v4 agent settings ----
     /** Screen agent: ask before every tap/scroll-free step (on by default). Risky buttons always ask. */

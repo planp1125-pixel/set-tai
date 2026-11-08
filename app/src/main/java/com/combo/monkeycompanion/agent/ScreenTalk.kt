@@ -272,6 +272,7 @@ data class QuickChip(val id: String, val label: String, val arg: String = "") {
         fun say(label: String, text: String) = QuickChip("say", label, text)
 
         /** The chat panel's / bubble's standard row (before context chips). */
-        val STANDARD = listOf(THINK, MISS, SCREEN, SUMMARISE, REPLY_FOR_ME, ROAST, FUNNY)
+        val STANDARD: List<QuickChip> get() = listOf(THINK, MISS, SCREEN, SUMMARISE, REPLY_FOR_ME, ROAST, FUNNY)
+            .filter { com.combo.monkeycompanion.brain.Distribution.screenAgent || it.id !in com.combo.monkeycompanion.brain.Distribution.SCREEN_ITEMS }
     }
 }

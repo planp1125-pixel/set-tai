@@ -311,3 +311,10 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Settings, Skills, Phone powers, Memory and Routines say "your character" instead of one character's name, because they work for every character. App-level things (Quit, Notification Access, the screen agent, notification channels) say Set-Tai.
 - Set-Tai Cloud (40 requests per phone per day, reset 5:30 AM India time): automatic lines (touch reactions, falls and landings, idle thoughts, quips, reaction-bank refills) no longer use the 40. They use the built-in lines, so only your own chats, chips and screen questions spend the cloud. New switch "Cloud also writes the automatic lines" turns the old behaviour back on. The Cloud card shows "Left today: N of 40" after the first reply. Your own API key and the on-device brain are unchanged.
 - Tests: two timing-flaky tests made robust (auto-rest now checks the rest timer itself, not any hide; the swipe test lets go a second time if the first let-go landed). New CloudBrainTest case for the cloud saver.
+
+## v10.39.3 (code 105): the Play build has no screen agent anywhere
+
+- The Play build (Accessibility service already removed from its manifest) now hides every way into the screen agent: the 👀 Screen button in the long-press menu, the "What's on screen? / Summarise this chat / Reply for me / Roast this screen" chat chips, the Screen errands switch in Skills and Settings, the Screen agent card and Accessibility row in Phone powers. The AI is never offered the screen tools, with any brain (Set-Tai Cloud, own key or on-device Gemma). Typing "what's on my screen" gets a friendly "I can't look inside other apps in this version" line.
+- One flag decides it: `brain/Distribution.screenAgent`, set from `BuildConfig.FLAVOR` at start. The full build (GitHub) is unchanged.
+- Every main build publishes both APKs again: `set-tai-full-release.apk` and `set-tai-play-release.apk` (same app id, so installing one replaces the other). The Play AAB stays off to save build time.
+- New PlayBuildTest.
