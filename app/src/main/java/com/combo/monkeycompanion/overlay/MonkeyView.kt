@@ -1651,8 +1651,7 @@ class MonkeyView(
     /** v10.38.25: a setting changed in the app: use it right away (the service calls this). */
     fun applySettingsNow() {
         runCatching { refreshQuipSettings() }
-        invalidate()
-        if (!running && live && !paused) start()
+        invalidate()   // never wakes a resting / sleeping companion (battery)
     }
 
     private fun refreshQuipSettings() {
