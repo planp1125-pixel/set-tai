@@ -578,31 +578,64 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
             (if (Build.VERSION.SDK_INT >= 26) View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0)
 
-        draft = CustomCompanionStore.activeSpec(this)
+        // v10.38.22: "Open Creator Studio" on a character opens THAT character (custom ids), not always the first one.
+        val asked = intent?.getStringExtra("character")
+        draft = asked?.let { CustomCompanionRegistry.specById(it) } ?: CustomCompanionStore.activeSpec(this)
+        originalSpec = draft
         previewChar = CustomCompanionRegistry.register(draft)
         rebuildUI()
     }
 
 
+    /** v10.38.22: the character as it was when the Studio opened (Discard changes) and recent edits (Undo). */
+    private var originalSpec: CustomCompanionSpec? = null
+    private val undoStack = ArrayDeque<CustomCompanionSpec>()
+    private var undoCount by androidx.compose.runtime.mutableIntStateOf(0)
+    private var discardAsk by androidx.compose.runtime.mutableStateOf(false)
+
+    private fun pushUndo() {
+        val cur = draftState.value ?: return
+        if (undoStack.lastOrNull() !== cur) { undoStack.addLast(cur); if (undoStack.size > 40) undoStack.removeFirst() }
+        undoCount = undoStack.size
+    }
+
+    private fun applySpec(spec: CustomCompanionSpec) {
+        draft = spec
+        draftRevision++
+        previewChar.updateSpec(spec)
+        CustomCompanionStore.save(this, spec)
+        stageView?.refreshSpec()
+    }
+
+    private fun undo() {
+        val prev = undoStack.removeLastOrNull() ?: return
+        undoCount = undoStack.size
+        applySpec(prev)
+    }
+
+    private fun discardChanges() {
+        val orig = originalSpec ?: return
+        undoStack.clear(); undoCount = 0
+        applySpec(orig)
+        Toast.makeText(this, "Changes discarded", Toast.LENGTH_SHORT).show()
+    }
+
     private fun updateDraft(newDraft: CustomCompanionSpec, rebuild: Boolean = false) {
+        pushUndo()
         draft = newDraft
         draftRevision++
         previewChar.updateSpec(draft)
         CustomCompanionStore.save(this, draft)
-        if (ChatHub.settings.characterId.startsWith("custom_")) {
-            ChatHub.settings.characterId = draft.id
-            ChatHub.settings.applyCharacter()
-        }
+        // v10.38.22: editing a character never makes it the main one by itself (only "Save & use" does).
+        if (ChatHub.settings.characterId == draft.id) ChatHub.settings.applyCharacter()
         stageView?.refreshSpec()
         if (rebuild) rebuildUI()
     }
 
     override fun onPause() {
         CustomCompanionStore.save(this, draft)
-        if (ChatHub.settings.characterId.startsWith("custom_")) {
-            ChatHub.settings.characterId = draft.id
-            ChatHub.settings.applyCharacter()
-        }
+        // v10.38.22: editing a character never makes it the main one by itself (only "Save & use" does).
+        if (ChatHub.settings.characterId == draft.id) ChatHub.settings.applyCharacter()
         com.combo.monkeycompanion.overlay.MonkeyOverlayService.syncCrew(this)
         super.onPause()
     }
@@ -775,10 +808,11 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                 uploadedPhotoThumb = lastUploadedPhoto
                 splitCompareMode = true; zoomLevel = 3.5f; showFaceMesh = true; moveMeshMode = true
                 selectedMeshFeature = stageView?.selectedMeshFeature ?: MeshFeatureTarget.WHOLE_MESH
-                onMeshAdjusted = { nextMesh -> draft = draft.copy(faceMesh = nextMesh); CustomCompanionStore.save(this@CompanionStudioActivity, draft); stageView?.refreshSpec() }
+                onMeshAdjusted = { nextMesh -> pushUndo(); draft = draft.copy(faceMesh = nextMesh); CustomCompanionStore.save(this@CompanionStudioActivity, draft); stageView?.refreshSpec() }
                 onResampledSpec = { nextSpec -> draft = nextSpec; CustomCompanionStore.save(this@CompanionStudioActivity, draft); stageView?.refreshSpec() }
             }
         }
+        val atOpen = androidx.compose.runtime.remember { draft }
         var split by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
         var mesh by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
         var drag by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
@@ -791,6 +825,7 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                         androidx.compose.material3.Text("Face editor", style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
                             modifier = androidx.compose.ui.Modifier.weight(1f))
                         androidx.compose.material3.TextButton(onClick = { showWhoIsInPhotoDialog() }) { androidx.compose.material3.Text(draft.gender.shortLabel) }
+                        androidx.compose.material3.TextButton(onClick = { applySpec(atOpen); inspectorOpen = false }) { androidx.compose.material3.Text("Cancel") }
                         androidx.compose.material3.Button(onClick = { inspectorOpen = false }) { androidx.compose.material3.Text("Done") }
                     }
                     androidx.compose.ui.viewinterop.AndroidView(factory = { big },
@@ -836,6 +871,7 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
         val st = StudioLiveStageView(this, previewChar).also {
             it.uploadedPhotoThumb = lastUploadedPhoto ?: runCatching { CustomCompanionStore.getOrDecodeBitmap(draft.id, draft.facePortraitBase64) }.getOrNull()
             it.onMeshAdjusted = { nextMesh ->
+                pushUndo()
                 draft = draft.copy(faceMesh = nextMesh)
                 CustomCompanionStore.save(this@CompanionStudioActivity, draft)
             }
@@ -899,9 +935,11 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                         androidx.compose.material3.TextButton(onClick = { finish() }) { androidx.compose.material3.Text("←", fontSize = 22.sp) }
                     },
                     actions = {
+                        androidx.compose.material3.TextButton(onClick = { undo() }, enabled = undoCount > 0) { androidx.compose.material3.Text("↶ Undo") }
                         androidx.compose.foundation.layout.Box {
                             androidx.compose.material3.TextButton(onClick = { menuOpen = true }) { androidx.compose.material3.Text("⋮", fontSize = 22.sp) }
                             androidx.compose.material3.DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                androidx.compose.material3.DropdownMenuItem(text = { androidx.compose.material3.Text("Discard all changes") }, onClick = { menuOpen = false; discardAsk = true })
                                 androidx.compose.material3.DropdownMenuItem(text = { androidx.compose.material3.Text("Export character") }, onClick = { menuOpen = false; exportCharacter() })
                                 androidx.compose.material3.DropdownMenuItem(text = { androidx.compose.material3.Text("Import character") }, onClick = { menuOpen = false; promptImportCharacter() })
                                 androidx.compose.material3.DropdownMenuItem(text = { androidx.compose.material3.Text("Open diary") }, onClick = {
@@ -941,6 +979,11 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
             if (whoDialogOpen) WhoIsInPhotoDialog()
             if (importOpen) ImportDialog()
             if (inspectorOpen) FullscreenFaceEditor()
+            if (discardAsk) androidx.compose.material3.AlertDialog(onDismissRequest = { discardAsk = false },
+                title = { androidx.compose.material3.Text("Discard all changes?") },
+                text = { androidx.compose.material3.Text("${draft.name} goes back to how it was when you opened the Studio.") },
+                confirmButton = { androidx.compose.material3.TextButton(onClick = { discardAsk = false; discardChanges() }) { androidx.compose.material3.Text("Discard") } },
+                dismissButton = { androidx.compose.material3.TextButton(onClick = { discardAsk = false }) { androidx.compose.material3.Text("Keep editing") } })
             androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().padding(pad)) {
                 // Pinned live preview: always visible while you change things.
                 androidx.compose.material3.Card(
@@ -1003,7 +1046,9 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                                     val next = draft.selectedPowers.toMutableSet()
                                     if (enabled) next.add(id) else if (next.size > 1) next.remove(id)
                                     updateDraft(draft.copy(selectedPowers = next))
-                                })
+                                },
+                                onOnly = { id -> updateDraft(draft.copy(selectedPowers = setOf(id))) })
+                            SNote("Double-tap and the long-press ⚡ menu use only the powers ticked here. The first ticked power is the main one: it plays first. Tap \"Only this\" to keep just one power.")
                         }
                         else -> PersonalityTab(draftRevision)
                     }

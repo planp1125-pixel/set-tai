@@ -416,11 +416,11 @@ class SettaiDesignActivity : ComponentActivity() {
                                                     Column {
                                                         Text(selected.name, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                                                         Text(selected.tagline, fontSize = 12.sp)
-                                                        if (selected.id == selectedCharacter) Text("Active companion", color = MaterialTheme.colorScheme.primary)
+                                                        if (selected.id == selectedCharacter) Text(if (overlayRunning) "Main character · on screen" else "Main character", color = MaterialTheme.colorScheme.primary)
                                                     }
                                                 }
                                             }
-                                            val tabs = listOf("Profile", "Behaviour", "Brain & AI", "Diary", "Appearance", "Skills")
+                                            val tabs = listOf("Main", "Behaviour", "Brain & AI", "Diary", "Appearance", "Skills")
                                             ScrollableTabRow(selectedTabIndex = characterTab, edgePadding = 0.dp) {
                                                 tabs.forEachIndexed { index, title ->
                                                     Tab(selected = characterTab == index, onClick = { characterTab = index },
@@ -429,14 +429,17 @@ class SettaiDesignActivity : ComponentActivity() {
                                             }
                                             when (characterTab) {
                                                 0 -> {
-                                                    Text("Companion profile", fontWeight = FontWeight.Bold, fontSize = 19.sp)
-                                                    Text("Choose a companion to show on your screen, or adjust their own personality and memories.", color = muted)
+                                                    Text("Main character", fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                                                    Text("The main character is the one that comes out when you tap Start companion (the leader in Duo / Trio). " +
+                                                        "This doesn't start or stop it.", color = muted)
+                                                    val isMain = selectedCharacter == selected.id
                                                     Button(onClick = {
                                                         ChatHub.settings.characterId = selected.id
                                                         ChatHub.settings.applyCharacter()
                                                         selectedCharacter = selected.id
                                                         syncActiveCrew()
-                                                    }, modifier = Modifier.fillMaxWidth()) { Text(if (selectedCharacter == selected.id) "Currently active" else "Make active companion") }
+                                                    }, enabled = !isMain, modifier = Modifier.fillMaxWidth()) { Text(if (isMain) "✓ ${selected.name} is your main character" else "Make ${selected.name} my main character") }
+                                                    Text(if (overlayRunning) "Companion is on your screen now." else "Companion is stopped. Start it from Home.", color = muted, fontSize = 12.sp)
                                                 }
                                                 1 -> {
                                                     Text("Behaviour & personality", fontWeight = FontWeight.Bold, fontSize = 19.sp)
@@ -458,7 +461,10 @@ class SettaiDesignActivity : ComponentActivity() {
                                                     Text("Appearance", fontWeight = FontWeight.Bold, fontSize = 19.sp)
                                                     Text("Choose how this companion looks. Wardrobe options depend on the character.", color = muted)
                                                     Button(onClick = { startActivity(Intent(this@SettaiDesignActivity, WardrobeActivity::class.java).putExtra("character", selected.id)) }, modifier = Modifier.fillMaxWidth()) { Text("Open wardrobe") }
-                                                    OutlinedButton(onClick = { open(CompanionStudioActivity::class.java) }, modifier = Modifier.fillMaxWidth()) { Text("Open Creator Studio") }
+                                                    if (selected.id.startsWith("custom_")) OutlinedButton(onClick = {
+                                                        startActivity(Intent(this@SettaiDesignActivity, CompanionStudioActivity::class.java).putExtra("character", selected.id))
+                                                    }, modifier = Modifier.fillMaxWidth()) { Text("Edit ${selected.name} in Creator Studio") }
+                                                    else Text("${selected.name} is a built-in character: change its look with the wardrobe. Creator Studio is for characters you make yourself.", color = muted, fontSize = 12.sp)
                                                 }
                                                 5 -> {
                                                     Text("Skills & powers", fontWeight = FontWeight.Bold, fontSize = 19.sp)

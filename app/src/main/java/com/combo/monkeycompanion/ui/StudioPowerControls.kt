@@ -13,7 +13,8 @@ import com.combo.monkeycompanion.character.FlightStyle
 @Composable
 internal fun StudioPowerControls(
     flight: FlightStyle, powers: Set<String>, onFlight: (FlightStyle) -> Unit,
-    onAll: () -> Unit, onTop: () -> Unit, onToggle: (String, Boolean) -> Unit
+    onAll: () -> Unit, onTop: () -> Unit, onToggle: (String, Boolean) -> Unit,
+    onOnly: (String) -> Unit = {}
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Flight & movement", style = MaterialTheme.typography.titleSmall)
@@ -26,8 +27,9 @@ internal fun StudioPowerControls(
             OutlinedButton(onClick = onTop) { Text("Top 4") }
         }
         CustomPowerCatalog.OPTIONS.forEach { option ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text(option.label, modifier = Modifier.weight(1f))
+                if (!(powers.size == 1 && option.id in powers)) androidx.compose.material3.TextButton(onClick = { onOnly(option.id) }) { Text("Only this") }
                 Checkbox(checked = option.id in powers,
                     onCheckedChange = { onToggle(option.id, it) },
                     enabled = option.id !in powers || powers.size > 1)
