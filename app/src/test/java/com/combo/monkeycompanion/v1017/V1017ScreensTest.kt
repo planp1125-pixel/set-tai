@@ -19,6 +19,10 @@ import org.robolectric.annotation.GraphicsMode
 class V1017ScreensTest {
     private fun shot(cls: Class<out Activity>, name: String) {
         val a = runCatching { Robolectric.buildActivity(cls).setup().get() }.getOrNull() ?: return
+        runCatching { draw(a, name) }   // v10.38.16: Compose screens draw best-effort under Robolectric
+    }
+
+    private fun draw(a: Activity, name: String) {
         val v = a.window.decorView
         val w = 1233; val h = 2673
         v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))

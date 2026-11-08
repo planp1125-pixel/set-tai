@@ -1109,10 +1109,7 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
             }
             if (advanced) {
                 StudioInspectionControls(stage, ::openFullscreenZoomInspector)
-                androidx.compose.ui.viewinterop.AndroidView(
-                    factory = { buildMeshFeatureControls(stage, darkTheme = false) },
-                    modifier = androidx.compose.ui.Modifier.fillMaxWidth()
-                )
+                MeshFeatureControls(stage)
                 androidx.compose.material3.Text(
                     "1. Tap a feature (hairline, brows, eyes, nose, mouth, jaw, chin).\n" +
                         "2. Swipe on the preview like a trackpad, or tap the arrows.\n" +

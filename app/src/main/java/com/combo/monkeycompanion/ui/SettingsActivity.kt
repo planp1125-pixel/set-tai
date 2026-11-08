@@ -29,6 +29,36 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.combo.monkeycompanion.ai.BrainType
 import com.combo.monkeycompanion.ai.ChatHub
 import com.combo.monkeycompanion.ai.ModelStore
@@ -39,231 +69,200 @@ import com.combo.monkeycompanion.ai.Provider
 import java.io.File
 import java.util.Locale
 
-/** Brain & settings: choose offline / online brain, keys, models, quips, memory and phone powers. */
+/**
+ * Brain & settings (v10.38.16: one Material 3 screen). Same settings and logic as before, grouped in cards.
+ * Opened with "settai_settings_section" it shows just that topic (brain, touch, personality, buddy, habits,
+ * superpowers, phone, appearance, character).
+ */
 @SuppressLint("SetTextI18n")
-class SettingsActivity : Activity() {
+class SettingsActivity : androidx.activity.ComponentActivity() {
 
     private val s get() = ChatHub.settings
-    private val d by lazy { resources.displayMetrics.density }
-    private fun dp(v: Int) = (v * d).toInt()
-    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
-    private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
-    private val accent = com.combo.monkeycompanion.theme.Th.rgb(0x6C, 0x5C, 0xE7)
-    private val cream = com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)
     private val ui = Handler(Looper.getMainLooper())
 
-    private lateinit var onlineCard: View
-    private lateinit var offlineCard: View
-    private lateinit var keyField: EditText
-    private lateinit var keyHint: TextView
-    private lateinit var modelField: EditText
-    private lateinit var urlField: EditText
-    private lateinit var urlRow: View
-    private lateinit var onlineResult: TextView
-    private lateinit var offlineStatus: TextView
-    private lateinit var dlBar: ProgressBar
-    private lateinit var dlText: TextView
-    private lateinit var dlCancel: Button
-    private lateinit var tokenField: EditText
-    private lateinit var installedBox: LinearLayout
-    private lateinit var offlineResult: TextView
-    private var catalogPick = 0
-    private var shownProvider = Provider.OPENAI
+    /** Bumped after any change so the screen re-reads the settings. */
+    private var rev by mutableIntStateOf(0)
+    private fun bump() { rev++ }
+
+    // live texts
+    private var onlineResult by mutableStateOf("")
+    private var offlineResult by mutableStateOf("")
+    private var dlText by mutableStateOf("")
+    private var dlFrac by mutableStateOf<Float?>(null)
+    private var energyText by mutableStateOf("Measuring…")
+    private var clearedText by mutableStateOf("")
+    private var powerBlurb by mutableStateOf("")
+    private var modelChoices by mutableStateOf<Pair<Provider, List<String>>?>(null)
+    private var showLog by mutableStateOf(false)
+
+    // own-key form
+    private var shownProvider by mutableStateOf(Provider.OPENAI)
+    private var keyText by mutableStateOf("")
+    private var modelText by mutableStateOf("")
+    private var urlText by mutableStateOf("")
+    private var tokenText by mutableStateOf("")
+    private var catalogPick by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ChatHub.init(this)
-        setContentView(build())
-        MaterialScreenPolish.apply(this)
+        shownProvider = s.provider
+        loadOnline()
+        catalogPick = ModelStore.CATALOG.indexOfFirst { File(s.offlineModelPath).name == it.file }.coerceAtLeast(0)
+        val target = intent.getStringExtra("settai_settings_section")
+        setContent { SettaiTheme(this) { SettingsScreen(target, rev) } }
     }
 
-    override fun onResume() { super.onResume(); refreshOffline(); pollDownload(); energyWindow.clear(); refreshEnergy() }
+    override fun onResume() { super.onResume(); pollDownload(); energyWindow.clear(); refreshEnergy(); bump() }
     override fun onPause() { super.onPause(); ui.removeCallbacksAndMessages(null); saveOnline() }
 
-    // ---------------- UI helpers ----------------
+    private val titles = mapOf("brain" to "Brain & AI", "touch" to "Touch & motion", "personality" to "Personality & memory",
+        "buddy" to "Buddy & moments", "habits" to "Daily habits", "superpowers" to "Superpowers", "phone" to "Phone powers",
+        "appearance" to "Appearance", "character" to "Character")
 
-    private fun text(t: String, size: Float = 14f, bold: Boolean = false, color: Int = brown) = TextView(this).apply {
-        text = t; textSize = size; setTextColor(color); if (bold) setTypeface(typeface, Typeface.BOLD)
-        setPadding(0, dp(3), 0, dp(3))
+    private fun visible(target: String?, id: String) = when (target) {
+        null -> true
+        "brain" -> id in listOf("brainType", "picker", "brain", "offline", "background")
+        "touch" -> id == "rest"
+        "personality" -> id == "feel"
+        "habits" -> id in listOf("engagement", "fun")
+        else -> id == target
     }
 
-    private fun button(label: String, primary: Boolean = false, click: () -> Unit) = Button(this).apply {
-        text = label; isAllCaps = false; textSize = 15f
-        setTextColor(if (primary) Color.WHITE else brown)
-        background = GradientDrawable().apply {
-            cornerRadius = dp(24).toFloat(); setColor(if (primary) accent else Color.WHITE)
-            setStroke(dp(2), if (primary) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
-        }
-        setOnClickListener { click() }
-        layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) }
-    }
-
-    private fun field(hint: String, secret: Boolean = false) = EditText(this).apply {
-        this.hint = hint; textSize = 15f; setTextColor(brown); isSingleLine = true
-        inputType = if (secret) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        else InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
-        setPadding(dp(12), dp(10), dp(12), dp(10))
-        background = GradientDrawable().apply { setColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xFB, 0xF5)); cornerRadius = dp(12).toFloat(); setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0)) }
-        layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) }
-    }
-
-    private fun card(title: String, vararg views: View) = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        setPadding(dp(16), dp(12), dp(16), dp(14))
-        background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.WHITE) }
-        addView(text(title, 17f, true))
-        views.forEach { addView(it) }
-        layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
-    }
-
-    private fun spinner(items: List<String>, selected: Int, onPick: (Int) -> Unit) = Spinner(this).apply {
-        adapter = ArrayAdapter(this@SettingsActivity, android.R.layout.simple_spinner_dropdown_item, items)
-        setSelection(selected)
-        onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) = onPick(pos)
-            override fun onNothingSelected(p: AdapterView<*>?) {}
-        }
-    }
-
-    // ---------------- build ----------------
-
-    private fun build(): View {
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(28)) }
-        val target = intent.getStringExtra("settai_settings_section")
-        val titles = mapOf("brain" to "Brain & AI", "touch" to "Touch & Motion", "personality" to "Personality & memory", "buddy" to "Buddy & moments", "habits" to "Daily habits", "superpowers" to "Superpowers", "phone" to "Phone powers", "appearance" to "Appearance")
-        if (target != null) col.addView(button("‹ Back") { finish() })
-        col.addView(text(titles[target] ?: "Set-Tai brain & settings", 26f, true).apply { gravity = Gravity.CENTER_HORIZONTAL })
-        val cloudIntro = text("Set-Tai Cloud is ready by default: no API key or Gmail sign-in. You can still turn Brain off. 40 cloud requests per UTC day; messages go to Gemini. Local jokes and commands stay on your phone.", 14f, color = soft)
-        if (target == null || target == "brain") col.addView(cloudIntro)
-
-        // Brain type
-        val group = RadioGroup(this)
-        val opts = listOf(
-            BrainType.NONE to "No brain (canned Settai lines)",
-            BrainType.OFFLINE to "On-device AI (offline, private)",
-            BrainType.ONLINE to "Set-Tai Cloud (optional own-key override)",
-        )
-        opts.forEachIndexed { i, (bt, label) ->
-            group.addView(RadioButton(this).apply { id = 100 + i; text = label; textSize = 15f; setTextColor(brown); isChecked = s.brainType == bt })
-        }
-        group.setOnCheckedChangeListener { _, id ->
-            s.brainType = opts[id - 100].first
-            updateCards()
-            if (s.brainType == BrainType.OFFLINE) ChatHub.preloadOffline()
-        }
-        val brainTypeCard = card("Settai's brain", group)
-        if (target == null || target == "brain") col.addView(brainTypeCard)
-        brainGroup = group
-        pickerBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val brainPickerCard = card("🧠 Active brain (tap to switch)", text("Every downloaded model and every API you've set up. Tap one to use it; switch any time.", 12f, color = soft), pickerBox!!)
-        if (target == null || target == "brain") col.addView(brainPickerCard)
-        refreshPicker()
-        mainCol = col
-        val sectionViews = linkedMapOf<String, View>()
-        fun section(id: String, view: View) {
-            sectionViews[id] = view
-            val visible = when (target) {
-                null -> true
-                "brain" -> id in listOf("brain", "offline", "background")
-                "touch" -> id == "rest"
-                "personality" -> id == "feel"
-                "habits" -> id in listOf("engagement", "fun")
-                else -> id == target
+    @Composable
+    private fun SettingsScreen(target: String?, @Suppress("UNUSED_PARAMETER") r: Int) {
+        SettaiScreen(title = titles[target] ?: "Settings", onBack = { finish() }) {
+            if (visible(target, "brainType")) {
+                SNote("Set-Tai Cloud is ready by default: no API key or Gmail sign-in. You can still turn Brain off. 40 cloud requests per UTC day; messages go to Gemini. Local jokes and commands stay on your phone.")
+                BrainTypeCard(r); BrainPickerCard(r)
             }
-            if (visible) col.addView(view)
+            if (visible(target, "character")) CharacterCard(r)
+            if (visible(target, "brain") && s.brainType == BrainType.ONLINE) OnlineCard(r)
+            if (visible(target, "offline") && s.brainType == BrainType.OFFLINE) OfflineCard(r)
+            if (visible(target, "feel")) PersonalityCard(r)
+            if (visible(target, "background")) BackgroundAiCard(r)
+            if (visible(target, "buddy")) BuddyCard(r)
+            if (visible(target, "appearance")) AppearanceCard()
+            if (visible(target, "rest")) RestCard(r)
+            if (visible(target, "superpowers")) SuperpowersCard(r)
+            if (visible(target, "phone")) PhonePowersCard(r)
+            if (visible(target, "fun")) Fun5Card(r)
+            if (visible(target, "engagement")) EngagementCard(r)
+            Spacer(Modifier.height(24.dp))
         }
-        section("character", buildCharacter())
-
-        section("brain", buildOnline().also { onlineCard = it })
-        section("offline", buildOffline().also { offlineCard = it })
-        section("feel", buildPersonality())
-        section("background", buildBackgroundAi())
-        section("buddy", buildBuddy())
-        section("appearance", buildAppearance())
-        section("rest", buildRest())
-        section("superpowers", buildSuperpowers().also { powersCard = it })
-        section("phone", buildPowers())
-        section("fun", buildFun5())
-        section("engagement", buildEngagement())   // v10.19
-        updateCards()
-
-        val scroll = ScrollView(this).apply { setBackgroundColor(cream); addView(col) }
-        scroll.setOnApplyWindowInsetsListener { v, insets ->
-            @Suppress("DEPRECATION")
-            v.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
-            insets
+        modelChoices?.let { (pr, ids) ->
+            val best = com.combo.monkeycompanion.ai.ModelList.pickDefault(ids)
+            AlertDialog(onDismissRequest = { modelChoices = null }, title = { Text("Models for ${pr.label}") },
+                text = {
+                    Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
+                        ids.forEach { id ->
+                            TextButton(onClick = { s.setModelFor(pr, id); modelText = id; onlineResult = "Model set: $id"; modelChoices = null; bump() },
+                                modifier = Modifier.fillMaxWidth()) { Text(if (id == best) "$id  ⭐ recommended" else id, modifier = Modifier.fillMaxWidth()) }
+                        }
+                    }
+                },
+                confirmButton = {}, dismissButton = { TextButton(onClick = { modelChoices = null }) { Text("Cancel") } })
         }
-        return scroll
+        if (showLog) {
+            AlertDialog(onDismissRequest = { showLog = false }, title = { Text("Recent actions") },
+                text = { Text(ActionLog.format(this).ifBlank { "Nothing yet." }) },
+                confirmButton = { TextButton(onClick = { showLog = false }) { Text("OK") } },
+                dismissButton = { TextButton(onClick = { ActionLog.clear(this); showLog = false }) { Text("Clear") } })
+        }
     }
 
-    private fun updateCards() {
-        onlineCard.visibility = if (s.brainType == BrainType.ONLINE) View.VISIBLE else View.GONE
-        offlineCard.visibility = if (s.brainType == BrainType.OFFLINE) View.VISIBLE else View.GONE
+    // ---------------- brain ----------------
+
+    private fun activate(bt: BrainType) {
+        s.brainType = bt
+        ChatHub.setBrainEnabled(true)
+        if (bt == BrainType.OFFLINE) ChatHub.preloadOffline()
+        bump()
     }
 
-    // ---------------- online ----------------
-
-    private fun buildOnline(): View {
-        val providers = Provider.entries
-        shownProvider = s.provider
-        keyField = field("Paste API key", secret = true)
-        keyHint = text("", 12f, color = soft)
-        modelField = field("Model name")
-        urlField = field("Base URL, e.g. https://my-server/v1")
-        urlRow = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(text("Server base URL (OpenAI-compatible /chat/completions)", 13f, color = soft)); addView(urlField)
-        }
-        onlineResult = text("", 13f, color = soft)
-        val sp = spinner(providers.map { it.label }, providers.indexOf(shownProvider)) { pos ->
-            saveOnline()
-            shownProvider = providers[pos]
-            s.provider = shownProvider
-            loadOnline()
-        }
-        loadOnline()
-        val advanced = card(
-            "Advanced: your own API provider",
-            text("Provider", 13f, color = soft), sp,
-            text("API key (stored encrypted on this phone)", 13f, color = soft), keyField, keyHint,
-            text("Model", 13f, color = soft), modelField,
-            urlRow,
-            button("📋 Pick model from my account") { saveOnline(); pickModel(auto = false) },
-            button("Save & test", primary = true) { saveOnline(); pickModel(auto = true) },
-            onlineResult,
-        )
-        advanced.visibility = if (s.useOwnApiKey) View.VISIBLE else View.GONE
-        val own = Switch(this).apply {
-            text = "Advanced: use my own API key / server"
-            isChecked = s.useOwnApiKey
-            setOnCheckedChangeListener { _, checked ->
-                s.useOwnApiKey = checked
-                advanced.visibility = if (checked) View.VISIBLE else View.GONE
-                refreshPicker()
+    @Composable
+    private fun BrainTypeCard(@Suppress("UNUSED_PARAMETER") r: Int) {
+        SCard("Settai's brain") {
+            val opts = listOf(
+                BrainType.NONE to "No brain (canned Settai lines)",
+                BrainType.OFFLINE to "On-device AI (offline, private)",
+                BrainType.ONLINE to "Set-Tai Cloud (optional own-key override)",
+            )
+            for ((bt, label) in opts) SRadio(label, s.brainType == bt) {
+                s.brainType = bt
+                if (bt == BrainType.OFFLINE) ChatHub.preloadOffline()
+                bump()
             }
         }
-        return card("Set-Tai Cloud", text("Built in. No key or Gmail needed. 40 requests per UTC day (including background AI). Local commands cost no chats. Your messages and character context go to Gemini; the gateway keeps only anonymous quota counts.", 13f, color = soft), own, advanced)
+    }
+
+    /** Every downloaded model and every API you've set up; tap one to use it. */
+    @Composable
+    private fun BrainPickerCard(@Suppress("UNUSED_PARAMETER") r: Int) {
+        SCard("Active brain", "Every downloaded model and every API you've set up. Tap one to use it; switch any time.") {
+            val on = s.aiBrainEnabled
+            SRadio("No AI (canned lines)", !on || s.brainType == BrainType.NONE) { s.brainType = BrainType.NONE; ChatHub.setBrainEnabled(false); bump() }
+            SRadio("☁️ Set-Tai Cloud · no key / sign-in", on && s.brainType == BrainType.ONLINE && !s.useOwnApiKey) { s.useOwnApiKey = false; activate(BrainType.ONLINE) }
+            for (f in ModelStore.installed(this@SettingsActivity)) {
+                val title = ModelStore.CATALOG.firstOrNull { it.file == f.name }?.title?.substringBefore(" (") ?: f.name
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) {
+                        SRadio("📱 $title · ${mb(f.length())}", on && s.brainType == BrainType.OFFLINE && s.offlineModelPath == f.path) {
+                            s.offlineModelPath = f.path; activate(BrainType.OFFLINE)
+                        }
+                    }
+                    TextButton(onClick = {
+                        if (s.offlineModelPath == f.path) s.offlineModelPath = ""
+                        f.delete(); ChatHub.setBrainEnabled(s.aiBrainEnabled); bump()
+                    }) { Text("Delete") }
+                }
+            }
+            for (pr in Provider.entries) {
+                val ok = if (pr == Provider.CUSTOM) s.customBaseUrl.isNotBlank() else s.apiKeyFor(pr).isNotBlank()
+                if (!ok) continue
+                SRadio("☁️ ${pr.label} (${s.modelFor(pr)})", on && s.brainType == BrainType.ONLINE && s.useOwnApiKey && s.provider == pr) {
+                    s.useOwnApiKey = true; s.provider = pr; activate(BrainType.ONLINE)
+                }
+            }
+        }
     }
 
     private fun loadOnline() {
         val pr = shownProvider
-        keyField.setText("")
-        val k = s.apiKeyFor(pr)
-        keyField.hint = if (k.isNotEmpty()) "Saved ••••${k.takeLast(4)} (type to replace)" else "Paste API key"
-        keyHint.text = "Get a key: ${pr.keyHint}"
-        modelField.setText(s.modelFor(pr))
-        modelField.hint = pr.defaultModel.ifEmpty { "e.g. llama3.1" }
-        urlField.setText(s.customBaseUrl)
-        urlRow.visibility = if (pr == Provider.CUSTOM) View.VISIBLE else View.GONE
+        keyText = ""
+        modelText = s.modelFor(pr)
+        urlText = s.customBaseUrl
+        tokenText = ""
     }
 
     private fun saveOnline() {
-        if (!::keyField.isInitialized) return
         val pr = shownProvider
-        val k = keyField.text.toString().trim()
-        if (k.isNotEmpty()) { s.setApiKeyFor(pr, k); keyField.setText(""); keyField.hint = "Saved ••••${k.takeLast(4)} (type to replace)" }
-        s.setModelFor(pr, modelField.text.toString())
-        if (pr == Provider.CUSTOM) s.customBaseUrl = urlField.text.toString()
+        val k = keyText.trim()
+        if (k.isNotEmpty()) { s.setApiKeyFor(pr, k); keyText = "" }
+        s.setModelFor(pr, modelText)
+        if (pr == Provider.CUSTOM) s.customBaseUrl = urlText
+    }
+
+    @Composable
+    private fun OnlineCard(@Suppress("UNUSED_PARAMETER") r: Int) {
+        SCard("Set-Tai Cloud", "Built in. No key or Gmail needed. 40 requests per UTC day (including background AI). Local commands cost no chats. Your messages and character context go to Gemini; the gateway keeps only anonymous quota counts.") {
+            SSwitch("Advanced: use my own API key / server", s.useOwnApiKey) { s.useOwnApiKey = it; bump() }
+            if (s.useOwnApiKey) {
+                val providers = Provider.entries
+                SChoice("Provider", providers.map { it.label }, providers.indexOf(shownProvider)) { pos ->
+                    saveOnline(); shownProvider = providers[pos]; s.provider = shownProvider; loadOnline(); bump()
+                }
+                val saved = s.apiKeyFor(shownProvider)
+                SField(keyText, { keyText = it }, "API key (stored encrypted on this phone)",
+                    placeholder = if (saved.isNotEmpty()) "Saved ••••${saved.takeLast(4)} (type to replace)" else "Paste API key", secret = true)
+                SNote("Get a key: ${shownProvider.keyHint}")
+                SField(modelText, { modelText = it }, "Model", placeholder = shownProvider.defaultModel.ifEmpty { "e.g. llama3.1" })
+                if (shownProvider == Provider.CUSTOM) SField(urlText, { urlText = it }, "Server base URL", placeholder = "https://my-server/v1")
+                SSecondary("Pick model from my account") { saveOnline(); pickModel(auto = false) }
+                SPrimary("Save & test") { saveOnline(); pickModel(auto = true) }
+                if (onlineResult.isNotBlank()) Text(onlineResult)
+            }
+        }
     }
 
     /** v10.13.2: the provider's live model list (only chat models; Gemini: those supporting generateContent). Blocking. */
@@ -289,244 +288,151 @@ class SettingsActivity : Activity() {
     /** Fetch the list; [auto] = keep a valid model or switch to the newest flash, then test. Otherwise let the user pick. */
     private fun pickModel(auto: Boolean) {
         val pr = shownProvider
-        if (pr != Provider.CUSTOM && s.apiKeyFor(pr).isBlank()) { onlineResult.text = "Paste your API key first."; return }
-        onlineResult.text = "Checking which models your key can use…"; onlineResult.setTextColor(soft)
+        if (pr != Provider.CUSTOM && s.apiKeyFor(pr).isBlank()) { onlineResult = "Paste your API key first."; return }
+        onlineResult = "Checking which models your key can use…"
         Thread {
             val res = runCatching { fetchModels(pr) }
             ui.post {
                 val ids = res.getOrNull().orEmpty()
                 if (auto) {
                     val cur = s.modelFor(pr)
-                    if (ids.isNotEmpty() && cur !in ids) {
-                        com.combo.monkeycompanion.ai.ModelList.pickDefault(ids)?.let { s.setModelFor(pr, it); modelField.setText(it) }
-                    }
-                    runTest(onlineResult)
+                    if (ids.isNotEmpty() && cur !in ids) com.combo.monkeycompanion.ai.ModelList.pickDefault(ids)?.let { s.setModelFor(pr, it); modelText = it }
+                    runTest { onlineResult = it }
                     return@post
                 }
-                if (ids.isEmpty()) {
-                    onlineResult.text = "\u274C " + (res.exceptionOrNull()?.message ?: "No chat models found for this key."); onlineResult.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xC6, 0x28, 0x28)); return@post
-                }
-                val best = com.combo.monkeycompanion.ai.ModelList.pickDefault(ids)
-                val labels = ids.map { if (it == best) "$it  ⭐ recommended" else it }.toTypedArray()
-                android.app.AlertDialog.Builder(this).setTitle("Models for ${pr.label}")
-                    .setItems(labels) { _, i -> s.setModelFor(pr, ids[i]); modelField.setText(ids[i]); onlineResult.text = "Model set: ${ids[i]}" }
-                    .setNegativeButton("Cancel", null).show()
-                onlineResult.text = "${ids.size} models available."
+                if (ids.isEmpty()) { onlineResult = "❌ " + (res.exceptionOrNull()?.message ?: "No chat models found for this key."); return@post }
+                onlineResult = "${ids.size} models available."
+                modelChoices = pr to ids
             }
         }.start()
     }
 
-    private fun runTest(out: TextView) {
-        out.text = "Testing… (an on-device model can take 10-60 s to load the first time)"
-        out.setTextColor(soft)
+    private fun runTest(out: (String) -> Unit) {
+        out("Testing… (an on-device model can take 10-60 s to load the first time)")
         val b = ChatHub.brain()
         val t0 = android.os.SystemClock.elapsedRealtime()
         ChatHub.test(b) { r ->
             r.onSuccess {
-                // v10.17.2: show where it ran and how long it took, and say so if the GPU fell back to CPU.
                 val secs = (android.os.SystemClock.elapsedRealtime() - t0) / 1000f
                 val ob = b as? com.combo.monkeycompanion.ai.OfflineBrain
-                val where = ob?.loadedOn?.let { " \u00b7 ran on $it" } ?: ""
+                val where = ob?.loadedOn?.let { " · ran on $it" } ?: ""
                 val fell = if (ob != null && s.offlineUseGpu && ob.loadedOn == "CPU")
                     "\n(GPU didn't work on this phone, so it used the CPU: ${ob.gpuError ?: "unknown reason"})" else ""
-                out.text = "\u2705 ${b.label} says: $it\n(${"%.1f".format(secs)} s$where)$fell"
-                out.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0x2E, 0x7D, 0x32))
+                out("✅ ${b.label} says: $it\n(${"%.1f".format(secs)} s$where)$fell")
             }
-            r.onFailure { out.text = "\u274C ${it.message}"; out.setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xC6, 0x28, 0x28)) }
+            r.onFailure { out("❌ ${it.message}") }
         }
     }
 
     // ---------------- offline ----------------
 
-    private var brainGroup: RadioGroup? = null
-    private var pickerBox: LinearLayout? = null
-
-    /** v10.13.1 brain picker: local models + configured API providers; the active one is marked. */
-    private fun refreshPicker() {
-        val box = pickerBox ?: return
-        box.removeAllViews()
-        fun row(label: String, active: Boolean, onUse: () -> Unit, onDelete: (() -> Unit)? = null) {
-            val r = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            r.addView(text((if (active) "✅ " else "⚪ ") + label, 14f, active).apply { setOnClickListener { onUse() } }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            if (!active) r.addView(Button(this).apply { text = "Use"; isAllCaps = false; setOnClickListener { onUse() } })
-            if (onDelete != null) r.addView(Button(this).apply { text = "Delete"; isAllCaps = false; setOnClickListener { onDelete() } })
-            box.addView(r)
-        }
-        fun activate(bt: BrainType) {
-            s.brainType = bt
-            ChatHub.setBrainEnabled(true)
-            brainGroup?.check(100 + listOf(BrainType.NONE, BrainType.OFFLINE, BrainType.ONLINE).indexOf(bt))
-            updateCards(); refreshPicker(); refreshOffline()
-            if (bt == BrainType.OFFLINE) ChatHub.preloadOffline()
-        }
-        val on = s.aiBrainEnabled
-        row("No AI (canned lines)", !on || s.brainType == BrainType.NONE, { s.brainType = BrainType.NONE; ChatHub.setBrainEnabled(false); brainGroup?.check(100); updateCards(); refreshPicker() })
-        row("☁️ Set-Tai Cloud · no key / sign-in", on && s.brainType == BrainType.ONLINE && !s.useOwnApiKey, { s.useOwnApiKey = false; activate(BrainType.ONLINE) })
-        for (f in ModelStore.installed(this)) {
-            val title = ModelStore.CATALOG.firstOrNull { it.file == f.name }?.title?.substringBefore(" (") ?: f.name
-            row("📱 $title  ·  ${mb(f.length())}", on && s.brainType == BrainType.OFFLINE && s.offlineModelPath == f.path,
-                { s.offlineModelPath = f.path; activate(BrainType.OFFLINE) },
-                { if (s.offlineModelPath == f.path) s.offlineModelPath = ""; f.delete(); ChatHub.setBrainEnabled(s.aiBrainEnabled); refreshPicker(); refreshOffline() })
-        }
-        for (pr in Provider.values()) {
-            val ok = if (pr == Provider.CUSTOM) s.customBaseUrl.isNotBlank() else s.apiKeyFor(pr).isNotBlank()
-            if (!ok) continue
-            row("☁️ ${pr.label} (${s.modelFor(pr)})", on && s.brainType == BrainType.ONLINE && s.useOwnApiKey && s.provider == pr, { s.useOwnApiKey = true; s.provider = pr; activate(BrainType.ONLINE) })
-        }
-        if (box.childCount == 1) box.addView(text("No models or API keys yet. Download a model or add a key below.", 12f, color = soft))
-    }
-
-    private fun buildOffline(): View {
-        offlineStatus = text("", 14f)
-        val catGroup = RadioGroup(this)
-        ModelStore.CATALOG.forEachIndexed { i, m ->
-            val inUse = File(s.offlineModelPath).name == m.file
-            if (inUse) catalogPick = i
-            catGroup.addView(RadioButton(this).apply { id = 200 + i; text = m.title + if (inUse) "  ✅ in use" else ""; textSize = 15f; setTextColor(brown); isChecked = if (s.offlineModelPath.isBlank()) i == 0 else inUse })
-            catGroup.addView(text(m.blurb, 12f, color = soft).apply { setPadding(dp(32), 0, 0, dp(4)) })
-        }
-        catGroup.setOnCheckedChangeListener { _, id ->
-            catalogPick = id - 200
-            // v10.13.1: picking a model that is already on the phone USES it (it used to only pick what to download,
-            // so the chat kept running the old model, e.g. Qwen, while Gemma looked selected).
-            val m = ModelStore.CATALOG.getOrNull(catalogPick) ?: return@setOnCheckedChangeListener
-            val f = ModelStore.installed(this).firstOrNull { it.name == m.file }
-            if (f != null && f.path != s.offlineModelPath && !ModelStore.isDownloading(this)) { s.offlineModelPath = f.path; refreshOffline(); ChatHub.preloadOffline() }
-            else if (f == null && ::offlineStatus.isInitialized) offlineStatus.text = "${m.title} isn't on this phone yet — tap Download. Still using: ${File(s.offlineModelPath).name.ifBlank { "none" }}"
-        }
-        tokenField = field("Hugging Face token (only for gated models)", secret = true)
-        val tk = s.hfToken
-        if (tk.isNotEmpty()) tokenField.hint = "Saved ••••${tk.takeLast(4)} (type to replace)"
-        dlBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 1000; visibility = View.GONE }
-        dlText = text("", 13f, color = soft)
-        dlCancel = button("Cancel download") {
-            ModelStore.cancelDownload(this); dlText.text = "Download cancelled."; dlBar.visibility = View.GONE; dlCancel.visibility = View.GONE
-        }.apply { visibility = View.GONE }
-        installedBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        offlineResult = text("", 13f, color = soft)
-        val gpu = Switch(this).apply {
-            text = "Use GPU (faster replies, but a big model can make the whole phone lag: turn off if it does)"; setTextColor(brown); isChecked = s.offlineUseGpu
-            setOnCheckedChangeListener { _, c -> s.offlineUseGpu = c }
-        }
-        val tools = Switch(this).apply {
-            text = "Let the on-device brain use phone powers (tags like [alarm 07:00])"; setTextColor(brown); isChecked = s.offlineTools
-            setOnCheckedChangeListener { _, c -> s.offlineTools = c }
-        }
-        return card(
-            "On-device brain",
-            offlineStatus,
-            text("Download a model", 15f, true), catGroup,
-            text("Gated models: open the model's Hugging Face page, accept the license, then create a Read token at huggingface.co/settings/tokens.", 12f, color = soft),
-            tokenField,
-            button("Download selected model", primary = true) { startDownload() },
-            button("Open model page on Hugging Face") {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ModelStore.CATALOG[catalogPick].pageUrl)))
-            },
-            dlBar, dlText, dlCancel,
-            button("Import a model file (.litertlm) from storage") { pickFile() },
-            text("Models on this phone", 15f, true), installedBox,
-            gpu, tools,
-            button("Test on-device brain") { runTest(offlineResult) },
-            offlineResult,
-        )
-    }
-
-    private fun refreshOffline() {
-        refreshPicker()
-        if (!::offlineStatus.isInitialized) return
-        val path = s.offlineModelPath
-        val f = File(path)
-        offlineStatus.text = when {
-            path.isBlank() -> "No model chosen yet."
-            ModelStore.isDownloading(this) -> "Downloading ${f.name}…"
-            f.exists() -> "Using: ${f.name} (${mb(f.length())})"
-            else -> "Chosen model file is missing: ${f.name}"
-        }
-        val free = ModelStore.freeBytes(this)
-        installedBox.removeAllViews()
-        val files = ModelStore.installed(this)
-        if (files.isEmpty()) installedBox.addView(text("None yet. Free space: ${mb(free)}", 13f, color = soft))
-        for (file in files) {
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            val active = file.path == path
-            row.addView(text((if (active) "\u2705 " else "") + "${file.name}\n${mb(file.length())}", 13f), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            if (!active) row.addView(Button(this).apply {
-                text = "Use"; isAllCaps = false
-                setOnClickListener { s.offlineModelPath = file.path; refreshOffline(); ChatHub.preloadOffline() }
+    @Composable
+    private fun OfflineCard(@Suppress("UNUSED_PARAMETER") r: Int) {
+        SCard("On-device brain") {
+            val path = s.offlineModelPath
+            val f = File(path)
+            Text(when {
+                path.isBlank() -> "No model chosen yet."
+                ModelStore.isDownloading(this@SettingsActivity) -> "Downloading ${f.name}…"
+                f.exists() -> "Using: ${f.name} (${mb(f.length())})"
+                else -> "Chosen model file is missing: ${f.name}"
             })
-            row.addView(Button(this).apply {
-                text = "Delete"; isAllCaps = false
-                setOnClickListener {
-                    if (active) s.offlineModelPath = ""
-                    file.delete(); refreshOffline()
+            SSubhead("Download a model")
+            ModelStore.CATALOG.forEachIndexed { i, m ->
+                val inUse = File(s.offlineModelPath).name == m.file
+                SRadio(m.title + if (inUse) "  ✅ in use" else "", catalogPick == i, m.blurb) {
+                    catalogPick = i
+                    val inst = ModelStore.installed(this@SettingsActivity).firstOrNull { it.name == m.file }
+                    if (inst != null && inst.path != s.offlineModelPath && !ModelStore.isDownloading(this@SettingsActivity)) {
+                        s.offlineModelPath = inst.path; ChatHub.preloadOffline()
+                    } else if (inst == null) dlText = "${m.title} isn't on this phone yet. Tap Download. Still using: ${File(s.offlineModelPath).name.ifBlank { "none" }}"
+                    bump()
                 }
-            })
-            installedBox.addView(row)
+            }
+            SNote("Gated models: open the model's Hugging Face page, accept the license, then create a Read token at huggingface.co/settings/tokens.")
+            val tk = s.hfToken
+            SField(tokenText, { tokenText = it }, "Hugging Face token (only for gated models)",
+                placeholder = if (tk.isNotEmpty()) "Saved ••••${tk.takeLast(4)} (type to replace)" else null, secret = true)
+            SPrimary("Download selected model") { startDownload() }
+            SSecondary("Open model page on Hugging Face") {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ModelStore.CATALOG[catalogPick].pageUrl)))
+            }
+            dlFrac?.let { LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth()) }
+            if (dlText.isNotBlank()) Text(dlText, style = MaterialTheme.typography.bodySmall)
+            if (dlFrac != null && ModelStore.isDownloading(this@SettingsActivity)) SSecondary("Cancel download") {
+                ModelStore.cancelDownload(this@SettingsActivity); dlText = "Download cancelled."; dlFrac = null
+            }
+            SSecondary("Import a model file (.litertlm) from storage") { pickFile() }
+            SSubhead("Models on this phone")
+            val files = ModelStore.installed(this@SettingsActivity)
+            val free = ModelStore.freeBytes(this@SettingsActivity)
+            if (files.isEmpty()) SNote("None yet. Free space: ${mb(free)}")
+            for (file in files) {
+                val active = file.path == path
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text((if (active) "✅ " else "") + "${file.name}\n${mb(file.length())}", modifier = Modifier.weight(1f))
+                    if (!active) TextButton(onClick = { s.offlineModelPath = file.path; ChatHub.preloadOffline(); bump() }) { Text("Use") }
+                    TextButton(onClick = { if (active) s.offlineModelPath = ""; file.delete(); bump() }) { Text("Delete") }
+                }
+            }
+            if (files.isNotEmpty()) SNote("Free space: ${mb(free)}")
+            SSwitch("Use GPU", s.offlineUseGpu, "Faster replies, but a big model can make the whole phone lag: turn off if it does.") { s.offlineUseGpu = it; bump() }
+            SSwitch("Let the on-device brain use phone powers", s.offlineTools, "Tags like [alarm 07:00].") { s.offlineTools = it; bump() }
+            SSecondary("Test on-device brain") { runTest { offlineResult = it } }
+            if (offlineResult.isNotBlank()) Text(offlineResult)
         }
-        if (files.isNotEmpty()) installedBox.addView(text("Free space: ${mb(free)}", 12f, color = soft))
     }
 
     private fun mb(b: Long) = if (b >= 1_000_000_000) String.format(Locale.US, "%.2f GB", b / 1e9) else String.format(Locale.US, "%.0f MB", b / 1e6)
 
     private fun startDownload() {
         val m = ModelStore.CATALOG[catalogPick]
-        val typed = tokenField.text.toString().trim()
-        if (typed.isNotEmpty()) { s.hfToken = typed; tokenField.setText(""); tokenField.hint = "Saved ••••${typed.takeLast(4)}" }
+        val typed = tokenText.trim()
+        if (typed.isNotEmpty()) { s.hfToken = typed; tokenText = "" }
         val token = s.hfToken
-        if (m.gated && token.isBlank()) {
-            dlText.text = "This model needs a Hugging Face token: accept the license on its page, then paste a Read token above."
-            return
-        }
-        if (ModelStore.isDownloading(this)) { dlText.text = "A download is already running."; return }
-        dlText.text = "Checking…"
+        if (m.gated && token.isBlank()) { dlText = "This model needs a Hugging Face token: accept the license on its page, then paste a Read token above."; return }
+        if (ModelStore.isDownloading(this)) { dlText = "A download is already running."; return }
+        dlText = "Checking…"
         Thread {
             try {
                 val probe = ModelStore.probe(m.url, token)
                 val need = if (probe.sizeBytes > 0) probe.sizeBytes else m.approxMb * 1_000_000L
                 val free = ModelStore.freeBytes(this)
-                if (free < need + 300_000_000L) {
-                    ui.post { dlText.text = "Not enough space: needs ${mb(need)}, only ${mb(free)} free." }
-                    return@Thread
-                }
+                if (free < need + 300_000_000L) { ui.post { dlText = "Not enough space: needs ${mb(need)}, only ${mb(free)} free." }; return@Thread }
                 val target = ModelStore.startDownload(this, probe, m.file, m.title)
                 s.offlineModelPath = target.path
-                ui.post { dlText.text = "Download started (${mb(need)}). You can leave this screen; it continues in the background."; pollDownload() }
+                ui.post { dlText = "Download started (${mb(need)}). You can leave this screen; it continues in the background."; pollDownload() }
             } catch (e: Exception) {
-                ui.post { dlText.text = "\u274C ${e.message}" }
+                ui.post { dlText = "❌ ${e.message}" }
             }
         }.start()
     }
 
     private fun pollDownload() {
-        val p = ModelStore.progress(this) ?: run { dlBar.visibility = View.GONE; dlCancel.visibility = View.GONE; return }
+        val p = ModelStore.progress(this) ?: run { dlFrac = null; return }
         when (p.status) {
             DownloadManager.STATUS_SUCCESSFUL -> {
-                dlBar.visibility = View.GONE; dlCancel.visibility = View.GONE
-                dlText.text = "\u2705 Download complete!"
+                dlFrac = null; dlText = "✅ Download complete!"
                 ModelStore.clearDownloadRecord(this)
-                // v10.13.1: a freshly downloaded model becomes the active brain (switch back any time in the picker)
-                s.brainType = BrainType.OFFLINE; ChatHub.setBrainEnabled(true); brainGroup?.check(101); updateCards()
-                refreshOffline()
-                ChatHub.preloadOffline()
+                s.brainType = BrainType.OFFLINE; ChatHub.setBrainEnabled(true)
+                ChatHub.preloadOffline(); bump()
                 return
             }
             DownloadManager.STATUS_FAILED -> {
-                dlBar.visibility = View.GONE; dlCancel.visibility = View.GONE
-                dlText.text = "\u274C Download failed (code ${p.reason}). Check your connection and space, then try again."
+                dlFrac = null
+                dlText = "❌ Download failed (code ${p.reason}). Check your connection and space, then try again."
                 ModelStore.clearDownloadRecord(this)
                 return
             }
             else -> {
-                dlBar.visibility = View.VISIBLE; dlCancel.visibility = View.VISIBLE
                 val frac = if (p.total > 0) p.done.toDouble() / p.total else 0.0
-                dlBar.progress = (frac * 1000).toInt()
+                dlFrac = frac.toFloat()
                 val state = when (p.status) {
                     DownloadManager.STATUS_PAUSED -> "Paused (waiting for network)"
                     DownloadManager.STATUS_PENDING -> "Waiting"
                     else -> "Downloading"
                 }
-                dlText.text = "$state: ${mb(p.done)} / ${if (p.total > 0) mb(p.total) else "?"} (${(frac * 100).toInt()}%)"
-                refreshOffline()
+                dlText = "$state: ${mb(p.done)} / ${if (p.total > 0) mb(p.total) else "?"} (${(frac * 100).toInt()}%)"
             }
         }
         ui.postDelayed({ pollDownload() }, 1000)
@@ -551,13 +457,11 @@ class SettingsActivity : Activity() {
                 c.getColumnIndex(OpenableColumns.SIZE).takeIf { it >= 0 }?.let { size = c.getLong(it) }
             }
         }
-        if (!name.endsWith(".litertlm")) {
-            dlText.text = "\u26A0 \"$name\" isn't a .litertlm file. This app runs LiteRT-LM models (.litertlm); it may not load."
-        }
+        if (!name.endsWith(".litertlm")) dlText = "⚠ \"$name\" isn't a .litertlm file. This app runs LiteRT-LM models (.litertlm); it may not load."
         val free = ModelStore.freeBytes(this)
-        if (size > 0 && free < size + 200_000_000L) { dlText.text = "Not enough space to import (${mb(size)} needed, ${mb(free)} free)."; return }
+        if (size > 0 && free < size + 200_000_000L) { dlText = "Not enough space to import (${mb(size)} needed, ${mb(free)} free)."; return }
         val target = File(ModelStore.modelsDir(this), name.replace(Regex("[^A-Za-z0-9._-]"), "_"))
-        dlBar.visibility = View.VISIBLE
+        dlFrac = 0f
         Thread {
             try {
                 val part = File(target.path + ".part")
@@ -572,8 +476,8 @@ class SettingsActivity : Activity() {
                                 last = done
                                 val dd = done
                                 ui.post {
-                                    dlText.text = "Importing ${mb(dd)}${if (size > 0) " / " + mb(size) else ""}…"
-                                    if (size > 0) dlBar.progress = (dd * 1000 / size).toInt()
+                                    dlText = "Importing ${mb(dd)}${if (size > 0) " / " + mb(size) else ""}…"
+                                    if (size > 0) dlFrac = dd.toFloat() / size
                                 }
                             }
                         }
@@ -581,358 +485,226 @@ class SettingsActivity : Activity() {
                 }
                 target.delete(); part.renameTo(target)
                 s.offlineModelPath = target.path
-                ui.post { dlBar.visibility = View.GONE; dlText.text = "\u2705 Imported ${target.name}"; refreshOffline(); ChatHub.preloadOffline() }
+                ui.post { dlFrac = null; dlText = "✅ Imported ${target.name}"; ChatHub.preloadOffline(); bump() }
             } catch (e: Exception) {
-                ui.post { dlBar.visibility = View.GONE; dlText.text = "\u274C Import failed: ${e.message}" }
+                ui.post { dlFrac = null; dlText = "❌ Import failed: ${e.message}" }
             }
         }.start()
     }
 
-    // ---------------- auto-rest, battery saver & energy (v3.2) ----------------
+    // ---------------- rest, battery & energy ----------------
 
-    private var energyText: TextView? = null
     private val energyWindow = ArrayDeque<com.combo.monkeycompanion.overlay.EnergyMeter.Sample>()
 
     private fun refreshEnergy() {
-        val tv = energyText ?: return
         val em = com.combo.monkeycompanion.overlay.EnergyMeter
         val now = em.sample()
         energyWindow.addLast(now)
         while (energyWindow.size > 1 && now.wallMs - energyWindow.first().wallMs > 10_000L) energyWindow.removeFirst()
         val first = energyWindow.first()
-        tv.text = em.describe(if (now.wallMs - first.wallMs >= 1500L) first to now else null, now) +
+        energyText = em.describe(if (now.wallMs - first.wallMs >= 1500L) first to now else null, now) +
             "\nMind CPU: " + com.combo.monkeycompanion.mind.MindHub.cpuSummary() +
             "\n(Estimate: ~200 mA per fully busy CPU core; screen and GPU compositing not included. The window includes this Settings screen.)"
         ui.postDelayed({ refreshEnergy() }, 2000L)
     }
 
     /** v10.17.1: System / Light / Dark app theme (the overlay character is never affected). */
-    private fun buildAppearance(): View {
+    @Composable
+    private fun AppearanceCard() {
         val T = com.combo.monkeycompanion.theme.ThemeSkin
         val modes = listOf(T.SYSTEM, T.LIGHT, T.DARK)
-        val sp = spinner(listOf("Follow phone (System)", "Light", "Dark"), modes.indexOf(T.mode(this)).coerceAtLeast(0)) {
-            if (modes[it] != T.mode(this)) { T.setMode(this, modes[it]); recreate() }
+        SCard("Appearance", "App screens only. Your characters on the phone screen never change.") {
+            SChoice(null, listOf("Follow phone (System)", "Light", "Dark"), modes.indexOf(T.mode(this@SettingsActivity)).coerceAtLeast(0)) {
+                if (modes[it] != T.mode(this@SettingsActivity)) { T.setMode(this@SettingsActivity, modes[it]); recreate() }
+            }
         }
-        return card("🌗 Appearance (app screens)", sp)
     }
 
-    private fun buildRest(): View {
+    @Composable
+    private fun RestCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         val secs = listOf(30, 60, 120, 300, 600, 0)
         val names = listOf("After 30 seconds", "After 1 minute", "After 2 minutes", "After 5 minutes", "After 10 minutes", "Never")
-        val restSp = spinner(names, secs.indexOf(s.restSeconds).let { if (it < 0) 2 else it }) { s.restSeconds = secs[it] }
-        val saver = Switch(this).apply {
-            text = "Battery saver (lower frame rate, fewer random moves and quips, rests within 1 minute)"; setTextColor(brown); isChecked = s.batterySaver
-            setOnCheckedChangeListener { _, c -> s.batterySaver = c }
+        SCard("Touch, motion & battery", "Auto-rest: if you don't play with Settai for a while, it hides behind the nearest edge (just a tab). Tap the tab to call it back, double-tap to chat. It also pops out for low battery, overheating and timers.") {
+            SChoice("Auto-rest", names, secs.indexOf(s.restSeconds).let { if (it < 0) 2 else it }) { s.restSeconds = secs[it]; bump() }
+            SSwitch("Come back out after I unlock the phone", s.comeOutOnUnlock) { s.comeOutOnUnlock = it; bump() }
+            SSwitch("Battery saver", s.batterySaver, "Lower frame rate, fewer random moves and quips, rests within 1 minute.") { s.batterySaver = it; bump() }
+            SSwitch("Let Settai roam", s.roam, "Climb the sides, hang from the top, drop down.") { s.roam = it; bump() }
+            SSwitch("Random comedy bits", s.gags, "Sneezes, juggling, air guitar…") { s.gags = it; bump() }
+            SSwitch("Smooth animation (beta)", s.smoothAnimation, "Squishy landings, tails, ears, hair and capes that swing and settle.") { s.smoothAnimation = it; bump() }
+            SSwitch("Living reactions (beta)", s.livingReactions, "Every touch gets a fresh reaction, never the same one twice in a row.") { s.livingReactions = it; bump() }
+            SSwitch("Sound effects", s.soundEffects, "Smash game, fireworks. Always quiet when your phone is on silent or vibrate.") { s.soundEffects = it; bump() }
+            SSwitch("Touch feel", s.touchFeel, "Feel them in your hand: a bump when picked up, a rattle when shaken, a purr when petted, a heartbeat when you keep holding, slingshot clicks, landing thumps.") { s.touchFeel = it; bump() }
+            SSwitch("Throw on fast flick", s.flickThrow, "A very fast flick throws the character (SPLAT, THWACK, PANCAKE). Off: any swipe makes it travel with its own power.") { s.flickThrow = it; bump() }
+            SSwitch("Double-tap for power", s.doubleTapPower, "Double-tap a character and it fires one of its powers. Off: double-tap opens the chat.") { s.doubleTapPower = it; bump() }
+            SSwitch("Chat buttons", s.chatButton, "Faint 💬 on the left and 🎤 on the right of each character.") { s.chatButton = it; bump() }
+            SSubhead("Energy")
+            SNote(energyText)
+            SNote("Changes apply within a minute.")
         }
-        val unlock = Switch(this).apply {
-            text = "When resting, come back out after I unlock the phone"; setTextColor(brown); isChecked = s.comeOutOnUnlock
-            setOnCheckedChangeListener { _, c -> s.comeOutOnUnlock = c }
-        }
-        val gags = Switch(this).apply {
-            text = "Random comedy bits (sneezes, juggling, air guitar...)"; setTextColor(brown); isChecked = s.gags
-            setOnCheckedChangeListener { _, c -> s.gags = c }
-        }
-        val smooth = Switch(this).apply {
-            text = "Smooth animation (beta): squishy landings, tails, ears, hair and capes that swing and settle. Turn off for the classic feel."
-            setTextColor(brown); isChecked = s.smoothAnimation
-            setOnCheckedChangeListener { _, c -> s.smoothAnimation = c }
-        }
-        val living = Switch(this).apply {
-            text = "Living reactions (beta): every touch gets a fresh reaction (head, belly, tail, ears, rocket…), never the same one twice in a row. Turn off for the classic taps."
-            setTextColor(brown); isChecked = s.livingReactions
-            setOnCheckedChangeListener { _, c -> s.livingReactions = c }
-        }
-        val sfx = Switch(this).apply {
-            text = "Sound effects (Smash game, fireworks). Always quiet when your phone is on silent or vibrate."
-            setTextColor(brown); isChecked = s.soundEffects
-            setOnCheckedChangeListener { _, c -> s.soundEffects = c }
-        }
-        val flickThrow = Switch(this).apply {
-            text = "Throw on fast flick: a very fast flick throws the character (SPLAT on a wall, THWACK on the top, PANCAKE on the floor). Off: any swipe makes it travel there with its own power."
-            setTextColor(brown); isChecked = s.flickThrow
-            setOnCheckedChangeListener { _, c -> s.flickThrow = c }
-        }
-        val touchFeel = Switch(this).apply {
-            text = "Touch feel: feel them in your hand. A light or heavy bump when you pick one up, a rattle when you shake, a purr when you pet, a heartbeat when you keep holding, clicks when you pull the slingshot, a thump when they land."
-            setTextColor(brown); isChecked = s.touchFeel
-            setOnCheckedChangeListener { _, c -> s.touchFeel = c }
-        }
-        val dtPower = Switch(this).apply {
-            text = "Double-tap for power: double-tap a character and it fires one of its powers right away (a different one each time). Turn off to make double-tap open the chat like before."
-            setTextColor(brown); isChecked = s.doubleTapPower
-            setOnCheckedChangeListener { _, c -> s.doubleTapPower = c }
-        }
-        val chatBtn = Switch(this).apply {
-            text = "Chat buttons: faint 💬 on the left and 🎤 on the right of each character. Tap 💬 to type or 🎤 to talk."
-            setTextColor(brown); isChecked = s.chatButton
-            setOnCheckedChangeListener { _, c -> s.chatButton = c }
-        }
-        val energy = text("Measuring…", 12f, color = soft).also { energyText = it }
-        val roam = Switch(this).apply {
-            text = "Let Settai roam (climb the sides, hang from the top, drop down)"; setTextColor(brown); isChecked = s.roam
-            setOnCheckedChangeListener { _, c -> s.roam = c }
-        }
-        return card(
-            "Rest & battery",
-            text("Auto-rest: if you don't play with Settai for a while, it hides behind the nearest edge (just a tab). Tap the tab to call it back, double-tap to chat. It also pops out for low battery, overheating and timers.", 12f, color = soft),
-            restSp, unlock, saver, roam, gags, smooth, living, sfx, touchFeel, flickThrow, dtPower, chatBtn,
-            text("Energy", 13f, bold = true), energy,
-            text("Changes apply within a minute.", 12f, color = soft),
-        )
     }
 
-    // ---------------- superpowers (v3.2) ----------------
+    // ---------------- character ----------------
 
-    // ---------------- v4.1 character ----------------
-    private lateinit var mainCol: LinearLayout
-    private var powersCard: View? = null
-
-    /** Character picker: live animated thumbnails; switching keeps memory, chat and settings. */
-    private fun buildCharacter(): View {
+    @Composable
+    private fun CharacterCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         val reg = com.combo.monkeycompanion.character.CharacterRegistry
-        val info = text("", 12f, color = soft)
-        val thumbs = ArrayList<CharacterPreviewView>()
-        val wardrobe = button("\uD83D\uDC57  Wardrobe…") {
-            startActivity(Intent(this, WardrobeActivity::class.java).putExtra("character", reg.current.id))
-        }
-        fun show() {
-            val c = reg.current
-            thumbs.forEach { it.picked = it.who === c }
-            info.text = "${c.name}: ${c.tagline}" + if (c.wardrobe.isNotEmpty()) "  (${c.wardrobe.size} wardrobe item${if (c.wardrobe.size == 1) "" else "s"})" else ""
-            wardrobe.visibility = if (c.wardrobe.isEmpty()) View.GONE else View.VISIBLE
-        }
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        for (c in reg.allWithCustom) {
-            val cell = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f) }
-            val v = CharacterPreviewView(this, c).apply { layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, dp(118)) }
-            thumbs.add(v)
-            cell.addView(v); cell.addView(text(c.name, 12f, true).apply { gravity = Gravity.CENTER_HORIZONTAL })
-            cell.setOnClickListener {
-                if (reg.current === c) return@setOnClickListener
-                s.characterId = c.id; s.applyCharacter(); show()
-                // Superpowers differ per body: rebuild that card.
-                powersCard?.let { old -> val i = mainCol.indexOfChild(old); if (i >= 0) { mainCol.removeViewAt(i); mainCol.addView(buildSuperpowers().also { powersCard = it }, i) } }
+        val c = reg.current
+        SCard("Character", "Switching body keeps your chats, memory, routines and settings. Each character has its own personality, lines and superpowers.") {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (ch in reg.allWithCustom) {
+                    val picked = ch.id == c.id
+                    Card(
+                        onClick = { if (!picked) { s.characterId = ch.id; s.applyCharacter(); bump() } },
+                        colors = CardDefaults.cardColors(containerColor = if (picked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.width(96.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(6.dp)) {
+                            androidx.compose.ui.viewinterop.AndroidView(factory = { ctx -> CharacterPreviewView(ctx, ch) },
+                                update = { it.picked = picked }, modifier = Modifier.fillMaxWidth().height(96.dp))
+                            Text(ch.name, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                        }
+                    }
+                }
             }
-            row.addView(cell)
+            Text("${c.name}: ${c.tagline}" + if (c.wardrobe.isNotEmpty()) "  (${c.wardrobe.size} wardrobe item${if (c.wardrobe.size == 1) "" else "s"})" else "")
+            if (c.wardrobe.isNotEmpty()) SSecondary("Wardrobe") {
+                startActivity(Intent(this@SettingsActivity, WardrobeActivity::class.java).putExtra("character", c.id))
+            }
+            SSecondary("Character Studio (create from a photo, import)") { startActivity(Intent(this@SettingsActivity, CompanionStudioActivity::class.java)) }
         }
-        show()
-        val studioBtn = button("📸✨  Photo-to-Look-Alike Studio (Create / Import)…") { startActivity(Intent(this, CompanionStudioActivity::class.java)) }
-        return card("Character", row, info, wardrobe, studioBtn,
-            text("Switching body keeps your chats, memory, routines and settings. Each character has its own personality, lines and superpowers.", 12f, color = soft))
     }
 
-    private fun buildSuperpowers(): View {
+    @Composable
+    private fun SuperpowersCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         val powers = com.combo.monkeycompanion.brain.Superpowers
-        // Data-driven: every power in Superpowers.all shows up here.
         val ids = listOf(powers.OFF, powers.RANDOM) + powers.all.map { it.id }
         val names = listOf("Off", "Random (surprise me)") + powers.all.map { it.title }
-        val blurb = text("", 12f, color = soft)
-        fun describe(i: Int) {
-            blurb.text = when (ids[i]) {
-                powers.OFF -> "No superpowers: ${com.combo.monkeycompanion.character.CharacterRegistry.current.name} stays a regular genius ${com.combo.monkeycompanion.character.CharacterRegistry.current.noun}."
-                powers.RANDOM -> "A random power each time: " + powers.all.joinToString("; ") { "${it.title}: ${it.blurb}" } + "."
-                else -> powers.byId(ids[i])?.blurb ?: ""
-            }
-        }
         val sel = ids.indexOf(s.power).let { if (it < 0) 1 else it }
-        val sp = spinner(names, sel) { s.power = ids[it]; describe(it) }
-        describe(sel)
-        val status = text("", 12f, color = soft)
-        val use = button("\uD83D\uDE80  Use power now") {
-            if (!com.combo.monkeycompanion.overlay.MonkeyOverlayService.running) { status.text = "Start Settai first (overlay mode), then try again."; return@button }
-            startService(Intent(this, com.combo.monkeycompanion.overlay.MonkeyOverlayService::class.java)
-                .setAction(com.combo.monkeycompanion.overlay.MonkeyOverlayService.ACTION_POWER))
-            status.text = if (s.power == powers.OFF) "Powers are Off: Settai will tell you so." else "Look at your screen!"
+        val who = com.combo.monkeycompanion.character.CharacterRegistry.current
+        SCard("Superpowers") {
+            SChoice(null, names, sel) { s.power = ids[it]; bump() }
+            SNote(when (ids[sel]) {
+                powers.OFF -> "No superpowers: ${who.name} stays a regular genius ${who.noun}."
+                powers.RANDOM -> "A random power each time: " + powers.all.joinToString("; ") { "${it.title}: ${it.blurb}" } + "."
+                else -> powers.byId(ids[sel])?.blurb ?: ""
+            })
+            SNote("Settai also uses its power when you ask in chat (\"fly!\", \"show your power\") and now and then on its own while you're around (never with Battery saver on or while resting).")
         }
-        return card(
-            "Superpowers",
-            sp, blurb,
-            text("Settai also uses its power when you ask in chat (\"fly!\", \"show your power\") and now and then on its own while you're around (never with Battery saver on or while resting). Flights last about 6-9 seconds; the extra effects only run during the flight.", 12f, color = soft),
-        )
     }
 
-    private fun buildBackgroundAi(): View {
+    @Composable
+    private fun BackgroundAiCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         val modes = listOf("off", "gentle", "fast")
-        val picker = spinner(listOf("Off — only when you interact", "Gentle — occasional background reactions", "Fast — more frequent, more battery"),
-            modes.indexOf(s.backgroundAi).coerceAtLeast(0)) { s.backgroundAi = modes[it] }
-        return card("Background AI", text("Optional background intelligence, independent of character animations.", 12f, color = soft), picker)
+        SCard("Background AI", "Optional background intelligence, independent of character animations.") {
+            SChoice(null, listOf("Off: only when you interact", "Gentle: occasional background reactions", "Fast: more frequent, more battery"),
+                modes.indexOf(s.backgroundAi).coerceAtLeast(0)) { s.backgroundAi = modes[it]; bump() }
+        }
     }
 
     // ---------------- personality & memory ----------------
 
-    private fun buildPersonality(): View {
-        val indepLabel = text("How independent: ${s.mindIndependence}%", 14f, bold = true)
-        val indepSeek = android.widget.SeekBar(this).apply {
-            max = 100; progress = s.mindIndependence
-            setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(sb: android.widget.SeekBar?, p: Int, fromUser: Boolean) {
-                    s.mindIndependence = p
-                    indepLabel.text = "How independent: $p%"
-                }
-                override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
-                override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
-            })
+    @Composable
+    private fun PersonalityCard(@Suppress("UNUSED_PARAMETER") r: Int) {
+        SCard("Personality & memory") {
+            SSlider("How independent", s.mindIndependence, 0..100) { s.mindIndependence = it; bump() }
+            SNote("Controls how often Settai acts on its own (exploring new apps, habits, gags, powers) and how strongly its traits show. High focus (typing, calls, meetings, banking, DND, quiet hours) always overrides.")
+            SSecondary("Open Settai's diary") { startActivity(Intent(this@SettingsActivity, DiaryActivity::class.java)) }
+            SSwitch("Random AI quips", s.quipsEnabled, "Only when a real brain is set up (uses a little data and battery).") { s.quipsEnabled = it; bump() }
+            val mins = listOf(5, 10, 15, 30, 60)
+            SChoice("How often", mins.map { "About every $it minutes" }, mins.indexOf(s.quipMinutes).coerceAtLeast(2)) { s.quipMinutes = mins[it]; bump() }
+            val turns = listOf(0, 4, 8, 15)
+            SChoice("Conversation memory", turns.map { if (it == 0) "Remember nothing" else "Remember last $it exchanges" }, turns.indexOf(s.memoryTurns).coerceAtLeast(2)) { s.memoryTurns = turns[it]; bump() }
+            SSecondary("Clear chat history") { ChatHub.clearMemory(); clearedText = "Forgotten! 🍌" }
+            if (clearedText.isNotBlank()) SNote(clearedText)
         }
-        val diaryBtn = button("📖  Open Settai's diary…") {
-            startActivity(Intent(this, DiaryActivity::class.java))
-        }
-        val quips = Switch(this).apply {
-            text = "Let Settai say random AI quips on its own"; setTextColor(brown); isChecked = s.quipsEnabled
-            setOnCheckedChangeListener { _, c -> s.quipsEnabled = c }
-        }
-        val mins = listOf(5, 10, 15, 30, 60)
-        val quipSp = spinner(mins.map { "About every $it minutes" }, mins.indexOf(s.quipMinutes).coerceAtLeast(2)) { s.quipMinutes = mins[it] }
-        val turns = listOf(0, 4, 8, 15)
-        val memSp = spinner(turns.map { if (it == 0) "Remember nothing" else "Remember last $it exchanges" }, turns.indexOf(s.memoryTurns).coerceAtLeast(2)) { s.memoryTurns = turns[it] }
-        val cleared = text("", 12f, color = soft)
-        return card(
-            "Personality & memory",
-            indepLabel, indepSeek,
-            text("Controls how often Settai acts on its own (exploring new apps, habits, gags, powers) and how strongly its traits show. High focus (typing, calls, meetings, banking, DND, quiet hours) always overrides.", 12f, color = soft),
-            diaryBtn,
-            quips, quipSp,
-            text("Quips only happen when a real brain is set up (they use a little data/battery).", 12f, color = soft),
-            text("Conversation memory", 13f, color = soft), memSp,
-            button("Clear chat history") { ChatHub.clearMemory(); cleared.text = "Forgotten! 🍌" }, cleared,
-        )
     }
 
-    /** v4.2: proactive buddy, quick-tap arc, hold-to-talk and spoken replies. */
-    private fun buildBuddy(): View {
-        val levels = com.combo.monkeycompanion.agent.ProLevel.entries
-        val levelHelp = text(com.combo.monkeycompanion.agent.ProLevel.of(s.proactiveLevel).help, 12f, color = soft)
-        val levelSp = spinner(levels.map { "Proactive: ${it.label}" + if (it.perHour > 0) " (max ${it.perHour}/hour)" else "" }, levels.indexOf(com.combo.monkeycompanion.agent.ProLevel.of(s.proactiveLevel))) {
-            s.proactiveLevel = levels[it].name; levelHelp.text = levels[it].help
-        }
+    /** v4.2: proactive buddy, quiet hours, pipe-up topics, break nudges, phone moments, bubble chat and voice. */
+    @Composable
+    private fun BuddyCard(@Suppress("UNUSED_PARAMETER") r: Int) {
+        val PL = com.combo.monkeycompanion.agent.ProLevel
+        val levels = PL.entries
         val QH = com.combo.monkeycompanion.agent.QuietHours
-        val qStart = field("23:00").apply { setText(QH.fmt(s.quietStart)) }
-        val qEnd = field("07:00").apply { setText(QH.fmt(s.quietEnd)) }
-        val qRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            addView(text("Quiet hours ", 14f)); addView(qStart, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            addView(text(" to ", 14f)); addView(qEnd, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+        var qStart by remember { mutableStateOf(QH.fmt(s.quietStart)) }
+        var qEnd by remember { mutableStateOf(QH.fmt(s.quietEnd)) }
+        var usage by remember { mutableStateOf(s.usageApps) }
+        SCard("Buddy mode", "Settai pipes up for moments that matter (a burst of messages, someone important, a delivery, an OTP, a long scroll session, full battery, good morning). Never while you type, call, game or watch fullscreen, in Do Not Disturb or in quiet hours.") {
+            SChoice("How often it pipes up", levels.map { "${it.label}" + if (it.perHour > 0) " (max ${it.perHour}/hour)" else "" }, levels.indexOf(PL.of(s.proactiveLevel))) {
+                s.proactiveLevel = levels[it].name; bump()
+            }
+            SNote(PL.of(s.proactiveLevel).help)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                SField(qStart, { qStart = it }, "Quiet from", "23:00", modifier = Modifier.weight(1f))
+                SField(qEnd, { qEnd = it }, "to", "07:00", modifier = Modifier.weight(1f))
+            }
+            SSecondary("Save quiet hours") {
+                s.quietStart = QH.parse(qStart, s.quietStart); s.quietEnd = QH.parse(qEnd, s.quietEnd)
+                qStart = QH.fmt(s.quietStart); qEnd = QH.fmt(s.quietEnd); bump()
+            }
+            SSubhead("What may it pipe up about?")
+            for (c in com.combo.monkeycompanion.agent.ProCat.entries) {
+                SSwitch(c.label + (if (c.minLevel.ordinal > PL.CHILL.ordinal) " (Buddy+)" else ""), s.proactiveCat(c)) { s.setProactiveCat(c, it); bump() }
+            }
+            SNote("Messages, bursts and important people need the Notification reader power; chat-list digests need the Screen agent power. OTPs are shown only to you (never spoken or sent to a brain).")
+            val usageMins = listOf(15, 20, 30, 45, 60, 90)
+            SChoice("Break nudge", usageMins.map { "After $it min in one go" }, usageMins.indexOf(s.usageMinutes).coerceAtLeast(2)) { s.usageMinutes = usageMins[it]; bump() }
+            SField(usage, { usage = it }, "Break-nudge apps", "com.instagram.android, com.google.android.youtube")
+            SSecondary("Save break-nudge apps") { s.usageApps = usage; bump() }
+            val ents = listOf("off", "sometimes", "often")
+            SChoice("Power entrances", listOf("Off", "Sometimes (~30% of pipe-ups)", "Often (~60%)"), ents.indexOf(s.powerEntrances).coerceAtLeast(1)) { s.powerEntrances = ents[it]; bump() }
+            SNote("Message summaries fly in, important ones arrive with a power strike, jokes come in on rockets / jets. Never with battery saver or with superpowers Off.")
+            SSubhead("Phone moments")
+            SNote("Little reactions when your phone does something (like plugging in the charger). Never in Do Not Disturb, quiet hours, calls or fullscreen.")
+            for (m in com.combo.monkeycompanion.brain.PhoneMoments.Moment.entries) {
+                SSwitch(m.label, s.phoneMoment(m.id)) { s.setPhoneMoment(m.id, it); bump() }
+            }
+            SSubhead("Bubble chat & voice")
+            val tos = listOf(30, 60, 120, 300, 0)
+            SChoice("Close the bubble chat", listOf("After 30 s idle", "After 1 min idle", "After 2 min idle (default)", "After 5 min idle", "Never by itself"),
+                tos.indexOf(s.chatTimeoutSecs).let { if (it < 0) 2 else it }) { s.chatTimeoutSecs = tos[it]; bump() }
+            SSwitch("Speak the answer when I asked by voice", s.speakVoiceReplies) { s.speakVoiceReplies = it; bump() }
+            SSwitch("Speak all replies out loud", s.speakReplies) { s.speakReplies = it; bump() }
         }
-        val qSave = button("Save quiet hours") {
-            s.quietStart = QH.parse(qStart.text.toString(), s.quietStart); s.quietEnd = QH.parse(qEnd.text.toString(), s.quietEnd)
-            qStart.setText(QH.fmt(s.quietStart)); qEnd.setText(QH.fmt(s.quietEnd))
-        }
-        val cats = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        for (c in com.combo.monkeycompanion.agent.ProCat.entries) cats.addView(Switch(this).apply {
-            text = c.label + (if (c.minLevel.ordinal > com.combo.monkeycompanion.agent.ProLevel.CHILL.ordinal) " (Buddy+)" else ""); setTextColor(brown); isChecked = s.proactiveCat(c)
-            setOnCheckedChangeListener { _, on -> s.setProactiveCat(c, on) }
-        })
-        val usage = field("com.instagram.android, com.google.android.youtube").apply { setText(s.usageApps) }
-        val usageMins = listOf(15, 20, 30, 45, 60, 90)
-        val usageSp = spinner(usageMins.map { "Break nudge after $it min in one go" }, usageMins.indexOf(s.usageMinutes).coerceAtLeast(2)) { s.usageMinutes = usageMins[it] }
-        val usageSave = button("Save break-nudge apps") { s.usageApps = usage.text.toString() }
-
-        val ents = listOf("off", "sometimes", "often")
-        val entSp = spinner(listOf("Power entrances: Off", "Power entrances: Sometimes (~30% of pipe-ups)", "Power entrances: Often (~60%)"),
-            ents.indexOf(s.powerEntrances).coerceAtLeast(1)) { s.powerEntrances = ents[it] }
-        val speakAll = Switch(this).apply {
-            text = "Speak all replies out loud"; setTextColor(brown); isChecked = s.speakReplies
-            setOnCheckedChangeListener { _, c -> s.speakReplies = c }
-        }
-        val speakVoice = Switch(this).apply {
-            text = "Speak the answer when I asked by voice"; setTextColor(brown); isChecked = s.speakVoiceReplies
-            setOnCheckedChangeListener { _, c -> s.speakVoiceReplies = c }
-        }
-        val tos = listOf(30, 60, 120, 300, 0)
-        val toSp = spinner(listOf("Close the bubble chat after 30 s idle", "… after 1 min idle", "… after 2 min idle (default)", "… after 5 min idle", "Never close it by itself"),
-            tos.indexOf(s.chatTimeoutSecs).let { if (it < 0) 2 else it }) { s.chatTimeoutSecs = tos[it] }
-        val menuBtn = button("Long-press menu: choose & order items…") {
-            startActivity(android.content.Intent(this, MenuSettingsActivity::class.java))
-        }.apply { visibility = android.view.View.GONE }   // v10.13.1: the popup is 8 fixed groups now; arranging items no longer applies
-        val moments = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            for (m in com.combo.monkeycompanion.brain.PhoneMoments.Moment.entries) addView(Switch(this@SettingsActivity).apply {
-                text = m.label; setTextColor(brown); isChecked = s.phoneMoment(m.id); minimumHeight = dp(44)
-                setOnCheckedChangeListener { _, c -> s.setPhoneMoment(m.id, c) }
-            })
-        }
-        return card(
-            "Buddy mode: pipe-ups, gestures & voice",
-            text("Settai pipes up for moments that matter (a burst of messages, someone important, a delivery, an OTP, a long scroll session, full battery, good morning). It never pipes up while you type, call, game or watch fullscreen, in Do Not Disturb (mouth cloth) or in quiet hours. Lines are templated, so no battery-hungry AI unless you tap a chip.", 12f, color = soft),
-            levelSp, levelHelp, qRow, qSave,
-            text("What may it pipe up about?", 13f, color = soft), cats,
-            text("Messages / bursts / important people need the Notification reader power; chat-list digests need the Screen agent power. OTPs are shown only to you (never spoken or sent to a brain).", 12f, color = soft),
-            usageSp, usage, usageSave,
-            entSp,
-            text("Power entrances: message summaries fly in (cape), important ones arrive with a power strike, jokes come in on rockets / jets, each character with its own power. Never with battery saver or with superpowers Off; still counted in the hourly limit.", 12f, color = soft),
-            text("Gestures (every character): Tap = tickle (head, belly, hands, tail, feet react) · Double-tap = chat · Long-press = menu (Chat · Talk · Missed? · Screen · ⚡ Powers · … More, customisable below) · Drag = move · Fling to an edge = hide. 🎤 Talk stops by itself when you pause, or tap Settai to send. The mic is also in the chat panels.", 12f, color = soft),
-            text("Phone moments", 15f, bold = true),
-            text("Little reactions when your phone does something: plug in the charger and ${'$'}{com.combo.monkeycompanion.character.CharacterRegistry.current.name} zaps the battery icon (each character in their own way). Never in Do Not Disturb, quiet hours, calls or fullscreen; each has a cooldown; battery saver plays a short version without effects.", 12f, color = soft),
-            moments,
-            menuBtn,
-            text("Bubble chat: close it with ✕, a swipe, a tap outside or Back. It never closes while you type or while I'm answering.", 12f, color = soft),
-            toSp,
-            speakVoice, speakAll,
-        )
     }
 
-    /** v10.19: daily habits with your character (friendship heart, daily hello, streak sulking, goodnight). */
-    private fun buildEngagement(): View {
+    /** v10.19: daily habits (friendship heart, daily hello, streak sulking, goodnight). */
+    @Composable
+    private fun EngagementCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         val S = com.combo.monkeycompanion.fun5.Fun5Store
-        val views = ArrayList<View>()
         val f = com.combo.monkeycompanion.v5.Friendship
         val st = S.friendship(this); val b = S.bond(this)
-        views += text("Friendship ${com.combo.monkeycompanion.v5.Bond.points(st.xp)}/100 · level ${f.level(st.xp)} (${f.title(f.level(st.xp))}) · " +
-            "${st.streak}-day streak · feeling ${com.combo.monkeycompanion.v5.Bond.warmthWord(b.warmth)}", 13f)
-        views += text("Friendship grows when you pat him, chat, play games and come back each day. The level never goes down; if you stay away he just misses you a bit.", 12f, color = soft)
-        for (ft in com.combo.monkeycompanion.fun5.Fun5Store.Feature.entries.filter { it.engagement }) {
-            views += Switch(this).apply {
-                text = ft.title; setTextColor(brown); isChecked = S.on(this@SettingsActivity, ft)
-                setOnCheckedChangeListener { _, c -> S.set(this@SettingsActivity, ft, c) }
-            }
-            views += text(ft.help, 11.5f, color = soft)
+        SCard("Engagement") {
+            Text("Friendship ${com.combo.monkeycompanion.v5.Bond.points(st.xp)}/100 · level ${f.level(st.xp)} (${f.title(f.level(st.xp))}) · " +
+                "${st.streak}-day streak · feeling ${com.combo.monkeycompanion.v5.Bond.warmthWord(b.warmth)}")
+            SNote("Friendship grows when you pat, chat, play games and come back each day. The level never goes down.")
+            for (ft in S.Feature.entries.filter { it.engagement }) SSwitch(ft.title, S.on(this@SettingsActivity, ft), ft.help) { S.set(this@SettingsActivity, ft, it); bump() }
         }
-        return card("💛 Engagement", *views.toTypedArray())
     }
 
     /** v5: one on/off per big feature; the characters decide the rest. */
-    private fun buildFun5(): View {
+    @Composable
+    private fun Fun5Card(@Suppress("UNUSED_PARAMETER") r: Int) {
         val S = com.combo.monkeycompanion.fun5.Fun5Store
-        val views = ArrayList<View>()
-        views += text("Games, clips, two phones and the friendship level are always there (long-press › More, or the app home). These switches cover the things Settai does by itself.", 12f, color = soft)
-        for (f in com.combo.monkeycompanion.fun5.Fun5Store.Feature.entries.filter { !it.engagement }) {
-            views += Switch(this).apply {
-                text = f.title; setTextColor(brown); isChecked = S.on(this@SettingsActivity, f)
-                setOnCheckedChangeListener { _, c -> S.set(this@SettingsActivity, f, c) }
-            }
-            views += text(f.help, 11.5f, color = soft)
+        SCard("Things Settai does by itself", "Games, clips, two phones and the friendship level are always there. These switches cover what Settai does on its own.") {
+            for (ft in S.Feature.entries.filter { !it.engagement }) SSwitch(ft.title, S.on(this@SettingsActivity, ft), ft.help) { S.set(this@SettingsActivity, ft, it); bump() }
+            SNote("Weather uses your coarse location only if you already allowed location for Settai, and asks Open-Meteo at most every 3 hours. Cricket scores are fetched only when you ask.")
         }
-        views += text("Weather uses your coarse location only if you already allowed location for Settai, and asks Open-Meteo at most every 3 hours. Cricket scores are fetched only when you ask (\"score enna?\").", 11.5f, color = soft)
-        return card("v5 fun: things Settai does by itself", *views.toTypedArray())
     }
 
-    private fun buildPowers(): View {
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        for (g in CapGroup.entries) {
-            val n = Capabilities.all.count { it.group == g }
-            box.addView(Switch(this).apply {
-                text = "${g.label} ($n)"
-                setTextColor(brown); isChecked = s.groupEnabled(g)
-                setOnCheckedChangeListener { _, c -> s.setGroupEnabled(g, c) }
-            })
+    @Composable
+    private fun PhonePowersCard(@Suppress("UNUSED_PARAMETER") r: Int) {
+        SCard("Phone powers", "What Settai may do, for every brain. Anything that opens or changes something asks Yes/No first.") {
+            SSecondary("Settai's skills (errands, senses & daily habits)") { startActivity(Intent(this@SettingsActivity, SkillsActivity::class.java)) }
+            SSecondary("What can Settai do? (powers & permissions)") { startActivity(Intent(this@SettingsActivity, CapabilitiesActivity::class.java)) }
+            for (g in CapGroup.entries) {
+                val n = Capabilities.all.count { it.group == g }
+                SSwitch("${g.label} ($n)", s.groupEnabled(g)) { s.setGroupEnabled(g, it); bump() }
+            }
+            val modes = listOf("auto", "clock", "settai")
+            SChoice("Timers & alarms", listOf("Clock app when possible, else Settai's own", "Always the Clock app", "Always Settai's own (rings with Settai)"),
+                modes.indexOf(s.clockMode).coerceAtLeast(0)) { s.clockMode = modes[it]; bump() }
+            SSecondary("Recent actions log") { showLog = true }
         }
-        val modes = listOf("auto", "clock", "settai")
-        val clockSp = spinner(listOf("Timers & alarms: Clock app when possible, else Settai's own", "Timers & alarms: always the Clock app", "Timers & alarms: always Settai's own (rings with Settai)"),
-            modes.indexOf(s.clockMode).coerceAtLeast(0)) { s.clockMode = modes[it] }
-        return card(
-            "Phone powers",
-            text("What Settai may do, for every brain. Anything that opens or changes something shows a Yes/No question first.", 12f, color = soft),
-            button("🛠️  Settai's skills (errands, senses & daily habits)…") { startActivity(android.content.Intent(this, SkillsActivity::class.java)) },
-            button("What can Settai do? (powers & permissions)") { startActivity(android.content.Intent(this, CapabilitiesActivity::class.java)) },
-            box,
-            clockSp,
-            button("Recent actions log") {
-                android.app.AlertDialog.Builder(this).setTitle("Recent actions")
-                    .setMessage(ActionLog.format(this).ifBlank { "Nothing yet." })
-                    .setPositiveButton("OK", null)
-                    .setNeutralButton("Clear") { _, _ -> ActionLog.clear(this) }.show()
-            },
-        )
     }
 
     companion object { private const val REQ_PICK = 31 }
