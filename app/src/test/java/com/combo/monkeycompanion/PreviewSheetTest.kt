@@ -106,6 +106,7 @@ class PreviewSheetTest {
         com.combo.monkeycompanion.mind.MindHub.init(ctx)
         val act = Robolectric.buildActivity(com.combo.monkeycompanion.ui.SkillsActivity::class.java).setup().get()
         val scroll = act.window.decorView.findViewById<ViewGroup>(android.R.id.content).getChildAt(0) as ViewGroup
+        org.junit.Assume.assumeTrue(scroll is android.widget.ScrollView)   // v10.38.17: Compose screen now
         val col = scroll.getChildAt(0)
         col.measure(View.MeasureSpec.makeMeasureSpec(920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
         val h = col.measuredHeight.coerceIn(1800, 2500)

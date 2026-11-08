@@ -623,7 +623,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     @Composable
     private fun BuddyCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         val PL = com.combo.monkeycompanion.agent.ProLevel
-        val levels = PL.entries
+        val levels = com.combo.monkeycompanion.agent.ProLevel.entries
         val QH = com.combo.monkeycompanion.agent.QuietHours
         var qStart by remember { mutableStateOf(QH.fmt(s.quietStart)) }
         var qEnd by remember { mutableStateOf(QH.fmt(s.quietEnd)) }
@@ -643,7 +643,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             }
             SSubhead("What may it pipe up about?")
             for (c in com.combo.monkeycompanion.agent.ProCat.entries) {
-                SSwitch(c.label + (if (c.minLevel.ordinal > PL.CHILL.ordinal) " (Buddy+)" else ""), s.proactiveCat(c)) { s.setProactiveCat(c, it); bump() }
+                SSwitch(c.label + (if (c.minLevel.ordinal > com.combo.monkeycompanion.agent.ProLevel.CHILL.ordinal) " (Buddy+)" else ""), s.proactiveCat(c)) { s.setProactiveCat(c, it); bump() }
             }
             SNote("Messages, bursts and important people need the Notification reader power; chat-list digests need the Screen agent power. OTPs are shown only to you (never spoken or sent to a brain).")
             val usageMins = listOf(15, 20, 30, 45, 60, 90)
@@ -677,7 +677,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             Text("Friendship ${com.combo.monkeycompanion.v5.Bond.points(st.xp)}/100 · level ${f.level(st.xp)} (${f.title(f.level(st.xp))}) · " +
                 "${st.streak}-day streak · feeling ${com.combo.monkeycompanion.v5.Bond.warmthWord(b.warmth)}")
             SNote("Friendship grows when you pat, chat, play games and come back each day. The level never goes down.")
-            for (ft in S.Feature.entries.filter { it.engagement }) SSwitch(ft.title, S.on(this@SettingsActivity, ft), ft.help) { S.set(this@SettingsActivity, ft, it); bump() }
+            for (ft in com.combo.monkeycompanion.fun5.Fun5Store.Feature.entries.filter { it.engagement }) SSwitch(ft.title, S.on(this@SettingsActivity, ft), ft.help) { S.set(this@SettingsActivity, ft, it); bump() }
         }
     }
 
@@ -686,7 +686,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     private fun Fun5Card(@Suppress("UNUSED_PARAMETER") r: Int) {
         val S = com.combo.monkeycompanion.fun5.Fun5Store
         SCard("Things Settai does by itself", "Games, clips, two phones and the friendship level are always there. These switches cover what Settai does on its own.") {
-            for (ft in S.Feature.entries.filter { !it.engagement }) SSwitch(ft.title, S.on(this@SettingsActivity, ft), ft.help) { S.set(this@SettingsActivity, ft, it); bump() }
+            for (ft in com.combo.monkeycompanion.fun5.Fun5Store.Feature.entries.filter { !it.engagement }) SSwitch(ft.title, S.on(this@SettingsActivity, ft), ft.help) { S.set(this@SettingsActivity, ft, it); bump() }
             SNote("Weather uses your coarse location only if you already allowed location for Settai, and asks Open-Meteo at most every 3 hours. Cricket scores are fetched only when you ask.")
         }
     }
