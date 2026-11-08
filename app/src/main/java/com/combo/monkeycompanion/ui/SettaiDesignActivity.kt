@@ -426,8 +426,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                                 }
                                                 1 -> {
                                                     Text("Behaviour & personality", fontWeight = FontWeight.Bold, fontSize = 19.sp)
-                                                    Text("Each character has its own behaviour sliders. Changes are saved for this character.", color = muted)
-                                                    Button(onClick = { characterDiary(selected.id) }, modifier = Modifier.fillMaxWidth()) { Text("Adjust behaviour sliders") }
+                                                    CharacterBehaviourPanel(characterId = selected.id)
                                                     OutlinedButton(onClick = { characterTab = 3 }, modifier = Modifier.fillMaxWidth()) { Text("View character memories") }
                                                 }
                                                 2 -> {
@@ -437,8 +436,9 @@ class SettaiDesignActivity : ComponentActivity() {
                                                 }
                                                 3 -> {
                                                     Text("Diary & memories", fontWeight = FontWeight.Bold, fontSize = 19.sp)
-                                                    Text("Open this character's saved memories, diary limits and pinned notes.", color = muted)
-                                                    Button(onClick = { characterDiary(selected.id) }, modifier = Modifier.fillMaxWidth()) { Text("Open diary") }
+                                                    CharacterMemoryPanel(characterId = selected.id)
+                                                    CharacterDiaryTimeline(characterId = selected.id)
+                                                    OutlinedButton(onClick = { characterDiary(selected.id) }, modifier = Modifier.fillMaxWidth()) { Text("Add memory / rule in full diary") }
                                                 }
                                                 4 -> {
                                                     Text("Appearance", fontWeight = FontWeight.Bold, fontSize = 19.sp)
@@ -461,18 +461,7 @@ class SettaiDesignActivity : ComponentActivity() {
                             items(CharacterRegistry.allWithCustom.filter { it.id != "chittu" }, key = { it.id }) { character ->
                                 Surface(
                                     onClick = {
-                                        ChatHub.settings.characterId = character.id
-                                        ChatHub.settings.applyCharacter()
-                                        if (character.id == "billa") {
-                                            val mode = if (crewMode == Population.Mode.TRIO) Population.Mode.TRIO else Population.Mode.DUO
-                                            val third = partnerTwo?.takeIf { it != "billa" && it != "chittu" }
-                                            MindHub.setCrew(this@SettaiDesignActivity, "billa", mode, "chittu", third)
-                                            crewMode = mode
-                                            partnerOne = "chittu"
-                                            partnerTwo = if (mode == Population.Mode.TRIO) third else null
-                                        }
-                                        syncActiveCrew()
-                                        selectedCharacter = character.id
+                                        // Opening details does not activate the character.
                                         characterDetails = character.id
                                         characterTab = 0
                                     },

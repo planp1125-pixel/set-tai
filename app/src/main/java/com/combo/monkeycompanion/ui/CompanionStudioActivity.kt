@@ -534,7 +534,7 @@ class StudioLiveStageView(context: Context, var character: CustomCharacter) : Vi
     }
 }
 
-class CompanionStudioActivity : Activity() {
+class CompanionStudioActivity : androidx.activity.ComponentActivity() {
     private val d by lazy { resources.displayMetrics.density }
     private val cream = com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)
     private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
@@ -544,6 +544,8 @@ class CompanionStudioActivity : Activity() {
     private val uiHandler = Handler(Looper.getMainLooper())
 
     private lateinit var draft: CustomCompanionSpec
+    // Snapshot state invalidates Compose controls when an edit saves without rebuilding the screen.
+    private var draftRevision by androidx.compose.runtime.mutableIntStateOf(0)
     private lateinit var previewChar: CustomCharacter
     private var stageView: StudioLiveStageView? = null
     private var lastUploadedPhoto: Bitmap? = null
@@ -569,6 +571,7 @@ class CompanionStudioActivity : Activity() {
 
     private fun updateDraft(newDraft: CustomCompanionSpec, rebuild: Boolean = false) {
         draft = newDraft
+        draftRevision++
         previewChar.updateSpec(draft)
         CustomCompanionStore.save(this, draft)
         if (ChatHub.settings.characterId.startsWith("custom_")) {
@@ -973,16 +976,17 @@ class CompanionStudioActivity : Activity() {
         col.addView(previewFrame, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) })
 
         // Multi-Level Zoom Buttons: [1x Full] [2x Upper] [3.5x Face] [5x Ultra] [🎯 Reset]
-        val zoomBtnRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(6)) }
-        for ((zVal, zLbl) in listOf(1.0f to "1x Full", 2.0f to "2x Upper", 3.5f to "3.5x Face", 5.0f to "5x Ultra")) {
-            zoomBtnRow.addView(pillButton(zLbl, selected = abs(stage.zoomLevel - zVal) < 0.25f) {
-                stage.zoomLevel = zVal
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(4) })
+        val zoomControls = androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(
+                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+            )
+            setContent {
+                androidx.compose.material3.MaterialTheme {
+                    StudioPreviewControls(stage)
+                }
+            }
         }
-        zoomBtnRow.addView(pillButton("🎯 Reset", selected = false) {
-            stage.resetView()
-        }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
-        col.addView(zoomBtnRow)
+        col.addView(zoomControls)
 
         stage.onMeshAdjusted = { nextMesh ->
             draft = draft.copy(faceMesh = nextMesh)
@@ -994,25 +998,17 @@ class CompanionStudioActivity : Activity() {
         }
 
         // Split-Screen Compare + 68-Pt Face-ID Mesh + Trackpad Drag + Fullscreen Inspector Row
-        val inspectRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(6)) }
-        inspectRow.addView(pillButton("🔍 Split Compare", selected = stage.splitCompareMode) {
-            stage.splitCompareMode = !stage.splitCompareMode
-            if (stage.splitCompareMode && stage.zoomLevel < 2.2f) stage.zoomLevel = 3.0f
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.15f).apply { rightMargin = dp(4) })
-        inspectRow.addView(pillButton("🕸️ 68-Pt Mesh", selected = stage.showFaceMesh) {
-            stage.showFaceMesh = !stage.showFaceMesh
-            if (stage.showFaceMesh) {
-                stage.moveMeshMode = true
-                if (!stage.splitCompareMode) {
-                    stage.splitCompareMode = true
-                    stage.zoomLevel = 3.0f
+        val inspectionControls = androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(
+                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+            )
+            setContent {
+                androidx.compose.material3.MaterialTheme {
+                    StudioInspectionControls(stage, ::openFullscreenZoomInspector)
                 }
             }
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.0f).apply { rightMargin = dp(4) })
-        inspectRow.addView(pillButton("⛶ Fullscreen Editor", selected = false) {
-            openFullscreenZoomInspector()
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.15f))
-        col.addView(inspectRow)
+        }
+        col.addView(inspectionControls)
 
         // Interactive 10-Feature Mesh Selector + Precision D-Pad (◀ ▲ ▼ ▶ ➖ ➕ 🎨 Copy) right on the main screen!
         col.addView(buildMeshFeatureControls(stage, darkTheme = false),
@@ -1041,15 +1037,19 @@ class CompanionStudioActivity : Activity() {
         })
         col.addView(guideBox)
 
-        val demoScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
-        val demoRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        for (dm in StudioLiveStageView.DemoMode.entries) {
-            demoRow.addView(pillButton(dm.label, selected = stage.demoMode == dm) {
-                stage.demoMode = dm
-            }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { rightMargin = dp(6) })
+        val demoControls = androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(
+                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+            )
+            setContent {
+                androidx.compose.material3.MaterialTheme {
+                    StudioDemoControls(stage)
+                }
+            }
         }
-        demoScroll.addView(demoRow)
-        col.addView(demoScroll, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(10) })
+        col.addView(demoControls, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
+            bottomMargin = dp(10)
+        })
 
         // 1B. Prominent Companion Name + 1-Tap Person Type (Girl / Boy / Woman / Man) & Age Selector Bar right below the stage!
         val personCard = card("👤 Companion Name, Sex & Age (1-Tap Selector)")
@@ -1098,204 +1098,148 @@ class CompanionStudioActivity : Activity() {
             text = "Switch anytime in 1 tap — Girl, Boy, Woman, or Man (never stuck on 35yr man!):"
             textSize = 12f; setTextColor(soft); setPadding(0, 0, 0, dp(6))
         })
-        val sexRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(6)) }
-        for (g in listOf(CompanionGender.GIRL_CHILD, CompanionGender.BOY_CHILD, CompanionGender.FEMALE, CompanionGender.MALE)) {
-            sexRow.addView(pillButton(g.shortLabel, selected = draft.gender == g) {
-                val updated = draft.applyGenderAndAge(newGender = g)
-                CustomCompanionStore.save(this, updated)
-                updateDraft(updated, rebuild = true)
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(4) })
-        }
-        personCard.addView(sexRow)
-
-        val ageQuickRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        for (ag in AgeGroup.entries) {
-            ageQuickRow.addView(pillButton(ag.shortLabel, selected = draft.ageGroup == ag) {
-                val nextGender = when {
-                    ag == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.FEMALE -> CompanionGender.GIRL_CHILD
-                    ag == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.MALE -> CompanionGender.BOY_CHILD
-                    ag != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.GIRL_CHILD -> CompanionGender.FEMALE
-                    ag != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.BOY_CHILD -> CompanionGender.MALE
-                    else -> draft.gender
+        // Material 3 selector; keep the existing spec transformation, save and rebuild.
+        val genderControls = androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(
+                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+            )
+            setContent {
+                androidx.compose.material3.MaterialTheme {
+                    StudioGenderControls(draft.gender) { gender ->
+                        val updated = draft.applyGenderAndAge(newGender = gender)
+                        CustomCompanionStore.save(this@CompanionStudioActivity, updated)
+                        updateDraft(updated, rebuild = true)
+                    }
                 }
-                val updated = draft.applyGenderAndAge(newGender = nextGender, newAge = ag)
-                CustomCompanionStore.save(this, updated)
-                updateDraft(updated, rebuild = true)
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(4) })
+            }
         }
-        personCard.addView(ageQuickRow)
+        personCard.addView(genderControls)
+
+        val ageControls = androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(
+                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+            )
+            setContent {
+                androidx.compose.material3.MaterialTheme {
+                    StudioAgeControls(draft.ageGroup) { age ->
+                        val nextGender = when {
+                            age == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.FEMALE -> CompanionGender.GIRL_CHILD
+                            age == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.MALE -> CompanionGender.BOY_CHILD
+                            age != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.GIRL_CHILD -> CompanionGender.FEMALE
+                            age != AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.BOY_CHILD -> CompanionGender.MALE
+                            else -> draft.gender
+                        }
+                        val updated = draft.applyGenderAndAge(newGender = nextGender, newAge = age)
+                        CustomCompanionStore.save(this@CompanionStudioActivity, updated)
+                        updateDraft(updated, rebuild = true)
+                    }
+                }
+            }
+        }
+        personCard.addView(ageControls)
         col.addView(personCard)
 
-        // 1C. Highlighted "🧠 Give Brain (AI Face Modeling Opt-In)" Card right inside Character Creation!
-        val brainCard = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(18).toFloat()
-                setColor(com.combo.monkeycompanion.theme.Th.rgb(0x23, 0x1B, 0x3A))
-                setStroke(dp(2), com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xC1, 0x07))
+        // Brain controls are shared settings, not stored in the character draft.
+        val brainCard = androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                StudioBrainControls(
+                    enabled = ChatHub.isBrainEnabled(),
+                    status = ChatHub.giveBrainStatusLine(),
+                    onConfigure = {
+                        GiveBrainDialog.show(
+                            act = this@CompanionStudioActivity,
+                            onChanged = { rebuildUI() },
+                            onRunAiPhotoModel = { runAiBrainPhotoModeling() }
+                        )
+                    },
+                    onToggle = {
+                        ChatHub.setBrainEnabled(!ChatHub.isBrainEnabled())
+                        rebuildUI()
+                    },
+                    onModel = { runAiBrainPhotoModeling() }
+                )
             }
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
         }
-        val brainTitle = TextView(this).apply {
-            text = if (ChatHub.isBrainEnabled()) "🧠 Give Brain: AI Model ENABLED ✅" else "🧠 Give Brain: AI Model OFF 🔒 (100% Local Mode)"
-            textSize = 15.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xD5, 0x4F))
-        }
-        val brainSub = TextView(this).apply {
-            text = ChatHub.giveBrainStatusLine() + " — Cloud is ready by default; turn Brain off any time."
-            textSize = 12f; setTextColor(com.combo.monkeycompanion.theme.Th.rgb(0xE0, 0xD8, 0xF0)); setPadding(0, dp(3), 0, dp(8))
-        }
-        brainCard.addView(brainTitle)
-        brainCard.addView(brainSub)
-
-        val brainBtnRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        brainBtnRow.addView(pillButton("🧠 Give Brain / Connect AI", selected = true) {
-            GiveBrainDialog.show(
-                act = this,
-                onChanged = { rebuildUI() },
-                onRunAiPhotoModel = { runAiBrainPhotoModeling() }
-            )
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1.35f).apply { rightMargin = dp(6) })
-        brainBtnRow.addView(pillButton(if (ChatHub.isBrainEnabled()) "🔒 Turn AI OFF" else "✅ Turn AI ON", selected = false) {
-            ChatHub.setBrainEnabled(!ChatHub.isBrainEnabled())
-            rebuildUI()
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 0.95f).apply { rightMargin = dp(6) })
-        brainBtnRow.addView(pillButton("✨ AI-Model", selected = ChatHub.isBrainEnabled()) {
-            runAiBrainPhotoModeling()
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 0.95f))
-        brainCard.addView(brainBtnRow)
         col.addView(brainCard)
 
-        // 2. Photo Upload + Face Mode + Fine-Tune Face Alignment & Hero Body Swap Card
+        // Compose photo and face editor: existing updateDraft path preserves persistence and preview.
         val photoCard = card("1. Upload Photo, Face Mode & Fine-Tune Alignment")
-        photoCard.addView(actionButton("📷 Pick Your Photo from Gallery (100% Offline)", primary = true) {
-            pickPhotoFromGallery()
-        }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(8) })
-
-        val suggBox = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(14).toFloat()
-                setColor(if (draft.bodyDetectedClearly) com.combo.monkeycompanion.theme.Th.rgb(0xE8, 0xF5, 0xE9) else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF8, 0xE1))
-                setStroke(dp(1), if (draft.bodyDetectedClearly) com.combo.monkeycompanion.theme.Th.rgb(0x66, 0xBB, 0x6A) else accent)
+        photoCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                StudioPhotoFaceControls(
+                    analysisSummary = draft.analysisSummary,
+                    suggestionPrompt = draft.suggestionPrompt,
+                    bodyDetectedClearly = draft.bodyDetectedClearly,
+                    faceModes = FaceMode.entries.map { it.label },
+                    selectedFaceMode = draft.faceMode.label,
+                    offsetX = draft.faceOffsetX,
+                    offsetY = draft.faceOffsetY,
+                    zoom = draft.faceZoomScale,
+                    onPickPhoto = { pickPhotoFromGallery() },
+                    onBodyTemplate = { template -> updateDraft(draft.applyBodyTemplate(template), rebuild = true) },
+                    onFaceMode = { label ->
+                        FaceMode.entries.firstOrNull { it.label == label }?.let { mode ->
+                            updateDraft(draft.copy(faceMode = mode), rebuild = true)
+                        }
+                    },
+                    onNudge = { dx, dy ->
+                        updateDraft(draft.copy(
+                            faceOffsetX = (draft.faceOffsetX + dx).coerceIn(-20f, 20f),
+                            faceOffsetY = (draft.faceOffsetY + dy).coerceIn(-20f, 20f)
+                        ), rebuild = true)
+                    },
+                    onZoom = { delta -> updateDraft(draft.copy(faceZoomScale = (draft.faceZoomScale + delta).coerceIn(0.80f, 1.35f)), rebuild = true) },
+                    onReset = { updateDraft(draft.copy(faceOffsetX = 0f, faceOffsetY = 0f, faceZoomScale = 1.0f), rebuild = true) }
+                )
             }
-        }
-        suggBox.addView(TextView(this).apply {
-            text = "🔍 ${draft.analysisSummary}"
-            textSize = 12.8f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
         })
-        suggBox.addView(TextView(this).apply {
-            text = draft.suggestionPrompt
-            textSize = 12f; setTextColor(soft); setPadding(0, dp(3), 0, dp(6))
-        })
-
-        suggBox.addView(TextView(this).apply {
-            text = "Swap Body (keeps your real face, beard & hair):"
-            textSize = 11.8f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
-        })
-        val swapRow1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(4), 0, 0) }
-        for ((tplId, lbl) in listOf("slim_body" to "🏃 Slim", "mid_body" to "👨 Mid-Body", "athletic_body" to "💪 Athletic", "bulky_body" to "🏋️ Bulky")) {
-            swapRow1.addView(pillButton(lbl, selected = false) {
-                updateDraft(draft.applyBodyTemplate(tplId), rebuild = true)
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-        }
-        suggBox.addView(swapRow1)
-
-        val swapRow2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(5), 0, 0) }
-        for ((tplId, lbl) in listOf("superboy_body" to "🦸 Superboy Body", "ironboy_body" to "🤖 Ironboy Armour", "ninja_body" to "🥷 Ninja Body")) {
-            swapRow2.addView(pillButton(lbl, selected = false) {
-                updateDraft(draft.applyBodyTemplate(tplId), rebuild = true)
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-        }
-        suggBox.addView(swapRow2)
-        photoCard.addView(suggBox)
-
-        photoCard.addView(subHeader("Head & Face Rendering Mode:"))
-        for (fm in FaceMode.entries) {
-            photoCard.addView(pillButton(fm.label, selected = draft.faceMode == fm) {
-                updateDraft(draft.copy(faceMode = fm), rebuild = true)
-            }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
-        }
-
-        // Fine-Tune Face Alignment & Scale Nudge Bar
-        photoCard.addView(subHeader("🎯 Fine-Tune Face Alignment & Head Cutout Scale:"))
-        val nudgeRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        nudgeRow.addView(pillButton("⬅", false) { updateDraft(draft.copy(faceOffsetX = (draft.faceOffsetX - 2f).coerceIn(-20f, 20f))) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-        nudgeRow.addView(pillButton("⬆", false) { updateDraft(draft.copy(faceOffsetY = (draft.faceOffsetY - 2f).coerceIn(-20f, 20f))) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-        nudgeRow.addView(pillButton("⬇", false) { updateDraft(draft.copy(faceOffsetY = (draft.faceOffsetY + 2f).coerceIn(-20f, 20f))) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-        nudgeRow.addView(pillButton("➡", false) { updateDraft(draft.copy(faceOffsetX = (draft.faceOffsetX + 2f).coerceIn(-20f, 20f))) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-        nudgeRow.addView(pillButton("➖", false) { updateDraft(draft.copy(faceZoomScale = (draft.faceZoomScale - 0.05f).coerceIn(0.80f, 1.35f))) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-        nudgeRow.addView(pillButton("➕", false) { updateDraft(draft.copy(faceZoomScale = (draft.faceZoomScale + 0.05f).coerceIn(0.80f, 1.35f))) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-        nudgeRow.addView(pillButton("🔄", false) { updateDraft(draft.copy(faceOffsetX = 0f, faceOffsetY = 0f, faceZoomScale = 1.0f)) },
-            LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        photoCard.addView(nudgeRow)
         col.addView(photoCard)
 
-        // 3. Quick Look-Alike Sample Archetypes
+        // Quick sample presets keep the existing generation and persistence callbacks.
         val presetCard = card("⚡ 1-Tap Look-Alike Sample Archetypes")
-        val pRow1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        pRow1.addView(pillButton("👨 35yr Mid-Body (Beard + Tee)", selected = draft.bodyBuild == BodyBuild.MID_BODY && draft.ageGroup == AgeGroup.ADULT_REGULAR) {
-            runPhotoGenerationWithProgress(createSampleAdult35MidBodyBitmap())
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(5) })
-        pRow1.addView(pillButton("🏋️ Bulky / Heavy", selected = draft.bodyBuild == BodyBuild.BULKY_HEAVY) {
-            runPhotoGenerationWithProgress(createSampleBulkyPersonBitmap())
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        presetCard.addView(pRow1)
-
-        val pRow2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(6), 0, 0) }
-        pRow2.addView(pillButton("👩 Woman (Long Hair)", selected = draft.gender == CompanionGender.FEMALE) {
-            updateDraft(CustomCompanionPresets.womanAdult(draft), rebuild = true)
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(5) })
-        pRow2.addView(pillButton("👧 5yr Girl (Daughter)", selected = draft.gender == CompanionGender.GIRL_CHILD) {
-            runPhotoGenerationWithProgress(createSamplePortraitBitmap())
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        presetCard.addView(pRow2)
-
-        val pRow3 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(6), 0, 0) }
-        pRow3.addView(pillButton("👦 5yr Boy (Chottu)", selected = draft.gender == CompanionGender.BOY_CHILD) {
-            updateDraft(CustomCompanionPresets.child5YrBoy(draft), rebuild = true)
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(5) })
-        pRow3.addView(pillButton("🏃 Slim / Lean", selected = draft.bodyBuild == BodyBuild.SLIM && draft.gender == CompanionGender.MALE && draft.ageGroup == AgeGroup.ADULT_REGULAR) {
-            runPhotoGenerationWithProgress(createSampleSlimPersonBitmap())
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        presetCard.addView(pRow3)
+        presetCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                draftRevision
+                StudioPresetControls(
+                    selected = listOf(
+                        draft.bodyBuild == BodyBuild.MID_BODY && draft.ageGroup == AgeGroup.ADULT_REGULAR,
+                        draft.bodyBuild == BodyBuild.BULKY_HEAVY,
+                        draft.gender == CompanionGender.FEMALE,
+                        draft.gender == CompanionGender.GIRL_CHILD,
+                        draft.gender == CompanionGender.BOY_CHILD,
+                        draft.bodyBuild == BodyBuild.SLIM && draft.gender == CompanionGender.MALE && draft.ageGroup == AgeGroup.ADULT_REGULAR
+                    ),
+                    onSelect = { index ->
+                        when (index) {
+                            0 -> runPhotoGenerationWithProgress(createSampleAdult35MidBodyBitmap())
+                            1 -> runPhotoGenerationWithProgress(createSampleBulkyPersonBitmap())
+                            2 -> updateDraft(CustomCompanionPresets.womanAdult(draft), rebuild = true)
+                            3 -> runPhotoGenerationWithProgress(createSamplePortraitBitmap())
+                            4 -> updateDraft(CustomCompanionPresets.child5YrBoy(draft), rebuild = true)
+                            5 -> runPhotoGenerationWithProgress(createSampleSlimPersonBitmap())
+                        }
+                    }
+                )
+            }
+        })
         col.addView(presetCard)
 
         // 4. Body Build, Proportions & Age Card
         val bodyCard = card("2. Body Build, Age Proportions & Width Sliders")
-        bodyCard.addView(subHeader("Body Build:"))
-        for (bb in BodyBuild.entries) {
-            bodyCard.addView(pillButton(bb.label, selected = draft.bodyBuild == bb) {
-                updateDraft(
-                    draft.copy(
-                        bodyBuild = bb,
-                        bodyWidthScale = bb.defaultWidthScale,
-                        shoulderScale = bb.defaultShoulderScale,
-                    ),
-                    rebuild = true
-                )
-            }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
-        }
-        bodyCard.addView(sliderRow("↔️ Body / Belly Width Scale", ((draft.bodyWidthScale - 0.7f) / 0.85f).coerceIn(0f, 1f)) { frac ->
-            updateDraft(draft.copy(bodyWidthScale = 0.70f + frac * 0.85f))
+        bodyCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                draftRevision // Observe edits that do not rebuild the Studio.
+                StudioBodyControls(draft.bodyBuild, draft.bodyWidthScale, draft.shoulderScale, draft.ageGroup,
+                    onBuild = { bb -> updateDraft(draft.copy(bodyBuild = bb, bodyWidthScale = bb.defaultWidthScale, shoulderScale = bb.defaultShoulderScale), rebuild = true) },
+                    onWidth = { updateDraft(draft.copy(bodyWidthScale = it)) },
+                    onShoulders = { updateDraft(draft.copy(shoulderScale = it)) },
+                    onAge = { ag -> updateDraft(draft.applyGenderAndAge(newGender = draft.gender, newAge = ag), rebuild = true) })
+            }
         })
-        bodyCard.addView(sliderRow("🏋️ Shoulder Broadness Scale", ((draft.shoulderScale - 0.75f) / 0.75f).coerceIn(0f, 1f)) { frac ->
-            updateDraft(draft.copy(shoulderScale = 0.75f + frac * 0.75f))
-        })
-
-        bodyCard.addView(subHeader("Age / Head-to-Body Proportion:"))
-        for (ag in AgeGroup.entries) {
-            bodyCard.addView(pillButton(ag.label, selected = draft.ageGroup == ag) {
-                updateDraft(draft.copy(ageGroup = ag, heightScale = ag.torsoHeightScale), rebuild = true)
-            }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
-        }
         col.addView(bodyCard)
 
         // 5. Facial Hair, Hair Style & Outfit Card
@@ -1332,78 +1276,69 @@ class CompanionStudioActivity : Activity() {
         })
         lookCard.addView(nameRow)
 
-        lookCard.addView(subHeader("Facial Hair (60fps animated beard & moustache):"))
-        for (fh in FacialHairStyle.entries) {
-            lookCard.addView(pillButton(fh.label, selected = draft.facialHair == fh) {
-                updateDraft(draft.copy(facialHair = fh), rebuild = true)
-            }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
-        }
-
-        lookCard.addView(subHeader("Hair Style (Men, Women & Kids):"))
-        for (hs in HairStyle.entries) {
-            lookCard.addView(pillButton(hs.label, selected = draft.hairStyle == hs) {
-                updateDraft(draft.copy(hairStyle = hs), rebuild = true)
-            }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
-        }
-
-        lookCard.addView(subHeader("Outfit & Hero Body Suit:"))
-        for (os in OutfitStyle.entries) {
-            lookCard.addView(pillButton(os.label, selected = draft.outfitStyle == os) {
-                updateDraft(draft.copy(outfitStyle = os), rebuild = true)
-            }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
-        }
-
-        lookCard.addView(subHeader("Optional Accessories (All OFF by default unless you enable them):"))
-        lookCard.addView(checkRow("👓 Glasses / Shades", draft.glasses) { updateDraft(draft.copy(glasses = it)) })
-        lookCard.addView(checkRow("🦸 Hero Cape", draft.cape) { updateDraft(draft.copy(cape = it)) })
-        lookCard.addView(checkRow("🔴 Forehead Pottu / Bindi", draft.hasBindi) { updateDraft(draft.copy(hasBindi = it)) })
-        lookCard.addView(checkRow("🎀 Hair ribbons / bow", draft.hairBow) { updateDraft(draft.copy(hairBow = it)) })
-        lookCard.addView(checkRow("🌸 Mallipoo jasmine flowers", draft.jasmine) { updateDraft(draft.copy(jasmine = it)) })
-        lookCard.addView(checkRow("🧚 Fairy / hero wings", draft.wings) { updateDraft(draft.copy(wings = it)) })
+        lookCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                draftRevision // Observe edits that do not rebuild the Studio.
+                StudioAppearanceControls(
+                    draft.facialHair, draft.hairStyle, draft.outfitStyle,
+                    draft.glasses, draft.cape, draft.hasBindi, draft.hairBow, draft.jasmine, draft.wings,
+                    onFacialHair = { updateDraft(draft.copy(facialHair = it), rebuild = true) },
+                    onHairStyle = { updateDraft(draft.copy(hairStyle = it), rebuild = true) },
+                    onOutfit = { updateDraft(draft.copy(outfitStyle = it), rebuild = true) },
+                    onGlasses = { updateDraft(draft.copy(glasses = it)) },
+                    onCape = { updateDraft(draft.copy(cape = it)) },
+                    onBindi = { updateDraft(draft.copy(hasBindi = it)) },
+                    onBow = { updateDraft(draft.copy(hairBow = it)) },
+                    onJasmine = { updateDraft(draft.copy(jasmine = it)) },
+                    onWings = { updateDraft(draft.copy(wings = it)) })
+            }
+        })
         col.addView(lookCard)
 
         // 6. Flight / Movement Style & Multi-Select Superpowers Card
         val powerCard = card("Flight & superpowers (${draft.selectedPowers.size}/${CustomPowerCatalog.OPTIONS.size})")
-        powerCard.addView(subHeader("Flight & Movement Style (Superboy Cape, Ironboy Jets, or All!):"))
-        for (fl in FlightStyle.entries) {
-            powerCard.addView(pillButton(fl.label, selected = draft.flightStyle == fl) {
-                updateDraft(draft.copy(flightStyle = fl), rebuild = true)
-                if (fl != FlightStyle.WALK_AND_HOP) stageView?.demoMode = StudioLiveStageView.DemoMode.FLIGHT_LOOP
-            }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
-        }
-
-        powerCard.addView(subHeader("Superpowers (Select multiple or ALL 18 powers at once!):"))
-        val bulkRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        bulkRow.addView(actionButton("⚡ Select ALL 18 Powers", primary = true) {
-            updateDraft(draft.copy(selectedPowers = CustomPowerCatalog.selectAllPowers()), rebuild = true)
-            stageView?.demoMode = StudioLiveStageView.DemoMode.CYCLE_POWERS
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
-        bulkRow.addView(actionButton("Top 4 (Ninja/Angry/Fly)", primary = false) {
-            updateDraft(draft.copy(selectedPowers = setOf("ninja", "kovam", "superboy_flight", "ironboy_flight")), rebuild = true)
-        }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        powerCard.addView(bulkRow, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(6) })
-
-        for (opt in CustomPowerCatalog.OPTIONS) {
-            val checked = opt.id in draft.selectedPowers
-            powerCard.addView(checkRow(opt.label, checked) { isChecked ->
-                val next = draft.selectedPowers.toMutableSet()
-                if (isChecked) next.add(opt.id) else if (next.size > 1) next.remove(opt.id)
-                updateDraft(draft.copy(selectedPowers = next), rebuild = false)
-            })
-        }
+        powerCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                draftRevision // Observe edits that do not rebuild the Studio.
+                StudioPowerControls(draft.flightStyle, draft.selectedPowers,
+                    onFlight = { fl ->
+                        updateDraft(draft.copy(flightStyle = fl), rebuild = true)
+                        if (fl != FlightStyle.WALK_AND_HOP) stageView?.demoMode = StudioLiveStageView.DemoMode.FLIGHT_LOOP
+                    },
+                    onAll = {
+                        updateDraft(draft.copy(selectedPowers = CustomPowerCatalog.selectAllPowers()), rebuild = true)
+                        stageView?.demoMode = StudioLiveStageView.DemoMode.CYCLE_POWERS
+                    },
+                    onTop = { updateDraft(draft.copy(selectedPowers = setOf("ninja", "kovam", "superboy_flight", "ironboy_flight")), rebuild = true) },
+                    onToggle = { id, enabled ->
+                        val next = draft.selectedPowers.toMutableSet()
+                        if (enabled) next.add(id) else if (next.size > 1) next.remove(id)
+                        updateDraft(draft.copy(selectedPowers = next), rebuild = false)
+                    })
+            }
+        })
         col.addView(powerCard)
 
         // 7. Per-Character Behaviour Sliders & Diary Limits Link
         val behCard = card("Personality & behaviour")
-        behCard.addView(sliderRow("🎉 Playfulness (dances & gags)", draft.playfulness) { updateDraft(draft.copy(playfulness = it)) })
-        behCard.addView(sliderRow("💬 Chattiness (how often they speak)", draft.chattiness) { updateDraft(draft.copy(chattiness = it)) })
-        behCard.addView(sliderRow("🧭 Curiosity (explores new apps)", draft.curiosity) { updateDraft(draft.copy(curiosity = it)) })
-        behCard.addView(sliderRow("⚡ Energy / Activity (active vs calm naps)", draft.energy) { updateDraft(draft.copy(energy = it)) })
-        behCard.addView(sliderRow("🦁 Boldness (heroic stunts & powers)", draft.boldness) { updateDraft(draft.copy(boldness = it)) })
-        behCard.addView(actionButton("📖 Configure Diary Limits & Pinned Memories", primary = false) {
-            CustomCompanionStore.save(this, draft)
-            startActivity(Intent(this, DiaryActivity::class.java).putExtra("character", draft.id))
-        }.apply { layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) } })
+        behCard.addView(androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                draftRevision // Observe edits that do not rebuild the Studio.
+                StudioBehaviourControls(draft.playfulness, draft.chattiness, draft.curiosity, draft.energy, draft.boldness,
+                    onPlayfulness = { updateDraft(draft.copy(playfulness = it)) },
+                    onChattiness = { updateDraft(draft.copy(chattiness = it)) },
+                    onCuriosity = { updateDraft(draft.copy(curiosity = it)) },
+                    onEnergy = { updateDraft(draft.copy(energy = it)) },
+                    onBoldness = { updateDraft(draft.copy(boldness = it)) },
+                    onDiary = {
+                        CustomCompanionStore.save(this@CompanionStudioActivity, draft)
+                        startActivity(Intent(this@CompanionStudioActivity, DiaryActivity::class.java).putExtra("character", draft.id))
+                    })
+            }
+        })
         col.addView(behCard)
 
         // 8. Save, Put on Screen, Export & Import .settai Character
@@ -1446,6 +1381,9 @@ class CompanionStudioActivity : Activity() {
         // Keep the live stage visible while the user edits one focused group at a time.
         // Reparent existing controls: callbacks, draft persistence and custom mesh stay intact.
         val allSections = (0 until col.childCount).map { col.getChildAt(it) }
+        require(allSections.size == 17) {
+            "Studio layout changed: expected 17 sections, found ${allSections.size}"
+        }
         val preview = allSections[2]
         val saveActions = allSections[16]
         val tabNames = listOf("Face", "Body", "Style", "Motion", "Behaviour", "Powers")
@@ -1459,29 +1397,36 @@ class CompanionStudioActivity : Activity() {
         )
         for (child in allSections.drop(3)) col.removeView(child)
         col.removeView(preview)
-        val tabScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
-        val tabRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        tabScroll.addView(tabRow)
-        col.addView(tabScroll, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) })
+        // Compose owns navigation; the native stage and editing views remain intact.
         val tabContent = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        col.addView(tabContent)
-        col.addView(saveActions)
+        val selectedTab = androidx.compose.runtime.mutableIntStateOf(studioTabIndex.coerceIn(tabNames.indices))
         fun displayTab(index: Int) {
-            studioTabIndex = index
+            val next = index.coerceIn(tabNames.indices)
+            studioTabIndex = next
+            selectedTab.intValue = next
             tabContent.removeAllViews()
-            tabRow.removeAllViews()
-            tabNames.forEachIndexed { i, name ->
-                tabRow.addView(pillButton(name, selected = i == studioTabIndex) {
-                    displayTab(i)
-                }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { rightMargin = dp(6) })
-            }
-            tabMembers[studioTabIndex].forEach { originalIndex ->
+            tabMembers[next].forEach { originalIndex ->
                 val view = allSections[originalIndex]
                 (view.parent as? android.view.ViewGroup)?.removeView(view)
                 tabContent.addView(view)
             }
         }
-        displayTab(studioTabIndex.coerceIn(tabNames.indices))
+        val tabCompose = androidx.compose.ui.platform.ComposeView(this).apply {
+            setViewCompositionStrategy(
+                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+            )
+            setContent {
+                androidx.compose.material3.MaterialTheme {
+                    StudioMaterialTabs(selectedTab.intValue, ::displayTab)
+                }
+            }
+        }
+        col.addView(tabCompose, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
+            bottomMargin = dp(12)
+        })
+        col.addView(tabContent)
+        col.addView(saveActions)
+        displayTab(selectedTab.intValue)
 
         val scroll = ScrollView(this).apply {
             setBackgroundColor(cream)
