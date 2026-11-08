@@ -112,7 +112,7 @@ object ActivityScheduler {
 
     private fun notifyDone(ctx: Context) = runCatching {
         val nm = ctx.getSystemService(NotificationManager::class.java) ?: return@runCatching
-        nm.createNotificationChannel(NotificationChannel(CH, "Settai study & focus timers", NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CH, "Set-Tai study & focus timers", NotificationManager.IMPORTANCE_DEFAULT))
         val open = PendingIntent.getActivity(ctx, 4, Intent(ctx, com.combo.monkeycompanion.ui.SettaiDesignActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         nm.notify(NOTE_ID, NotificationCompat.Builder(ctx, CH).let { com.combo.monkeycompanion.overlay.CharacterIcon.applyTo(it, ctx) }
             .setContentTitle("🍅 Study session complete!")

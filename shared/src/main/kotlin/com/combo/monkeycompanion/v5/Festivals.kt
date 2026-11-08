@@ -80,10 +80,10 @@ object Festivals {
             Kind.CHRISTMAS -> listOf("Merry Christmas! 🎄 Ho ho ho machan!", "Merry Christmas! Star on top ⭐")
         }
         val extra = when (characterId) {
-            "superboy" -> "Superboy salutes the festival! ⚡"
+            "superboy" -> "Zoom salutes the festival! ⚡"
             "armour" -> "Suit lights set to festival mode 🎆"
-            "mask" -> "Mask Man brought sweets… from his belt 🍬"
-            else -> "Settai special: extra banana today 🍌"
+            "mask" -> "Masko brought sweets… from his belt 🍬"
+            else -> "Pogo special: extra banana today 🍌"
         }
         return base + extra
     }

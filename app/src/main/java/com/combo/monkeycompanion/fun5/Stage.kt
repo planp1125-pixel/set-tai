@@ -659,14 +659,14 @@ class Stage(private val h: StageHost) : PairHub.Listener {
 
     // ======================= 8. paired phone =======================
     override fun onPaired(peerName: String, peerCharacter: String) {
-        h.say("Paired with $peerName's ${CharacterRegistry.byId(peerCharacter)?.name ?: "Settai"}! 👋", 3000L); h.play(MonkeyState.WAVE, 2f)
+        h.say("Paired with $peerName's ${CharacterRegistry.byId(peerCharacter)?.name ?: "buddy"}! 👋", 3000L); h.play(MonkeyState.WAVE, 2f)
         xp(Friendship.Source.PAIR)
     }
     override fun onClosed() { if (visitor != null) visitor = null }
     override fun onEvent(ev: PairProtocol.Event, side: PairProtocol.Side?) {
         val peer = PairHub.peerName ?: "friend"
         when (ev) {
-            PairProtocol.Event.WAVE -> { h.play(MonkeyState.WAVE, 2.2f); h.say("$peer's Settai says hi from the other phone 👋", 2600L) }
+            PairProtocol.Event.WAVE -> { h.play(MonkeyState.WAVE, 2.2f); h.say("$peer's buddy says hi from the other phone 👋", 2600L) }
             PairProtocol.Event.DANCE -> { h.dance(); h.say("Dance-off with $peer! 💃🕺", 2600L) }
             PairProtocol.Event.FIGHT -> { h.play(MonkeyState.ANGRY, 2.6f); dizzyUntil = t + 2.5f; h.say("Pillow fight with $peer! 🥊 (no one gets hurt)", 2600L) }
             PairProtocol.Event.JUMP_ACROSS -> {
@@ -680,7 +680,7 @@ class Stage(private val h: StageHost) : PairHub.Listener {
     }
     /** From the Two-phones screen / menu: my character does something on both phones. */
     fun sendToPeer(ev: PairProtocol.Event, side: PairProtocol.Side? = null): Boolean {
-        if (!PairHub.paired) { h.say("Pair with another phone first (Settai app → Two phones) 📱📱", 3000L); return false }
+        if (!PairHub.paired) { h.say("Pair with another phone first (Set-Tai app → Two phones) 📱📱", 3000L); return false }
         if (!PairHub.sendEvent(ev, side)) return false
         when (ev) {
             PairProtocol.Event.JUMP_ACROSS -> h.leaveBy(if (side == PairProtocol.Side.LEFT) -1 else 1)

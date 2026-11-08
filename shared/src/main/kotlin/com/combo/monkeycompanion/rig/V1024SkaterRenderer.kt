@@ -9,7 +9,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * v10.24 Skater Girl: an ORIGINAL cute chibi girl (same human style as Surfing Girl) with dark brown curly hair, a
+ * v10.24 Rollie: an ORIGINAL cute chibi girl (same human style as Wavy) with dark brown curly hair, a
  * mint-green tee under an open lilac hoodie-jacket, denim shorts, pink-and-white high-top sneakers, on a coral
  * skateboard with yellow wheels. Pose slots she reads: dvAura = ride on the board (0 = carrying it), dvSpell = kickflip
  * roll (0..1 = one full turn of the board), surfSpray = grind sparks. No RNG.

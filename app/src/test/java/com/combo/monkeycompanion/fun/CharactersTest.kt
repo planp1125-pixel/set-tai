@@ -58,10 +58,10 @@ class CharactersTest {
     }
 
     @Test fun originalNamesAreConstantsAndNotTrademarks() {
-        assertEquals("Settai", CharacterNames.MONKEY)
+        assertEquals("Pogo", CharacterNames.MONKEY)
         assertEquals(CharacterNames.SUPERBOY, Superboy.name)
-        assertEquals("Armour Anna", ArmourAnna.name)
-        assertEquals("Mask Man", MaskMan.name)
+        assertEquals("Bolt", ArmourAnna.name)
+        assertEquals("Masko", MaskMan.name)
         for (c in CharacterRegistry.all) assertFalse(c.name, Regex("(?i)superman|iron ?man|the mask|\\btom\\b|\\bjerry\\b").containsMatchIn(c.name))
     }
 
@@ -78,14 +78,14 @@ class CharactersTest {
         assertEquals(BodyAction.CLIMB, MonkeyCharacter.mapAction(BodyAction.CLIMB, mw))
         assertEquals(BodyAction.TAIL_HIDE, MonkeyCharacter.mapAction(BodyAction.TAIL_HIDE, mw))
         assertNull(MonkeyCharacter.mapAction(BodyAction.SKATE, mw))
-        // Superboy: climb = hover near an edge; no tail.
+        // Zoom: climb = hover near an edge; no tail.
         val sw = CharacterRegistry.wear(Superboy)
         assertEquals(BodyAction.CLIMB, Superboy.mapAction(BodyAction.CLIMB, sw))
         assertEquals(BodyAction.HIDE, Superboy.mapAction(BodyAction.TAIL_HIDE, sw))
         assertEquals(Gag.FAKE_SLEEP, Superboy.mapGag(Gag.TAIL_HIDE, sw))
-        // Armour Anna can't climb: hop.
+        // Bolt can't climb: hop.
         assertEquals(BodyAction.JUMP, ArmourAnna.mapAction(BodyAction.CLIMB, CharacterRegistry.wear(ArmourAnna)))
-        // Mask Man follows his wardrobe.
+        // Masko follows his wardrobe.
         val w = CharacterRegistry.wear(MaskMan); w.allOn()
         assertEquals(BodyAction.CHICKEN, MaskMan.mapAction(BodyAction.CHICKEN, w))
         assertEquals(BodyAction.GADGET, MaskMan.mapAction(BodyAction.GADGET, w))
@@ -198,12 +198,12 @@ class CharactersTest {
         assertFalse(mm.contains("[skate] (ride")); assertFalse(mm.contains("[chicken] (squeak"))
         assertTrue(mm.contains("Switched OFF by your human")); assertTrue(mm.contains("skateboard"))
         // Compact prompt (on-device brain) too.
-        assertTrue(Persona.systemPrompt(toolsAvailable = false, compact = true).contains("You ARE Mask Man"))
+        assertTrue(Persona.systemPrompt(toolsAvailable = false, compact = true).contains("You ARE Masko"))
     }
 
     @Test fun eachCharacterHasItsOwnLines() {
         CharacterRegistry.select("mask")
-        repeat(10) { val l = Lines.pick(Lines.HELLO); assertTrue(l, HeroLines.MM_HELLO.any { it.replace("Settai", "Mask Man") == l } ) }
+        repeat(10) { val l = Lines.pick(Lines.HELLO); assertTrue(l, HeroLines.MM_HELLO.any { it.replace("Pogo", "Masko") == l } ) }
         assertTrue(HeroLines.MM_SQUEAK.isNotEmpty())
         CharacterRegistry.select("superboy")
         repeat(10) { assertTrue(HeroLines.SB_RANDOM.contains(Lines.pick(Lines.RANDOM))) }

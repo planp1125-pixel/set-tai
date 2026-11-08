@@ -86,7 +86,7 @@ object Friendship {
 
     fun levelUpLine(level: Int, characterId: String): String {
         val n = newAt(level).joinToString(", ") { it.title }
-        val who = when (characterId) { "superboy" -> "Hero bond"; "armour" -> "Suit sync"; "mask" -> "Mask Man trust"; else -> "Friendship" }
+        val who = when (characterId) { "superboy" -> "Hero bond"; "armour" -> "Suit sync"; "mask" -> "Masko trust"; else -> "Friendship" }
         return "$who level $level! 🎉" + if (n.isNotEmpty()) " Unlocked: $n" else ""
     }
 }

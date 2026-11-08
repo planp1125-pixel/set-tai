@@ -74,9 +74,9 @@ class MemoryActivity : androidx.activity.ComponentActivity() {
         var input by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
         var confirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
         val all = st.all().sortedByDescending { it.at }
-        SettaiScreen("Settai's notebook", onBack = { finish() }, rev = r) {
-            SNote("Things you told Settai to remember. Kept only in a file on this phone and used to make chats (and jokes) personal. Passwords, PINs and codes are never stored.")
-            if (!ChatHub.settings.groupEnabled(CapGroup.MEMORY)) SNote("Memory is OFF: switch it on in Phone powers so Settai learns and uses these.")
+        SettaiScreen("${NM}'s notebook", onBack = { finish() }, rev = r) {
+            SNote("Things you told ${nm} to remember. Kept only in a file on this phone and used to make chats (and jokes) personal. Passwords, PINs and codes are never stored.")
+            if (!ChatHub.settings.groupEnabled(CapGroup.MEMORY)) SNote("Memory is OFF: switch it on in Phone powers so ${nm} learns and uses these.")
             SCard("Add") {
                 SField(input, { input = it }, "Remember", "e.g. I love filter coffee")
                 SPrimary("Remember this") {
@@ -115,8 +115,8 @@ class RoutinesActivity : androidx.activity.ComponentActivity() {
     private fun Screen(@Suppress("UNUSED_PARAMETER") r: Int) {
         var input by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
         var preview by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
-        SettaiScreen("Settai's routines", onBack = { finish() }, rev = r) {
-            SNote("Time routines run even when Settai is asleep (alarm-clock style). Event routines (charger, battery low, Wi-Fi, headphones) run while Settai is on screen or in the wallpaper. Anything that changes the phone still asks Yes/No when it runs.")
+        SettaiScreen("${NM}'s routines", onBack = { finish() }, rev = r) {
+            SNote("Time routines run even when ${nm} is asleep (alarm-clock style). Event routines (charger, battery low, Wi-Fi, headphones) run while ${nm} is on screen or in the wallpaper. Anything that changes the phone still asks Yes/No when it runs.")
             if (!ChatHub.settings.groupEnabled(CapGroup.ROUTINES)) SNote("Routines are OFF: switch them on in Phone powers.")
             SCard("Add a routine", "Examples: \"weekdays at 7:30 say good morning\" · \"every night at 10 turn on do not disturb\" · \"when headphones are plugged in say music time\" · \"every sunday at 6 pm remind me to water the plants\"") {
                 SField(input, { input = it }, "Routine", "every day at 9 pm remind me to drink water")
@@ -148,7 +148,7 @@ object AgentScreens {
     fun extras(a: Activity, g: CapGroup, col: LinearLayout) {
         fun b(t: String, f: () -> Unit) = Button(a).apply { text = t; isAllCaps = false; setOnClickListener { f() } }
         when (g) {
-            CapGroup.MEMORY -> col.addView(b("Open Settai's notebook (view / delete)") { a.startActivity(Intent(a, MemoryActivity::class.java)) })
+            CapGroup.MEMORY -> col.addView(b("Open ${nm}'s notebook (view / delete)") { a.startActivity(Intent(a, MemoryActivity::class.java)) })
             CapGroup.ROUTINES -> col.addView(b("Open routines") { a.startActivity(Intent(a, RoutinesActivity::class.java)) })
             else -> AgentScreensMore.extras(a, g, col)
         }
@@ -165,8 +165,8 @@ object AgentScreensMore {
         when (g) {
             CapGroup.VOICE -> {
                 col.addView(Switch(a).apply { text = "Speak replies out loud"; textSize = 14f; setTextColor(brown); isChecked = s.speakReplies; setOnCheckedChangeListener { _, c -> s.speakReplies = c } })
-                col.addView(Button(a).apply { text = "Test voice"; isAllCaps = false; setOnClickListener { com.combo.monkeycompanion.agent.Voice.speak(a, "Vanakkam! I'm Settai, your naughty monkey. Banana time?") } })
-                col.addView(note("The 🎤 button appears in the chat once the mic is granted. Settai listens only while you press it — no always-on wake word (maybe a future power)."))
+                col.addView(Button(a).apply { text = "Test voice"; isAllCaps = false; setOnClickListener { com.combo.monkeycompanion.agent.Voice.speak(a, "Hi! I'm ${com.combo.monkeycompanion.character.CharacterRegistry.current.name}. Nice to meet you!") } })
+                col.addView(note("The 🎤 button appears in the chat once the mic is granted. ${NM} listens only while you press it — no always-on wake word (maybe a future power)."))
             }
             CapGroup.WEB -> {
                 col.addView(note("Lookups use DuckDuckGo Instant Answers + Wikipedia (no key). For full web results, paste a search API URL with {q} where the query goes (e.g. your SearXNG instance: https://searx.example/search?format=json&q={q})."))
@@ -180,7 +180,7 @@ object AgentScreensMore {
                 })
                 col.addView(note("Weather: Open-Meteo (free, no key). Location is only read when you ask for weather without a city."))
             }
-            CapGroup.PIM -> col.addView(note("Also gives a 9 am birthday reminder from your contacts. Calls are never placed: Settai only opens the dialer."))
+            CapGroup.PIM -> col.addView(note("Also gives a 9 am birthday reminder from your contacts. Calls are never placed: ${nm} only opens the dialer."))
             CapGroup.DOCTOR -> col.addView(note("Android doesn't share per-app battery numbers with apps, so “battery hogs” = the apps you used most today (screen-on time)."))
             else -> {}
         }
@@ -201,8 +201,8 @@ class ReportsActivity : androidx.activity.ComponentActivity() {
         val all = st.all().sortedByDescending { it.at }
         SettaiScreen("Reported replies", onBack = { finish() }, rev = r) {
             SNote("Replies you flagged with ⚑ Report. They stay in a file on this phone; nothing is uploaded. Use Share to send one yourself.")
-            if (all.isEmpty()) SNote("Nothing reported. Tap ⚑ on a reply in the bubble or the chat if Settai says something wrong or not OK.")
-            for (rp in all) SCard("Settai: " + rp.reply) {
+            if (all.isEmpty()) SNote("Nothing reported. Tap ⚑ on a reply in the bubble or the chat if ${nm} says something wrong or not OK.")
+            for (rp in all) SCard("Reply: " + rp.reply) {
                 SNote("You: " + rp.prompt.ifBlank { "(not recorded)" })
                 SNote(rp.brain + " · " + DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(rp.at)))
                 androidx.compose.foundation.layout.Row {
@@ -217,3 +217,7 @@ class ReportsActivity : androidx.activity.ComponentActivity() {
         }
     }
 }
+
+// v10.39.2: settings work for every character, so the screens say "your character", not one name
+private val nm: String get() = "your character"
+private val NM: String get() = "Your character"

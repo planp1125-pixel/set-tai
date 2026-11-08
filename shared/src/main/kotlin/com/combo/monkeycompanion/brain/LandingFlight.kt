@@ -11,7 +11,7 @@ import kotlin.random.Random
 /**
  * v5 power-landing flight ([Landings.Style.ROCKET_ARC]): instead of a straight drop, a rocket-like curved flight
  * across the screen (loop-the-loop, corkscrew spiral, S-curve or big swoop), banking with the path, then each
- * character's own finish: Superboy's fist-first touchdown, Armour Anna's jet-brake hover + thud, the monkey's
+ * character's own finish: Zoom's fist-first touchdown, Bolt's jet-brake hover + thud, the monkey's
  * leg-fire crash landing. A new random path every time, never the same shape twice in a row. Pure, unit-tested.
  */
 object LandingFlight {
@@ -28,7 +28,7 @@ object LandingFlight {
         else -> Finish.CRASH
     }
 
-    /** Hover height above the floor for Anna's brake (dp). */
+    /** Hover height above the floor for Bolt's brake (dp). */
     const val HOVER_DP = 70f
     const val HOVER_SECS = 0.65f
     /** Seconds of the touchdown pose (fist / thud / tumble). */
@@ -113,7 +113,7 @@ object LandingFlight {
         out[0] = cr(px(i - 1), px(i), px(i + 1), px(i + 2)); out[1] = cr(py(i - 1), py(i), py(i + 1), py(i + 2))
     }
 
-    /** Eased progress for flight time [k] 0..1: a rocket accelerates; Anna eases into her brake. */
+    /** Eased progress for flight time [k] 0..1: a rocket accelerates; Bolt eases into her brake. */
     fun ease(f: Finish, k: Float): Float {
         val c = k.coerceIn(0f, 1f)
         return if (f == Finish.HOVER_THUD) c * c * (3f - 2f * c) else c.pow(1.2f)

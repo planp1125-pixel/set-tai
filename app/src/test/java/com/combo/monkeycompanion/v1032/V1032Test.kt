@@ -29,7 +29,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
-/** v10.32: Expression / Movement / Props / StageFx engines + the script player, with the Satan vs Angel show. */
+/** v10.32: Expression / Movement / Props / StageFx engines + the script player, with the Tutty vs Angel show. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-xxhdpi")
@@ -40,8 +40,8 @@ class V1032Test {
 
     @Test fun userScriptParses() {
         val s = show()
-        assertEquals("Satan vs Angel", s.title)
-        assertEquals(mapOf("angel" to "angel", "satan" to "devil"), s.cast)
+        assertEquals("Tutty vs Angel", s.title)
+        assertEquals(mapOf("angel" to "angel", "tutty" to "devil"), s.cast)
         assertEquals(1, s.rules.size)
         assertEquals("fireball", s.rules[0].prop); assertEquals("angel", s.rules[0].target)
         assertEquals("vanish", s.rules[0].cmds[0].verb)
@@ -57,7 +57,7 @@ class V1032Test {
 
     @Test fun angelFliesInThenHoversAndSatanEntersFromTheEdge() {
         val p = ScriptPlayer(show())
-        val angel = p.actor("angel")!!; val satan = p.actor("satan")!!
+        val angel = p.actor("angel")!!; val satan = p.actor("tutty")!!
         p.advanceTo(0.05f); assertTrue("angel starts off-screen left", angel.mover.x < 0f)
         p.advanceTo(3.0f)
         assertTrue(angel.mover.hovering); assertFalse(angel.mover.moving)
@@ -71,14 +71,14 @@ class V1032Test {
 
     @Test fun fireballNearAngelMakesHerVanishAndTheRestPlays() {
         val p = ScriptPlayer(show())
-        val angel = p.actor("angel")!!; val satan = p.actor("satan")!!
+        val angel = p.actor("angel")!!; val satan = p.actor("tutty")!!
         p.advanceTo(4.7f); assertTrue("fireballs fly", p.projectiles.isNotEmpty())
         assertTrue(angel.visible)
         p.advanceTo(7.2f)
         assertTrue("proximity rule fired", 0 in p.fired)
         assertTrue(angel.mover.gone); assertTrue(satan.visible)
         p.advanceTo(8.6f); assertTrue("angel back", angel.visible); assertEquals("wake", angel.faceAt(p.t))
-        p.advanceTo(10f); assertTrue(p.rays.any { it.from == "satan" && it.src == "eyes" }); assertEquals("shield", angel.held?.id)
+        p.advanceTo(10f); assertTrue(p.rays.any { it.from == "tutty" && it.src == "eyes" }); assertEquals("shield", angel.held?.id)
         p.advanceTo(13f); assertTrue(p.clashOn); assertEquals(2, p.rays.count { it.src == "hands" })
         assertEquals(p.clashX to p.clashY, p.rayEnd(p.rays.first { it.from == "angel" }))
         p.advanceTo(15.6f); assertNotNull(p.crack); assertTrue(p.crack!!.cy > Mover.FLOOR)

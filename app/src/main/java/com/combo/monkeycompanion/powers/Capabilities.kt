@@ -43,21 +43,21 @@ enum class CapGroup(val label: String, val optIn: Boolean = false, val explain: 
     APPS("Open apps, camera & Settings pages"),
     COMMS("Web search, dialer, SMS composer, calendar, share, maps"),
     SCREEN("Screen agent: read the screen, tap, type, scroll", true,
-        "Uses Android Accessibility so Settai can read what's on screen and tap / type / scroll for you, step by step, only when you ask. Every tap and every bit of typing asks Yes/No in the bubble first. Never touches the lock screen, password fields or banking / payment apps. Tap Settai (or the notification) to stop. Works best with an online brain."),
+        "Uses Android Accessibility so your character can read what's on screen and tap / type / scroll for you, step by step, only when you ask. Every tap and every bit of typing asks Yes/No in the bubble first. Never touches the lock screen, password fields or banking / payment apps. Tap your character (or the notification) to stop. Works best with an online brain."),
     NOTIFS("Notification reader: what did I miss, OTPs, reply", true,
         "Reads the notifications on your phone to summarise them when you ask. With an online brain, the summary text (app, title, message) is sent to that provider when you ask; OTP codes are masked and never sent. Replies and dismissals ask Yes/No first."),
-    MEMORY("Memory: things you tell Settai to remember", true,
+    MEMORY("Memory: things you tell your character to remember", true,
         "Remembers small facts you tell it (your name, likes, birthdays, habits) in a file on this phone only, and uses them in chats and jokes. See or delete them under Memory."),
     ROUTINES("Routines: timed & event reminders / actions", true,
         "Lets you make routines like 'every day at 9 pm remind me to drink water' or 'when the charger is connected say hi'. Actions that change something still ask Yes/No when they run."),
     VOICE("Voice: push-to-talk and spoken replies", true,
-        "A mic button in the chat (you press it; no always-on listening) and Settai can say replies out loud with a moving mouth. Uses your phone's speech engines."),
+        "A mic button in the chat (you press it; no always-on listening) and your character can say replies out loud with a moving mouth. Uses your phone's speech engines."),
     WEB("Web brain: quick lookups & weather", true,
         "Looks things up on the web (DuckDuckGo / Wikipedia or your own search URL) and gets the weather from Open-Meteo using your rough location. Needs internet."),
     DOCTOR("Phone doctor: storage & battery hogs", true,
         "Looks at storage use and which apps you used most (Usage access) and suggests clean-ups. Opening an app's settings page asks first."),
     PIM("Calendar & contacts", true,
-        "Reads today's calendar and your contacts so 'what's my day', birthdays and 'call Amma' work. Calls are never placed: Settai only fills the dialer."),
+        "Reads today's calendar and your contacts so 'what's my day', birthdays and 'call Amma' work. Calls are never placed: your character only fills the dialer."),
 }
 
 /** Special access some powers need, with the one-tap grant screen. [runtime] = an Android runtime permission (asked in-app). */
@@ -67,7 +67,7 @@ enum class Perm(val label: String, val runtime: String? = null) {
     NOTIF_POLICY("Do Not Disturb access"),
     NOTIF_LISTENER("Notification access (what's playing, notification reader)"),
     POST_NOTIF("Notifications (so alarms can ring)"),
-    ACCESSIBILITY("Accessibility: Settai screen agent"),
+    ACCESSIBILITY("Accessibility: Set-Tai screen agent"),
     USAGE_STATS("Usage access (phone doctor)"),
     LOCATION("Approximate location (weather)", android.Manifest.permission.ACCESS_COARSE_LOCATION),
     CALENDAR("Read calendar", android.Manifest.permission.READ_CALENDAR),
@@ -137,7 +137,7 @@ class Capability(
     val tag: String? = null,
     val tagHelp: String? = null,
     val fromTag: ((String) -> Map<String, Any?>?)? = null,
-    /** Which [Perm]s it can need (for the "What can Settai do?" screen). */
+    /** Which [Perm]s it can need (for the "What can your character do?" screen). */
     val needs: List<Perm> = emptyList(),
     /** v4: brain tool calls wait for the user's Yes/No and get the real result (screen agent). */
     val blocking: Boolean = false,
@@ -306,10 +306,10 @@ object Capabilities {
                 ClockPowers.setAlarm(c, s, h, m, label, tmr) + note
             }
         },
-        Capability("list_timers", CapGroup.CLOCK, "List timers & alarms", "List the timers and alarms Settai is keeping.", change = false, tag = "timers", tagHelp = "[timers]", fromTag = { emptyMap() }) { c, _, _ ->
+        Capability("list_timers", CapGroup.CLOCK, "List timers & alarms", "List the timers and alarms Set-Tai is keeping.", change = false, tag = "timers", tagHelp = "[timers]", fromTag = { emptyMap() }) { c, _, _ ->
             Plan.Answer(ClockPowers.list(c))
         },
-        Capability("cancel_timer", CapGroup.CLOCK, "Cancel timers & alarms", "Cancel Settai's own timers and/or alarms.",
+        Capability("cancel_timer", CapGroup.CLOCK, "Cancel timers & alarms", "Cancel Set-Tai's own timers and/or alarms.",
             listOf(Param("which", "string", "timer, alarm or all", false, listOf("timer", "alarm", "all"))), change = false,
             tag = "cancel", tagHelp = "[cancel timer|alarm|all]", fromTag = { a -> mapOf("which" to a.ifBlank { "all" }) }) { c, _, a ->
             Plan.Answer(ClockPowers.cancel(c, a.str("which").ifBlank { "all" }))

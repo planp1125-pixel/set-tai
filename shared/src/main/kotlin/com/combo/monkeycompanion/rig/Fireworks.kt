@@ -49,7 +49,7 @@ class FwSpec(
 )
 
 /**
- * Procedural fireworks (Rocket Girl's sky show, Smash rocket hits). v10.9: every burst comes from a named recipe in
+ * Procedural fireworks (Skye's sky show, Smash rocket hits). v10.9: every burst comes from a named recipe in
  * [FireworkRecipes] (50+), layered by default: 2-4 concentric rings/spheres at different radii and colours, a crackle /
  * glitter / strobe core, willow / crossette / comet / horsetail outer layers, colour change and multi-break stars.
  * Never the same recipe, shape or palette twice in a row. Sparks are drawn as thin tapered streaks bright at the tip,

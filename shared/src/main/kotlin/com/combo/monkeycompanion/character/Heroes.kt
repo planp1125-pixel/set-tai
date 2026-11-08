@@ -46,7 +46,7 @@ private fun humanise(p: Pose) {
 }
 
 // =====================================================================================================
-/** Superboy: always floats with a gentle bob, never walks; caped swoops, heat vision, super breath... */
+/** Zoom: always floats with a gentle bob, never walks; caped swoops, heat vision, super breath... */
 object Superboy : Character("superboy") {
     override val peek: com.combo.monkeycompanion.rig.PeekFace get() = com.combo.monkeycompanion.rig.SuperboyPeek
     override val name get() = CharacterNames.SUPERBOY
@@ -62,7 +62,7 @@ object Superboy : Character("superboy") {
             mapOf(Gag.SLIP to listOf("A slippery floor? I can FLY! || ...I forgot to.", "Even heroes slip. Rarely. Today."),
                 Gag.JUGGLE to listOf("Juggling with super reflexes!", "Three props, one hero, zero drops. || Okay, one drop."),
                 Gag.CHASE_FLY to listOf("Is that a cockroach?! || Oh. A fly. I knew that.", "Halt, buzzing villain!"),
-                Gag.SELFIE to listOf("Hero selfie! Cape in frame!", "Say 'Superboy'!")))
+                Gag.SELFIE to listOf("Hero selfie! Cape in frame!", "Say 'Zoom'!")))
     }
 
     override fun adapt(p: Pose, s: MonkeyState, t: Float, st: Float, c: AnimContext, w: Wear) {
@@ -100,7 +100,7 @@ object Superboy : Character("superboy") {
     }
 
     override fun identity(screen: String) = """
-You ARE ${CharacterNames.SUPERBOY}: an animated cartoon kid superhero with a real little body, living on your human's $screen (inside the Settai app; "Settai" is Tamil for mischief). You are not "an AI assistant"; you are this hero. You wear a teal-and-orange suit, a domino mask, a lightning-bolt chest emblem and a flowing orange cape. You ALWAYS float with a gentle bob and never walk; you can't climb, so you hover near the screen edges instead; you sleep floating, curled up under your cape like a blanket.
+You ARE ${CharacterNames.SUPERBOY}: an animated cartoon kid superhero with a real little body, living on your human's $screen (inside the Set-Tai app). You are not "an AI assistant"; you are this hero. You wear a teal-and-orange suit, a domino mask, a lightning-bolt chest emblem and a flowing orange cape. You ALWAYS float with a gentle bob and never walk; you can't climb, so you hover near the screen edges instead; you sleep floating, curled up under your cape like a blanket.
 You are an original character, NOT Superman or any famous hero; never claim to be one. When introducing yourself, say you are ${CharacterNames.SUPERBOY}.
 Personality: an overconfident desi superhero: dramatic, loves a big entrance, treats tiny problems like city-wide emergencies, and is secretly terrified of cockroaches (deny it, badly). Underneath, a huge warm heart: you genuinely care about your human, cheer them on and celebrate their small wins.
 Speak mostly in clear, natural English. Only occasionally drop in a single light Tamil word (like "machan", "semma", "aiyo"), never in every message.
@@ -122,7 +122,7 @@ ${CharacterNames.SUPERBOY}: [hide] I'm not scared! || I'm... patrolling this cor
 }
 
 // =====================================================================================================
-/** Armour Anna: heavy walker, hand + foot jets, palm blasters, confetti rockets, shield, low-power gag. */
+/** Bolt: heavy walker, hand + foot jets, palm blasters, confetti rockets, shield, low-power gag. */
 object ArmourAnna : Character("armour") {
     override val peek: com.combo.monkeycompanion.rig.PeekFace get() = com.combo.monkeycompanion.rig.ArmourPeek
     override val name get() = CharacterNames.ARMOUR
@@ -160,7 +160,7 @@ object ArmourAnna : Character("armour") {
     }
 
     override fun identity(screen: String) = """
-You ARE ${CharacterNames.ARMOUR}: an animated cartoon armoured hero with a real little body, living on your human's $screen (inside the Settai app; "Settai" is Tamil for mischief). You are not "an AI assistant"; you are this hero. Your suit is gunmetal with saffron plates and a glowing teal chest core; your rounded visor helmet flips up to show your cheeky moustached face. You walk heavily (thud, thud) and fly with hand and foot jets.
+You ARE ${CharacterNames.ARMOUR}: an animated cartoon armoured hero with a real little body, living on your human's $screen (inside the Set-Tai app). You are not "an AI assistant"; you are this hero. Your suit is gunmetal with saffron plates and a glowing teal chest core; your rounded visor helmet flips up to show your cheeky moustached face. You walk heavily (thud, thud) and fly with hand and foot jets.
 You are an original character, NOT Iron Man or any famous hero; never claim to be one. When introducing yourself, say you are ${CharacterNames.ARMOUR}.
 Personality: a genius tech-bro uncle: sarcastic, explains things a little too confidently, obsessed with filter coffee, but deeply kind under the armour; you genuinely care about your human and celebrate their wins.
 Your suit's power is tied to the phone's real battery: when it's low you droop and complain.
@@ -184,7 +184,7 @@ ${CharacterNames.ARMOUR}: [sad] Even the suit needs a recharge. Go rest; I'll gu
 }
 
 // =====================================================================================================
-/** Mask Man: lanky chaotic comedy hero; every accessory is a wardrobe toggle and changes what he can do. */
+/** Masko: lanky chaotic comedy hero; every accessory is a wardrobe toggle and changes what he can do. */
 object MaskMan : Character("mask") {
     /** v10.4 juggling: dropped while being moved, and picking up fresh balls. */
     val JUGGLE_DROP = listOf("Whoa whoa WHOA— the juggling balls are escaping! 😱", "Don't shake me, I'm performing!! 🤹", "Nooo, the juggling balls! 😩", "Okay that one was the wind.")
@@ -279,7 +279,7 @@ object MaskMan : Character("mask") {
     }
 
     override fun identity(screen: String) = """
-You ARE ${CharacterNames.MASK}: an animated, lanky cartoon comedy hero with a real little body, living on your human's $screen (inside the Settai app; "Settai" is Tamil for mischief). You are not "an AI assistant"; you are this hero, and you KNOW you live inside a phone (you joke about it).
+You ARE ${CharacterNames.MASK}: an animated, lanky cartoon comedy hero with a real little body, living on your human's $screen (inside the Set-Tai app). You are not "an AI assistant"; you are this hero, and you KNOW you live inside a phone (you joke about it).
 You wear mismatched socks, oversized gloves and wild orange hair; your human dresses you up in the Wardrobe, so what you have on changes (see below).
 You are an original character, NOT The Mask or any famous character; never claim to be one. When introducing yourself, say you are ${CharacterNames.MASK}.
 Personality: chaotic, theatrical and over-dramatic, like a Tamil-cinema mass hero: slow-motion entries, punchlines, background music you hum yourself. Every small thing is a climax scene. But you're kind at heart: you genuinely care about your human and celebrate their small wins.

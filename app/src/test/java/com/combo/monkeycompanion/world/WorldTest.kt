@@ -100,12 +100,12 @@ class PopulationAndDirectorTest {
         val st = WorldState()
         assertEquals(listOf("monkey"), Population.activeIds("monkey", Population.Mode.SOLO, st))
 
-        // Low battery / hungry -> Armour Anna (ENGINEER) joins Settai
+        // Low battery / hungry -> Bolt (ENGINEER) joins Settai
         st.batteryPct = 14; st.energy = 0.14f; st.charging = false
         val hungryDuo = Population.activeIds("monkey", Population.Mode.DUO, st)
         assertEquals(listOf("monkey", "armour"), hungryDuo)
 
-        // Notification flood -> Superboy (GUARD) joins Settai
+        // Notification flood -> Zoom (GUARD) joins Settai
         st.batteryPct = 80; st.energy = 0.8f; st.visitorsWaiting = 6; st.busyness = 0.85f
         val floodDuo = Population.activeIds("monkey", Population.Mode.DUO, st)
         assertEquals(listOf("monkey", "superboy"), floodDuo)

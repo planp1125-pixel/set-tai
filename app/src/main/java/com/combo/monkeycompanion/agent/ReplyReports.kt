@@ -37,7 +37,7 @@ class ReplyReportStore(private val file: File) {
 
     companion object {
         const val MAX = 100
-        fun shareText(r: ReplyReport) = "Settai reply report\nBrain: ${r.brain}\n\nI asked:\n${r.prompt.ifBlank { "(not recorded)" }}\n\nSettai said:\n${r.reply}"
+        fun shareText(r: ReplyReport) = "Set-Tai reply report\nBrain: ${r.brain}\n\nI asked:\n${r.prompt.ifBlank { "(not recorded)" }}\n\nReply:\n${r.reply}"
     }
 }
 

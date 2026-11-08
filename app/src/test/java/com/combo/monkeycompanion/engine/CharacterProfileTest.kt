@@ -17,7 +17,7 @@ class CharacterProfileTest {
             assertEquals(c.id, if (catMouse) 0.55f else null, p.wallClimbChance)
             assertEquals(c.id, c.id == "mask", p.clumsyClimber)
             assertEquals(c.id, c.id == "superboy" || c.id == "armour", p.edgeCrashOnFlight)
-            assertEquals(c.id, when (c.id) { "armour" -> 42f; "rocketgirl" -> 30f; "surfer" -> 44f; else -> 18f }, p.hoverJetPadRig)   // v10.8 Rocket Girl rides a rocket
+            assertEquals(c.id, when (c.id) { "armour" -> 42f; "rocketgirl" -> 30f; "surfer" -> 44f; else -> 18f }, p.hoverJetPadRig)   // v10.8 Skye rides a rocket
             assertSame(c.id, PhysicsProfile.DEFAULT, p.physics)
         }
     }

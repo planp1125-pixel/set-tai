@@ -36,7 +36,7 @@ import java.io.File
 import kotlin.math.sin
 
 /**
- * v10.9 preview sheet from the real code -> build/test-out/settai-v10.9-preview.png: Rocket Girl (face close-up, picker
+ * v10.9 preview sheet from the real code -> build/test-out/settai-v10.9-preview.png: Skye (face close-up, picker
  * thumbnail, the 45° broom-ride with the flame out of the rocket's tail), a swipe flight, the bottle launch, multi-ring
  * fireworks, the floating chat button, and the reference photos side by side (refs are read only here, never in the app).
  */
@@ -56,7 +56,7 @@ class V109PreviewTest {
         c.drawRect(r, p)
     }
 
-    /** Rocket Girl at (x, feetY), [s] px per rig unit; [tweak] edits the pose after fill. */
+    /** Skye at (x, feetY), [s] px per rig unit; [tweak] edits the pose after fill. */
     private fun drawGirl(c: Canvas, x: Float, feetY: Float, s: Float, state: MonkeyState = MonkeyState.IDLE, st: Float = 1.2f,
                          facing: Float = 1f, tweak: (Pose) -> Unit = {}): MonkeyRig {
         val wear = CharacterRegistry.wear(girl)
@@ -81,7 +81,7 @@ class V109PreviewTest {
         val H = 80 + faceH + 60 + rideH + 60 + flightH + 60 + bottleH + 60 + fwH + 60 + btnH + 60 + refH + 30
         val bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp); c.drawColor(Color.WHITE)
-        c.drawText("Settai v10.9: Rocket Girl (slim, cute), her Diwali rocket, the bottle sky show, double-tap power + chat button", 20f, 50f, title)
+        c.drawText("Settai v10.9: Skye (slim, cute), her Diwali rocket, the bottle sky show, double-tap power + chat button", 20f, 50f, title)
         var y = 80f
 
         // ---- 1. face close-up + picker thumbnail + poses ----

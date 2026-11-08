@@ -142,6 +142,14 @@ class AppSettings(ctx: Context) {
         get() = p.getString("bg_ai", "gentle") ?: "gentle"
         set(v) = p.edit().putString("bg_ai", v).apply()
 
+    /**
+     * v10.39.2: Set-Tai Cloud has 40 requests a day per phone. Off (default) = only YOUR chats use them; the automatic
+     * lines (touch reactions, body moments, idle thoughts, quips) use the built-in local lines instead.
+     */
+    var cloudAutoLines: Boolean
+        get() = p.getBoolean("cloud_auto_lines", false)
+        set(v) = p.edit().putBoolean("cloud_auto_lines", v).apply()
+
     var quipsEnabled: Boolean
         get() = p.getBoolean("quips", true)
         set(v) = p.edit().putBoolean("quips", v).apply()
@@ -221,7 +229,7 @@ class AppSettings(ctx: Context) {
         set(v) = p.edit().putString("character", v).apply()
 
     /**
-     * v10.16: new installs start with Kutti Satan (the little devil). An older install that never picked a body keeps
+     * v10.16: new installs start with Tutty (the little devil). An older install that never picked a body keeps
      * the monkey it has always shown (it already has other settings saved); the choice is saved once so it never flips.
      */
     private fun defaultCharacter(): String {

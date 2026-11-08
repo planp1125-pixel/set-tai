@@ -59,7 +59,7 @@ class V1012CrewAndSkitTest {
             val s = d.pickScene("gajju", D, st.copy(visitorsWaiting = 3), 600, 1000L, forceKind = k, rnd = Random(1), active = listOf("gajju", "rocketgirl"))
             assertNotNull(k.name, s)
             assertTrue("${k.name} buddy ${s!!.buddyId}", s.buddyId == "rocketgirl")
-            assertFalse(s.leadLine.contains("Settai!"))
+            assertFalse(s.leadLine.contains("Pogo!"))
         }
         assertNull(Director(0L).pickScene("gajju", D, st, 600, 1000L, active = listOf("gajju")))
     }

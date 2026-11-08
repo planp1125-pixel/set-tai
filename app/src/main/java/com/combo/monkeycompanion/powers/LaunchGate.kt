@@ -62,12 +62,12 @@ object LaunchGate {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         if (!nm.areNotificationsEnabled()) return false
         if (nm.getNotificationChannel(CHANNEL) == null)
-            nm.createNotificationChannel(NotificationChannel(CHANNEL, "Things Settai opens for you", NotificationManager.IMPORTANCE_HIGH))
+            nm.createNotificationChannel(NotificationChannel(CHANNEL, "Things Set-Tai opens for you", NotificationManager.IMPORTANCE_HIGH))
         val pi = PendingIntent.getActivity(ctx, what.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val n = NotificationCompat.Builder(ctx, CHANNEL)
             .let { com.combo.monkeycompanion.overlay.CharacterIcon.applyTo(it, ctx) }
             .setContentTitle("Tap to open: $what")
-            .setContentText("Settai can't open it from the wallpaper by himself.")
+            .setContentText("${com.combo.monkeycompanion.character.CharacterRegistry.current.name} can't open it from the wallpaper alone.")
             .setContentIntent(pi).setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()

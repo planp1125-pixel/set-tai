@@ -63,7 +63,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         strokeWidth = 2f * density; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
     private val iconPath = android.graphics.Path()
-    var replyHint = "Reply to Settai…"
+    var replyHint = "Reply…"
     /** null: show the hint; "": empty (a real text box sits on top); else text drawn in the field. */
     var fieldText: String? = null
     val hasReply get() = reply

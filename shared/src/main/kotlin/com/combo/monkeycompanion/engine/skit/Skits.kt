@@ -56,7 +56,7 @@ object SkitLibrary {
                 Beat(1, MonkeyState.HAPPY_PAT, "Ahh, my lovely banana 🍌", 2.0f, "🍌"),
                 Beat(0, MonkeyState.PEEK, "*sneaks closer* Shhh… 🙈", 1.8f, null, Move.TOWARD),
                 Beat(0, MonkeyState.GIGGLE, "*SNATCH* Banana is mine! 🐒🍌", 1.4f, "🍌", Move.AWAY),
-                Beat(1, MonkeyState.ANGRY, "Settai! Come back here! 😤", 1.8f, null, Move.TOWARD),
+                Beat(1, MonkeyState.ANGRY, "Pogo! Come back here! 😤", 1.8f, null, Move.TOWARD),
             ),
             listOf(
                 Ending(0.5f, listOf(Beat(0, MonkeyState.STARTLED, "*slips on own peel* WAAAH 🍌💫", 2.0f, "💫"), Beat(1, MonkeyState.GIGGLE, "Ha! Karma, monkey 😂", 1.6f))),

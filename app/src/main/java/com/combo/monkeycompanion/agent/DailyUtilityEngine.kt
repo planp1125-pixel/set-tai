@@ -244,7 +244,7 @@ object DailyUtilityEngine {
     fun copyBackpackItem(ctx: Context, index: Int): String? {
         init(ctx)
         val item = backpackItems.getOrNull(index) ?: return null
-        copyToSystemClipboard(ctx, "Settai Backpack", item)
+        copyToSystemClipboard(ctx, "Set-Tai Backpack", item)
         return item
     }
 

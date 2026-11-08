@@ -13,7 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** v10.4 end to end: Mask Man juggles, drops balls when shaken, and a fast fling sends them all across the screen. */
+/** v10.4 end to end: Masko juggles, drops balls when shaken, and a fast fling sends them all across the screen. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-xxhdpi")
 class MaskManJuggleTest {

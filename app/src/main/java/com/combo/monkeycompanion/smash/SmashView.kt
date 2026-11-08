@@ -60,7 +60,7 @@ class SmashView(ctx: Context, private val shot: Bitmap, private val who: Charact
     private var throwT = 0f; private var jumpT = 0f
     private var sayText: String? = null; private var sayLeft = 0f
     private var firstTap = false
-    // v10.8 polish: hop/fly toward the target, victory / oops reactions, sounds, Rocket Girl's firework rockets.
+    // v10.8 polish: hop/fly toward the target, victory / oops reactions, sounds, Skye's firework rockets.
     private val fxRnd = Random(SystemClock.uptimeMillis() xor 0x5A5AL)   // own RNG for the new bits
     private val flier = who.locomotion.contains(com.combo.monkeycompanion.character.Locomotion.FLY) || CharacterProfiles.of(who).ridesProp
     private var hopT = 0f; private var cheerT = 0f; private var oopsT = 0f
@@ -565,7 +565,7 @@ class SmashView(ctx: Context, private val shot: Bitmap, private val who: Charact
                     c.restore()
                 }
                 Attack.ROCKET -> {
-                    // v10.8 Rocket Girl: a mini Diwali rocket with a sparkle tail (it bursts into a firework on impact)
+                    // v10.8 Skye: a mini Diwali rocket with a sparkle tail (it bursts into a firework on impact)
                     g.shotPos(s, false, pt2)
                     val k2 = (g.shotT[s] - 0.04f).coerceAtLeast(0f); val sv = g.shotT[s]; g.shotT[s] = k2; g.shotPos(s, attack.arc, pt2); g.shotT[s] = sv
                     val ang = Math.toDegrees(kotlin.math.atan2((pt[1] - pt2[1]).toDouble(), (pt[0] - pt2[0]).toDouble())).toFloat()

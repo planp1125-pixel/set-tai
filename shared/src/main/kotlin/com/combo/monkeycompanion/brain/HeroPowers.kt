@@ -3,9 +3,9 @@ package com.combo.monkeycompanion.brain
 import com.combo.monkeycompanion.speech.HeroLines
 import kotlin.random.Random
 
-// v4.1 hero superpowers (Superboy, Armour Anna). Same sealed family as the monkey powers.
+// v4.1 hero superpowers (Zoom, Bolt). Same sealed family as the monkey powers.
 
-/** Superboy: cape swoops across the screen, heroic landing. */
+/** Zoom: cape swoops across the screen, heroic landing. */
 object HeroSwoop : Superpower("swoop", "Flight swoop", "Cape-flapping swoops across the screen, heroic landing", setOf(PowerKit.CAPE, PowerKit.SPEED_LINES)) {
     override val startLines get() = HeroLines.SB_FLY
     override val landLines get() = HeroLines.SB_LAND
@@ -14,7 +14,7 @@ object HeroSwoop : Superpower("swoop", "Flight swoop", "Cape-flapping swoops acr
     override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random) = Superpower.SuperBanana.plan(x0, y0, crash, rnd)
 }
 
-/** Superboy: hovers and sweeps two heat-vision beams across the screen (scorch marks fade). */
+/** Zoom: hovers and sweeps two heat-vision beams across the screen (scorch marks fade). */
 object HeatVisionPower : Superpower("laser", "Heat vision", "Laser eyes sweep across the screen", setOf(PowerKit.CAPE)) {
     override val startLines get() = HeroLines.SB_LASER
     override val landLines get() = HeroLines.SB_LAND
@@ -27,7 +27,7 @@ object HeatVisionPower : Superpower("laser", "Heat vision", "Laser eyes sweep ac
     )
 }
 
-/** Superboy: a big frosty breath that ices the screen edge. */
+/** Zoom: a big frosty breath that ices the screen edge. */
 object SuperBreathPower : Superpower("breath", "Super breath", "Blows a frosty gale across the screen", setOf(PowerKit.CAPE)) {
     override val startLines get() = HeroLines.SB_BREATH
     override val landLines get() = HeroLines.SB_LAND
@@ -38,7 +38,7 @@ object SuperBreathPower : Superpower("breath", "Super breath", "Blows a frosty g
     )
 }
 
-/** Superboy: lifts a bus-sized notification card overhead (with your real count). */
+/** Zoom: lifts a bus-sized notification card overhead (with your real count). */
 object SuperStrengthPower : Superpower("lift", "Super strength", "Lifts a bus-sized notification card overhead", setOf(PowerKit.CAPE)) {
     override val startLines get() = HeroLines.SB_LIFT
     override val landLines get() = HeroLines.SB_LAND
@@ -49,7 +49,7 @@ object SuperStrengthPower : Superpower("lift", "Super strength", "Lifts a bus-si
     )
 }
 
-/** Superboy: zips back and forth so fast he leaves after-images. */
+/** Zoom: zips back and forth so fast he leaves after-images. */
 object SpeedBlurPower : Superpower("blur", "Speed blur", "Zips across the screen leaving after-images", setOf(PowerKit.CAPE, PowerKit.SPEED_LINES)) {
     override val startLines get() = HeroLines.SB_SPEED
     override val landLines get() = HeroLines.SB_LAND
@@ -66,7 +66,7 @@ object SpeedBlurPower : Superpower("blur", "Speed blur", "Zips across the screen
     }
 }
 
-/** Armour Anna: hand + foot jets, palm blasters, thud landing (sputters when the suit runs low). */
+/** Bolt: hand + foot jets, palm blasters, thud landing (sputters when the suit runs low). */
 object ArmourJetsPower : Superpower("jets", "Armour jets", "Hand and foot jets, palm blasters, heavy landing", setOf(PowerKit.FOOT_JETS, PowerKit.PALM_RINGS)) {
     override val startLines get() = HeroLines.AA_FLY
     override val landLines get() = HeroLines.AA_LAND
@@ -76,7 +76,7 @@ object ArmourJetsPower : Superpower("jets", "Armour jets", "Hand and foot jets, 
     override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random) = Superpower.RocketMonkey.plan(x0, y0, crash, rnd)
 }
 
-/** Armour Anna: shoulder mini-rockets that fire... confetti. */
+/** Bolt: shoulder mini-rockets that fire... confetti. */
 object ConfettiRocketsPower : Superpower("confetti", "Confetti rockets", "Shoulder mini-rockets fire party confetti", emptySet()) {
     override val startLines get() = HeroLines.AA_CONFETTI
     override val landLines get() = HeroLines.AA_LAND
@@ -87,7 +87,7 @@ object ConfettiRocketsPower : Superpower("confetti", "Confetti rockets", "Should
     )
 }
 
-/** Armour Anna: a glowing shield bubble. */
+/** Bolt: a glowing shield bubble. */
 object ShieldBubblePower : Superpower("shield", "Shield bubble", "A glowing force-field bubble", emptySet()) {
     override val startLines get() = HeroLines.AA_SHIELD
     override val landLines get() = HeroLines.AA_LAND
@@ -98,7 +98,7 @@ object ShieldBubblePower : Superpower("shield", "Shield bubble", "A glowing forc
     )
 }
 
-/** Armour Anna: the suit runs out of charge (the phone's battery is low): droops, reboots. Event only. */
+/** Bolt: the suit runs out of charge (the phone's battery is low): droops, reboots. Event only. */
 object LowPowerPower : Superpower("lowpower", "Low power", "Suit runs out of charge when your phone does", emptySet()) {
     override val startLines get() = HeroLines.AA_LOW
     override val landLines get() = HeroLines.AA_REBOOT

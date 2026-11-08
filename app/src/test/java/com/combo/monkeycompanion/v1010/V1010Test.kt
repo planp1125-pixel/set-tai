@@ -29,7 +29,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowSystemClock
 import java.time.Duration
 
-/** v10.10: one double-tap = one whole power (Rocket Girl's sky show first), taps never launch her, the chat button's pressed look. */
+/** v10.10: one double-tap = one whole power (Skye's sky show first), taps never launch her, the chat button's pressed look. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-xxhdpi")
 class V1010Test {
@@ -75,7 +75,7 @@ class V1010Test {
     @Test fun oneDoubleTapPlaysTheWholeSkyShowWithFiveBursts() {
         val v = view("rocketgirl")
         doubleTap(v)
-        assertSame("first double-tap on Rocket Girl = her sky show", SkyBurstPower, v.debugLastShortcut)
+        assertSame("first double-tap on Skye = her sky show", SkyBurstPower, v.debugLastShortcut)
         assertTrue(v.debugPowerOn)
         var flew = false; var frames = 0
         // no more taps: the one double-tap has to carry the show all the way to 5 bursts

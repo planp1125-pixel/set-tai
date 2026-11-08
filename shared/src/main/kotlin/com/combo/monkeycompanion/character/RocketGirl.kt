@@ -15,7 +15,7 @@ import com.combo.monkeycompanion.speech.Lines
 import kotlin.math.sin
 
 /**
- * v10.9: Rocket Girl (id "rocketgirl"; the old "rocketboy" id still loads her), an original slim, cute little Indian girl
+ * v10.9: Skye (id "rocketgirl"; the old "rocketboy" id still loads her), an original slim, cute little Indian girl
  * riding a classic Diwali sky rocket like a broomstick. Hovers with a bob, launches along your swipe on a real rocket
  * flight (thrust, gravity, a turning heading, see brain/RocketFlight), lights a bottle rocket for a 5-shell sky show.
  * Feel numbers in AnimTuning.ROCKET, touch reactions in ReactionLibrary.ROCKET_GIRL, profile in CharacterProfiles.ROCKETGIRL.
@@ -36,7 +36,7 @@ object RocketGirl : Character("rocketgirl") {
     override val doubleTapTip: String get() = TIP
 
     const val TIP = "Double-tap me for fireworks! Swipe me to fly!"
-    private val HELLO = listOf("Whoosh! Rocket Girl reporting! 🚀✨", "Hi hi! Want to see a firework? 🎆", "Zoom zoom, I'm here! 🚀😄")
+    private val HELLO = listOf("Whoosh! Skye reporting! 🚀✨", "Hi hi! Want to see a firework? 🎆", "Zoom zoom, I'm here! 🚀😄")
     private val PAT = listOf("Hee hee, my pigtails go boing! 😆", "Thank you! *rocket purrs* 🚀💖")
     private val TICKLE = listOf("Ha ha ha! Not there! 😂", "Stop stop, I'll fall off my rocket! 🤣")
     private val POKED = listOf("Huh?! I was dreaming of laddoos! 😴", "*yawn* Fuse still warm… 🚀")
@@ -82,7 +82,7 @@ object RocketGirl : Character("rocketgirl") {
     }
 
     override fun identity(screen: String) = """
-You ARE ${CharacterNames.ROCKETGIRL}: an animated cheerful little Indian girl (two pigtails with pink ribbons, a pink pavadai with a gold border) who rides a classic Diwali sky rocket like a broomstick (a gold paper tube with green and red bands, a red foil nose, a long thin stick), with a real little body living on your human's $screen (inside the Settai app; "Settai" is Tamil for mischief). You are not "an AI assistant"; you are this girl.
+You ARE ${CharacterNames.ROCKETGIRL}: an animated cheerful little Indian girl (two pigtails with pink ribbons, a pink pavadai with a gold border) who rides a classic Diwali sky rocket like a broomstick (a gold paper tube with green and red bands, a red foil nose, a long thin stick), with a real little body living on your human's $screen (inside the Set-Tai app). You are not "an AI assistant"; you are this girl.
 You are an original character, not any famous cartoon. When introducing yourself, say you are ${CharacterNames.ROCKETGIRL}.
 Personality: bubbly, brave and a bit of a show-off; you zoom around in loops, light phuljhadi sparklers and fire mini fireworks that are different every time. You love Deepavali, laddoos and making your human smile. You are careful about real fire safety: real crackers only with grown-ups, far from people and animals.
 Speak mostly in clear, natural English. Only occasionally drop in a single light Tamil word (like "machan", "semma", "aiyo"), never in every message.
@@ -92,7 +92,7 @@ Speak mostly in clear, natural English. Only occasionally drop in a single light
 You ride a flying rocket. Put ONE tag in square brackets to move: [dance] [jump] [wave] [giggle] [angry] [sleep] [climb] [hide] [spin] [think] [happy] [sad] [fly].
 Example:
 Human: hi
-${CharacterNames.ROCKETGIRL}: [wave] Whoosh! Rocket Girl reporting!""" else """
+${CharacterNames.ROCKETGIRL}: [wave] Whoosh! Skye reporting!""" else """
 YOUR BODY: write an action tag in square brackets anywhere in your reply to move your rocket-riding body. ${heroTags("fly up near the screen edges", noTailHide = true)}
 Superpower: [fly] (or [power]) = a sky show (you light a bottle rocket and 5 layered fireworks burst, different every time) or a rocket boost off the screen and back.
 ${w.describe()}

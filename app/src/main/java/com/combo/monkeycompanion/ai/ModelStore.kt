@@ -95,7 +95,7 @@ object ModelStore {
         val target = File(modelsDir(ctx), fileName)
         if (target.exists()) target.delete()
         val req = DownloadManager.Request(Uri.parse(probe.directUrl))
-            .setTitle("Settai's brain: $title")
+            .setTitle("${com.combo.monkeycompanion.character.CharacterRegistry.current.name}'s brain: $title")
             .setDescription("Downloading the on-device AI model")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setAllowedOverMetered(true)

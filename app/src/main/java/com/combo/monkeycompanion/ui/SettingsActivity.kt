@@ -80,7 +80,9 @@ import java.util.Locale
 @SuppressLint("SetTextI18n")
 class SettingsActivity : androidx.activity.ComponentActivity() {
     /** v10.38.24: texts use the main character's name instead of "Settai". */
-    private val nm: String get() = com.combo.monkeycompanion.character.CharacterRegistry.current.name
+    // v10.39.2: settings work for every character, so the screens say "your character", not one name
+    private val nm: String get() = "your character"
+    private val NM: String get() = "Your character"
 
 
     private val s get() = ChatHub.settings
@@ -240,7 +242,10 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     @Composable
     private fun OnlineCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         if (!s.useOwnApiKey) {
-            SCard("Set-Tai Cloud", "Built in. No key or Gmail needed. 40 requests per UTC day (including background AI); local commands cost nothing. Your messages and character context go to Gemini; the gateway keeps only anonymous quota counts.") {
+            SCard("Set-Tai Cloud", "Built in. No key or Gmail needed. 40 requests per phone per day (the count restarts at 5:30 AM India time). Local commands cost nothing. Your messages and character context go to Gemini; the gateway keeps only a daily count.") {
+                ChatHub.cloudLeftToday()?.let { SNote("Left today: $it of 40") }
+                SSwitch("Cloud also writes the automatic lines", s.cloudAutoLines,
+                    "Touch reactions, falls, idle thoughts and quips. Off = only your own chats use the 40, and ${nm} uses built-in lines for the rest. On = more surprising lines, but the 40 can run out in a few minutes of play.") { s.cloudAutoLines = it; bump() }
                 SSecondary("Test the brain") { runTest { onlineResult = it } }
                 if (onlineResult.isNotBlank()) Text(onlineResult)
             }
@@ -632,7 +637,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
         var qStart by remember { mutableStateOf(QH.fmt(s.quietStart)) }
         var qEnd by remember { mutableStateOf(QH.fmt(s.quietEnd)) }
         var usage by remember { mutableStateOf(s.usageApps) }
-        SCard("Buddy mode", "${nm} pipes up for moments that matter (a burst of messages, someone important, a delivery, an OTP, a long scroll session, full battery, good morning). Never while you type, call, game or watch fullscreen, in Do Not Disturb or in quiet hours.") {
+        SCard("Buddy mode", "${NM} pipes up for moments that matter (a burst of messages, someone important, a delivery, an OTP, a long scroll session, full battery, good morning). Never while you type, call, game or watch fullscreen, in Do Not Disturb or in quiet hours.") {
             SChoice("How often it pipes up", levels.map { "${it.label}" + if (it.perHour > 0) " (max ${it.perHour}/hour)" else "" }, levels.indexOf(PL.of(s.proactiveLevel))) {
                 s.proactiveLevel = levels[it].name; bump()
             }
@@ -694,7 +699,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     @Composable
     private fun PhonePowersCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         SCard("Phone powers", "What ${nm} may do, for every brain. Anything that opens or changes something asks Yes/No first.") {
-            SSecondary("${nm}'s skills (errands, senses & daily habits)") { startActivity(Intent(this@SettingsActivity, SkillsActivity::class.java)) }
+            SSecondary("${NM}'s skills (errands, senses & daily habits)") { startActivity(Intent(this@SettingsActivity, SkillsActivity::class.java)) }
             SSecondary("What can ${nm} do? (powers & permissions)") { startActivity(Intent(this@SettingsActivity, CapabilitiesActivity::class.java)) }
             for (g in CapGroup.entries) {
                 val n = Capabilities.all.count { it.group == g }
@@ -902,7 +907,7 @@ object GiveBrainDialog {
         }
 
         android.app.AlertDialog.Builder(act)
-            .setTitle("🧠 Give Brain to Settai")
+            .setTitle("🧠 Give Brain to your characters")
             .setView(ScrollView(act).apply { addView(root) })
             .setNeutralButton("Full Brain Settings") { _, _ ->
                 act.startActivity(Intent(act, SettingsActivity::class.java))

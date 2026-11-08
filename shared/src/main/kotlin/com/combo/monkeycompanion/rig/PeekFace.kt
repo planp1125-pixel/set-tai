@@ -99,7 +99,7 @@ object MonkeyPeek : PeekFace("monkey") {
     }
 }
 
-/** Superboy: skin, black hair tuft, teal domino mask with white eye slits, orange cape corner flapping out. */
+/** Zoom: skin, black hair tuft, teal domino mask with white eye slits, orange cape corner flapping out. */
 object SuperboyPeek : PeekFace("superboy") {
     override fun drawFace(c: Canvas, wear: Wear?, s: State) {
         val tw = s.tw; val cy = s.cy
@@ -128,7 +128,7 @@ object SuperboyPeek : PeekFace("superboy") {
     override val wardrobeShown = setOf("scarf")
 }
 
-/** Armour Anna: gunmetal helmet, glowing teal visor slit; mid-peek the visor flips up for a moustache peek. */
+/** Bolt: gunmetal helmet, glowing teal visor slit; mid-peek the visor flips up for a moustache peek. */
 object ArmourPeek : PeekFace("armour") {
     override val wardrobeShown = setOf("scarf")
     /** 0 = visor down, 1 = up (mid-peek, for a second). */
@@ -162,7 +162,7 @@ object ArmourPeek : PeekFace("armour") {
     }
 }
 
-/** Mask Man: huge carnival-mask eyes that blink and change mood; hat tip and the pet crow from the wardrobe. */
+/** Masko: huge carnival-mask eyes that blink and change mood; hat tip and the pet crow from the wardrobe. */
 object MaskManPeek : PeekFace("mask") {
     override val wardrobeShown = setOf("mask", "hat", "crow", "shades", "stache")
     enum class Mood { CALM, SURPRISED, HAPPY, SUSPICIOUS }

@@ -8,7 +8,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * v10.23 Angel, Kutti Satan's partner and opposite (procedural, no images). Same chibi body as the devil (it reuses his
+ * v10.23 Angel, Tutty's partner and opposite (procedural, no images). Same chibi body as the devil (it reuses his
  * renderer), but cream-white, no horns and no tail; a floating gold halo, small white feathered wings, pink cheeks,
  * a small smile, a gold trim on the dress hem. All fx are pure functions of time + pose slots (no RNG).
  * Pose slots she borrows from the devil (he never shares a body with her): dvSpell = healing sparkles, dvAura = soft

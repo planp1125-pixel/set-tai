@@ -7,7 +7,7 @@ package com.combo.monkeycompanion.engine
 data class PhysicsProfile(
     /** Free-fall gravity, dp/s². */
     val gravityDp: Float = 2600f,
-    /** Terminal fall speed when floating down (fall gravity < 1, e.g. Mask Man's umbrella), dp/s. */
+    /** Terminal fall speed when floating down (fall gravity < 1, e.g. Masko's umbrella), dp/s. */
     val floatTerminalDp: Float = 420f,
     /** A cannonball only bounces if it hits the ground faster than this, dp/s. */
     val bounceMinDp: Float = 300f,

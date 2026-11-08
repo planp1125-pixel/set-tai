@@ -19,9 +19,9 @@ data class CharacterProfile(
     val walksScreenEdges: Boolean = false,
     /** v9.3 let go mid-screen: 1 s Tom & Jerry mid-air hold, then a cannonball fall (Billa, Chittu). */
     val coyoteOnMidScreenDrop: Boolean = false,
-    /** Front-view comedy climb up a side edge and hang from the top (Mask Man; no climbing profile). */
+    /** Front-view comedy climb up a side edge and hang from the top (Masko; no climbing profile). */
     val clumsyClimber: Boolean = false,
-    /** v9.3 can lose thrust on hitting a screen edge while flying and crash-land (Superboy, Armour Anna). */
+    /** v9.3 can lose thrust on hitting a screen edge while flying and crash-land (Zoom, Bolt). */
     val edgeCrashOnFlight: Boolean = false,
     /** Roaming on the floor: chance to go climb a screen wall instead (null = the default for this kind of body). */
     val wallClimbChance: Float? = null,
@@ -35,7 +35,7 @@ data class CharacterProfile(
     val drawScale: Float = 1f,
     /** v10.2 Gajju: a belly poke gets a trunk-full of water sprayed across the screen, then it flies off in a huff. */
     val bellySpray: Boolean = false,
-    /** v10.4 Mask Man: juggles three balls whenever he's standing about; moving him makes him wobble and drop them. */
+    /** v10.4 Masko: juggles three balls whenever he's standing about; moving him makes him wobble and drop them. */
     val juggles: Boolean = false,
     /** v10.7 Disney-principles animation feel (squash, follow-through springs, easing). Visual only. */
     val anim: AnimTuning = AnimTuning.DEFAULT,
@@ -43,7 +43,7 @@ data class CharacterProfile(
     val body: BodyFeatures = BodyFeatures(),
     /** v10.8 touch engine: this character's own reaction entries on top of the shared library. */
     val reactions: List<ReactionEntry> = emptyList(),
-    /** v10.8 rides a prop under the body (Rocket Girl's rocket): taps on it are the PROP body part. */
+    /** v10.8 rides a prop under the body (Skye's rocket): taps on it are the PROP body part. */
     val ridesProp: Boolean = false,
 ) {
     /** v10.8 the full reaction table (built once per profile). */
@@ -65,18 +65,18 @@ object CharacterProfiles {
     /** v10.1 flying elephant: loops all over the screen and dances in the air a lot. */
     val GAJJU = CharacterProfile("gajju", airPatrolChance = 0.45f, airDanceChance = 0.3f, drawScale = GAJJU_DRAW_SCALE, bellySpray = true, anim = AnimTuning.GAJJU,
         body = BodyFeatures(tail = true, ears = true, trunk = true))
-    /** v10.8 Rocket Girl: rides a Diwali rocket; hovers, patrols in arcs, dances in the air now and then. */
+    /** v10.8 Skye: rides a Diwali rocket; hovers, patrols in arcs, dances in the air now and then. */
     val ROCKETGIRL = CharacterProfile("rocketgirl", edgeCrashOnFlight = false, airPatrolChance = 0.5f, airDanceChance = 0.2f, hoverJetPadRig = 30f,
         anim = AnimTuning.ROCKET, body = BodyFeatures(prop = true), reactions = ReactionLibrary.ROCKET_GIRL, ridesProp = true)
-    /** v10.14 Hollow Man: walks the floor, dances; the fedora is the follow-through piece. */
+    /** v10.14 Echo: walks the floor, dances; the fedora is the follow-through piece. */
     val HOLLOWMAN = CharacterProfile("hollowman", anim = AnimTuning.HOLLOW)
-    /** v10.14 Surfing Girl: hovers on her wave, patrols around the screen a lot, dances on the board now and then. */
+    /** v10.14 Wavy: hovers on her wave, patrols around the screen a lot, dances on the board now and then. */
     val SURFER = CharacterProfile("surfer", edgeCrashOnFlight = false, airPatrolChance = 0.6f, airDanceChance = 0.15f, hoverJetPadRig = 44f, anim = AnimTuning.SURF)
-    /** v10.16 Kutti Satan: floats and bobs, patrols the air now and then, a whippy tail (TAIL spring). */
+    /** v10.16 Tutty: floats and bobs, patrols the air now and then, a whippy tail (TAIL spring). */
     val DEVIL = CharacterProfile("devil", airPatrolChance = 0.35f, airDanceChance = 0.12f, anim = AnimTuning.DEVIL, body = BodyFeatures(tail = true))
-    /** v10.23 Angel: floats like Kutti Satan, patrols the air a little more (she has wings). */
+    /** v10.23 Angel: floats like Tutty, patrols the air a little more (she has wings). */
     val ANGEL = CharacterProfile("angel", airPatrolChance = 0.4f, airDanceChance = 0.15f, anim = AnimTuning.DEVIL)
-    /** v10.24 Skater Girl: a floor character who rolls on her board. */
+    /** v10.24 Rollie: a floor character who rolls on her board. */
     val SKATER = CharacterProfile("skater", anim = AnimTuning.SURF)
     /** Custom photo look-alikes and anything new. */
     val DEFAULT = CharacterProfile("default", anim = AnimTuning.CHIBI)

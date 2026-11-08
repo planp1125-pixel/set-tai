@@ -39,7 +39,7 @@ object AgentExtras {
             CapGroup.SCREEN -> {
                 col.addView(sw("Ask before every tap", s.agentConfirmEach) { s.agentConfirmEach = it })
                 col.addView(note("Typing always asks. Buttons like Send / Pay / Delete / Post / Buy always ask, even with this off."))
-                col.addView(note("Never driven: lock screen, password fields, Settai itself, and banking / UPI / wallet apps (${AgentSafety.DEFAULT_BLOCKED.size} built in, plus any package with bank / upi / wallet in its name)."))
+                col.addView(note("Never driven: lock screen, password fields, Set-Tai itself, and banking / UPI / wallet apps (${AgentSafety.DEFAULT_BLOCKED.size} built in, plus any package with bank / upi / wallet in its name)."))
                 col.addView(field("More apps to block (package names, comma separated)", s.agentBlocked) { s.agentBlocked = it })
                 col.addView(field("Allow anyway (package names that were wrongly blocked)", s.agentAllowed) { s.agentAllowed = it })
             }
@@ -62,16 +62,16 @@ internal fun AgentExtrasPanel(a: Activity, g: CapGroup) {
             var allowed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(s.agentAllowed) }
             SSwitch("Ask before every tap", s.agentConfirmEach) { s.agentConfirmEach = it; rev++ }
             SNote("Typing always asks. Buttons like Send / Pay / Delete / Post / Buy always ask, even with this off.")
-            SNote("Never driven: lock screen, password fields, Settai itself, and banking / UPI / wallet apps (${AgentSafety.DEFAULT_BLOCKED.size} built in, plus any package with bank / upi / wallet in its name).")
+            SNote("Never driven: lock screen, password fields, Set-Tai itself, and banking / UPI / wallet apps (${AgentSafety.DEFAULT_BLOCKED.size} built in, plus any package with bank / upi / wallet in its name).")
             SField(blocked, { blocked = it; s.agentBlocked = it }, "More apps to block", "package names, comma separated")
             SField(allowed, { allowed = it; s.agentAllowed = it }, "Allow anyway", "package names that were wrongly blocked")
         }
-        CapGroup.MEMORY -> SSecondary("Open Settai's notebook (view / delete)") { a.startActivity(android.content.Intent(a, MemoryActivity::class.java)) }
+        CapGroup.MEMORY -> SSecondary("Open ${nm}'s notebook (view / delete)") { a.startActivity(android.content.Intent(a, MemoryActivity::class.java)) }
         CapGroup.ROUTINES -> SSecondary("Open routines") { a.startActivity(android.content.Intent(a, RoutinesActivity::class.java)) }
         CapGroup.VOICE -> {
             SSwitch("Speak replies out loud", s.speakReplies) { s.speakReplies = it; rev++ }
-            SSecondary("Test voice") { com.combo.monkeycompanion.agent.Voice.speak(a, "Vanakkam! I'm Settai, your naughty monkey. Banana time?") }
-            SNote("The 🎤 button appears in the chat once the mic is granted. Settai listens only while you press it. No always-on wake word.")
+            SSecondary("Test voice") { com.combo.monkeycompanion.agent.Voice.speak(a, "Hi! I'm ${com.combo.monkeycompanion.character.CharacterRegistry.current.name}. Nice to meet you!") }
+            SNote("The 🎤 button appears in the chat once the mic is granted. ${NM} listens only while you press it. No always-on wake word.")
         }
         CapGroup.WEB -> {
             var url by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(s.searchUrl) }
@@ -79,8 +79,12 @@ internal fun AgentExtrasPanel(a: Activity, g: CapGroup) {
             SField(url, { url = it; s.searchUrl = it.trim() }, "Optional search URL with {q}")
             SNote("Weather: Open-Meteo (free, no key). Location is only read when you ask for weather without a city.")
         }
-        CapGroup.PIM -> SNote("Also gives a 9 am birthday reminder from your contacts. Calls are never placed: Settai only opens the dialer.")
+        CapGroup.PIM -> SNote("Also gives a 9 am birthday reminder from your contacts. Calls are never placed: ${nm} only opens the dialer.")
         CapGroup.DOCTOR -> SNote("Android doesn't share per-app battery numbers with apps, so \"battery hogs\" = the apps you used most today (screen-on time).")
         else -> {}
     }
 }
+
+// v10.39.2: settings work for every character, so the screens say "your character", not one name
+private val nm: String get() = "your character"
+private val NM: String get() = "Your character"

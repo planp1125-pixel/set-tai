@@ -64,9 +64,10 @@ class RestAndScreenTest {
         // first, so how long that takes depends on test order: wait in 1 s steps, bounded).
         val looper = shadowOf(android.os.Looper.getMainLooper())
         looper.idleFor(Duration.ofSeconds(28))
-        assertFalse("not hidden before the rest timeout", v.debugHidden)
+        // v10.39.2: a story beat may make the character leave for a few seconds by itself; only the rest timer counts here
+        assertEquals("the rest timer did not fire before the timeout", 0L, v.debugLastRestAt)
         var waited = 28
-        while (!v.debugHidden && waited < 150) { looper.idleFor(Duration.ofSeconds(1)); waited++ }
+        while (!(v.debugHidden && v.debugLastRestAt > 0L) && waited < 150) { looper.idleFor(Duration.ofSeconds(1)); waited++ }
         assertTrue("hid after rest timeout (waited $waited s) ${v.debugRestBlock}", v.debugHidden)
         assertTrue(v.debugResting)
         v.debugFrames(5)

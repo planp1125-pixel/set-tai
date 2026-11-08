@@ -28,7 +28,7 @@ import com.combo.monkeycompanion.speech.CloudBubble
  *  - Left: real rendered DiaryActivity (character tabs, thinking summary, MoodBarsView, seeded favourites, cute diary entries)
  *  - Right top: "What's Settai thinking?" menu chip + in-character thinking bubble
  *  - Right middle: Explore-new-app 3-step sequence (1. Walk over -> 2. Sniff around -> 3. Peek & comment)
- *  - Right bottom: Real-device fixes (Armour Anna hover boot/palm jets in own window + Charger plug-in big lightning bolt in own window)
+ *  - Right bottom: Real-device fixes (Bolt hover boot/palm jets in own window + Charger plug-in big lightning bolt in own window)
  */
 object PreviewV6 {
     private val brown = Color.rgb(0x4A, 0x2C, 0x14)
@@ -97,9 +97,9 @@ object PreviewV6 {
             drawExploreCell(c, cr, i, label, st, line, subP, borderP)
         }
 
-        // 3. Bottom-right: Real-device fixes (Anna hover jets + Charger lightning bolt in own window)
+        // 3. Bottom-right: Real-device fixes (Bolt hover jets + Charger lightning bolt in own window)
         ry = expTop + expH + 18f
-        c.drawText("🚀⚡ Real-device fixes: Anna's hover jets & charger lightning bolt (in own window)", rx + 6f, ry + 22f, secP)
+        c.drawText("🚀⚡ Real-device fixes: Bolt's hover jets & charger lightning bolt (in own window)", rx + 6f, ry + 22f, secP)
         val fixTop = ry + 34f; val fixH = H - fixTop - 24f
         val halfW = (rw - gap) / 2f
         val rAnna = RectF(rx, fixTop, rx + halfW, fixTop + fixH)
@@ -232,7 +232,7 @@ object PreviewV6 {
         }
         c.drawPath(p, arcP)
         val lblP = Paint(subP).apply { color = Color.rgb(0xE0, 0xEC, 0xFF) }
-        c.drawText("Armour Anna hover jets + big curved swipe-down flight", r.centerX(), r.bottom - 14f, lblP)
+        c.drawText("Bolt hover jets + big curved swipe-down flight", r.centerX(), r.bottom - 14f, lblP)
         c.restore()
         c.drawRoundRect(r, 20f, 20f, borderP)
     }

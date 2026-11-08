@@ -14,7 +14,7 @@ import com.combo.monkeycompanion.rig.Pose
 /**
  * v10.31: status-bar / always-on-display icon of the CURRENT character, drawn by the same procedural renderer
  * as the overlay (no bitmap assets). Android tints small icons by their alpha, so the AOD shows the character's
- * silhouette (Kutti Satan's horns + tail) instead of the old static monkey vector. Cached per character id.
+ * silhouette (Tutty's horns + tail) instead of the old static monkey vector. Cached per character id.
  */
 object CharacterIcon {
     private var cacheId: String? = null

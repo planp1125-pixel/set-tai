@@ -32,7 +32,7 @@ class V1017Test {
             BodySense.Event(now - 3_000, "the keyboard pushed me aside", BodySense.Feeling.SQUISHED),
             BodySense.Event(now - 1_000, "you're holding me", BodySense.Feeling.HELD),
         )
-        val s = BodySense.Snapshot("Kutti Satan", "bottom-left", "resting, idle", battery = 80, hour = 15, quietMin = 12, restedMin = 5, keyboard = true, app = "chat list")
+        val s = BodySense.Snapshot("Tutty", "bottom-left", "resting, idle", battery = 80, hour = 15, quietMin = 12, restedMin = 5, keyboard = true, app = "chat list")
         val note = BodySense.build(s, ev, now)
         assertTrue(note, note.length <= BodySense.MAX_CHARS)
         assertTrue(note, note.contains("held gently") && note.contains("keyboard"))

@@ -83,7 +83,7 @@ class PhonePowers(
             val q = "For that I need the “${perm.label}” permission. Shall I open the switch? Flip it, then ask me again. 🔑"
             return Handled(q, PendingAction(q, "") {
                 ActionLog.add(ctx, "Grant ${perm.label}", "opening settings")
-                Capabilities.open(ctx, perm.grantIntent(ctx), "the ${perm.label} switch", "Flip the switch for Settai, then come back and ask me again! 🔑")
+                Capabilities.open(ctx, perm.grantIntent(ctx), "the ${perm.label} switch", "Flip the switch for Set-Tai, then come back and ask me again! 🔑")
             })
         }
         return try {

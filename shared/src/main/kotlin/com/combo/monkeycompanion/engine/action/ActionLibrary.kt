@@ -7,7 +7,7 @@ import kotlin.math.sin
  * v10.31 shared Action Library: reusable pose overlays that ANY character plays from one place.
  *
  * Every built-in and studio (custom) character draws through the same [Pose] slots and the same
- * [com.combo.monkeycompanion.rig.MonkeyRig] skeleton, so one action written here works on Kutti Satan, Angel,
+ * [com.combo.monkeycompanion.rig.MonkeyRig] skeleton, so one action written here works on Tutty, Angel,
  * Settai, Gajju, Chittu, heroes and custom companions alike. No per-character copies, no bitmaps.
  *
  * An action is layered on top of whatever state pose is already in the frame ([apply] blends by weight [k]),

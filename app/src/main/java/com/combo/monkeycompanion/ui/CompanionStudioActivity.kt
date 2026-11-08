@@ -1269,7 +1269,7 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
         runCatching { file.writeText(json) }
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "application/json"
-            putExtra(Intent.EXTRA_SUBJECT, "Settai Companion: ${draft.name} (.settai.json)")
+            putExtra(Intent.EXTRA_SUBJECT, "Set-Tai Companion: ${draft.name} (.settai.json)")
             putExtra(Intent.EXTRA_TEXT, json)
         }
         startActivity(Intent.createChooser(send, "Export ${draft.name} (.settai)"))

@@ -18,7 +18,7 @@ class GatewayBrain(
     private val endpoint: String = URL,
     private val client: OkHttpClient = CLIENT,
 ) : Brain {
-    override val label = "Set-Tai Cloud (40 chats / UTC day)"
+    override val label = "Set-Tai Cloud (40 a day)"
     override val supportsTools = false
     @Volatile private var active: Call? = null
     @Volatile private var cancelled = false
@@ -59,7 +59,7 @@ class GatewayBrain(
                 val result = runCatching { JSONObject(response.body?.string().orEmpty()) }.getOrNull()
                 result?.optInt("leftToday", -1)?.takeIf { it >= 0 }?.let { leftToday = it }
                 if (response.code == 429) {
-                    val text = "Today's cloud chats are used up. Local jokes, dance and phone commands still work. Try again after midnight UTC."
+                    val text = "Today's cloud chats are used up. Local jokes, dance and phone commands still work. Try again after midnight UTC (5:30 AM in India)."
                     onText(text); return text
                 }
                 if (!response.isSuccessful) throw BrainException("Cloud unavailable.")

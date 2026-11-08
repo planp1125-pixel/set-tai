@@ -562,7 +562,7 @@ class MonkeyOverlayService : Service(), OverlayHost {
         val chat = PendingIntent.getService(this, 3, Intent(this, MonkeyOverlayService::class.java).setAction(ACTION_CHAT), pi)
         return NotificationCompat.Builder(this, CHANNEL)
             .let { CharacterIcon.applyTo(it, this) }
-            .setContentTitle(com.combo.monkeycompanion.character.CharacterRegistry.current.name.let { n -> if (asleep) "$n is asleep 💤" else if (n == "Settai") getString(R.string.notif_title) else "$n is awake ✨" })
+            .setContentTitle(com.combo.monkeycompanion.character.CharacterRegistry.current.name.let { n -> if (asleep) "$n is asleep 💤" else if (n == com.combo.monkeycompanion.character.CharacterNames.MONKEY) getString(R.string.notif_title) else "$n is awake ✨" })
             .setContentText(if (asleep) (if (com.combo.monkeycompanion.character.CharacterRegistry.current.can(com.combo.monkeycompanion.character.Locomotion.CLIMB)) "Zzz… unlock and I'll climb back up!" else "Zzz… unlock and I'll be right back!") else getString(R.string.notif_text))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .apply { if (asleep) sleepyPortrait?.let { setLargeIcon(it) } }

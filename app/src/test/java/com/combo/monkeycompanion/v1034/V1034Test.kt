@@ -55,7 +55,7 @@ class V1034Test {
         val users = UserShows.user(ctx)
         assertEquals(1, users.size); assertTrue(users[0].text(ctx).contains("Vanakkam!"))
         val all = UserShows.all(ctx)
-        assertTrue("bundled Satan vs Angel still there", all.any { it.bundled && it.title == "Satan vs Angel" })
+        assertTrue("bundled Tutty vs Angel still there", all.any { it.bundled && it.title == "Tutty vs Angel" })
         assertTrue(all.any { !it.bundled && it.title == "Wave hello" })
         assertTrue(UserShows.delete(users[0])); assertTrue(UserShows.user(ctx).isEmpty())
         assertEquals("wave-hello", UserShows.slug("  Wave   hello!! "))
@@ -79,6 +79,6 @@ class V1034Test {
         assertTrue(a.lastMessage!!.contains("line 2"))
         assertTrue(a.addText(wave, playNow = false))
         assertEquals(1, UserShows.user(ctx).size)
-        assertNotNull(ScriptShowHub.load(ctx))   // bundled Satan vs Angel still loads
+        assertNotNull(ScriptShowHub.load(ctx))   // bundled Tutty vs Angel still loads
     }
 }

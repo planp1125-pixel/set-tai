@@ -293,7 +293,7 @@ class PowerEmitter(val parts: Particles) {
                 while (flameAcc >= 1f) { flameAcc -= 1f; headTop(rig, a)
                     parts.spawn(Particles.SNOW, a[0] + (rnd.nextFloat() - 0.5f) * 150f * s, a[1] - 40f * s, 0f, (40f + rnd.nextFloat() * 30f) * s, 2.6f, (4f + rnd.nextFloat() * 3f) * s) }
             }
-            PowerPhase.CONFETTI -> if (power.id != "skyburst") {   // v10.8: Rocket Girl's sky-burst draws Fireworks instead
+            PowerPhase.CONFETTI -> if (power.id != "skyburst") {   // v10.8: Skye's sky-burst draws Fireworks instead
                 // A pop from alternate shoulders four times: bursts of confetti.
                 val pop = (k * 4f).toInt()
                 if (pop != lastPop && k > 0.05f) { lastPop = pop; headTop(rig, a)

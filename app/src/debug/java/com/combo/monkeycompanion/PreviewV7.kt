@@ -23,7 +23,7 @@ import com.combo.monkeycompanion.speech.CloudBubble
 /**
  * Debug-only v7.0 preview sheet ("The Phone as a World"):
  *  1. Home World Weather/Conditions card + Solo/Duo/Trio toggle + Morning Night-Trace card
- *  2. Two neighbours bantering on screen together (Settai & Armour Anna in one shared window)
+ *  2. Two neighbours bantering on screen together (Settai & Bolt in one shared window)
  *  3. Lasting Energy States: Hungry low-battery (<20%) huddle vs. Feeding time (charger bolt + eating current)
  *  4. Physical Keyboard (IME) Dodge: Settai relocates above imeTopY so spacebar / bottom keys stay 100% clear
  *  5. Reframed "🛠️ Settai's skills (errands & powers)" screen (real rendered SkillsActivity)
@@ -111,7 +111,7 @@ object PreviewV7 {
             "🌤️ Morning · 🍌 Well-fed (84%) · 🍃 Cool (30°C)",
             "📍 At the WhatsApp market · 📬 3 visitors at gate",
             "🌉 Bridge up (Wi-Fi) · 🤝 Visitor trust 86%",
-            "👥 On screen: Settai & Armour Anna (Duo)",
+            "👥 On screen: Settai & Bolt (Duo)",
         )
         for (l in lines) { c.drawText(l, r.left + 18f, y, bP); y += 23f }
 
@@ -122,7 +122,7 @@ object PreviewV7 {
         val trTitle = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0xFF, 0xE0, 0x82); textSize = 14.5f; typeface = Typeface.DEFAULT_BOLD }
         val trBody = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = 13.8f }
         c.drawText("🌙 Morning trace (while the glass was dark, 7h 30m):", trBox.left + 12f, trBox.top + 24f, trTitle)
-        c.drawText("“While the glass was dark, Settai & Anna shared a", trBox.left + 12f, trBox.top + 48f, trBody)
+        c.drawText("“While the glass was dark, Settai & Bolt shared a", trBox.left + 12f, trBox.top + 48f, trBody)
         c.drawText("banana near the battery icon & hid a 3 AM card 🍌🔋”", trBox.left + 12f, trBox.top + 68f, trBody)
         y = trBox.bottom + 18f
 
@@ -243,7 +243,7 @@ object PreviewV7 {
         val badge = RectF(r.left + 16f, r.top + 14f, r.right - 16f, r.top + 52f)
         c.drawRoundRect(badge, 12f, 12f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0x3A, 0x22, 0x10) })
         val bt = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = 14.5f; typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.CENTER }
-        c.drawText("Single shared window · Settai (Scout) + Armour Anna (Engineer)", badge.centerX(), badge.centerY() + 5f, bt)
+        c.drawText("Single shared window · Settai (Scout) + Bolt (Engineer)", badge.centerX(), badge.centerY() + 5f, bt)
 
         val fy = r.bottom - 56f
         // Settai on the left (Turn 1)
@@ -258,7 +258,7 @@ object PreviewV7 {
         bub1.setText("Ooh, a crunchy WhatsApp visitor card at the gate! *nibble* 📬😋", 240)
         bub1.draw(c, r.left + 18f, r.top + 74f, h1[0], h1[1], 1f, 1f)
 
-        // Armour Anna on the right (Turn 2 companion response)
+        // Bolt on the right (Turn 2 companion response)
         val rig2 = MonkeyRig(); val p2 = Pose()
         Animations.fill(p2, MonkeyState.WAVE, 1.3f, 1.3f, AnimContext())
         val x2 = r.right - 155f

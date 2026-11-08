@@ -3,7 +3,7 @@ package com.combo.monkeycompanion.brain
 import com.combo.monkeycompanion.character.Character
 
 /**
- * v10.17 power choice for the main character (Kutti Satan): the user switches his powers on/off from the long-press
+ * v10.17 power choice for the main character (Tutty): the user switches his powers on/off from the long-press
  * powers ring. No saved choice = the character's own powers
  * (the old behaviour). The main (signature) power is always on. [store] is wired by the app (null in tests).
  */
@@ -13,7 +13,7 @@ object PowerPrefs {
     /** Everything this character could use: its own powers first, then all others (no internal low-power routine). */
     fun available(c: Character): List<Superpower> = c.powers.filter { it != LowPowerPower }
 
-    /** v10.17 (revised): only the main character (Kutti Satan) has a choosable set; built-ins keep fixed powers and
+    /** v10.17 (revised): only the main character (Tutty) has a choosable set; built-ins keep fixed powers and
      *  Companion Studio characters use the Studio's own multi-select. */
     fun choosable(c: Character): Boolean = c.id == "devil"
 

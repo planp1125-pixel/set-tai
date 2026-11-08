@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** v10.8: Rocket Girl in the real overlay view: living touch reactions play, never twice in a row, and the sky-burst launches fireworks. */
+/** v10.8: Skye in the real overlay view: living touch reactions play, never twice in a row, and the sky-burst launches fireworks. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-xxhdpi")
 class RocketGirlOverlayTest {

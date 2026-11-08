@@ -2,10 +2,10 @@ package com.combo.monkeycompanion.brain
 
 import kotlin.random.Random
 
-// v10.14 Hollow Man (invisible dancer) and Surfing Girl powers (same sealed family as the other powers).
+// v10.14 Echo (invisible dancer) and Wavy powers (same sealed family as the other powers).
 // Each plan is pure data; the dance/surf poses live in the characters' adapt() (keyed on the power id + phase).
 
-/** Hollow Man's signature: a hat-tip wind-up, then a long, smooth moonwalk glide across the floor and a toe-stand finish. */
+/** Echo's signature: a hat-tip wind-up, then a long, smooth moonwalk glide across the floor and a toe-stand finish. */
 object MoonwalkPower : Superpower("moonwalk", "Moonwalk", "Glides backwards across the whole screen, then freezes up on his toes", emptySet()) {
     override val startLines get() = listOf("Hee-hee! Watch the floor… 🕺", "Smooth mode: ON 🎩", "Shamone! Backwards we go ✨", "Floor is ice, I am nice 😎")
     override val landLines get() = listOf("*toe stand* …and FREEZE. 🕴️", "Semma smooth, no? 😎", "The floor is still shining ✨")
@@ -20,7 +20,7 @@ object MoonwalkPower : Superpower("moonwalk", "Moonwalk", "Glides backwards acro
     }
 }
 
-/** Hollow Man: a fast double spin that ends on his toes (clothes swirl, hat stays put by a miracle). */
+/** Echo: a fast double spin that ends on his toes (clothes swirl, hat stays put by a miracle). */
 object DanceSpinPower : Superpower("dancespin", "Spin & freeze", "A double spin, a kick and a toe-stand freeze", emptySet()) {
     override val startLines get() = listOf("Spin time! 🌀", "Round and round! 🕺", "Hoo! 🌀🎩")
     override val landLines get() = listOf("*freeze* 🕴️", "Dizzy? Me? Never 😵‍💫… okay little bit")
@@ -28,7 +28,7 @@ object DanceSpinPower : Superpower("dancespin", "Spin & freeze", "A double spin,
     override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random) = listOf(PowerStep(PowerPhase.POSE, 2.9f))
 }
 
-/** Hollow Man: tips the hat to you (nobody under it), bows, puts it back. */
+/** Echo: tips the hat to you (nobody under it), bows, puts it back. */
 object HatTipPower : Superpower("hattip", "Hat tip", "Lifts his hat to you: there is nobody under it", emptySet()) {
     override val startLines get() = listOf("For you, my friend 🎩", "*tips hat* Vanakkam 🎩", "Gentleman mode 🎩✨")
     override val landLines get() = listOf("Yes, nobody inside. Surprise! 👻🎩", "Hat back on. Looking sharp 😎")
@@ -36,7 +36,7 @@ object HatTipPower : Superpower("hattip", "Hat tip", "Lifts his hat to you: ther
     override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random) = listOf(PowerStep(PowerPhase.POSE, 2.9f))
 }
 
-/** Hollow Man: the big impossible forward lean, feet glued to the floor, then he snaps back up. */
+/** Echo: the big impossible forward lean, feet glued to the floor, then he snaps back up. */
 object GravityLeanPower : Superpower("lean", "Impossible lean", "Leans way forward on glued feet, then springs back", emptySet()) {
     override val startLines get() = listOf("Gravity? Never heard of it 😎", "Leeeean… 🕴️", "Physics, please look away 🙈")
     override val landLines get() = listOf("*snaps back* Ta-da! ✨", "Feet still glued 👞✨")
@@ -45,7 +45,7 @@ object GravityLeanPower : Superpower("lean", "Impossible lean", "Leans way forwa
 }
 
 /**
- * Surfing Girl's signature. v10.22: a REAL surf ride along the bottom of the screen (the water), not a thrust flight:
+ * Wavy's signature. v10.22: a REAL surf ride along the bottom of the screen (the water), not a thrust flight:
  * she paddles, pops up, gathers speed down the wave face, carves up and down it (leaning into each turn), cuts back,
  * and glides to a soft stop as the water slows her. One continuous glide per leg ([PowerStep.glide]); no speed lines.
  */
@@ -68,7 +68,7 @@ object BigWavePower : Superpower("bigwave", "Big wave ride", "Paddles in and sur
     }
 }
 
-/** Surfing Girl: an aerial off the lip, a full flip, and (sometimes) a splashy wipeout gag. */
+/** Wavy: an aerial off the lip, a full flip, and (sometimes) a splashy wipeout gag. */
 object AerialFlipPower : Superpower("aerial", "Aerial flip", "Launches off a wave lip into a full flip; sometimes a wipeout", emptySet()) {
     override val startLines get() = listOf("Watch this trick! 🏄‍♀️", "Air time! ✨", "One… two… FLIP! 🤸‍♀️")
     override val landLines get() = listOf("Stuck it! 😎", "Ten out of ten, judges? 🏆", "Semma landing 🌊")
@@ -86,7 +86,7 @@ object AerialFlipPower : Superpower("aerial", "Aerial flip", "Launches off a wav
     }
 }
 
-/** Surfing Girl: carves a quick S across the screen, spraying a wall of water. */
+/** Wavy: carves a quick S across the screen, spraying a wall of water. */
 object SprayCarvePower : Superpower("carve", "Spray carve", "Carves a deep turn on the water and throws a wall of spray", emptySet()) {
     override val startLines get() = listOf("Carve time! 🌊", "Spray for you! 💦", "Hold on to your phone! 🌊😜")
     override val landLines get() = listOf("Did you get wet? Hehe 💦", "Smooth like coconut water 🥥")

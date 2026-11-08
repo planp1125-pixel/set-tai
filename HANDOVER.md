@@ -1,6 +1,18 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.39 (versionCode 102)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.39.2 (versionCode 104)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.39.2 names and cloud saver
+
+- Display names: devil = Tutty (the app's heart, first character on new installs), armour = Bolt, rocketgirl = Skye,
+  superboy = Zoom, mask = Masko, surfer = Wavy, skater = Rollie, hollowman = Echo, monkey = Pogo; Billa, Chittu, Gajju,
+  Angel unchanged. Ids and Kotlin object names (KuttiSatan, ArmourAnna, Superboy…) are unchanged on purpose. Shared lines
+  use "Pogo" as the placeholder that `SimpleVoice.polish` swaps for the current name. The app name is "Set-Tai".
+- Settings-type screens say "your character" (file-private `nm`/`NM`); the overlay, chat hints and the character's own
+  lines use the current name.
+- Set-Tai Cloud: `ChatHub.autoAiAllowed()` gates every automatic AI line (MonkeyView.aiVoiceOn, quips, Mind comments).
+  On the cloud it is false unless `AppSettings.cloudAutoLines`; user chats always go through. The worker allows 40
+  requests per anonymous id per UTC day and counts failed attempts too.
 
 ## v10.39 current handoff (Material 3 app screens)
 

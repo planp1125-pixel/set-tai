@@ -78,7 +78,7 @@ object PairHub {
         val nm = ctx.getSystemService(NsdManager::class.java); nsd = nm
         found.clear()
         val dl = object : NsdManager.DiscoveryListener {
-            override fun onDiscoveryStarted(t: String) { fire { it.onStatus("Looking for Settais on this Wi-Fi…") } }
+            override fun onDiscoveryStarted(t: String) { fire { it.onStatus("Looking for Set-Tai phones on this Wi-Fi…") } }
             override fun onServiceFound(i: NsdServiceInfo) {
                 if (!i.serviceType.contains("_settai")) return
                 found[i.serviceName] = i; val names = found.keys.toList(); fire { it.onFound(names) }

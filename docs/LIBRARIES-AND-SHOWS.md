@@ -19,7 +19,7 @@ This file answers three questions: **What's the plan now? What libraries do we a
 - **Props engine** `engine/props/Props.kt`: fireball, shield, dosa pan, shock ball, laddu, ball. Thrown props are `Projectile`s with real positions.
 - **Stage effects** `engine/stagefx/StageFx.kt`: rays from eyes or hands, a clash burst, the cracked-glass overlay, and vanish smoke in each body's `vanishStyle`.
 - **Script player** `engine/script/` (`ShowScript` parser, `ScriptPlayer`, `ScriptStageRenderer`), with timed beats plus `when <prop> near <role>` rules.
-- The first script is `app/src/main/assets/shows/satan_vs_angel.show`. Start it from long-press → 🎬 Show → 😈😇 Satan vs Angel. Tap the stage to stop it.
+- The first script is `app/src/main/assets/shows/satan_vs_angel.show`. Start it from long-press → 🎬 Show → 😈😇 Tutty vs Angel. Tap the stage to stop it.
 
 **Still later (NOT BUILT):**
 1. More actions and faces as shows need them (wave, clap, whisper, bow…).
@@ -155,14 +155,14 @@ Coordinates are screen fractions: x from 0 (left) to 1 (right), y from 0 (top) t
 
 **The fireball-near-Angel rule** is `when fireball near angel within 0.08: angel vanish in 0.5`. The player checks every projectile against every rule each step (prop kind matches, the target is visible, distance ≤ r), then runs that rule's commands once. To swap rays for objects, change one word: `rival throw dosa_pan at hero` + `when dosa_pan near hero: hero vanish`. The test `V1032Test.sameVerbsWorkForAnyCastAndAnyProp` does exactly that with Gajju and Billa.
 
-**Play it:** long-press the character → 🎬 Show → 😈😇 Satan vs Angel (`MonkeyView.startScriptShow()`). It plays on a full-screen stage window, the companion windows hide meanwhile, and a tap stops it. Double-tap is unchanged (it still fires a random power, the main one first).
+**Play it:** long-press the character → 🎬 Show → 😈😇 Tutty vs Angel (`MonkeyView.startScriptShow()`). It plays on a full-screen stage window, the companion windows hide meanwhile, and a tap stops it. Double-tap is unchanged (it still fires a random power, the main one first).
 
 **Add a new show:** copy `satan_vs_angel.show`, change `cast:` and the beats, and add a menu entry calling `startScriptShow("shows/<file>.show")`. An unknown verb, role or bad time throws `ScriptError` with the line number.
 
 ## 7. Your own shows (v10.34)
 
 You don't need a new APK for each script. Long-press the character → 🎬 Show → 🎭 Shows opens the Shows list:
-- **⭐ bundled shows** (Satan vs Angel) and **📝 your shows**. ▶ plays, 🗑 deletes one of yours. Tap the screen during a show to stop it.
+- **⭐ bundled shows** (Tutty vs Angel) and **📝 your shows**. ▶ plays, 🗑 deletes one of yours. Tap the screen during a show to stop it.
 - **Add a show**, three ways:
   1. **Paste** the whole script, then *Save & play* or *Save*.
   2. **Pick a file**: a `.show` or `.txt` file through Android's file picker (no storage permission).

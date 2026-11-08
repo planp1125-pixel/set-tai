@@ -10,7 +10,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * v10.24 the props of the swipe trips (procedural): Mask Man's bedsheet, Chittu's mouse holes, the surf curl and spray,
+ * v10.24 the props of the swipe trips (procedural): Masko's bedsheet, Chittu's mouse holes, the surf curl and spray,
  * landing dust, magic sparkles. Drawn around the character's feet ([cx], [fy]); [u] = px per dp. No RNG.
  */
 class SwipeFx {
@@ -37,7 +37,7 @@ class SwipeFx {
     }
 
     /** In front of the body: sheet, curl lip, spray, sparkles, dust. */
-    /** v10.25.1 smoke puff colour for MAGIC_HOPS (red = Kutti Satan, white/gold = Angel). */
+    /** v10.25.1 smoke puff colour for MAGIC_HOPS (red = Tutty, white/gold = Angel). */
     var puffRed = true
     fun drawFront(c: Canvas, f: SwipeTravel.Frame, cx: Float, fy: Float, bodyH: Float, u: Float, t: Float, dir: Float) {
         if (f.puff > 0.01f) {

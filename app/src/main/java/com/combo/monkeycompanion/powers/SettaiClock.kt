@@ -112,8 +112,8 @@ object SettaiClock {
     fun channel(ctx: Context) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         if (nm.getNotificationChannel(CHANNEL) != null) return
-        val ch = NotificationChannel(CHANNEL, "Settai's timers & alarms", NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "Rings when a timer or alarm Settai set for you goes off"
+        val ch = NotificationChannel(CHANNEL, "Set-Tai timers & alarms", NotificationManager.IMPORTANCE_HIGH).apply {
+            description = "Rings when a timer or alarm your character set goes off"
             setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
                 AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
             enableVibration(true); vibrationPattern = longArrayOf(0, 600, 400, 600, 400, 600)

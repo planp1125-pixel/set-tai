@@ -96,7 +96,7 @@ class V1023AngelTest {
         val c2 = Canvas(pair); c2.drawColor(Color.rgb(0xF6, 0xF4, 0xFA))
         draw(c2, KuttiSatan, 230f, 440f, 2f, MonkeyState.IDLE, 2.1f)
         draw(c2, Angel, 530f, 440f, 2f, MonkeyState.IDLE, 2.1f)
-        c2.drawText("Kutti Satan", 230f, 500f, label); c2.drawText("Angel", 530f, 500f, label)
+        c2.drawText("Tutty", 230f, 500f, label); c2.drawText("Angel", 530f, 500f, label)
         TestPaths.out("angel-with-satan.png").outputStream().use { pair.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 }

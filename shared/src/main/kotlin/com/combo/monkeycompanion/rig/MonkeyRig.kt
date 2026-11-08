@@ -103,10 +103,10 @@ class MonkeyRig {
         return dx * dx + dy * dy <= 1f
     }
 
-    /** v10.8: is view point (x, y) on the prop ridden under the hips (Rocket Girl's rocket and its stick)? */
+    /** v10.8: is view point (x, y) on the prop ridden under the hips (Skye's rocket and its stick)? */
     fun propHit(x: Float, y: Float): Boolean {
         val h = local(hips, x, y)
-        // v10.9: Rocket Girl's tilted rocket (tube + long stick), in the rocket's own frame
+        // v10.9: Skye's tilted rocket (tube + long stick), in the rocket's own frame
         val r = FloatArray(2); RocketGeom.toRocket(h[0], h[1], r)
         return r[0] in (RocketGeom.RIDE_STICK_BACK - 6f)..(DiwaliRocketArt.NOSE + 4f) && r[1] in (DiwaliRocketArt.TY - DiwaliRocketArt.R - 6f)..8f
     }

@@ -113,7 +113,7 @@ object RoutineRunner {
             val h = runCatching { ChatHub.powers.handle(Invocation(r.capId ?: "", r.args)) }.getOrNull()
             line = when {
                 h == null -> "Routine failed to run. 😕"
-                h.pending != null -> { ChatHub.propose(h.pending); "Routine: ${h.pending.question} (answer in Settai's bubble)" }
+                h.pending != null -> { ChatHub.propose(h.pending); "Routine: ${h.pending.question} (answer in ${com.combo.monkeycompanion.character.CharacterRegistry.current.name}'s bubble)" }
                 else -> h.say
             }
             ChatHub.alert(line, BodyAction.WAVE)
@@ -126,9 +126,9 @@ object RoutineRunner {
 
     private fun notify(ctx: Context, id: Int, line: String) = runCatching {
         val nm = ctx.getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CH, "Settai routines", NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CH, "Set-Tai routines", NotificationManager.IMPORTANCE_DEFAULT))
         val open = PendingIntent.getActivity(ctx, 3, Intent(ctx, com.combo.monkeycompanion.ui.SettaiDesignActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
-        nm.notify(30000 + id, NotificationCompat.Builder(ctx, CH).let { com.combo.monkeycompanion.overlay.CharacterIcon.applyTo(it, ctx) }.setContentTitle(com.combo.monkeycompanion.character.CharacterRegistry.current.name.let { if (it == "Settai") "🐒 Settai" else "✨ $it" }).setContentText(line)
+        nm.notify(30000 + id, NotificationCompat.Builder(ctx, CH).let { com.combo.monkeycompanion.overlay.CharacterIcon.applyTo(it, ctx) }.setContentTitle(com.combo.monkeycompanion.character.CharacterRegistry.current.name.let { if (it == com.combo.monkeycompanion.character.CharacterNames.MONKEY) "🐒 $it" else "✨ $it" }).setContentText(line)
             .setStyle(NotificationCompat.BigTextStyle().bigText(line)).setContentIntent(open).setAutoCancel(true).build())
     }
 

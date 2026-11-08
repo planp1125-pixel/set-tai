@@ -9,13 +9,13 @@ import org.junit.Test
 class BodySenseTest {
     private val now = 1_000_000_000L
     private fun snap(bat: Int = 80, ch: Boolean = false, hour: Int = 14) =
-        BodySense.Snapshot("Rocket Girl", "hanging from the top edge of the screen", "resting, idle", battery = bat, charging = ch, hour = hour, mood = "happy", friendship = "Thick friends")
+        BodySense.Snapshot("Skye", "hanging from the top edge of the screen", "resting, idle", battery = bat, charging = ch, hour = hour, mood = "happy", friendship = "Thick friends")
 
     @Test fun buildsCompactBlockWithEventsAndFeelings() {
         val ev = listOf(BodySense.Event(now - 5_000, "you flung me up", BodySense.Feeling.DIZZY))
         val b = BodySense.build(snap(), ev, now)
         assertTrue(b.startsWith(BodySense.MARKER))
-        assertTrue(b.contains("Rocket Girl") && b.contains("top edge") && b.contains("flung me up") && b.contains("5s ago"))
+        assertTrue(b.contains("Skye") && b.contains("top edge") && b.contains("flung me up") && b.contains("5s ago"))
         assertTrue(b.contains("dizzy")); assertTrue(b.contains("80%")); assertTrue(b.contains("afternoon"))
         assertTrue(b.length <= BodySense.MAX_CHARS)
         assertFalse(b.contains("rocket launch"))

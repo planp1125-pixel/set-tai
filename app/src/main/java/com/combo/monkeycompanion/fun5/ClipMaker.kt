@@ -80,7 +80,7 @@ class ClipRenderer(private val character: Character, private val wear: Wear?, va
                 c.drawText(line, w / 2 + 2f, y + 2f, shadow); c.drawText(line, w / 2, y, caption)
             }
         }
-        if (f.showLogo) { caption.textSize = 22f; caption.alpha = 230; c.drawText("made with Settai 🐒", w / 2, h - 30f, caption) }
+        if (f.showLogo) { caption.textSize = 22f; caption.alpha = 230; c.drawText("made with Set-Tai", w / 2, h - 30f, caption) }
     }
 
     fun frame(i: Int): Bitmap = Bitmap.createBitmap(ClipScript.W, ClipScript.H, Bitmap.Config.ARGB_8888).also { draw(Canvas(it), i) }
@@ -154,7 +154,7 @@ object ClipMaker {
         val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".clips", file)
         val send = Intent(Intent.ACTION_SEND).setType("video/mp4").putExtra(Intent.EXTRA_STREAM, uri).putExtra(Intent.EXTRA_TEXT, caption)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        ctx.startActivity(Intent.createChooser(send, "Share Settai's clip").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION))
+        ctx.startActivity(Intent.createChooser(send, "Share the clip").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION))
     }
 }
 

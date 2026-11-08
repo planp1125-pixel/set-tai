@@ -235,6 +235,15 @@ object ChatHub {
     fun brainLabel(): String = runCatching { brain().label }.getOrDefault("?")
     fun hasRealBrain(): Boolean = runCatching { settings.aiBrainEnabled && brain().isReal }.getOrDefault(false)
     fun isBrainEnabled(): Boolean = runCatching { settings.aiBrainEnabled && settings.brainType != BrainType.NONE }.getOrDefault(false)
+    /** v10.39.2: the brain in use is the free Set-Tai Cloud (40 requests per phone per UTC day). */
+    fun onCloud(): Boolean = runCatching { settings.aiBrainEnabled && settings.brainType == BrainType.ONLINE && !settings.useOwnApiKey }.getOrDefault(false)
+    /**
+     * v10.39.2: may the brain write lines nobody asked for (touch reactions, body moments, idle thoughts, quips)?
+     * On Set-Tai Cloud only when the user allows it, so the 40 daily requests go to their own chats.
+     */
+    fun autoAiAllowed(): Boolean = isBrainEnabled() && (!onCloud() || runCatching { settings.cloudAutoLines }.getOrDefault(false))
+    /** v10.39.2: cloud requests left today (null until the first cloud reply today). */
+    fun cloudLeftToday(): Int? = (brain as? GatewayBrain)?.leftToday
 
     fun setBrainEnabled(on: Boolean) {
         if (!on) runCatching { brain?.cancel() }
@@ -383,7 +392,7 @@ object ChatHub {
 
     // ---------------- v4.2 smart screen talk + quick chips ----------------
 
-    private const val NO_SVC = "My screen agent is off: switch on “Settai screen agent” in Android's Accessibility settings (Phone powers → Grant). 👓"
+    private const val NO_SVC = "My screen agent is off: switch on “Set-Tai screen agent” in Android's Accessibility settings (Phone powers → Grant). 👓"
 
     /** Last digest (for context chips / proactive); null when unknown. */
     @Volatile var lastDigest: com.combo.monkeycompanion.agent.ScreenDigest? = null; private set

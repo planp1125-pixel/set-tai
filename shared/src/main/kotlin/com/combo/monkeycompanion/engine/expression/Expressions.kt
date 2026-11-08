@@ -5,7 +5,7 @@ import kotlin.math.sin
 
 /**
  * v10.32 Expression engine: named faces ANY body can show. A [Face] writes only the shared face slots of [Pose]
- * (eyes, brows, mouth, look, blush, anger, sweat, head tilt), blended by weight, so Kutti Satan, Angel, Settai,
+ * (eyes, brows, mouth, look, blush, anger, sweat, head tilt), blended by weight, so Tutty, Angel, Settai,
  * Gajju, heroes and studio characters all act the same expression with no per-character code.
  * NaN = leave that slot as the body's animation drew it. Pure functions of time: no Random (GoldenTrace-safe).
  * (Episode's older `Expr` stays for the Billa & Chittu dramas; new scripts use this catalog.)

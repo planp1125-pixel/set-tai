@@ -67,7 +67,7 @@ abstract class HumanRenderer : MonkeyRenderer() {
 }
 
 /**
- * Superboy (v4.1): an ORIGINAL kid hero, teal + orange suit, domino mask, lightning-bolt emblem, orange cape.
+ * Zoom (v4.1): an ORIGINAL kid hero, teal + orange suit, domino mask, lightning-bolt emblem, orange cape.
  * Deliberately not Superman: no shield, no red/blue/yellow, no spit curl.
  */
 class SuperboyRenderer : HumanRenderer() {
@@ -169,7 +169,7 @@ class SuperboyRenderer : HumanRenderer() {
 }
 
 /**
- * Armour Anna (v4.1): an original armoured uncle, gunmetal + saffron plates, glowing teal chest core,
+ * Bolt (v4.1): an original armoured uncle, gunmetal + saffron plates, glowing teal chest core,
  * a rounded visor helmet that flips up to show a cheeky moustached face. Not red/gold, no faceplate copy.
  */
 class ArmourRenderer : HumanRenderer() {
@@ -364,7 +364,7 @@ class ArmourRenderer : HumanRenderer() {
 }
 
 /**
- * Mask Man (v4.1): a lanky, original carnival-masked comedy hero (not The Mask). Every accessory is a
+ * Masko (v4.1): a lanky, original carnival-masked comedy hero (not The Mask). Every accessory is a
  * wardrobe item and simply isn't drawn when switched off.
  */
 class MaskManRenderer : HumanRenderer() {

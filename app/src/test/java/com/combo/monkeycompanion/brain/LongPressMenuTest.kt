@@ -54,7 +54,7 @@ class LongPressMenuTest {
 
     @Test fun powerPinsPerCharacter() {
         var c = M.defaults(); for (id in listOf("context", "funny", "games", "smash", "clip", "screen", "missed")) c = M.toggle(c, id, false)
-        // Monkey pins Thunder: it shows; Superboy has no Thunder: the stale pin drops.
+        // Monkey pins Thunder: it shows; Zoom has no Thunder: the stale pin drops.
         val r = M.layout(c, listOf("thunder"), monkeyPowers, true)
         assertEquals(listOf("chat", "talk", "powers", "quit", M.pin("thunder")), r.main)
         val sb = M.layout(c, listOf("thunder"), Superboy.powers.map { it.id }, true)
@@ -63,7 +63,7 @@ class LongPressMenuTest {
 
     @Test fun reorderKeepsHiddenSlots() {
         val c = M.Config(listOf("chat", "power:swoop", "talk", "power:thunder", "quit"), emptySet())
-        val visible = listOf("chat", "talk", "power:thunder", "quit")   // the monkey editor doesn't show Superboy's swoop
+        val visible = listOf("chat", "talk", "power:thunder", "quit")   // the monkey editor doesn't show Zoom's swoop
         val moved = M.move(c, visible, 2, 0)
         assertEquals(listOf("power:thunder", "power:swoop", "chat", "talk", "quit"), moved.order)
         assertEquals(c, M.move(c, visible, 1, 1))

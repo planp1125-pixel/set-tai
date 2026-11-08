@@ -58,7 +58,7 @@ class AnimPreviewTest {
     }
 
     @Test fun renderBeforeAfter() {
-        val ids = listOf("monkey" to "Settai", "billa" to "Billa (cat)", "superboy" to "Superboy", "gajju" to "Gajju")
+        val ids = listOf("monkey" to "Settai", "billa" to "Billa (cat)", "superboy" to "Zoom", "gajju" to "Gajju")
         val top = 70; val left = 0
         val out = Bitmap.createBitmap(cw * 4, top + ch * ids.size, Bitmap.Config.ARGB_8888)
         val c = Canvas(out); c.drawColor(Color.WHITE)

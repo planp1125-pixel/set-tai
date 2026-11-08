@@ -40,7 +40,9 @@ import com.combo.monkeycompanion.powers.Capabilities
  */
 class SkillsActivity : androidx.activity.ComponentActivity() {
     /** v10.38.24: texts use the main character's name instead of "Settai". */
-    private val nm: String get() = com.combo.monkeycompanion.character.CharacterRegistry.current.name
+    // v10.39.2: settings work for every character, so the screens say "your character", not one name
+    private val nm: String get() = "your character"
+    private val NM: String get() = "Your character"
 
     private var rev by androidx.compose.runtime.mutableIntStateOf(0)
     private var showLog by androidx.compose.runtime.mutableStateOf(false)
@@ -64,18 +66,18 @@ class SkillsActivity : androidx.activity.ComponentActivity() {
         return when {
             on && scr -> "✅ Ready for errands: ${nm} can read screens and run errands when you ask (every tap or type asks Yes/No first)."
             on -> "⚠️ Accessibility is allowed, but 'Screen errands' is switched off below."
-            else -> "Off by default. Turn on 'Settai screen agent' in Android Accessibility only if you want ${nm} to run errands inside other apps."
+            else -> "Off by default. Turn on 'Set-Tai screen agent' in Android Accessibility only if you want ${nm} to run errands inside other apps."
         }
     }
 
     @androidx.compose.runtime.Composable
     private fun Screen(@Suppress("UNUSED_PARAMETER") r: Int) {
         val s = ChatHub.settings
-        val who = CharacterRegistry.current.name
+        val who = "your character"   // v10.39.2: skills are for every character
         val playBuild = com.combo.monkeycompanion.agent.ForegroundAppTracker.isPlayStoreBuild(this)
         SettaiScreen("Skills", onBack = { finish() }, subtitle = "Optional errands, senses and habits for $who", rev = r) {
             if (playBuild) {
-                SCard("Guided errands", "$who opens the right app or screen for you (alarms, timers, maps, dialer, messages, settings) and guides you step by step from its speech bubble.") {
+                SCard("Guided errands", "Your character opens the right app or screen for you (alarms, timers, maps, dialer, messages, settings) and guides you step by step from its speech bubble.") {
                     SNote(a11yLine())
                     SPrimary("Allow Usage Access") { runCatching { startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) } }
                     SSecondary("All errands, powers & permissions") { startActivity(Intent(this@SkillsActivity, CapabilitiesActivity::class.java)) }
@@ -100,7 +102,7 @@ class SkillsActivity : androidx.activity.ComponentActivity() {
             SCard("Habits & memory", "Teach $who daily habits (morning briefing, reminders, event triggers) or see what it remembers about you.") {
                 SPrimary("Daily habits & routines") { startActivity(Intent(this@SkillsActivity, RoutinesActivity::class.java)) }
                 SSecondary("What ${nm} remembers about you") { startActivity(Intent(this@SkillsActivity, MemoryActivity::class.java)) }
-                SSecondary("Settai's own diary") { startActivity(Intent(this@SkillsActivity, DiaryActivity::class.java)) }
+                SSecondary("${NM}'s own diary") { startActivity(Intent(this@SkillsActivity, DiaryActivity::class.java)) }
                 SSecondary("Reported replies") { startActivity(Intent(this@SkillsActivity, ReportsActivity::class.java)) }
             }
             SCard("More (advanced)", "Behind-the-scenes logs for the curious.") {

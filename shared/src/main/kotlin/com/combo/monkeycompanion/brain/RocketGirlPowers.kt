@@ -2,10 +2,10 @@ package com.combo.monkeycompanion.brain
 
 import kotlin.random.Random
 
-// v10.8/v10.9 Rocket Girl's powers (same sealed family as the other powers).
+// v10.8/v10.9 Skye's powers (same sealed family as the other powers).
 
 /**
- * Rocket Girl's sky show (v10.9): she drops low beside a glass bottle, lights the rocket standing in it with her
+ * Skye's sky show (v10.9): she drops low beside a glass bottle, lights the rocket standing in it with her
  * sparkler, and 5 bottle rockets whistle up on wobbly paths and burst into layered multi-ring fireworks at different
  * heights, a different recipe each (see rig/SkyShow, rig/Fireworks, rig/FireworkRecipes).
  */
@@ -22,7 +22,7 @@ object SkyBurstPower : Superpower("skyburst", "Sky show", "Lights a bottle rocke
 }
 
 /**
- * Rocket Girl: full throttle! Zooms off one side of the screen on a curved arc and comes whistling back in from the
+ * Skye: full throttle! Zooms off one side of the screen on a curved arc and comes whistling back in from the
  * other side (the rare "boost" touch reaction uses this too).
  */
 object RocketBoostPower : Superpower("boost", "Rocket boost", "Zooms off the screen and whistles back in on a big arc", setOf(PowerKit.SPEED_LINES)) {

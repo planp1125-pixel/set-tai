@@ -117,9 +117,9 @@ object PreviewV44 {
         c.drawText("5 · Phone moments: charger in → zap the battery icon, each in their own way", w / 2f, y0 + 60f, head)
         val tiles = listOf(
             Tile(MonkeyCharacter, Moment.CHARGE, 0.62f, "Settai: lightning zap"),
-            Tile(R.byId("superboy")!!, Moment.CHARGE, 0.62f, "Superboy: heat beam"),
-            Tile(R.byId("armour")!!, Moment.CHARGE, 0.62f, "Anna: core cable"),
-            Tile(R.byId("mask")!!, Moment.CHARGE, 0.62f, "Mask Man: giant plug"),
+            Tile(R.byId("superboy")!!, Moment.CHARGE, 0.62f, "Zoom: heat beam"),
+            Tile(R.byId("armour")!!, Moment.CHARGE, 0.62f, "Bolt: core cable"),
+            Tile(R.byId("mask")!!, Moment.CHARGE, 0.62f, "Masko: giant plug"),
             Tile(MonkeyCharacter, Moment.FULL, 0.5f, "100% → flex 💪"),
             Tile(MonkeyCharacter, Moment.LOW, 0.75f, "15% → dramatic collapse"),
             Tile(MonkeyCharacter, Moment.WIFI, 0.62f, "Wi-Fi → catches the signal"),
@@ -206,8 +206,8 @@ object PreviewV44 {
         data class L(val style: com.combo.monkeycompanion.brain.Landings.Style?, val title: String, val sub: String, val st: Float)
         val tiles = listOf(
             L(null, "1. The decision beat", "looks down · scratches head", 0.3f),
-            L(com.combo.monkeycompanion.brain.Landings.Style.CAPE_FLOAT, "Cape float, fist first", "Superboy: float or speed-dive", 0.4f),
-            L(com.combo.monkeycompanion.brain.Landings.Style.PARACHUTE, "Leaf parachute", "Mask Man: his own umbrella", 0.5f),
+            L(com.combo.monkeycompanion.brain.Landings.Style.CAPE_FLOAT, "Cape float, fist first", "Zoom: float or speed-dive", 0.4f),
+            L(com.combo.monkeycompanion.brain.Landings.Style.PARACHUTE, "Leaf parachute", "Masko: his own umbrella", 0.5f),
             L(com.combo.monkeycompanion.brain.Landings.Style.SCREAM_JETS, "Scream… then jets!", "falls, then jets at the last second", 0.4f),
         )
         val tw = w / 4f; val th = LROW - 90f; val d = 1.9f; val scale = 1.35f

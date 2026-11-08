@@ -125,7 +125,7 @@ class LandingE2ETest {
             assertTrue("$id hovering", v.debugHovering)
             assertFalse(v.debugFalling)
             assertTrue("$id stays up there (${v.debugBox().top} vs $y0)", abs(v.debugBox().top - y0) < 60f && v.debugBox().bottom < 1900f)
-            if (id == "armour") assertTrue("Anna's hover thrusters flicker", v.debugHoverFlames > 100)
+            if (id == "armour") assertTrue("Bolt's hover thrusters flicker", v.debugHoverFlames > 100)
         }
     }
 
@@ -283,10 +283,10 @@ class LandingE2ETest {
             val bmp = record(v, h, sb, { setup(v) }, min, max, every)
             panels += Panel(title, sb.toString(), bmp)
         }
-        panel("Superboy: let go mid-air", "superboy", false, 0.4f, "hovers (bob + cape) · ", 150, 150, every = 25) { v -> dragAndRelease(v, 1000f) }
-        panel("Superboy: swipe down", "superboy", false, 0.4f, "rocket arc, fist-first · ", 30, 700) { v -> flingDown(v, 1300f) }
-        panel("Armour Anna: fling sideways", "armour", false, 0.2f, "arc, then hovers again · ", 30, 700) { v -> flingSide(v, 900f, 300f) }
-        panel("Armour Anna: swipe down", "armour", false, 0.6f, "jet-brake hover, thud · ", 30, 700) { v -> flingDown(v, 1300f) }
+        panel("Zoom: let go mid-air", "superboy", false, 0.4f, "hovers (bob + cape) · ", 150, 150, every = 25) { v -> dragAndRelease(v, 1000f) }
+        panel("Zoom: swipe down", "superboy", false, 0.4f, "rocket arc, fist-first · ", 30, 700) { v -> flingDown(v, 1300f) }
+        panel("Bolt: fling sideways", "armour", false, 0.2f, "arc, then hovers again · ", 30, 700) { v -> flingSide(v, 900f, 300f) }
+        panel("Bolt: swipe down", "armour", false, 0.6f, "jet-brake hover, thud · ", 30, 700) { v -> flingDown(v, 1300f) }
         run {   // the monkey: drop until a rocket arc comes up
             val (v, h) = newView("monkey")
             var tries = 0
@@ -300,7 +300,7 @@ class LandingE2ETest {
             val bmp = record(v, h, sb, {}, 30, 700)
             panels += Panel("Settai: let go mid-air", sb.toString(), bmp)
         }
-        run {   // Mask Man: release until the crow taxi
+        run {   // Masko: release until the crow taxi
             val (v, h) = newView("mask")
             var tries = 0
             while (tries < 30) {
@@ -311,14 +311,14 @@ class LandingE2ETest {
             }
             val sb = StringBuilder("crow taxi, then dropped · ")
             val bmp = record(v, h, sb, {}, 30, 700)
-            panels += Panel("Mask Man: tries to fly", sb.toString(), bmp)
+            panels += Panel("Masko: tries to fly", sb.toString(), bmp)
         }
         run {
             CharacterRegistry.select("mask"); CharacterRegistry.wear().set("umbrella", true)
             val (v, h) = newView("mask")
             val sb = StringBuilder("hangs by the umbrella handle · ")
             val bmp = record(v, h, sb, { v.debugMaskHang() }, 120, 120, every = 40)
-            panels += Panel("Mask Man: dragged to the top", sb.toString(), bmp)
+            panels += Panel("Masko: dragged to the top", sb.toString(), bmp)
         }
         val sc = 0.3f; val pw = (1080 * sc).toInt(); val ph = (2340 * sc).toInt()
         val cols = 4; val rows = (panels.size + cols - 1) / cols

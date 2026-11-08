@@ -5,7 +5,7 @@ import kotlin.random.Random
 
 /**
  * Directs short 2-turn templated banter & interactions between two creatures on screen together
- * (e.g., Anna scolding Settai for eating a notification card, Superboy & Settai arguing over who guards the top edge,
+ * (e.g., Bolt scolding Settai for eating a notification card, Zoom & Settai arguing over who guards the top edge,
  * sharing filter coffee at 4 PM, huddling when battery < 20%, cheering when the charger plugs in).
  *
  * Strictly obeys ProactiveGate respect rules: NEVER plays during typing, calls, fullscreen, DND or quiet hours.

@@ -38,8 +38,8 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * v10.8 preview sheet from the real code -> build/test-out/settai-v10.8-preview.png:
- * Rocket Girl's poses and touch reactions, living reactions on the others, every character's picker thumbnail
- * (head checked inside the card), 4 different sky-burst fireworks, and Rocket Girl in the Smash game.
+ * Skye's poses and touch reactions, living reactions on the others, every character's picker thumbnail
+ * (head checked inside the card), 4 different sky-burst fireworks, and Skye in the Smash game.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -92,9 +92,9 @@ class V108PreviewTest {
         val H = 90 + rowsTop * ch + 60 + thumbH + 60 + fwH + 60 + smashH + 20
         val bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp); c.drawColor(Color.WHITE)
-        c.drawText("Settai v10.8: Rocket Girl, living reactions, Disney part 2", 20f, 46f, title)
+        c.drawText("Settai v10.8: Skye, living reactions, Disney part 2", 20f, 46f, title)
         val y0 = 90f
-        // Row 0: Rocket Girl
+        // Row 0: Skye
         panel(c, 0, 0, y0, "rocketgirl", "Hover: bob + sparkle exhaust", MonkeyState.IDLE, 1.3f)
         panel(c, 1, 0, y0, "rocketgirl", "Flying: leans into the turn", MonkeyState.WALK, 0.6f, lean = 14f)
         panel(c, 2, 0, y0, "rocketgirl", "Tap head: giggle", MonkeyState.GIGGLE, 0.3f, Verb.GIGGLE to BodyPart.HEAD, 0.4f)
@@ -106,12 +106,12 @@ class V108PreviewTest {
         panel(c, 1, 1, y0, "billa", "Billa: ear flick", MonkeyState.IDLE, 0.5f, Verb.EAR_FLICK to BodyPart.EAR, 0.35f)
         panel(c, 2, 1, y0, "gajju", "Gajju: trunk boop", MonkeyState.IDLE, 0.5f, Verb.TRUNK_BOOP to BodyPart.TRUNK, 0.4f)
         panel(c, 3, 1, y0, "chittu", "Chittu: dodge", MonkeyState.IDLE, 0.5f, Verb.DODGE to BodyPart.BELLY, 0.35f)
-        panel(c, 4, 1, y0, "superboy", "Superboy: show-off flip", MonkeyState.IDLE, 0.5f, Verb.SHOW_OFF to BodyPart.HEAD, 0.5f)
-        panel(c, 5, 1, y0, "armour", "Anna: lean in (happy squint)", MonkeyState.HAPPY_PAT, 0.5f, Verb.LEAN_IN to BodyPart.HEAD, 0.5f)
+        panel(c, 4, 1, y0, "superboy", "Zoom: show-off flip", MonkeyState.IDLE, 0.5f, Verb.SHOW_OFF to BodyPart.HEAD, 0.5f)
+        panel(c, 5, 1, y0, "armour", "Bolt: lean in (happy squint)", MonkeyState.HAPPY_PAT, 0.5f, Verb.LEAN_IN to BodyPart.HEAD, 0.5f)
         // Row 2: Diwali accents + more
         panel(c, 0, 2, y0, "monkey", "Diwali season accents", MonkeyState.IDLE, 0.9f, festive = true)
-        panel(c, 1, 2, y0, "rocketgirl", "Rocket Girl at Diwali", MonkeyState.IDLE, 2.1f, festive = true)
-        panel(c, 2, 2, y0, "mask", "Mask Man: spin look", MonkeyState.IDLE, 0.5f, Verb.SPIN_LOOK to BodyPart.HEAD, 0.5f)
+        panel(c, 1, 2, y0, "rocketgirl", "Skye at Diwali", MonkeyState.IDLE, 2.1f, festive = true)
+        panel(c, 2, 2, y0, "mask", "Masko: spin look", MonkeyState.IDLE, 0.5f, Verb.SPIN_LOOK to BodyPart.HEAD, 0.5f)
         panel(c, 3, 2, y0, "rocketgirl", "Wardrobe: goggles off", MonkeyState.WAVE, 0.6f, wear = "")
         panel(c, 4, 2, y0, "rocketgirl", "Sleepy hover", MonkeyState.SLEEP, 2f)
         panel(c, 5, 2, y0, "gajju", "Gajju: tail curl", MonkeyState.IDLE, 0.5f, Verb.TAIL_CURL to BodyPart.TAIL, 0.5f)
@@ -145,7 +145,7 @@ class V108PreviewTest {
 
         // Fireworks: 4 bursts, all different
         ty += thumbH + 60f
-        c.drawText("Rocket Girl's sky-burst: a new firework every time", 20f, ty - 10f, title)
+        c.drawText("Skye's sky-burst: a new firework every time", 20f, ty - 10f, title)
         val sky = Paint().apply { shader = LinearGradient(0f, ty, 0f, ty + fwH, Color.rgb(0x10, 0x0C, 0x2E), Color.rgb(0x2A, 0x16, 0x40), Shader.TileMode.CLAMP) }
         c.drawRect(0f, ty, W.toFloat(), ty + fwH, sky)
         val fw = Fireworks(108L)
@@ -160,9 +160,9 @@ class V108PreviewTest {
         names.forEachIndexed { k, n -> c.drawText(n, W * (0.14f + 0.24f * k), ty + fwH - 22f, lw) }
         assertTrue(fw.history.zipWithNext().all { (a, b) -> a.shape != b.shape && a.palette != b.palette })
 
-        // Smash: Rocket Girl's rockets + the new cracked-wallpaper reveal
+        // Smash: Skye's rockets + the new cracked-wallpaper reveal
         ty += fwH + 60f
-        c.drawText("Smash: Rocket Girl's firework rockets + the peeking-monkey wallpaper holes", 20f, ty - 10f, title)
+        c.drawText("Smash: Skye's firework rockets + the peeking-monkey wallpaper holes", 20f, ty - 10f, title)
         val ctx = ApplicationProvider.getApplicationContext<android.app.Application>()
         ChatHub.init(ctx)
         val snaps = ArrayList<Bitmap>()

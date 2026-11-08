@@ -5,7 +5,7 @@ import com.combo.monkeycompanion.brain.TouchZone
 /** v10.8 touch engine body parts: the rig's [TouchZone]s plus sub-parts the old zones lumped together. */
 enum class BodyPart {
     HEAD, EAR, TRUNK, NECK, BELLY, TAIL, HAND, FOOT,
-    /** A ridden / held prop (Rocket Girl's rocket). */
+    /** A ridden / held prop (Skye's rocket). */
     PROP,
     PRIVATE, NONE;
 

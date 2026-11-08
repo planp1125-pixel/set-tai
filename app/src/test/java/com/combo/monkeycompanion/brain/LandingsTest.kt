@@ -51,7 +51,7 @@ class LandingsTest {
     @Test fun powersOffAndSaver() {
         val off = Landings.allowed("monkey", false, powersOn = false, saver = false, canClimb = true).map { it.first }
         assertTrue(off.none { it.power }); assertTrue(Style.PARACHUTE in off && Style.CANNONBALL in off)
-        // Superboy without powers: a heroic thud, never a flight.
+        // Zoom without powers: a heroic thud, never a flight.
         assertEquals(listOf(Style.CANNONBALL), Landings.allowed("superboy", false, false, false, false).map { it.first })
         // Battery saver: short, effect-free variants only, no decision beat.
         for (id in listOf("monkey", "superboy", "armour", "mask")) {
@@ -90,13 +90,13 @@ class LandingsTest {
             repeat(n) { last = Landings.pick(Landings.allowed(id, umb, true, false, id == "monkey"), last, rnd); if (last!!.power) power++ }
             assertTrue("$id ${power.toFloat() / n}", power.toFloat() / n >= min)
         }
-        // v5: Mask Man can't really fly, he *tries*: crow taxi / flaps / umbrella / ninja flip make up most of his drops.
+        // v5: Masko can't really fly, he *tries*: crow taxi / flaps / umbrella / ninja flip make up most of his drops.
         run {
             val rnd = Random(11); var last: Style? = null; var show = 0
             repeat(3000) { last = Landings.pick(Landings.allowed("mask", true, true, false, false), last, rnd); if (last != Style.CANNONBALL && last != Style.SNORE_FLOAT) show++ }
             assertTrue(show / 3000f >= 0.7f)
         }
-        // Mask Man's own drops include his ninja flip, not only umbrella / snore / bounce.
+        // Masko's own drops include his ninja flip, not only umbrella / snore / bounce.
         assertTrue(Style.NINJA_FLIP in Landings.allowed("mask", true, true, false, false).map { it.first })
     }
 

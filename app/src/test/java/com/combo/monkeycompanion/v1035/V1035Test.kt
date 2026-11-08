@@ -26,7 +26,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.time.Duration
 
-/** v10.35: medium slingshot marble bounce stays a visible solid body for every character (Armour Anna fix). */
+/** v10.35: medium slingshot marble bounce stays a visible solid body for every character (Bolt fix). */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-xxhdpi")
 class V1035Test {

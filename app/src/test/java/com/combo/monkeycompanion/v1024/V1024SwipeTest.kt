@@ -131,7 +131,7 @@ class V1024SwipeTest {
         v = view("mask"); v.debugPlace(400f, onFloor = true); ChatHub.settings.flickThrow = true; v.debugRelease(0f, -6000f)
         assertTrue(v.debugImpact)
         ChatHub.settings.flickThrow = false
-        // Mask Man's sheet trick reappears exactly at a HIGH target, then falls and lands
+        // Masko's sheet trick reappears exactly at a HIGH target, then falls and lands
         v = view("mask"); v.debugPlace(200f, onFloor = true); val g = v.debugXY[2]; v.debugRelease(900f, -2500f)
         val trip = v.debugSwipeTrip ?: error("no mask trip")
         assertTrue("high target", trip.y1 < g - 300f)
@@ -205,7 +205,7 @@ class V1024SwipeTest {
         }
     }
 
-    /** v10.26: a flick down from high up = PANCAKE; Superboy keeps his swoop. */
+    /** v10.26: a flick down from high up = PANCAKE; Zoom keeps his swoop. */
     @Test fun flickDownPancakesAndSuperboyHasNoJets() {
         val v = view("billa")
         v.debugPlace(400f, onFloor = false, y = v.debugXY[2] - 1000f)
@@ -213,7 +213,7 @@ class V1024SwipeTest {
         v.debugRelease(0f, 6500f)
         ChatHub.settings.flickThrow = false
         assertTrue("thrown down", v.debugImpact)
-        // Superboy still flies his big curved swoop when swiped down (cape + speed streaks; no jets are drawn for him)
+        // Zoom still flies his big curved swoop when swiped down (cape + speed streaks; no jets are drawn for him)
         val s = view("superboy"); s.debugPlace(300f, onFloor = false, y = 900f)
         s.debugSwipeDown(3000f)
         assertNull(s.debugSwipeTrip)
@@ -259,7 +259,7 @@ class V1024SwipeTest {
         assertSame(SkaterGirl, CharacterRegistry.byId("skater"))
         assertEquals("skater", CharacterRegistry.all.last().id)
         assertEquals("skater", Population.allIds.last())
-        assertEquals("Skater Girl", Population.displayName("skater"))
+        assertEquals("Rollie", Population.displayName("skater"))
         assertSame(KickflipShowPower, SkaterGirl.signaturePower); assertSame(KickflipShowPower, SkaterGirl.powers.first())
         for (p in SkaterGirl.powers) assertTrue(p.plan(0.5f, 0.5f, false, Random(1)).sumOf { it.secs.toDouble() } in 2.0..9.0)
         assertSame(CharacterProfiles.SKATER, CharacterProfiles.of(SkaterGirl))

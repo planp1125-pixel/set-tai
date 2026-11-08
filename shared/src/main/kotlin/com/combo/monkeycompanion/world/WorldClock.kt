@@ -1,5 +1,6 @@
 package com.combo.monkeycompanion.world
 
+import com.combo.monkeycompanion.character.CharacterNames
 import com.combo.monkeycompanion.mind.Drives
 import kotlin.math.max
 import kotlin.math.min
@@ -207,25 +208,25 @@ class WorldClock(val state: WorldState = WorldState()) {
     }
 
     private fun charName(id: String) = when (id) {
-        "superboy" -> "Superboy"
-        "armour" -> "Anna"
-        "mask" -> "Mask Man"
-        else -> "Settai"
+        "superboy" -> "Zoom"
+        "armour" -> "Bolt"
+        "mask" -> "Masko"
+        else -> CharacterNames.MONKEY
     }
 
     private fun buildTrace(now: Long, awayMins: Int, minuteOfDay: Int, companions: List<String>, rnd: Random): NightTrace {
         val lead = companions.firstOrNull() ?: "monkey"
         val buddy = companions.drop(1).firstOrNull()
         val leadName = charName(lead)
-        val buddyName = buddy?.let { charName(it) } ?: if (lead == "monkey") "Anna" else "Settai"
+        val buddyName = buddy?.let { charName(it) } ?: if (lead == "monkey") "Bolt" else CharacterNames.MONKEY
         val overnight = awayMins >= 180 || minuteOfDay in (5 * 60)..(10 * 60 + 30)
         val options = ArrayList<Pair<String, String>>()
         if (overnight) {
             options += "While the glass was dark, $leadName & $buddyName shared a banana near the battery icon 🍌🔋" to "shared a midnight banana with $buddyName near the battery icon"
             options += "Found a shiny notification card at 3 AM and hid it under the corner 📬✨" to "hid a shiny 3 AM notification card under the corner"
-            options += "While you slept, Superboy patrolled the top edge while Settai built a pillow fort by the clock 🌙🛡️" to "built a pillow fort by the clock while Superboy patrolled"
-            options += "Anna oiled the battery pipes at midnight and tucked a blanket over $leadName ⚙️😴" to "Anna tuned the battery pipes and tucked everyone in"
-            options += "Mask Man practised shadow puppets against the dimmed status bar until dawn 🎭🌙" to "practised shadow puppets against the status bar"
+            options += "While you slept, Zoom patrolled the top edge while Pogo built a pillow fort by the clock 🌙🛡️" to "built a pillow fort by the clock while Zoom patrolled"
+            options += "Bolt oiled the battery pipes at midnight and tucked a blanket over $leadName ⚙️😴" to "Bolt tuned the battery pipes and tucked everyone in"
+            options += "Masko practised shadow puppets against the dimmed status bar until dawn 🎭🌙" to "practised shadow puppets against the status bar"
         } else {
             val hrs = if (awayMins >= 90) "${awayMins / 60}h" else "${awayMins}m"
             options += "While the glass was dark ($hrs), $leadName & $buddyName played rock-paper-scissors in the home clearing ✊✌️" to "played rock-paper-scissors with $buddyName while the screen was dark"

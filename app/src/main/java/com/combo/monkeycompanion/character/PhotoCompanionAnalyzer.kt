@@ -449,7 +449,7 @@ object PhotoCompanionAnalyzer {
         val suggestionPrompt = if (bodyDetectedClearly) {
             "✅ 68-Pt Face-ID Mesh & Body detected (${(bodyConfidence * 100).toInt()}% confidence). Use the 1x–5x Zoom & Split-Screen Compare above, or swap to any Hero Body below!"
         } else {
-            "💡 Close-up selfie / unclear torso! We mapped your 68-Pt Face-ID Mesh & suggested ${bodyBuild.label.substringBefore(" (")} — tap a suggestion chip below (Slim · Mid-Body · Bulky · Superboy · Ironboy) to pick the exact body!"
+            "💡 Close-up selfie / unclear torso! We mapped your 68-Pt Face-ID Mesh & suggested ${bodyBuild.label.substringBefore(" (")} — tap a suggestion chip below (Slim · Mid-Body · Bulky · Zoom · Ironboy) to pick the exact body!"
         }
 
         val isKidFemale = detectedGender == CompanionGender.GIRL_CHILD

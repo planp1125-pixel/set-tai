@@ -84,7 +84,7 @@ class PairActivity : androidx.activity.ComponentActivity(), PairHub.Listener {
         askPeer?.let { (peerName, peerCharacter) ->
             androidx.compose.material3.AlertDialog(onDismissRequest = {},
                 title = { androidx.compose.material3.Text("Pair with $peerName?") },
-                text = { androidx.compose.material3.Text("$peerName ($peerCharacter) typed the right code. Accept to let your Settais wave, jump across, fight and dance together.") },
+                text = { androidx.compose.material3.Text("$peerName ($peerCharacter) typed the right code. Accept to let your characters wave, jump across, fight and dance together.") },
                 confirmButton = { androidx.compose.material3.TextButton(onClick = { PairHub.answer(true); askPeer = null }) { androidx.compose.material3.Text("Accept") } },
                 dismissButton = { androidx.compose.material3.TextButton(onClick = { PairHub.answer(false); status = "Rejected."; askPeer = null }) { androidx.compose.material3.Text("Reject") } })
         }

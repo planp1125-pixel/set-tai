@@ -9,7 +9,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * v10.9 Rocket Girl's swipe launch: a real little rocket flight, not a straight rise or a canned arc.
+ * v10.9 Skye's swipe launch: a real little rocket flight, not a straight rise or a canned arc.
  * Thrust along a HEADING that turns gradually toward a target picked along the swipe (power ~ swipe speed), plus
  * gravity and drag, a corkscrew wobble on the heading, then a sputter (thrust coughs) and a glide down. The nose always
  * points along the VELOCITY ([noseDeg]). Pure maths in screen px (y down), own seeded [Random] (never the frame loop's).

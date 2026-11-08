@@ -2,7 +2,7 @@ package com.combo.monkeycompanion.brain
 
 import kotlin.random.Random
 
-// v10.24 Skater Girl's fixed powers. Pure data plans; poses in SkaterGirl.adapt(), board fx in SkaterRenderer. No cooldowns.
+// v10.24 Rollie's fixed powers. Pure data plans; poses in SkaterGirl.adapt(), board fx in SkaterRenderer. No cooldowns.
 
 /** Her signature: an ollie, then a kickflip (the board rolls a full turn under her), then a second one, ta-da. */
 object KickflipShowPower : Superpower("kickflip", "Kickflip show", "Ollie, kickflip, double kickflip, then a ta-da", emptySet()) {

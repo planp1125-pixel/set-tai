@@ -129,7 +129,7 @@ object NotifSummary {
         if (groups.isEmpty()) return "All caught up, machan! Zero pending notifications."
         val total = groups.sumOf { it.count }
         val names = groups.take(3).joinToString(", ") { it.title.substringBefore(" (") }
-        return "✨ Settai recap: $total update${if (total == 1) "" else "s"} across $names — tap any row to jump right in!"
+        return "✨ Set-Tai recap: $total update${if (total == 1) "" else "s"} across $names — tap any row to jump right in!"
     }
 
     fun demoItems(now: Long = System.currentTimeMillis()): List<NotifItem> = listOf(

@@ -63,9 +63,9 @@ class V1033Test {
         assertTrue(text.contains("both face scream for 1"))
         assertFalse(text.contains("AAAAH"))
         val p = ScriptPlayer(ScriptShowHub.load(ctx))
-        p.advanceTo(15.6f); assertNotNull(p.crack); assertEquals("shocked", p.actor("satan")!!.faceAt(p.t))
-        p.advanceTo(16.9f); for (r in listOf("satan", "angel")) assertEquals("scream", p.actor(r)!!.faceAt(p.t))
-        assertNull(p.actor("satan")!!.saying(p.t))
+        p.advanceTo(15.6f); assertNotNull(p.crack); assertEquals("shocked", p.actor("tutty")!!.faceAt(p.t))
+        p.advanceTo(16.9f); for (r in listOf("tutty", "angel")) assertEquals("scream", p.actor(r)!!.faceAt(p.t))
+        assertNull(p.actor("tutty")!!.saying(p.t))
         p.advanceTo(17.5f); assertNotEquals("scream", p.actor("angel")!!.faceAt(p.t))
         p.advanceTo(19.5f); assertEquals("sorry bro", p.actor("angel")!!.saying(p.t))
     }

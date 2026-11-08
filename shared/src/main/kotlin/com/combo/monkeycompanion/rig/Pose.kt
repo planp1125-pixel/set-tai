@@ -143,16 +143,16 @@ class Pose {
     var hud by slot(0f)            // 0..1 scanner HUD around the helmet
     var blanket by slot(0f)        // cape used as a blanket (floating sleep)
     var clones by slot(0f)         // 0..1 shadow clones / after-images (drawn by the host)
-    // v10.8 Rocket Girl + festive accents (visual only; set after the pose blend)
+    // v10.8 Skye + festive accents (visual only; set after the pose blend)
     var rbSputter by slot(0f)      // 0..1 rocket coughing / sputtering
     var rbSpin by slot(0f)         // degrees the rocket rolls about its own axis (stripes scroll)
     var sparkler by slot(0f)       // 0..1 phuljhadi sparkler in the right hand
     var festive by slot(0f)        // 0..1 Diwali-season diya / sparkle accents
     var glint by slot(0f)          // 0..1 appeal: extra eye catch-light twinkle (Smooth animation only)
-    // v10.9 Rocket Girl
+    // v10.9 Skye
     var rbThrust by slot(0f)       // 0..1 the rocket's tail flame burst (swipe launch / boost)
     var rgReach by slot(0f)        // 0..1 her right hand reaches down to light the bottle's fuse
-    // v10.14 Hollow Man + Surfing Girl (visual only; never motion slots)
+    // v10.14 Echo + Wavy (visual only; never motion slots)
     var hmMoon by slot(0f)         // 0..1 moonwalk: the body faces AWAY from the way it glides
     var hmHatTip by slot(0f)       // 0..1 hat lifted off the (invisible) head by the right glove
     var spinX by slot(1f)          // cos of a spin about the vertical axis (1 = front, -1 = back), x scale
@@ -160,7 +160,7 @@ class Pose {
     var flipC by slot(1f)
     var surf by slot(0f)           // 0..1 standing on the surfboard over a wave
     var surfSpray by slot(0f)      // 0..1 extra splash (big wave ride, landing, wipeout)
-    // v10.16 Kutti Satan, the little devil (visual only; never motion slots)
+    // v10.16 Tutty, the little devil (visual only; never motion slots)
     var dvPortal by slot(0f)       // 0..1 the red swirl portal he pops out of (reappear half of the vanish)
     var dvSmoke by slot(0f)        // 0..1 the red smoke puff + sparkles he vanishes into
     var dvSpell by slot(0f)        // 0..1 red spell sparks crackling between his fingers

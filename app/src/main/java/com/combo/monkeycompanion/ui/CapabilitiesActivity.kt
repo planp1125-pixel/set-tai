@@ -52,14 +52,14 @@ class CapabilitiesActivity : androidx.activity.ComponentActivity() {
     private fun Screen(@Suppress("UNUSED_PARAMETER") r: Int) {
         val s = ChatHub.settings
         SettaiScreen("What can Set-Tai do?", onBack = { finish() }, rev = r) {
-            SNote("Every brain (online, on-device or none) can use these. Anything that changes or opens something asks Yes/No in Settai's bubble first. Just ask in your own words: \"volume 40\", \"brightness up\", \"silent mode\", \"wake me at 6\", \"next song\", \"turn on wifi\".")
+            SNote("Every brain (online, on-device or none) can use these. Anything that changes or opens something asks Yes/No in ${nm}'s bubble first. Just ask in your own words: \"volume 40\", \"brightness up\", \"silent mode\", \"wake me at 6\", \"next song\", \"turn on wifi\".")
             SCard("Special access") {
                 for (p in Perm.entries.filter { it != Perm.NONE }) PermRow(p.label, p.granted(this@CapabilitiesActivity)) {
                     runCatching { startActivity(p.grantIntent(this@CapabilitiesActivity).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 }
             }
             SSubhead("Agent powers")
-            SNote("Bigger powers that let Settai act more like a phone assistant. All are OFF until you switch them on. Anything that changes something in another app or sends anything asks Yes/No first. Settai never sends on its own.")
+            SNote("Bigger powers that let ${nm} act more like a phone assistant. All are OFF until you switch them on. Anything that changes something in another app or sends anything asks Yes/No first. ${NM} never sends on its own.")
             for (g in CapGroup.entries.filter { it.optIn }) AgentCard(g, r)
             SSecondary("Reported replies") { startActivity(android.content.Intent(this@CapabilitiesActivity, ReportsActivity::class.java)) }
             SSubhead("Everyday powers")
@@ -83,18 +83,18 @@ class CapabilitiesActivity : androidx.activity.ComponentActivity() {
                 }
             }
             SCard("What Android won't let any app do") {
-                SNote("• Flip Wi-Fi (Android 10+), Bluetooth (13+), mobile data, airplane mode, location, NFC or hotspot directly. Settai opens the system switch for one tap instead.\n" +
-                    "• Show Settai's overlay on top of the lock screen. The live wallpaper shows sleeping Settai there instead, plus the lock-screen notification.\n" +
-                    "• Send SMS, place calls, or save calendar events silently. Settai fills them in and you press send / call / save.\n" +
+                SNote("• Flip Wi-Fi (Android 10+), Bluetooth (13+), mobile data, airplane mode, location, NFC or hotspot directly. ${NM} opens the system switch for one tap instead.\n" +
+                    "• Show ${nm}'s overlay on top of the lock screen. The live wallpaper shows sleeping ${nm} there instead, plus the lock-screen notification.\n" +
+                    "• Send SMS, place calls, or save calendar events silently. ${NM} fills them in and you press send / call / save.\n" +
                     "• Read live CPU load or temperatures other than the battery's.\n" +
-                    "• Open other apps while Settai's not visible on screen (Android blocks background launches). Settai posts a tap-to-open notification instead.")
+                    "• Open other apps while ${nm}'s not visible on screen (Android blocks background launches). ${NM} posts a tap-to-open notification instead.")
             }
         }
         if (a11yAsk) {
             androidx.compose.material3.AlertDialog(onDismissRequest = { a11yAsk = false },
-                title = { androidx.compose.material3.Text("Let Settai drive your screen?") },
+                title = { androidx.compose.material3.Text("Let ${nm} drive your screen?") },
                 text = {
-                    androidx.compose.material3.Text(getString(com.combo.monkeycompanion.R.string.a11y_description) + "\n\nOn the next screen pick \"Settai screen agent\" and switch it on." +
+                    androidx.compose.material3.Text(getString(com.combo.monkeycompanion.R.string.a11y_description) + "\n\nOn the next screen pick \"Set-Tai screen agent\" and switch it on." +
                         "\n\nGreyed out / \"Restricted setting\"? Android 13+ blocks this for apps installed from an APK file. Open App info > ⋮ (top right) > Allow restricted settings, then come back.")
                 },
                 confirmButton = { androidx.compose.material3.TextButton(onClick = { a11yAsk = false; runCatching { startActivity(Perm.ACCESSIBILITY.grantIntent(this)) } }) { androidx.compose.material3.Text("I agree, open settings") } },
@@ -144,7 +144,7 @@ class CapabilitiesActivity : androidx.activity.ComponentActivity() {
                     android.net.Uri.parse("package:$packageName"))) } }) { androidx.compose.material3.Text("Open App info") }
             }
             if (g == CapGroup.NOTIFS && android.os.Build.VERSION.SDK_INT >= 35)
-                SNote("Android 15+ may hide one-time codes from notification readers. If so, Settai says the code is hidden instead of showing it.")
+                SNote("Android 15+ may hide one-time codes from notification readers. If so, ${nm} says the code is hidden instead of showing it.")
             if (g == CapGroup.ROUTINES && android.os.Build.VERSION.SDK_INT >= 31) {
                 val ok = com.combo.monkeycompanion.powers.SettaiClock.exactAllowed(this@CapabilitiesActivity)
                 PermRow("Exact alarms", ok, okWord = "allowed", action = "Allow") {
@@ -158,3 +158,7 @@ class CapabilitiesActivity : androidx.activity.ComponentActivity() {
         }
     }
 }
+
+// v10.39.2: settings work for every character, so the screens say "your character", not one name
+private val nm: String get() = "your character"
+private val NM: String get() = "Your character"

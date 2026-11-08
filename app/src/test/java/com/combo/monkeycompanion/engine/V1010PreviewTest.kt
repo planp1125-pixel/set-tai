@@ -32,7 +32,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * v10.10 preview from the real code -> build/test-out/settai-v10.10-preview.png: Rocket Girl riding ASTRIDE her rocket
+ * v10.10 preview from the real code -> build/test-out/settai-v10.10-preview.png: Skye riding ASTRIDE her rocket
  * (side and 3/4 close-ups), the new spark-fountain exhaust (idle / swiped / the bottle lift-off / a real overlay flight),
  * and the chat button idle vs pressed (real overlay).
  */
@@ -76,7 +76,7 @@ class V1010PreviewTest {
         val H = 80 + rowA + 60 + rowB + 60 + rowC + 60 + rowD + 30
         val bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp); c.drawColor(Color.WHITE)
-        c.drawText("Settai v10.10: Rocket Girl rides ASTRIDE her rocket, sparkle exhaust (no blast), chat button idle vs pressed", 20f, 50f, title)
+        c.drawText("Settai v10.10: Skye rides ASTRIDE her rocket, sparkle exhaust (no blast), chat button idle vs pressed", 20f, 50f, title)
         var y = 80f
 
         // ---- A. riding close-ups: side + 3/4 + thumbnail ----

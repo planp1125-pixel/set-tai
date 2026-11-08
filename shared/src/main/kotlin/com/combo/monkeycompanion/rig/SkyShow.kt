@@ -11,7 +11,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * v10.9 Rocket Girl's sky-firework power, as a little show (screen px, drawn in the full-screen FX layer):
+ * v10.9 Skye's sky-firework power, as a little show (screen px, drawn in the full-screen FX layer):
  * a green glass bottle appears beside her with a Diwali rocket standing in it (stick down the neck, tilted);
  * she holds her sparkler to the fuse ([reach] = anticipation), the fuse sparks, and [SHELLS] rockets launch FROM THE
  * BOTTLE in quick succession on wobbly rocket paths with a whistle and a glitter trail, bursting at different heights

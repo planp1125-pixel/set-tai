@@ -266,9 +266,9 @@ open class MonkeyRenderer {
     protected open val glintEye: FloatArray? = floatArrayOf(12f, -41f, 1f)
     /** v10.9: head drawn smaller around the neck (1 = the chibi ratio every other character keeps). */
     protected open val headScale: Float = 1f
-    /** v10.9: moves the head down along the neck (rig units); 0 for everyone but Rocket Girl. */
+    /** v10.9: moves the head down along the neck (rig units); 0 for everyone but Skye. */
     protected open val headDrop: Float = 0f
-    /** v10.10: the head sits forward over a leaning torso (Rocket Girl riding); 0 = everyone else. */
+    /** v10.10: the head sits forward over a leaning torso (Skye riding); 0 = everyone else. */
     protected open val headShiftX: Float = 0f
 
     /** v10.8 (Smooth animation only): a tiny living catch-light in each eye that gently breathes. */
@@ -813,8 +813,8 @@ open class MonkeyRenderer {
     /** Front-facing head drawn with an arbitrary matrix (head-local space, neck at origin). Used by the profile climber too. */
     fun drawHeadAt(c: Canvas, m: Matrix, p: Pose, t: Float) {
         c.save(); c.concat(m)
-        if (headDrop != 0f || headShiftX != 0f) c.translate(headShiftX, headDrop)   // v10.9: a shorter neck (Rocket Girl); v10.10: + lean shift; 0 = everyone else
-        if (headScale != 1f) c.scale(headScale, headScale)   // v10.9: slimmer head-to-body ratio (Rocket Girl); 1 = everyone else
+        if (headDrop != 0f || headShiftX != 0f) c.translate(headShiftX, headDrop)   // v10.9: a shorter neck (Skye); v10.10: + lean shift; 0 = everyone else
+        if (headScale != 1f) c.scale(headScale, headScale)   // v10.9: slimmer head-to-body ratio (Skye); 1 = everyone else
         drawHeadBase(c, p, t)
         // Anger flush over the whole head
         if (p.anger > 0.01f) {

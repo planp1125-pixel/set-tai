@@ -372,7 +372,7 @@ object MindHub {
             if (!forced || now - lastIgnoreLog < 120_000L) return      // ignored things are logged at most every 2 min
             lastIgnoreLog = now
         }
-        val name = runCatching { CharacterRegistry.current.name }.getOrDefault("Settai")
+        val name = runCatching { CharacterRegistry.current.name }.getOrDefault(com.combo.monkeycompanion.character.CharacterNames.MONKEY)
         val line = d.reason
         synchronized(recent) { recent.addFirst(line); while (recent.size > 8) recent.removeLast() }
         runCatching { ActionLog.add(c, "Mind: $line", name) }

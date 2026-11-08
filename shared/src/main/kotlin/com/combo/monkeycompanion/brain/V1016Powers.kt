@@ -2,7 +2,7 @@ package com.combo.monkeycompanion.brain
 
 import kotlin.random.Random
 
-// v10.16 Kutti Satan (the little devil) black-magic powers. Pure data plans, same sealed family as the other powers.
+// v10.16 Tutty (the little devil) black-magic powers. Pure data plans, same sealed family as the other powers.
 // Poses and the red smoke / portal / sparks are drawn by the devil's own adapt() + renderer (keyed on the power id + phase).
 
 /** Where the devil reappears for a vanish from [x0]: always the OTHER half of the screen, a little in from the edge. */
@@ -10,7 +10,7 @@ fun devilOppositeX(x0: Float): Float = if (x0 < 0.5f) 0.88f else 0.12f
 
 /** His signature: crouch (anticipation), POOF into red smoke, then pop out of a red swirl portal on the other side. */
 object VanishPortalPower : Superpower("vanish", "Vanish & portal", "Vanishes in a puff of red smoke and pops out of a portal on the other side", emptySet()) {
-    override val startLines get() = listOf("Now you see me… 😈", "Abra-ka-DEVIL! ✨", "Watch closely… *snap* 😈", "Kutti magic, one… two…")
+    override val startLines get() = listOf("Now you see me… 😈", "Abra-ka-DEVIL! ✨", "Watch closely… *snap* 😈", "Tutty magic, one… two…")
     override val landLines get() = listOf("…now you DON'T! Over here! 😈✨", "Ta-daa! Missed me? 😏", "Portal travel, zero traffic 😎", "Hee-hee! Other side! 👋😈")
     override val crashChance get() = 0f
     override fun plan(x0: Float, y0: Float, crash: Boolean, rnd: Random): List<PowerStep> {

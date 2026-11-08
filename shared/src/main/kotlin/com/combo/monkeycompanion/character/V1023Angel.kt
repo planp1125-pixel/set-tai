@@ -21,7 +21,7 @@ private fun ss2(e0: Float, e1: Float, x: Float): Float { val k = ((x - e0) / (e1
 private fun bell2(a: Float, b: Float, x: Float, edge: Float = 0.2f): Float { val w = (b - a) * edge; return ss2(a, a + w, x) * (1f - ss2(b - w, b, x)) }
 
 /**
- * v10.23 Angel (id "angel"): Kutti Satan's partner and opposite: a cute little angel girl with the same chibi body
+ * v10.23 Angel (id "angel"): Tutty's partner and opposite: a cute little angel girl with the same chibi body
  * (round head, big black oval eyes that blink softly), cream-white, a floating gold halo, small flapping white wings,
  * pink cheeks and a small smile. Built-in fixed powers: healing sparkle (main, first on double-tap), halo spin, wing
  * flight, gentle float. All animation is a pure function of time (no frame-loop Random).
@@ -30,7 +30,7 @@ object Angel : Character("angel") {
     override val peek: PeekFace get() = AngelPeek
     override val name: String get() = CharacterNames.ANGEL
     override val noun: String get() = "little angel"
-    override val tagline: String get() = "Kutti Satan's sweet opposite: halo, little wings, healing sparkles. Double-tap: a golden healing glow!"
+    override val tagline: String get() = "Tutty's sweet opposite: halo, little wings, healing sparkles. Double-tap: a golden healing glow!"
     override val locomotion = setOf(Locomotion.FLOAT, Locomotion.FLY)
     override val vanishStyle get() = com.combo.monkeycompanion.engine.stagefx.VanishStyle.WHITE_SMOKE
     override val wardrobe = listOf(WardrobeItem("halo", "Halo", defaultOn = true, note = "Her floating gold halo"))
@@ -39,13 +39,13 @@ object Angel : Character("angel") {
     override val signaturePower: Superpower get() = HealingGlowPower
     override val doubleTapTip: String get() = "Double-tap me for a healing sparkle! ✨😇"
 
-    private val HELLO = listOf("Hi hi! I'm Angel 😇 Is Kutti Satan behaving?", "Hello! Need a little sparkle today? ✨", "Vanakkam! I'll keep that little devil in check 😇")
+    private val HELLO = listOf("Hi hi! I'm Angel 😇 Is Tutty behaving?", "Hello! Need a little sparkle today? ✨", "Vanakkam! I'll keep that little devil in check 😇")
     private val PAT = listOf("Aww, thank you 😊💛", "Head pats make my halo glow ✨")
     private val TICKLE = listOf("Hee-hee! Not the wings! 🪽😆", "Stop, stop, my feathers! 😂")
     private val POKED = listOf("Mm…? I was dreaming of clouds ☁️", "*yawn* Just one more cloud nap… 😴")
     private val DANCE = listOf("Angel twirl! 💫", "Flap, flap, spin! 🪽🎶", "Happy dance ✨😇")
     private val RANDOM = listOf("If something goes missing, ask the devil 😇", "Be kind today, okay? 💛", "My halo is solar powered. Kidding ✨",
-        "Drink some water, it's good for you 💧😇", "I'm small, but my sparkle is big ✨", "Kutti Satan thinks he's sneaky. He's not 😏")
+        "Drink some water, it's good for you 💧😇", "I'm small, but my sparkle is big ✨", "Tutty thinks he's sneaky. He's not 😏")
     private val FALL = listOf("Wings, wings, flap! 😱🪽", "Eek! Catch me! 😵")
     private val LAND = listOf("*flutter* Safe landing 😇", "Soft as a feather 🪶")
     private val GRUMPY = listOf("Hmph. Even angels get grumpy 😤", "No sparkles right now. Okay, one ✨")
@@ -58,7 +58,7 @@ object Angel : Character("angel") {
 
     /** A softer, slower float than the devil's. */
     fun bob(t: Float): Float = 2.4f * sin(t * 1.8f + 1.1f) + 0.7f * sin(t * 4.1f)
-    /** Soft blink, offset from Kutti Satan's so the pair never blink in sync. */
+    /** Soft blink, offset from Tutty's so the pair never blink in sync. */
     fun blink(t: Float): Float = DevilBlink.closed(t + 1.7f)
 
     override fun adapt(p: Pose, s: MonkeyState, t: Float, st: Float, c: AnimContext, w: Wear) {
@@ -126,7 +126,7 @@ object Angel : Character("angel") {
     override fun identity(screen: String) = """
 You ARE ${CharacterNames.ANGEL}: a cute little angel girl who lives on your human's $screen (inside the Set-Tai app). You have a soft round cream-white head and body, big black oval eyes, pink cheeks, a small smile, a floating gold halo and small white feathered wings. You float and fly.
 You are an original character. When introducing yourself, say you are ${CharacterNames.ANGEL}.
-Personality: sweet, kind, caring and a little cheeky; Kutti Satan the little devil is your partner and opposite: he does mischief, you fix it with healing sparkles, but you're secretly friends. Your magic is healing sparkles, a spinning halo, flying and gentle floating.
+Personality: sweet, kind, caring and a little cheeky; Tutty the little devil is your partner and opposite: he does mischief, you fix it with healing sparkles, but you're secretly friends. Your magic is healing sparkles, a spinning halo, flying and gentle floating.
 Speak mostly in clear, natural English. Only occasionally drop in a single light Tamil word, never in every message.
 """
 

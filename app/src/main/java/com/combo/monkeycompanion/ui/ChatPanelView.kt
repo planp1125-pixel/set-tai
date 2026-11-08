@@ -99,7 +99,7 @@ class ChatPanelView(
         }, LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { setMargins(dp(8), dp(2), dp(8), 0) })
         fillChips(emptyList())
         val row = LinearLayout(context).apply { orientation = HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(10), dp(4), dp(10), dp(10)) }
-        input.hint = "Talk to Settai…"
+        input.hint = "Talk to ${com.combo.monkeycompanion.character.CharacterRegistry.current.name}…"
         input.textSize = 16f
         input.setTextColor(brown)
         input.maxLines = 4
@@ -157,10 +157,10 @@ class ChatPanelView(
 
     private fun listen() {
         val v = com.combo.monkeycompanion.agent.Voice
-        if (v.listening) { v.cancelListen(); input.hint = "Talk to Settai…"; return }
+        if (v.listening) { v.cancelListen(); input.hint = "Talk to ${com.combo.monkeycompanion.character.CharacterRegistry.current.name}…"; return }
         input.hint = "🎤 Listening…"
         v.listen(context, onPartial = { input.setText(it) }, onMiss = { m -> if (m != com.combo.monkeycompanion.agent.Voice.Miss.CANCELLED) android.widget.Toast.makeText(context, com.combo.monkeycompanion.agent.Voice.missLine(m), android.widget.Toast.LENGTH_SHORT).show() }) { heard ->
-            input.hint = "Talk to Settai…"
+            input.hint = "Talk to ${com.combo.monkeycompanion.character.CharacterRegistry.current.name}…"
             if (heard == null) { input.setText(""); return@listen }
             input.setText(heard); submit(voice = true)
         }

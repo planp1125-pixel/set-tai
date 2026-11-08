@@ -26,7 +26,7 @@ internal fun StudioPhotoFaceControls(
         Text(if (bodyDetectedClearly) "Body detected" else "Body detection needs review", style = MaterialTheme.typography.labelMedium)
         Text("Body template", style = MaterialTheme.typography.titleSmall)
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("slim_body" to "Slim", "mid_body" to "Mid-body", "athletic_body" to "Athletic", "bulky_body" to "Bulky", "superboy_body" to "Superboy", "ironboy_body" to "Ironboy", "ninja_body" to "Ninja").forEach { (id, label) ->
+            listOf("slim_body" to "Slim", "mid_body" to "Mid-body", "athletic_body" to "Athletic", "bulky_body" to "Bulky", "superboy_body" to "Zoom", "ironboy_body" to "Ironboy", "ninja_body" to "Ninja").forEach { (id, label) ->
                 OutlinedButton(onClick = { onBodyTemplate(id) }) { Text(label) }
             }
         }

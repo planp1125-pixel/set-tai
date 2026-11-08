@@ -160,7 +160,7 @@ enum class OutfitStyle(val id: String, val label: String) {
     KURTA_SET("kurta", "Festive Kurta Set ✨"),
     PATTU_PAVADAI("pattu_pavadai", "Silk Pattu Pavadai & Gold Zari 👧"),
     FROCK_DRESS("frock", "Cute Flared Frock & Bow 👗"),
-    SUPER_SUIT("super_suit", "🦸 Superboy Hero Body (Cape + Lightning Emblem)"),
+    SUPER_SUIT("super_suit", "🦸 Zoom Hero Body (Cape + Lightning Emblem)"),
     IRON_ARMOUR_SUIT("iron_armour", "🤖 Ironboy Armour Body (Chest Reactor + Jet Boots)"),
     NINJA_SHINOBI_SUIT("ninja_suit", "🥷 Shadow Ninja Body (Shinobi Gi + Katana)");
 
@@ -171,7 +171,7 @@ enum class OutfitStyle(val id: String, val label: String) {
 
 enum class FlightStyle(val id: String, val label: String, val locomotion: Set<Locomotion>) {
     WALK_AND_HOP("walk", "Walk & Bounce on Floor 🏃", setOf(Locomotion.WALK)),
-    SUPERBOY_CAPE_FLY("superboy_fly", "Fly & Hover like Superboy (Cape + Sky Loops) 🦸", setOf(Locomotion.WALK, Locomotion.FLY, Locomotion.FLOAT)),
+    SUPERBOY_CAPE_FLY("superboy_fly", "Fly & Hover like Zoom (Cape + Sky Loops) 🦸", setOf(Locomotion.WALK, Locomotion.FLY, Locomotion.FLOAT)),
     IRONBOY_JET_FLY("ironboy_fly", "Jet Hover & Fly like Ironboy (Boot/Palm Jets) 🚀🔥", setOf(Locomotion.WALK, Locomotion.FLY, Locomotion.FLOAT)),
     CLIMB_WALLS("climb", "Edge Park & Hover Patrol 🧗", setOf(Locomotion.WALK, Locomotion.FLY, Locomotion.FLOAT)),
     ALL_HERO_MOVES("all_hero", "All Hero Moves (Hover + Cape + Jets + Sky Loops!) 🌟🦸🚀", setOf(Locomotion.WALK, Locomotion.FLY, Locomotion.FLOAT));
@@ -704,7 +704,7 @@ object CustomPowerCatalog {
     val OPTIONS: List<PowerOption> = listOf(
         PowerOption("ninja", "🥷 Ninja Mode (Smoke + Shadow Clones)", Superpower.NinjaSettai, setOf("ninja_mode")),
         PowerOption("kovam", "😡 Kovam / Angry Mode (Giant Fiery Stomp)", Superpower.KovamMode, setOf("angry", "angry_mode")),
-        PowerOption("superboy_flight", "🦸 Superboy Sky Flight Swoop (Cape Loops)", HeroSwoop, setOf("swoop", "superboy")),
+        PowerOption("superboy_flight", "🦸 Zoom Sky Flight Swoop (Cape Loops)", HeroSwoop, setOf("swoop", "superboy")),
         PowerOption("ironboy_flight", "🚀 Ironboy Jet Thrusters & Palm Repulsors", ArmourJetsPower, setOf("jets", "ironboy", "armour_jets")),
         PowerOption("rocket", "🚀 Rocket Jetpack Boost", Superpower.RocketMonkey, setOf("rocket_monkey")),
         PowerOption("thunder", "⚡ Thunder Storm & Lightning Staff", Superpower.ThunderMonkey, setOf("lightning")),

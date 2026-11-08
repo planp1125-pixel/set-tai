@@ -386,7 +386,7 @@ class CustomCompanionStudioTest {
         assertEquals(0f, vCat.coyoteScareTimer, 0.01f)
         assertTrue("fell down after 1s coyote scare (${vCat.debugBox().top})", vCat.debugBox().top > yStart + 400f)
 
-        // 5. Verify Superboy & Armour Anna Edge-Collision Thrust Loss & Crash-Landing at Bottom Display!
+        // 5. Verify Zoom & Bolt Edge-Collision Thrust Loss & Crash-Landing at Bottom Display!
         for (heroId in listOf("superboy", "armour")) {
             CharacterRegistry.select(heroId)
             val vHero = MonkeyView(ctx, host)
@@ -553,11 +553,11 @@ class CustomCompanionStudioTest {
 
         // 3. Verify Custom Name Saving & Multi-Character Roster in MainActivity
         val c1 = CustomCompanionStore.save(ctx, womanSpec.copy(id = "custom_1", name = "Ananya"))
-        val c2 = CustomCompanionStore.saveAsNewCompanion(ctx, CustomCompanionPresets.child5YrDaughter().copy(name = "Kutti"))
+        val c2 = CustomCompanionStore.saveAsNewCompanion(ctx, CustomCompanionPresets.child5YrDaughter().copy(name = "Tutty"))
         assertEquals("Ananya", c1.name)
-        assertEquals("Kutti", c2.name)
+        assertEquals("Tutty", c2.name)
         val rosterNames = CharacterRegistry.allWithCustom.map { it.name }
-        assertTrue("Roster contains Ananya and Kutti: $rosterNames", "Ananya" in rosterNames && "Kutti" in rosterNames)
+        assertTrue("Roster contains Ananya and Tutty: $rosterNames", "Ananya" in rosterNames && "Tutty" in rosterNames)
 
         // 4. Verify Give Brain gate: disabling still turns AI OFF; enabling turns it back ON
         ChatHub.settings.provider = com.combo.monkeycompanion.ai.Provider.GEMINI
@@ -845,16 +845,16 @@ class CustomCompanionStudioTest {
         c.drawRoundRect(r2, 22f, 22f, borderP)
 
         // =========================================================================
-        // PANEL 3 (Bottom-Left): Superboy & Armour Anna Edge-Collision Thrust Drop & Crash-Landing + Live Trio (3)
+        // PANEL 3 (Bottom-Left): Zoom & Bolt Edge-Collision Thrust Drop & Crash-Landing + Live Trio (3)
         // =========================================================================
         val r3 = RectF(gap, r1.bottom + gap + 22f, gap + colW, H - 18f)
-        c.drawText("3. Superboy & Armour Anna Edge-Hit Thrust Loss & Crash-Landing + Solo/Duo/Trio Screen", r3.left + 4f, r3.top - 8f, secP)
+        c.drawText("3. Zoom & Bolt Edge-Hit Thrust Loss & Crash-Landing + Solo/Duo/Trio Screen", r3.left + 4f, r3.top - 8f, secP)
         c.drawRoundRect(r3, 22f, 22f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0x1C, 0x18, 0x2B) })
         c.save(); c.clipRect(r3)
 
         val fy3 = r3.bottom - 58f
 
-        // 3A: Armour Anna hitting top-left edge -> thrust sputtering & dropping!
+        // 3A: Bolt hitting top-left edge -> thrust sputtering & dropping!
         ArmourAnna.fill(pose, MonkeyState.FALLING, 2.0f, 1.0f, actx, Wear(ArmourAnna))
         pose.armLRaise = 142f; pose.armRRaise = 142f; pose.jets = 0.2f; pose.palmGlow = 0.2f
         rig.layout(pose, r3.left + 115f, r3.top + 175f, 1.28f, 1f)
@@ -863,7 +863,7 @@ class CustomCompanionStudioTest {
         c.drawText("🛡️ 1. Edge Hit Sputter", r3.left + 115f, r3.bottom - 30f, capP)
         c.drawText("(Power Drops → Plunges)", r3.left + 115f, r3.bottom - 13f, subCapP)
 
-        // 3B: Superboy Crash-Landed at Bottom Display with Spinning Stars!
+        // 3B: Zoom Crash-Landed at Bottom Display with Spinning Stars!
         Superboy.fill(pose, MonkeyState.IDLE, 2.4f, 1.0f, actx, Wear(Superboy))
         pose.squashY = 0.78f; pose.squashX = 1.22f; pose.bodyY = 12f; pose.bodyRot = 24f; pose.eyeOpen = 0.4f; pose.soot = 0.8f
         rig.layout(pose, r3.left + 310f, fy3, 1.38f, 1f)

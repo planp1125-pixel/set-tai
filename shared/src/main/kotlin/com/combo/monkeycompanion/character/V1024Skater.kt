@@ -20,7 +20,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * v10.24 Skater Girl (id "skater"): an ORIGINAL cute chibi girl with dark brown curly hair, a lilac jacket over a mint
+ * v10.24 Rollie (id "skater"): an ORIGINAL cute chibi girl with dark brown curly hair, a lilac jacket over a mint
  * tee, denim shorts and pink high-tops, always with her coral skateboard. Rolls along the floor on it; swipe her and she
  * skates to the spot doing tricks. Fixed powers: kickflip show (main), grind, board spin. Time-based animation, no RNG.
  */
@@ -36,7 +36,7 @@ object SkaterGirl : Character("skater") {
     override val signaturePower: Superpower get() = KickflipShowPower
     override val doubleTapTip: String get() = "Double-tap me for a kickflip show! 🛹"
 
-    private val HELLO = listOf("Heyy! Skater Girl rolling in! 🛹", "Hi hi! Your screen is the smoothest skate park 😎", "Yo! Want to see a kickflip? 🛹✨")
+    private val HELLO = listOf("Heyy! Rollie rolling in! 🛹", "Hi hi! Your screen is the smoothest skate park 😎", "Yo! Want to see a kickflip? 🛹✨")
     private val PAT = listOf("Hehe, careful, the curls bounce back! 😆", "Aww thanks! *does a tiny wheelie* 🛹")
     private val TICKLE = listOf("Haha no, I'll fall off my board! 🤣", "Stop stop, balance, balance! 😂")
     private val POKED = listOf("Huh?! I was dreaming of a mega ramp 😴", "*yawn* Five more minutes, then skating 🛹")

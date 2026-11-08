@@ -192,7 +192,7 @@ object PreviewV8 {
             HeartFx.drawCampfire(c, c3.centerX(), fy, 1.0f, 1.6f)
             val ht = FloatArray(2); rigL.headTop(ht)
             val bub = CloudBubble(1.1f, 14.5f)
-            bub.setText("Late-night campfire with Anna 🔥🌙", (c3.width() - 20f).toInt())
+            bub.setText("Late-night campfire with Bolt 🔥🌙", (c3.width() - 20f).toInt())
             bub.draw(c, c3.left + 10f, c3.top + 16f, ht[0], ht[1], 1f, 1f)
             c.drawText("3. Night Campfire (Duo)", c3.centerX(), c3.bottom - 16f, subP)
         }

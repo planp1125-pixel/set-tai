@@ -46,13 +46,13 @@ class SmashPreviewTest {
         for (i in listOf(5, 9)) { sb.debugTap(g.tileLeft(i) + g.tileW * 0.4f, g.tileTop(i) + g.tileH * 0.6f); frames(sb, 2) }
         sb.debugTap(g.tileLeft(17) + 60f, g.tileTop(17) + 80f)
         frames(sb, 4)
-        shots += "Superboy: heat-vision laser" to snap(sb)
+        shots += "Zoom: heat-vision laser" to snap(sb)
 
         val mm = view("mask"); val gm = mm.debugGame!!
         for (i in listOf(8, 9, 12)) { mm.debugTap(gm.tileLeft(i) + 100f, gm.tileTop(i) + 100f); frames(mm, 16) }
         for (i in listOf(8, 9)) { mm.debugTap(gm.tileLeft(i) + 120f, gm.tileTop(i) + 90f); frames(mm, 16) }
         mm.debugTap(gm.tileLeft(21) + 120f, gm.tileTop(21) + 90f); frames(mm, 8)
-        shots += "Mask Man: juggling balls" to snap(mm)
+        shots += "Masko: juggling balls" to snap(mm)
 
         val gj = view("gajju"); val gg = gj.debugGame!!
         for (i in listOf(14, 15, 18)) { gj.debugTap(gg.tileLeft(i) + 100f, gg.tileTop(i) + 100f); frames(gj, 14) }

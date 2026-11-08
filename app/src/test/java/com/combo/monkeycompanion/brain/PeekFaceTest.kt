@@ -59,11 +59,11 @@ class PeekFaceTest {
     }
 
     @Test fun peeksAnimate() {
-        // Anna's visor flips up mid-peek (moustache), down at rest.
+        // Bolt's visor flips up mid-peek (moustache), down at rest.
         assertEquals(0f, ArmourPeek.visorUp(-1f), 0f)
         assertEquals(1f, ArmourPeek.visorUp(2f), 0f)
         assertNotEquals(render(ArmourAnna.peek, Wear(ArmourAnna), t = 0.2f).toList(), render(ArmourAnna.peek, Wear(ArmourAnna), t = 2f).toList())
-        // Mask Man's eyes change mood during a peek, calm at rest.
+        // Masko's eyes change mood during a peek, calm at rest.
         assertEquals(MaskManPeek.Mood.CALM, MaskManPeek.mood(-1f))
         assertEquals(4, (0 until 8).map { MaskManPeek.mood(it * 0.6f) }.toSet().size)
         // Binoculars work for everyone.

@@ -73,11 +73,23 @@ class CloudBrainTest {
         assertFalse(ChatHub.brain() is GatewayBrain)
         ChatHub.settings.useOwnApiKey = false; ChatHub.setBrainEnabled(false)
     }
+    /** v10.39.2: on Set-Tai Cloud the 40 daily requests are for the user's own chats; automatic lines stay local unless allowed. */
+    @Test fun cloudKeepsDailyRequestsForChatsUnlessAutoLinesAllowed() {
+        ChatHub.init(context)
+        ChatHub.settings.useOwnApiKey = false; ChatHub.settings.brainType = BrainType.ONLINE; ChatHub.setBrainEnabled(true)
+        ChatHub.settings.cloudAutoLines = false
+        assertTrue(ChatHub.onCloud()); assertTrue(ChatHub.isBrainEnabled()); assertFalse(ChatHub.autoAiAllowed())
+        ChatHub.settings.cloudAutoLines = true; assertTrue(ChatHub.autoAiAllowed())
+        ChatHub.settings.cloudAutoLines = false; ChatHub.settings.useOwnApiKey = true
+        assertFalse(ChatHub.onCloud()); assertTrue(ChatHub.autoAiAllowed())
+        ChatHub.settings.useOwnApiKey = false; ChatHub.setBrainEnabled(false)
+        assertFalse(ChatHub.autoAiAllowed())
+    }
     @Test fun gatewaySendsAnonymousIdentityBodySenseAndHistory() {
         var captured = ""
         val url = serve(200, """{"text":"Tiny horns, big hello!","leftToday":39}""") { captured = it }
         val b = GatewayBrain("anonymous-test", { true }, { "Body Sense: awake" }, url)
-        assertEquals("Tiny horns, big hello!", b.chat("You are Kutti Satan", listOf(ChatMsg(true, "hi")), "hello", null) {})
+        assertEquals("Tiny horns, big hello!", b.chat("You are Tutty", listOf(ChatMsg(true, "hi")), "hello", null) {})
         val json = JSONObject(captured)
         assertEquals("anonymous-test", json.getString("userId")); assertEquals("devil", json.getString("characterId"))
         assertEquals("Body Sense: awake", json.getString("bodySense")); assertEquals(1, json.getJSONArray("history").length())

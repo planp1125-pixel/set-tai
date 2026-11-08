@@ -22,20 +22,20 @@ enum class Locomotion { WALK, CLIMB, HANG, FLY, FLOAT }
 
 /** Display names in one place so they can be renamed before any public release. */
 object CharacterNames {
-    const val MONKEY = "Settai"
-    const val SUPERBOY = "Superboy"          // working name (could become "Super Payyan")
-    const val ARMOUR = "Armour Anna"
-    const val MASK = "Mask Man"
+    const val MONKEY = "Pogo"
+    const val SUPERBOY = "Zoom"
+    const val ARMOUR = "Bolt"
+    const val MASK = "Masko"
     const val BILLA = "Billa"
     const val CHITTU = "Chittu"
     const val GAJJU = "Gajju"
-    const val ROCKETGIRL = "Rocket Girl"
-    const val HOLLOWMAN = "Hollow Man"
-    const val SURFER = "Surfing Girl"
-    /** v10.16 the app's own little devil mascot ("Settai" was already the monkey's name). */
-    const val DEVIL = "Kutti Satan"
+    const val ROCKETGIRL = "Skye"
+    const val HOLLOWMAN = "Echo"
+    const val SURFER = "Wavy"
+    /** v10.16 the app's own little devil mascot; v10.39.2 renamed Tutty (the app's heart). */
+    const val DEVIL = "Tutty"
     const val ANGEL = "Angel"
-    const val SKATER = "Skater Girl"
+    const val SKATER = "Rollie"
 }
 
 /** One toggleable part. [options] = styles to pick from (first = default). */
@@ -94,7 +94,7 @@ open class SimpleVoice(private val noun: String, overrides: Map<List<String>, Li
     override fun polish(s: String): String = s
         .replace(Regex("\\bmonkeys\\b"), noun + "s").replace(Regex("\\bmonkey\\b"), noun)
         .replace(Regex("\\bMonkeys\\b"), noun.replaceFirstChar { it.uppercase() } + "s").replace(Regex("\\bMonkey\\b"), noun.replaceFirstChar { it.uppercase() })
-        .replace("Settai", CharacterRegistry.current.name)
+        .replace(CharacterNames.MONKEY, CharacterRegistry.current.name)
 }
 
 abstract class Character(val id: String) {
@@ -107,9 +107,9 @@ abstract class Character(val id: String) {
     fun can(l: Locomotion) = l in locomotion
     /** Heavy footsteps (thud + small shake while walking). */
     open val heavy: Boolean get() = false
-    /** True when this character hovers/flies using boot & palm jet flames (like Armour Anna / Ironboy mode). */
+    /** True when this character hovers/flies using boot & palm jet flames (like Bolt / Ironboy mode). */
     open val usesHoverJets: Boolean get() = id == "armour"
-    /** True when this character flies/glides with a hero cape and speed streaks (like Superboy mode). */
+    /** True when this character flies/glides with a hero cape and speed streaks (like Zoom mode). */
     open val usesCapeFlight: Boolean get() = id == "superboy"
     /** Falling speed multiplier (an umbrella floats down). */
     open fun fallGravity(w: Wear): Float = 1f
@@ -158,19 +158,23 @@ abstract class Character(val id: String) {
 object CharacterRegistry {
     val all: List<Character> by lazy { listOf(KuttiSatan, Angel, MonkeyCharacter, Superboy, ArmourAnna, MaskMan, Billa, Chittu, Gajju, RocketGirl, HollowMan, SurferGirl, SkaterGirl) }
     val allWithCustom: List<Character> get() = all + CustomCompanionRegistry.allCharacters()
-    @Volatile var current: Character = MonkeyCharacter; private set   // engine fallback; the app picks AppSettings.characterId (v10.16: Kutti Satan on new installs)
+    @Volatile var current: Character = MonkeyCharacter; private set   // engine fallback; the app picks AppSettings.characterId (v10.16: Tutty on new installs)
     private val wears = HashMap<String, Wear>()
 
     fun byId(id: String?): Character? {
         val norm = when (id?.lowercase()?.trim()) {
             "chottu", "mouse", "eli" -> "chittu"
             "cat" -> "billa"
-            "rocket", "rocket girl", "rocketgirl", "rocketboy", "rocket boy", "rocket_boy", "broomboy", "broom boy" -> "rocketgirl"
-            "hollow", "hollow man", "hollowman", "invisible", "invisible man", "dancer" -> "hollowman"
-            "devil", "satan", "kutti satan", "kuttisatan", "kutti", "little devil", "imp" -> "devil"
+            "pogo", "settai" -> "monkey"
+            "zoom", "superboy", "super boy" -> "superboy"
+            "bolt", "armour anna", "armor anna", "anna", "armour", "armor" -> "armour"
+            "masko", "mask man", "maskman", "mask" -> "mask"
+            "rocket", "skye", "rocket girl", "rocketgirl", "rocketboy", "rocket boy", "rocket_boy", "broomboy", "broom boy" -> "rocketgirl"
+            "hollow", "echo", "hollow man", "hollowman", "invisible", "invisible man", "dancer" -> "hollowman"
+            "devil", "satan", "tutty", "kuttisatan", "kutti", "little devil", "imp" -> "devil"
             "angel", "little angel", "devathai", "dhevathai", "fairy" -> "angel"
-            "skater", "skater girl", "skate", "skategirl", "skateboard girl" -> "skater"
-            "surfer", "surf", "surfing girl", "surfgirl", "surfer girl" -> "surfer"
+            "skater", "rollie", "skater girl", "skate", "skategirl", "skateboard girl" -> "skater"
+            "surfer", "wavy", "surf", "surfing girl", "surfgirl", "surfer girl" -> "surfer"
             else -> id
         }
         return all.firstOrNull { it.id.equals(norm, ignoreCase = true) } ?: CustomCompanionRegistry.byId(norm)

@@ -23,7 +23,7 @@ object SwipeTravel {
         MOUSE_HOLE(1.9f, false, "mouse-hole dive"),
         SKATE(5.4f, false, "skate show"),
         RUN(1.3f, false, "run"),
-        /** v10.25.1 Kutti Satan (red smoke) / Angel (white-gold): vanish, reappear a hop further, 3-5 times, then land. */
+        /** v10.25.1 Tutty (red smoke) / Angel (white-gold): vanish, reappear a hop further, 3-5 times, then land. */
         MAGIC_HOPS(2.0f, true, "smoke-puff hops"),
         /** v10.26 Angel: graceful wing flight with a golden sparkle trail. */
         WINGS(1.7f, true, "angel wing flight"),
@@ -36,7 +36,7 @@ object SwipeTravel {
     /** v10.26 faster than this (dp/s) = a flick: thrown (splat / thwack / pancake) or hidden at a close edge. */
     const val FLICK_DP = 1600f
 
-    /** null = this character keeps its old swipe (Anna, Superboy, Rocket Girl, Kutti Satan, Angel). */
+    /** null = this character keeps its old swipe (Bolt, Zoom, Skye, Tutty, Angel). */
     fun styleFor(id: String, custom: Boolean): Style? = when (id) {
         "surfer" -> Style.SURF
         "monkey" -> Style.DIVE_POP
@@ -85,7 +85,7 @@ object SwipeTravel {
         var k = 0f; private set
         val done get() = k >= 1f
         val dir get() = if (x1 >= x0) 1f else -1f
-        /** v10.26.1 tours are brisk loops like Armour Anna's flights (a little longer than a direct trip). */
+        /** v10.26.1 tours are brisk loops like Bolt's flights (a little longer than a direct trip). */
         val secs: Float get() = if (tour == TOUR_NONE) style.secs else when (style) {
             Style.MAGIC_HOPS -> 0.42f * (wx.size - 1)          // one teleport per waypoint
             Style.EAR_FLAP -> 3.4f                               // he's heavy
@@ -94,7 +94,7 @@ object SwipeTravel {
         }
         /**
          * The tour: a loop through waypoints (Catmull-Rom, smooth). Up = first to the TOP MIDDLE of the screen, then a round
-         * loop like Anna's, and it stays up at the top. Down = up to the top middle, round the loop, then down to land.
+         * loop like Bolt's, and it stays up at the top. Down = up to the top middle, round the loop, then down to land.
          */
         private val wx: FloatArray
         private val wy: FloatArray

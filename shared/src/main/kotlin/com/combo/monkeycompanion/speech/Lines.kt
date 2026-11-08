@@ -51,13 +51,13 @@ object Lines {
     )
     val LAND = listOf(
         "Ta-da! Perfect landing!", "Ten out of ten!", "Ouch... || I meant to do that.", "Boing!", "Stuck the landing. Judges?",
-        "Nailed it. || My knees did not.", "Gravity: 1, Settai: also 1.",
+        "Nailed it. || My knees did not.", "Gravity: 1, Pogo: also 1.",
     )
     val FALL = listOf("Wheeeee!", "Here I goooo!", "Banzaaai!", "Catch meee!", "I regret nothiiing!", "Tell my bananas I love theeem!")
 
     /** Plain idle chatter. */
     val IDLE = listOf(
-        "Banana break, anyone?", "Your screen is so cozy.", "I live here now.", "Just monkeying around.", "Settai means naughty. I take it seriously.",
+        "Banana break, anyone?", "Your screen is so cozy.", "I live here now.", "Just monkeying around.", "Mischief is my middle name. I take it seriously.",
         "Did you drink water today?", "Ooh ooh ah ah!", "I'm guarding your phone!", "What are we doing today?",
         "I counted your apps. || I lost count. Again.", "Is it just me, or is this screen a bit… pixel-y?", "Fun fact: I'm 0% calories.",
         "I'm not lazy, I'm in power-saving mode.", "I tried to leave once. || The edge of the screen said no.", "Your notifications gossip about you, you know.",
@@ -73,10 +73,10 @@ object Lines {
         "I could do a trick! || If someone was watching.", "If a monkey dances and no one taps it, did it even dance?",
     )
     val RANDOM = IDLE + BORED
-    val HELLO = listOf("Hi! I'm Settai!", "Settai reporting for mischief!", "Ooh! A new home!", "Hello, human!", "Vanakkam! Your phone is mine now. || Kidding. Mostly.")
+    val HELLO = listOf("Hi! I'm Pogo!", "Pogo reporting for mischief!", "Ooh! A new home!", "Hello, human!", "Vanakkam! Your phone is mine now. || Kidding. Mostly.")
 
     val HANG = listOf("Look ma, no feet!", "Tree monkey mode: ON", "Wheee, I'm swinging!", "Nice branch you've got here!", "The status bar is surprisingly grippy.", "I can see your clock from here!")
-    val CLIMB = listOf("Climbing time!", "This wall is my tree now!", "Up, up, up!", "Don't look down, Settai...", "Parkour! || That's the only word I know.")
+    val CLIMB = listOf("Climbing time!", "This wall is my tree now!", "Up, up, up!", "Don't look down, Pogo...", "Parkour! || That's the only word I know.")
     val DT_FIRST = listOf("Double-tap me to chat!")
     val DT_HINT = listOf(
         "Bored? Double-tap me, machan!", "Psst... double-tap me and let's talk!", "Double-tap me if you want to chat!",
@@ -134,11 +134,11 @@ object Lines {
 
     // ---- quitting (long-press) ----
     val QUIT_ASK = listOf(
-        "Leaving me already, machan? Quit Settai?",
-        "Is this... a breakup? Quit Settai?",
-        "You want me to leave? Quit Settai?",
-        "Aiyo, sending me home? Quit Settai?",
-        "Exit the monkey? Quit Settai?",
+        "Leaving me already, machan? Quit Set-Tai?",
+        "Is this... a breakup? Quit Set-Tai?",
+        "You want me to leave? Quit Set-Tai?",
+        "Aiyo, sending me home? Quit Set-Tai?",
+        "Exit the monkey? Quit Set-Tai?",
     )
     val QUIT_STAY = listOf("Phew! I knew you loved me.", "Yay! Staying. Forever. Mostly.", "Good choice. I'm unpacking my bananas.", "Semma! Back to monkey business.")
     val EXIT_FAINT = listOf("Tell my bananas... I loved them...", "This is my final scene... *swoon*", "Goodbye, cruel phone...")
@@ -173,7 +173,7 @@ object Lines {
         "And that's how it's done!", "Smooth like banana pudding.",
     )
     val POWER_LAND_BANANA = listOf(
-        "Fear not, citizen! Settai is here!", "Super Banana, saving screens since today!",
+        "Fear not, citizen! Pogo is here!", "Super Banana, saving screens since today!",
         "Strike a pose... || and hold it... || the wind is in my cape!", "Mission complete. Snacks, please.",
     )
     // ---- v4 show-off powers ----
@@ -182,7 +182,7 @@ object Lines {
     val POWER_THUNDER_ZAP = listOf("Ayyo! It came back!", "Bzzt! || ...my fur is now a hairstyle.", "Note to self: don't hold the staff up during a thunderstorm.")
     val POWER_NINJA = listOf("Ninja mode. || You didn't see me.", "Poof! Over here! || No, here!", "Silent but mischievous.", "Shadow clones, assemble!")
     val POWER_LAND_NINJA = listOf("Ninja bow. You may clap silently.", "Four of me! Your phone can barely handle one.", "Vanished. Reappeared. Very professional.")
-    val POWER_KOVAM = listOf("Grrr... KOVAM MODE!", "You made me angry! || Watch me grow!", "Kovam varudhu! KOVAM VARUDHU!", "Settai SMASH! || ...gently.")
+    val POWER_KOVAM = listOf("Grrr... KOVAM MODE!", "You made me angry! || Watch me grow!", "Kovam varudhu! KOVAM VARUDHU!", "Pogo SMASH! || ...gently.")
     val POWER_LAND_KOVAM = listOf("Oops. Is that crack real? || ...It isn't. Phew.", "Sorry sorry! I'll pay for it in bananas.", "I'm small now. Nobody saw anything.", "That was... a bit much. Sorry, machan.")
     val POWER_ICE = listOf("Your phone is HOT, machan! Ice Monkey to the rescue!", "Brrr! Cooling you down!", "Ice Monkey! || Chill, everyone.", "Making it snow on your screen. You're welcome.")
     val POWER_LAND_ICE = listOf("All cool now. || Literally.", "Brrr... I need a blanket.", "Phone chilled. Monkey frozen.")
@@ -191,7 +191,7 @@ object Lines {
     val POWER_FREEZE = listOf("Time freeze! || Everything... is... slow...", "Bananas incoming! || Matrix mode!", "Slow-mo! Watch my moves!")
     val POWER_LAND_FREEZE = listOf("Dodged every single banana!", "Time unfrozen. You're welcome.", "I'm so fast I scared myself.")
     val POWER_FREEZE_HIT = listOf("Ow! One banana got me!", "Slow-mo is slow for me too, apparently.")
-    val POWER_MAGIC = listOf("Ladies and gentlemen... || the amazing Settai!", "Abracadabra... banana-dabra!", "Nothing in the hat... || or IS there?")
+    val POWER_MAGIC = listOf("Ladies and gentlemen... || the amazing Pogo!", "Abracadabra... banana-dabra!", "Nothing in the hat... || or IS there?")
     val POWER_LAND_MAGIC = listOf("Thank you, thank you! Tips in bananas.", "The rabbit counted your notifications. Smart rabbit.", "Magic! Don't ask how.")
     val POWER_OFF = listOf("My superpowers are switched off in Settings, machan. || I'm just a regular genius monkey now.")
     val POWER_TIRED = listOf("Powers recharging, machan. Give me a minute!", "Cape's in the wash. Try again soon!")
@@ -200,7 +200,7 @@ object Lines {
     private val GAG_LINES = mapOf(
         Gag.SNEEZE to listOf("Bless me! Thanks, I'll do it myself.", "Sorry. Pixel dust.", "Excuse me. || Was that on camera?"),
         Gag.SLIP to listOf("I meant to do that.", "Who leaves bananas lying around?! || Oh right. Me.", "That banana peel was a trap!", "Ten out of ten for falling style."),
-        Gag.BINOCULARS to listOf("Spotted: one human.", "Agent Settai on lookout duty.", "I see you! || You see me? Awkward."),
+        Gag.BINOCULARS to listOf("Spotted: one human.", "Agent Pogo on lookout duty.", "I see you! || You see me? Awkward."),
         Gag.FAKE_SLEEP to listOf("I wasn't watching you. || I was totally watching you.", "Zzz... || ...is it safe?", "Fake snore! || Real giggle."),
         Gag.JUGGLE to listOf("Banana juggling! Don't try this at home.", "Three bananas! Next: four. Then dinner.", "Circus monkey! || Retired."),
         Gag.TAIL_HIDE to listOf("You can't see me.", "Perfect hiding spot. Flawless.", "I'm a tail now. Just a tail."),

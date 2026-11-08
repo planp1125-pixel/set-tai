@@ -16,7 +16,7 @@ object Fun5Store {
     /** [engagement] = shown in Settings › Engagement (v10.19) instead of the v5 fun card. */
     enum class Feature(val key: String, val title: String, val help: String, val defaultOn: Boolean, val engagement: Boolean = false) {
         MUNCH("munch", "Eats notifications (just for show)", "Now and then grabs a fake banner, munches it and burps a 1-line summary. Real notifications are never touched.", true),
-        MOTION("motion", "Shake & tilt", "Shake = dizzy, hard shake = angry, tilt = slides to the low side, face-down = sleep mask. Sensor only while Settai is on screen.", true),
+        MOTION("motion", "Shake & tilt", "Shake = dizzy, hard shake = angry, tilt = slides to the low side, face-down = sleep mask. Sensor only while your character is on screen.", true),
         FESTIVALS("festivals", "Festivals & coffee break", "Festival moods (Pongal, Deepavali, …) and a 4 PM filter-coffee break.", true),
         SLEEP_NAG("sleepnag", "Late-night sleep nag", "After 11:30 PM with the screen on for 10+ minutes: yawns and gently nags. Never in Do Not Disturb.", true),
         WEATHER("weather", "Weather reactions", "Umbrella in rain, fanning in heat, shawl in cold. Checks at most every 3 hours, on unlock.", true),

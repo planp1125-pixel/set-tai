@@ -16,10 +16,10 @@ import kotlin.math.sin
  * it is wide: gold with green and red bands, little stars and a round emblem), a red foil nose cone, a little white
  * fuse at the bottom, and a long thin twisted white stick along one side (about 2.7x the tube's length below it).
  * The exhaust (v10.10: a narrow spark fountain + a thin smoke wisp) comes out of the BOTTOM of the tube (the fuse end).
- * Shared by Rocket Girl's ride, the bottle launcher and the Smash rockets. Every flicker is a hash of time (no RNG).
+ * Shared by Skye's ride, the bottle launcher and the Smash rockets. Every flicker is a hash of time (no RNG).
  */
 object DiwaliRocketArt {
-    /** Rocket-frame geometry (rig units for Rocket Girl's ride). */
+    /** Rocket-frame geometry (rig units for Skye's ride). */
     const val STICK_BACK = -62f
     const val TUBE_B = 30f
     const val TUBE_F = 64f

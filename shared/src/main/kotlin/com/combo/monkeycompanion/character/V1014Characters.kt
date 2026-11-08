@@ -33,7 +33,7 @@ private fun bell(a: Float, b: Float, x: Float, edge: Float = 0.2f): Float {
 }
 
 /**
- * v10.14 Hollow Man (id "hollowman"): an ORIGINAL invisible dancer. Only his clothes float in the air (fedora, round
+ * v10.14 Echo (id "hollowman"): an ORIGINAL invisible dancer. Only his clothes float in the air (fedora, round
  * sunglasses, white gloves, a teal jacket, black trousers and shiny loafers); there is no visible body at all. Inspired
  * by the idea of an invisible man dancing to a fun Tamil film song, not by any film's costume or any real person.
  * Dances with original procedural moves: moonwalk glide, toe stand, spins, hat tip, the impossible lean.
@@ -54,7 +54,7 @@ object HollowMan : Character("hollowman") {
     override val signaturePower: Superpower get() = MoonwalkPower
     override val doubleTapTip: String get() = "Double-tap me for a dance! First one is a moonwalk 🕺"
 
-    private val HELLO = listOf("Hee-hee! You can't see me, but I can see you 😎", "Hollow Man in the house! 🎩", "Vanakkam! Just my clothes came today 👔✨")
+    private val HELLO = listOf("Hee-hee! You can't see me, but I can see you 😎", "Echo in the house! 🎩", "Vanakkam! Just my clothes came today 👔✨")
     private val PAT = listOf("Ooh, you found my shoulder! 😄", "Gentle, gentle, the jacket is ironed 👔")
     private val TICKLE = listOf("Hee-hee! Invisible people are ticklish too! 🤣", "Not the gloves! 😂")
     private val POKED = listOf("Huh? Who poked the air? Oh, me 😴", "*shades slide down* I was resting my nothing 😪")
@@ -189,7 +189,7 @@ When your human asks you to move, DO it with the tag and say something fun in ch
 }
 
 /**
- * v10.14 Surfing Girl (id "surfer"): an ORIGINAL cute girl on a surfboard. She floats on a procedurally drawn wave
+ * v10.14 Wavy (id "surfer"): an ORIGINAL cute girl on a surfboard. She floats on a procedurally drawn wave
  * wherever she is (screen edges, across the middle), leaves splash trails, does aerial flips and the odd wipeout.
  */
 object SurferGirl : Character("surfer") {

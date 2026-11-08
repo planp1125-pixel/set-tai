@@ -133,9 +133,9 @@ class V1011PreviewTest {
         c.drawText("3. Where it sits: low beside the feet, away from the face, fully on screen even at the edges", 20f, y, title); y += 20f
         run {
             val list = listOf<Triple<String, Float, String>>(
-                Triple("rocketgirl", 0f, "Rocket Girl, left edge"), Triple("rocketgirl", 1f, "Rocket Girl, right edge"),
-                Triple("billa", 0.5f, "Billa"), Triple("chittu", 0.5f, "Chittu"), Triple("mask", 0.5f, "Mask Man"),
-                Triple("armour", 0.5f, "Armour Anna"), Triple("monkey", 0.15f, "Settai + Duo buddy"),
+                Triple("rocketgirl", 0f, "Skye, left edge"), Triple("rocketgirl", 1f, "Skye, right edge"),
+                Triple("billa", 0.5f, "Billa"), Triple("chittu", 0.5f, "Chittu"), Triple("mask", 0.5f, "Masko"),
+                Triple("armour", 0.5f, "Bolt"), Triple("monkey", 0.15f, "Settai + Duo buddy"),
             )
             val n = list.size; val pw = (W - 20f) / n
             list.forEachIndexed { i, (id, frac, what) ->

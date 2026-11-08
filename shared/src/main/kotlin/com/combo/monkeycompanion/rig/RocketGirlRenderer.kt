@@ -17,7 +17,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * v10.9 where Rocket Girl's rocket sits, in hips space: it runs through [SEAT_X],[SEAT_Y] (where she sits on the stick)
+ * v10.9 where Skye's rocket sits, in hips space: it runs through [SEAT_X],[SEAT_Y] (where she sits on the stick)
  * at [TILT] degrees (nose up and forward; with her ~8 degree forward lean it reads as about 45 degrees on screen).
  * Shared by the renderer, the touch hit-test ([MonkeyRig.propHit]) and the overlay's exhaust particles.
  */
@@ -66,7 +66,7 @@ object RocketGeom {
 }
 
 /**
- * v10.9 Rocket Girl (was Rocket Boy): an ORIGINAL slim, cute little Indian girl riding a classic Diwali sky rocket like a
+ * v10.9 Skye (was Rocket Boy): an ORIGINAL slim, cute little Indian girl riding a classic Diwali sky rocket like a
  * broomstick. Procedurally drawn (no photo parts). A smaller head than the chibi kids ([headScale]), a soft oval face
  * with a little pointed chin, big sparkly lashed eyes, rosy cheeks, two pigtails with ribbons (and a small bindi), a
  * green blouse and a pink pavadai skirt with a gold border, slim arms and legs with tiny gold juttis.
@@ -198,7 +198,7 @@ class RocketGirlRenderer : HumanRenderer() {
     /** Right hand centre in view space (sparkler, fuse lighting). */
     fun rightHand(out: FloatArray) { out[0] = 0f; out[1] = FORE + 1f; foreR.mapPoints(out) }
 
-    /** v10.10 Rocket Girl never shows boot jets: the rocket's own spark fountain is her only exhaust. */
+    /** v10.10 Skye never shows boot jets: the rocket's own spark fountain is her only exhaust. */
     override fun drawJets(c: Canvas, rig: MonkeyRig, p: Pose, t: Float) = Unit
 
     /**
@@ -518,7 +518,7 @@ class RocketGirlRenderer : HumanRenderer() {
     @Suppress("unused") private fun len(x: Float, y: Float) = sqrt(x * x + y * y)
 }
 
-/** Rocket Girl's edge-tab face: a slim oval face, pigtails with ribbons, lashes, a bindi and a sparkle. */
+/** Skye's edge-tab face: a slim oval face, pigtails with ribbons, lashes, a bindi and a sparkle. */
 object RocketGirlPeek : PeekFace("rocketgirl") {
     override fun drawFace(c: Canvas, wear: Wear?, s: State) {
         val tw = s.tw; val cy = s.cy

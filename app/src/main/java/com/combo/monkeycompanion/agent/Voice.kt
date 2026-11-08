@@ -63,7 +63,7 @@ object Voice {
     private var appCtx: Context? = null
     private fun say(e: TextToSpeech, t: String) { appCtx?.let { tune(e, it) }; speaking = true; e.speak(t, TextToSpeech.QUEUE_FLUSH, null, "settai") }
 
-    /** v4.2: each character has its own voice: (pitch, rate). Settai squeaky, Armour Anna deep, ... */
+    /** v4.2: each character has its own voice: (pitch, rate). Settai squeaky, Bolt deep, ... */
     fun style(characterId: String): Pair<Float, Float> = when (characterId) {
         "superboy" -> 1.05f to 1.12f
         "armour" -> 0.72f to 0.94f

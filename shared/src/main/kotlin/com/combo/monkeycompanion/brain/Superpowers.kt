@@ -72,7 +72,7 @@ sealed class Superpower(
     open val fireLines: List<String> get() = Lines.POWER_FIRE
     /** Chance of the comedy crash variant. */
     open val crashChance: Float get() = 0.3f
-    /** v4.1: false = only triggered by an event (e.g. Armour Anna's low-battery droop), never at random. */
+    /** v4.1: false = only triggered by an event (e.g. Bolt's low-battery droop), never at random. */
     open val randomPick: Boolean get() = true
     fun has(k: PowerKit) = k in kits
 
@@ -127,7 +127,7 @@ sealed class Superpower(
     }
 
     /** Smoke-bomb teleports between screen corners, then three shadow clones dance in sync. Crash: teleports into his own smoke. */
-    object NinjaSettai : Superpower("ninja", "Ninja Settai", "Smoke-bomb teleports between corners, three shadow clones dance", setOf(PowerKit.NINJA)) {
+    object NinjaSettai : Superpower("ninja", "Ninja Mode", "Smoke-bomb teleports between corners, three shadow clones dance", setOf(PowerKit.NINJA)) {
         override val startLines get() = Lines.POWER_NINJA
         override val landLines get() = Lines.POWER_LAND_NINJA
         override val crashChance get() = 0.15f

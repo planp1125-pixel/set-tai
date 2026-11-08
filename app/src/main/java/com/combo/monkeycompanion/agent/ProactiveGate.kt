@@ -51,7 +51,7 @@ data class ProSituation(
         typing -> "you're typing"
         fullscreen -> "fullscreen"
         game -> "gaming"
-        busy -> "Settai is busy"
+        busy -> "${com.combo.monkeycompanion.character.CharacterRegistry.current.name} is busy"
         else -> null
     }
 }

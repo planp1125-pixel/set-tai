@@ -28,7 +28,7 @@ object Landings {
         CHICKEN_FLAP(false, false, 0.4f, 320f, listOf("Bawk bawk! 🐔", "Flap flap flap!")),
         /** v5: curved rocket flight across the screen, then the character's own finish (see [LandingFlight]). */
         ROCKET_ARC(true, true, 0f, 0f, listOf("Launching! 🚀", "Let's take the scenic route 🚀", "Loop-de-loop time! 🌀")),
-        /** v5 Mask Man "tries to fly": his crow grabs him by the collar, carries him a bit, then lets go. */
+        /** v5 Masko "tries to fly": his crow grabs him by the collar, carries him a bit, then lets go. */
         CROW_CARRY(false, true, 0f, 0f, listOf("Crow! CROW! Up! 🐦‍⬛", "Taxi! Crow taxi! 🐦‍⬛")),
     }
 
@@ -46,7 +46,7 @@ object Landings {
 
     /**
      * Weighted styles for a character (before the power / saver / climb filters). v4.5: power landings carry
-     * about half the weight (monkey 11/20, Mask Man 4/9 + his umbrella; Superboy and Anna are mostly powered).
+     * about half the weight (monkey 11/20, Masko 4/9 + his umbrella; Zoom and Bolt are mostly powered).
      */
     /** v10.25.1: bodies without jets never pick a jet / rocket landing (it flew them UP with thrust). */
     /** v10.25.1: ONLY these bodies may loop / arc / use jets when landing; every other body never does. */
@@ -70,13 +70,13 @@ object Landings {
                     listOf(Style.ROCKET_ARC to 4, Style.NINJA_FLIP to 3, Style.CAPE_FLOAT to 2, Style.JETS to 2, Style.PARACHUTE to 2)
             }
         }
-        // v10.17 Kutti Satan: magic floaty landings; boot jets only if the user switched a jet power on for him
+        // v10.17 Tutty: magic floaty landings; boot jets only if the user switched a jet power on for him
         characterId == "devil" -> listOf(Style.SNORE_FLOAT to 3, Style.NINJA_FLIP to 3, Style.CANNONBALL to 1) +
             (if (com.combo.monkeycompanion.character.CharacterRegistry.byId("devil")?.let { d -> PowerPrefs.enabled(d) }.orEmpty().any { it.id == "jets" || it.id == "rocket" || it.id == "boost" || it.id == "swoop" })
                 listOf(Style.JETS to 2, Style.ROCKET_ARC to 3) else emptyList())
         // v10.23 Angel: soft winged landings, never jets
         characterId == "angel" -> listOf(Style.SNORE_FLOAT to 3, Style.CAPE_FLOAT to 2, Style.NINJA_FLIP to 1)
-        // v10.24 Skater Girl: lands like a skater, never jets
+        // v10.24 Rollie: lands like a skater, never jets
         characterId == "skater" -> listOf(Style.NINJA_FLIP to 3, Style.CANNONBALL to 1, Style.PARACHUTE to 1)
         characterId == "mask" -> listOf((if (umbrella) Style.PARACHUTE else Style.CHICKEN_FLAP) to 4, Style.CROW_CARRY to 3, Style.NINJA_FLIP to 2,
             Style.SNORE_FLOAT to 1, Style.CANNONBALL to 1)
@@ -126,7 +126,7 @@ object Landings {
         val why = buildList {
             add("own pick of ${opts.size}")
             if (!powersOn) add("powers Off: no power landings")
-            if (saver) add("Settai battery saver: simple variants")
+            if (saver) add("Battery saver: simple variants")
             if (last != null && last != Style.SIMPLE && opts.size > 1) add("not ${label(last)} again")
             if (screenPx != Float.MAX_VALUE) add("drop ${(100f * dropPx / screenPx).toInt()}% of screen")
         }.joinToString(", ")

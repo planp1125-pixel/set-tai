@@ -3,9 +3,9 @@ package com.combo.monkeycompanion.world
 /**
  * Population & roles under the glass:
  *  - Settai ("monkey"): SCOUT — the mischief-maker, snack-hunter & scout
- *  - Armour Anna ("armour"): ENGINEER — inspects battery pipes, heat & storage clutter
- *  - Superboy ("superboy"): GUARD — patrols the top edge and handles visitor floods
- *  - Mask Man ("mask"): JESTER — theatrical wildcard, mirror-studio regular & comic relief
+ *  - Bolt ("armour"): ENGINEER — inspects battery pipes, heat & storage clutter
+ *  - Zoom ("superboy"): GUARD — patrols the top edge and handles visitor floods
+ *  - Masko ("mask"): JESTER — theatrical wildcard, mirror-studio regular & comic relief
  */
 object Population {
     enum class Mode(val id: String, val label: String, val maxCreatures: Int) {
@@ -34,26 +34,26 @@ object Population {
     val allIds = listOf("devil", "monkey", "armour", "superboy", "mask", "billa", "chittu", "gajju", "rocketgirl", "hollowman", "surfer", "angel", "skater")
 
     fun displayName(id: String): String = when (id) {
-        "superboy" -> "Superboy"
-        "armour" -> "Armour Anna"
-        "mask" -> "Mask Man"
+        "superboy" -> "Zoom"
+        "armour" -> "Bolt"
+        "mask" -> "Masko"
         "billa" -> "Billa"
         "chittu" -> "Chittu"
         "gajju" -> "Gajju"
-        "rocketgirl" -> "Rocket Girl"
-        "hollowman" -> "Hollow Man"
-        "surfer" -> "Surfing Girl"
-        "devil" -> "Kutti Satan"
+        "rocketgirl" -> "Skye"
+        "hollowman" -> "Echo"
+        "surfer" -> "Wavy"
+        "devil" -> "Tutty"
         "angel" -> "Angel"
-        "skater" -> "Skater Girl"
-        "monkey" -> "Settai"
-        else -> com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(id)?.name ?: "Settai"
+        "skater" -> "Rollie"
+        "monkey" -> com.combo.monkeycompanion.character.CharacterNames.MONKEY
+        else -> com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(id)?.name ?: com.combo.monkeycompanion.character.CharacterNames.MONKEY
     }
 
     /**
      * Picks which creatures are on screen right now: [leadId] first, plus 0, 1 (DUO) or 2 (TRIO) neighbours
-     * chosen according to current [WorldState] needs (Anna for battery/heat/engine room, Superboy for floods/watchtower,
-     * Mask Man for mirror studio/cinema/evening, Settai for food bazaar/mischief).
+     * chosen according to current [WorldState] needs (Bolt for battery/heat/engine room, Zoom for floods/watchtower,
+     * Masko for mirror studio/cinema/evening, Settai for food bazaar/mischief).
      */
     fun activeIds(leadId: String, mode: Mode, state: WorldState, pool: List<String> = allIds): List<String> {
         if (mode == Mode.SOLO) return listOf(leadId)

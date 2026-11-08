@@ -40,7 +40,7 @@ object AgentCaps {
         return sv.snapshot().also { ScreenAgent.last = it }
     }
 
-    private const val NO_SVC = "My screen agent is off: switch on “Settai screen agent” in Android's Accessibility settings (Phone powers → Grant). 👓"
+    private const val NO_SVC = "My screen agent is off: switch on “Set-Tai screen agent” in Android's Accessibility settings (Phone powers → Grant). 👓"
 
     private fun screen(): List<Capability> = listOf(
         Capability("read_screen", CapGroup.SCREEN, "Read the screen",

@@ -341,7 +341,7 @@ class MonkeyView(
     var coyoteScareTriggeredCount: Int = 0; private set
 
     /**
-     * v9.3: Superboy & Armour Anna (Ironman) Random Edge-Collision Thrust Loss & Crash-Landing!
+     * v9.3: Zoom & Bolt (Ironman) Random Edge-Collision Thrust Loss & Crash-Landing!
      * Phases: 0 = normal, 1 = edge impact & thrust sputter, 2 = plunging to bottom display, 3 = crash-landed at bottom with stars (1.8s).
      */
     var edgeThrustFailurePhase: Int get() = pb.crashPhase; private set(v) { pb.crashPhase = v }
@@ -352,7 +352,7 @@ class MonkeyView(
     var edgeCrashLandingCount: Int = 0; private set
     val isEdgeCrashLanding: Boolean get() = edgeThrustFailurePhase != 0
 
-    /** v5: Superboy and Armour Anna hover where you let go (overlay only); they land when flung down. */
+    /** v5: Zoom and Bolt hover where you let go (overlay only); they land when flung down. */
     private val hovers get() = host != null && !wp && !isEdgeCrashLanding && character.can(com.combo.monkeycompanion.character.Locomotion.FLOAT) &&
         character.can(com.combo.monkeycompanion.character.Locomotion.FLY) && powerSetting() != Superpowers.OFF
     private val isMask get() = profile.clumsyClimber && host != null && !wp
@@ -527,7 +527,7 @@ class MonkeyView(
     private var livingLastState = MonkeyState.IDLE
     private var livingLastArc = false
     private val fireworks = com.combo.monkeycompanion.rig.Fireworks(System.nanoTime())
-    /** v10.9 Rocket Girl's bottle-rocket sky shows (two, so a new one can start while the last one is still in the sky). */
+    /** v10.9 Skye's bottle-rocket sky shows (two, so a new one can start while the last one is still in the sky). */
     private val skyShows = arrayOf(com.combo.monkeycompanion.rig.SkyShow(System.nanoTime() xor 0x5C1L, fireworks), com.combo.monkeycompanion.rig.SkyShow(System.nanoTime() xor 0x5C2L, fireworks))
     private var skyShowNext = 0
     private var skyShowStarted = false
@@ -801,7 +801,7 @@ class MonkeyView(
     private var aiVoiceAt = -1L
     private fun aiVoiceOn(): Boolean {
         val now = android.os.SystemClock.uptimeMillis()
-        if (now - aiVoiceAt > 1000L || aiVoiceAt < 0L) { aiVoiceAt = now; aiVoiceCache = runCatching { ChatHub.isBrainEnabled() }.getOrDefault(false) }
+        if (now - aiVoiceAt > 1000L || aiVoiceAt < 0L) { aiVoiceAt = now; aiVoiceCache = runCatching { ChatHub.autoAiAllowed() }.getOrDefault(false) }
         return aiVoiceCache
     }
     private fun nowSec() = android.os.SystemClock.uptimeMillis() / 1000f
@@ -1272,7 +1272,7 @@ class MonkeyView(
             "notif_card_demo" -> openNotifSummaryCard(useDemoIfEmpty = true)
             "perm_notifs" -> runCatching {
                 context.startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                sayInfo("Switch on 'Settai' in Notification Access, then tap me again! 📬", 4800L)
+                sayInfo("Switch on 'Set-Tai' in Notification Access, then tap me again! 📬", 4800L)
             }
             "perm_mic" -> runCatching {
                 context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + context.packageName)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -1564,7 +1564,7 @@ class MonkeyView(
         val coach = !prefs.getBoolean("chatCoach44", false)
         if (coach) prefs.edit().putBoolean("chatCoach44", true).apply()
         showBubble(if (coach) "Chat's open! Close it with ✕, a swipe, or a tap outside 👋"
-            else listOf("What's up? \uD83D\uDC12", "Talk to me!", "Yes, boss? \uD83C\uDF4C", "Settai is listening…").random(), 12f, talk = true)
+            else listOf("What's up? \uD83D\uDC12", "Talk to me!", "Yes, boss? \uD83C\uDF4C", "${com.combo.monkeycompanion.character.CharacterRegistry.current.name} is listening…").random(), 12f, talk = true)
         startTyping()
     }
 
@@ -1954,7 +1954,7 @@ class MonkeyView(
     private var silent = false
 
     private fun requestQuip(): Boolean {
-        if (!ChatHub.settings.quipsEnabled || ChatHub.busy || !ChatHub.hasRealBrain()) return false
+        if (!ChatHub.settings.quipsEnabled || ChatHub.busy || !ChatHub.autoAiAllowed() || !ChatHub.hasRealBrain()) return false
         val bi = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         val lvl = bi?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
         val tmp = (bi?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0) / 10f
@@ -2437,7 +2437,7 @@ class MonkeyView(
             com.combo.monkeycompanion.mind.Act.EXPLORE -> { exploreApp(dec.scene?.app ?: "this app", dec.line); true }
             com.combo.monkeycompanion.mind.Act.COMMENT -> {
                 val fallback = dec.line ?: "Ooh, ${dec.scene?.app ?: "interesting"}!"
-                if (dec.wantsLlm && ChatHub.hasRealBrain() && ChatHub.settings.quipsEnabled) {
+                if (dec.wantsLlm && ChatHub.autoAiAllowed() && ChatHub.hasRealBrain() && ChatHub.settings.quipsEnabled) {
                     val ctxText = "User opened ${dec.scene?.app} (${dec.scene?.cat?.label}). ${com.combo.monkeycompanion.mind.MindHub.promptNote()}"
                     ChatHub.quip(ctxText) { q -> if (!paused && !hiddenTab && !dragging) say(q ?: fallback, 3800L) }
                 } else say(fallback, 3800L)
@@ -2712,7 +2712,7 @@ class MonkeyView(
         }
         controller.play(MonkeyState.STARTLED, 1.8f)
         say("Whoa! Moving $label?! Watch my tail! 🐒📦", 2600L)
-        if (host != null) runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Widget dragged: $label", "Settai jumped clear & watched") }
+        if (host != null) runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Widget dragged: $label", "${com.combo.monkeycompanion.character.CharacterRegistry.current.name} jumped clear & watched") }
         updateGeometry(); invalidate(); host?.onFrame()
     }
 
@@ -2734,7 +2734,7 @@ class MonkeyView(
                 updateGeometry(); invalidate(); host?.onFrame()
             }
         }
-        if (host != null) runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Widget placed: $label", "Settai explored new ledge #$spotIndex") }
+        if (host != null) runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Widget placed: $label", "${com.combo.monkeycompanion.character.CharacterRegistry.current.name} explored new ledge #$spotIndex") }
     }
 
     override fun doFrame(frameTimeNanos: Long) {
@@ -3153,7 +3153,7 @@ class MonkeyView(
         if (sinkY > boxH * 0.55f || abs(sinkX) > boxW * 0.5f) return TouchZone.NONE
         if (climber.active) return climber.hitTest(x + winX - sinkX, y + winY - sinkY)
         val z = rig.hitTest(x - sinkX, y)
-        // v10.8: Rocket Girl's rocket is part of him (so a tap on it counts).
+        // v10.8: Skye's rocket is part of him (so a tap on it counts).
         if (z == TouchZone.NONE && profile.ridesProp && rig.propHit(x - sinkX, y)) return TouchZone.BELLY
         return z
     }
@@ -3220,7 +3220,7 @@ class MonkeyView(
         return true
     }
 
-    /** v10.8: Disney secondary action / staging / anticipation, touch reactions, fireworks, Rocket Girl exhaust, Diwali accents. */
+    /** v10.8: Disney secondary action / staging / anticipation, touch reactions, fireworks, Skye exhaust, Diwali accents. */
     private fun stepLiving(dt: Float) {
         val st = controller.state
         val arcNow = arc != null
@@ -3255,7 +3255,7 @@ class MonkeyView(
                 com.combo.monkeycompanion.v5.Festivals.diwaliSeason(java.time.LocalDate.now())) 1f else 0f
         }
         drawPose.festive = festiveK
-        // Rocket Girl: sky-burst fireworks, the boost whistle, a sparkle exhaust trail while flying.
+        // Skye: sky-burst fireworks, the boost whistle, a sparkle exhaust trail while flying.
         val pw = if (powerOn) flight.power else null
         if (pw === com.combo.monkeycompanion.brain.SkyBurstPower && flight.phase == com.combo.monkeycompanion.brain.PowerPhase.CONFETTI) {
             if (!skyShowStarted && host != null) {
@@ -3806,7 +3806,7 @@ class MonkeyView(
             val style = com.combo.monkeycompanion.engine.swipe.SwipeTravel.styleFor(character.id,
                 com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null)
             val cx = mx + boxW / 2f; val px = cx + fvx * 0.38f
-            val heroFlight = style == null && hovers   // Armour Anna / Superboy / Rocket Girl keep their own flight swipes (arcs, swoops, rocket)
+            val heroFlight = style == null && hovers   // Bolt / Zoom / Skye keep their own flight swipes (arcs, swoops, rocket)
             val down = upSwipeDown > 0f || (fvy > 0f && fvy > abs(fvx) * 1.2f)
             val up = !down && fvy < 0f && -fvy > abs(fvx) * 1.2f
             val throws = runCatching { ChatHub.settings.flickThrow }.getOrDefault(false)
@@ -3849,7 +3849,7 @@ class MonkeyView(
                 rocketLanding(upSwipeDown); return true
             }
             if (profile.ridesProp && livingOn && sp > ROCKET_SWIPE_DP * d && dragTravel >= ROCKET_SWIPE_MIN_TRAVEL_DP * d) {
-                // v10.9 Rocket Girl: the rocket ignites and flies her along the swipe (a real rocket path)
+                // v10.9 Skye: the rocket ignites and flies her along the swipe (a real rocket path)
                 if (sp > fast && abs(fvx) >= abs(fvy)) {
                     val cx = mx + boxW / 2f
                     val nearEdge = if (fvx < 0) cx < sw() * 0.22f else cx > sw() * 0.78f
@@ -4058,7 +4058,7 @@ class MonkeyView(
     // ---------------- v5 curved power landings (brain/LandingFlight) ----------------
     private var arc: LandingFlight.Plan? = null
     private var arcT = 0f
-    private var arcPhase = 0          // 0 fly, 1 hover (Anna), 2 drop (Anna), 3 touchdown pose
+    private var arcPhase = 0          // 0 fly, 1 hover (Bolt), 2 drop (Bolt), 3 touchdown pose
     private var arcPhaseT = 0f
     private var arcRot = 0f
     /** v10.14 leftover tilt after a rocket flight, decaying to upright (visual only). */
@@ -4085,7 +4085,7 @@ class MonkeyView(
             mx = (tx - boxW / 2f).coerceIn(10 * d, max(10 * d, sw() - boxW - 10 * d)); my = (ty - boxH / 2f).coerceIn(hoverMinY(), ground())
             surf = freeSurf(my); slideFrom(fx, fy, 1.8f); return
         }
-        if (swipeTripInsteadOfArc(tx, ty)) return   // v10.25.1: only Anna / Superboy / Rocket Girl fly the looping arc
+        if (swipeTripInsteadOfArc(tx, ty)) return   // v10.25.1: only Bolt / Zoom / Skye fly the looping arc
         val fx = mx; val fy = my
         beginFall()
         mx = fx; my = fy
@@ -4101,8 +4101,8 @@ class MonkeyView(
     }
 
     /**
-     * v6: a swipe down on a hovering hero ALWAYS flies a big curved path across the screen and then lands (Superboy fist
-     * first, Anna jet-brake + thud). Battery saver only trims particles; the flight and the flames stay.
+     * v6: a swipe down on a hovering hero ALWAYS flies a big curved path across the screen and then lands (Zoom fist
+     * first, Bolt jet-brake + thud). Battery saver only trims particles; the flight and the flames stay.
      */
     private fun rocketLanding(v: Float) {
         if (character.id !in Landings.ARC_IDS) { beginSmartFall(true, Landings.Style.SIMPLE, "you swiped down"); return }   // v10.25.1: straight drop, no looping arc
@@ -4140,7 +4140,7 @@ class MonkeyView(
 
     private fun hoverMinY() = topY() + boxH * 0.12f
 
-    // ---------------- v10.9 Rocket Girl's swipe launch (brain/RocketFlight) ----------------
+    // ---------------- v10.9 Skye's swipe launch (brain/RocketFlight) ----------------
     private val rocketFly = com.combo.monkeycompanion.brain.RocketFlight(System.nanoTime() xor 0x5EED_0A9L)
     private var rocketFlyOn = false
     private var rocketFaceHold = 0f
@@ -4246,7 +4246,7 @@ class MonkeyView(
     }
 
     /**
-     * v9.3: Superboy & Armour Anna (Ironman) Edge-Collision Thrust Loss & Crash-Landing!
+     * v9.3: Zoom & Bolt (Ironman) Edge-Collision Thrust Loss & Crash-Landing!
      * When hitting the screen border while flying, thrust drops (`edgeThrustMultiplier = 0.18f`),
      * sparks sputter out, and they plummet to the bottom display for a comic crash-landing with spinning stars!
      */
@@ -4405,7 +4405,7 @@ class MonkeyView(
                 mx = nx; my = arcPt[1] - boxH / 2f
                 arcRot = LandingFlight.bodyRot(p, u) * arcBank
                 arcTrail()
-                // v9.3: If Superboy or Armour Anna hits the screen edge while flying in roam mode, random thrust drop & crash-landing!
+                // v9.3: If Zoom or Bolt hits the screen edge while flying in roam mode, random thrust drop & crash-landing!
                 if (arcHover && controller.roam && edgeCrashCooldown <= 0f && u in 0.18f..0.85f &&
                     (mx <= 10 * d || mx >= sw() - boxW - 10 * d || my <= topY() + 14 * d)
                 ) {
@@ -4413,7 +4413,7 @@ class MonkeyView(
                 }
                 if (k >= 1f) { arcRot = 0f; if (arcHover) endHoverArc() else if (p.finish == LandingFlight.Finish.HOVER_THUD) arcPhase(1) else touchdown() }
             }
-            1 -> {   // Anna: jets braking, hovering with a little bob
+            1 -> {   // Bolt: jets braking, hovering with a little bob
                 arcPhaseT += dt
                 my = p.y1 - boxH / 2f + 4f * d * sin(arcPhaseT * 14f)
                 arcTrail()
@@ -4510,13 +4510,13 @@ class MonkeyView(
 
     /**
      * Power-landing thrust drawn in Settai's own window (rotated with the body): leg-fire / boot jets for the monkey and
-     * Anna, speed streaks for Superboy. Always visible, effects window or not (v5 fix: on some phones the power landings
+     * Bolt, speed streaks for Zoom. Always visible, effects window or not (v5 fix: on some phones the power landings
      * looked like plain falls because their only visible part lived in the effects window).
      */
-    /** v10.25: only bodies with a jet / rocket power ever show jets or thrust (Anna, Superboy's landing kit, Rocket Girl, Kutti Satan if a jet power is on). */
-    // v10.26: Superboy flies with no thrust at all (just the cape and speed streaks); jets = Armour Anna; Rocket Girl = her rocket
+    /** v10.25: only bodies with a jet / rocket power ever show jets or thrust (Bolt, Zoom's landing kit, Skye, Tutty if a jet power is on). */
+    // v10.26: Zoom flies with no thrust at all (just the cape and speed streaks); jets = Bolt; Skye = her rocket
     private fun hasJetPower(): Boolean = character.id == "armour" || character.id == "rocketgirl" ||
-        // v10.25.1: Kutti Satan only while his rocket / jet power is actually firing (Angel never)
+        // v10.25.1: Tutty only while his rocket / jet power is actually firing (Angel never)
         (character.id == "devil" && powerOn && controller.anim.power?.id.let { it == "jets" || it == "rocket" || it == "boost" }) ||
         (com.combo.monkeycompanion.character.CustomCompanionRegistry.byId(character.id) != null && character.usesHoverJets)
     private fun drawLandingThrust(c: Canvas) {
@@ -4530,8 +4530,8 @@ class MonkeyView(
         val cx = ox + boxW / 2f; val cy = oy + boxH / 2f
         if (arcRot + rotEase + shockSpin != 0f) c.rotate(arcRot + rotEase + shockSpin, cx, cy)      // the body is drawn in the same rotated frame (restored by drawMonkey)
         if (!jets && !streaks) return
-        if (jets && !hasJetPower()) return   // v10.25: no thrust for non-jet characters (surfer, Angel, Kutti Satan…)
-        if (jets && profile.ridesProp) return   // v10.10 Rocket Girl: no boot jets / blast cones; her rocket's spark fountain is the exhaust
+        if (jets && !hasJetPower()) return   // v10.25: no thrust for non-jet characters (surfer, Angel, Tutty…)
+        if (jets && profile.ridesProp) return   // v10.10 Skye: no boot jets / blast cones; her rocket's spark fountain is the exhaust
         if (!hoverJets) landFlames++ else hoverFlames++
         if (fxHosted) landFxSeen = true
         val fy = oy + boxH - groundPad
@@ -4608,15 +4608,15 @@ class MonkeyView(
         }
         val shown = when {
             picked == Landings.Style.SIMPLE -> ""
-            saver -> " · Settai battery saver: no flames"
-            landFlames > 0 -> " · flames/streaks drawn in Settai's window ($landFlames frames)" + if (landFxSeen) ", effects window on" else ", effects window off"
+            saver -> " · battery saver: no flames"
+            landFlames > 0 -> " · flames/streaks drawn in the character's window ($landFlames frames)" + if (landFxSeen) ", effects window on" else ", effects window off"
             picked.power -> " · no thrust drawn"
             else -> ""
         }
         runCatching { com.combo.monkeycompanion.powers.ActionLog.add(context, "Landing played: $played", "${character.name}, picked ${Landings.label(picked)}$shown") }
     }
 
-    // ---------------- v5 Mask Man: clumsy climbing and hanging (front view; he has no climbing profile) ----------------
+    // ---------------- v5 Masko: clumsy climbing and hanging (front view; he has no climbing profile) ----------------
     private var mcOn = false
     private var mcSide = -1
     private var mcHang = false
@@ -4705,7 +4705,7 @@ class MonkeyView(
         c.drawArc(tmpA[0], top + 2 * d, tmpA[0] + 14 * d, top + 14 * d, 180f, 180f, false, thrust)
     }
 
-    /** Mask Man's crow carrying him by the collar. */
+    /** Masko's crow carrying him by the collar. */
     private fun drawCrow(c: Canvas) {
         if (!falling || landStyle != Landings.Style.CROW_CARRY) return
         rig.headTop(tmpA)
@@ -4740,7 +4740,7 @@ class MonkeyView(
         }
     }
 
-    /** Leaf parachute above the hands (the Mask Man's umbrella is part of his outfit). */
+    /** Leaf parachute above the hands (the Masko's umbrella is part of his outfit). */
     private fun drawLandingFront(c: Canvas) {
         drawMaskHang(c)
         if (!saver) drawCrow(c)
@@ -5220,7 +5220,7 @@ class MonkeyView(
         if (host != null && !hiddenTab && !controller.isAsleep) { controller.play(MonkeyState.WAVE, 2.2f); say(Lines.pick(Lines.HELLO), 3500L) }
     }
 
-    /** Phone battery low: a line, or (Armour Anna) the suit's low-power droop with the real percentage. */
+    /** Phone battery low: a line, or (Bolt) the suit's low-power droop with the real percentage. */
     private fun onBatteryLow() {
         val pct = runCatching { context.getSystemService(BatteryManager::class.java)?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1 }.getOrDefault(-1)
         (renderer as? com.combo.monkeycompanion.rig.ArmourRenderer)?.batteryPct = pct
@@ -5428,7 +5428,7 @@ class MonkeyView(
             val Q = com.combo.monkeycompanion.agent.QuickChip
             if (!granted) {
                 showBubble(
-                    "📬 Allow Settai in Notification Access so I can group what you missed (or tap Preview to see the card)!",
+                    "📬 Allow Set-Tai in Notification Access so I can group what you missed (or tap Preview to see the card)!",
                     11f,
                     chips = listOf(Q.PERM_NOTIFS, com.combo.monkeycompanion.agent.QuickChip("notif_card_demo", "Preview card ✨"), Q.LATER),
                     reply = false
@@ -6206,7 +6206,7 @@ class MonkeyView(
     }
 
     /** Settai only (no bubble), e.g. for the wallpaper preview. */
-    /** v10.16: lifted by a friend's magic (Kutti Satan's float-a-buddy); expires by itself if the caster stops. */
+    /** v10.16: lifted by a friend's magic (Tutty's float-a-buddy); expires by itself if the caster stops. */
     private var levAmt = 0f
     private var levAt = 0L
     private val levPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
@@ -6227,7 +6227,7 @@ class MonkeyView(
             }
         }
         if (clipSink && !sinkClipY.isNaN() && sinkY > 0f) canvas.clipRect(-10000f, -10000f, 100000f, sinkClipY)
-        // Armour Anna's heavy footsteps: a tiny jolt on each footfall.
+        // Bolt's heavy footsteps: a tiny jolt on each footfall.
         heavyShake = if (character.heavy && controller.state == MonkeyState.WALK && !climber.active && !hoverOn) {
             val ph = abs(sin(controller.stateTime * 6.2f * controller.anim.walkSpeed)); if (ph < 0.18f) (1f - ph / 0.18f) * 1.8f * d else 0f
         } else 0f
@@ -6969,7 +6969,7 @@ class MonkeyView(
         scaredUntil = SystemClock.uptimeMillis() + 20_000L
         BSN.record("you shot me from a slingshot", BSN.Feeling.WHOOSH)
         feelTouch(com.combo.monkeycompanion.ai.react.ReactKind.THROW, force = tn, extra = "slingshot")
-        // v10.30: medium pull = marble bounce; full power (or Rocket Girl) keeps the comic smash / rocket fly
+        // v10.30: medium pull = marble bounce; full power (or Skye) keeps the comic smash / rocket fly
         val flew = when {
             profile.ridesProp -> { startRocketFly(fvx, fvy, sp); true }
             tn < TouchFeel.MARBLE_MAX_TENSION -> { startMarble(fvx, fvy); true }
@@ -7100,7 +7100,7 @@ class MonkeyView(
         val ph = flight.phase; val k = flight.k
         a.powerPhase = ph; a.powerK = k; a.crashed = flight.crashed
         a.carveLean = flight.glideLean; a.glideSpeed = flight.glideSpeed; a.gliding = (flight.step?.glide ?: 0f) > 0f
-        // v10.16 Kutti Satan's "float a buddy": the nearest crew buddy rises on red sparkles (visual only, self-expiring)
+        // v10.16 Tutty's "float a buddy": the nearest crew buddy rises on red sparkles (visual only, self-expiring)
         if (pw.id == "floatbuddy") partnerViews.firstOrNull()?.levitateBy(min(1f, k / 0.15f) * min(1f, (1f - k) / 0.15f))
         a.sinceRing = emitter.sinceRing; a.ringLeft = emitter.leftHand
         val sp = hypot(powerVx, powerVy)
@@ -7495,7 +7495,7 @@ class MonkeyView(
                     val fall = settleAfterDrag(if (fresh) vx else 0f, if (fresh) vyDrag else 0f)
                     upSwipeDown = -1f
                     if (hideAnim < 0f) controller.onDragEnd(fall)
-                    // v10.8: a quick flick (Rocket Girl: loop-de-loop) layered over the normal fling.
+                    // v10.8: a quick flick (Skye: loop-de-loop) layered over the normal fling.
                     val spd = hypot(vx, vyDrag) / d
                     if (livingOn && fresh && hideAnim < 0f && impact == null && spd > 900f && e.eventTime - downAt < 450L && !rocketFlyOn &&
                         profile.reactionTable.any { com.combo.monkeycompanion.engine.touch.TouchKind.FLICK in it.kinds }) {
@@ -8112,7 +8112,7 @@ class MonkeyView(
         }
     }
 
-    // ---------------- v10.4 Mask Man: always juggling; moving him makes him wobble and drop the balls ----------------
+    // ---------------- v10.4 Masko: always juggling; moving him makes him wobble and drop the balls ----------------
     private val balls = com.combo.monkeycompanion.engine.JuggleBalls()
     private val juggles get() = profile.juggles && host != null && !wp && !saver
     private var juggleOn = false
@@ -8593,6 +8593,8 @@ class MonkeyView(
     fun debugBellySpray() = startTrunkSpray()
     val debugSpraying get() = sprayT >= 0f
     val debugHidden get() = hiddenTab
+    /** v10.39.2: when the auto-rest timer last fired (0 = never), so tests tell a rest from a story "leave". */
+    val debugLastRestAt get() = lastRestAt
     val debugRestBlock get() = "drag=$dragging track=$tracking fall=$falling tween=$tweenT hide=$hideAnim ent=$entKind typing=$typing pend=$pendingShown think=$thinkingBubble busy=${ChatHub.busy} convo=$convoActive hubPend=${ChatHub.pending} st=${controller.state} power=$powerOn exiting=$exiting quit=$quitAsk restGo=$restGoIn nap=$restNap asleep=${controller.isAsleep}"
     val debugResting get() = resting
     val debugLoopRunning get() = running
@@ -8660,7 +8662,7 @@ class MonkeyView(
         private const val TAB_PEEK_SECS = 3.2f
         /** v10.24: a swipe faster than this (dp/s) sends a character on its own swipe trip. */
         const val SWIPE_TRIP_DP = 450f
-        /** v10.9: a swipe faster than this (dp/s) launches Rocket Girl's rocket. */
+        /** v10.9: a swipe faster than this (dp/s) launches Skye's rocket. */
         const val ROCKET_SWIPE_DP = 380f
         /** v10.10: a rocket launch needs a real swipe (at least this far), never a tap. */
         const val ROCKET_SWIPE_MIN_TRAVEL_DP = 36f

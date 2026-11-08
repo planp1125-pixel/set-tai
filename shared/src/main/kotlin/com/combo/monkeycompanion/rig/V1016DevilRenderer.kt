@@ -13,7 +13,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * v10.16 Kutti Satan, the app's cute little devil (procedural, no images). Soft round white head and body, two small
+ * v10.16 Tutty, the app's cute little devil (procedural, no images). Soft round white head and body, two small
  * white horns, tall solid black oval eyes (no highlights), no mouth unless reacting, stubby limbs, a long thin white
  * tail ending in a small red heart. A soft grey-lilac outline keeps him visible on white screens.
  * Magic fx (all pure functions of time + pose slots, no RNG): red smoke puff + sparkles (vanish), a red swirl portal

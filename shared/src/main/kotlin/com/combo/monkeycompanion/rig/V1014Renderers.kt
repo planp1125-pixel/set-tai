@@ -35,7 +35,7 @@ abstract class V1014BodyRenderer : HumanRenderer() {
 }
 
 /**
- * v10.14 Hollow Man: an ORIGINAL invisible dancer, only floating clothes. Nothing is drawn where a body would be: the
+ * v10.14 Echo: an ORIGINAL invisible dancer, only floating clothes. Nothing is drawn where a body would be: the
  * neck, wrists and ankles are empty air (a faint shimmer reads as "someone is there"). Fedora (wobbles a beat behind on
  * the HAIR spring: follow-through), round shades, white gloves, a teal jacket over a white shirt collar, black trousers,
  * shiny loafers with white socks.
@@ -194,7 +194,7 @@ object HollowManPeek : PeekFace("hollowman") {
 }
 
 /**
- * v10.14 Surfing Girl: an ORIGINAL cute little girl (high ponytail + hibiscus, coral rash guard, aqua shorts) standing on
+ * v10.14 Wavy: an ORIGINAL cute little girl (high ponytail + hibiscus, coral rash guard, aqua shorts) standing on
  * a yellow-and-teal surfboard that rides a procedurally drawn wave (layered swell, foam crest, droplets). The spray trail
  * grows with her real screen speed (the anim engine's velocity) and with [Pose.surfSpray]; the ponytail swings on the
  * HAIR spring (follow-through). No images.

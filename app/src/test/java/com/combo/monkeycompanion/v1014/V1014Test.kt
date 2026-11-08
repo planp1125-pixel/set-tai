@@ -25,10 +25,10 @@ class V1014Test {
         for (id in listOf("hollowman", "surfer")) {
             assertNotNull(id, CharacterRegistry.all.firstOrNull { it.id == id })
             assertTrue(id, id in Population.allIds)
-            assertNotEquals("Settai", Population.displayName(id))
+            assertNotEquals("Pogo", Population.displayName(id))
             assertNotSame(CharacterProfiles.DEFAULT, CharacterProfiles.of(CharacterRegistry.byId(id)!!))
         }
-        assertEquals("hollowman", CharacterRegistry.byId("Hollow Man")!!.id)
+        assertEquals("hollowman", CharacterRegistry.byId("Echo")!!.id)
         assertEquals("surfer", CharacterRegistry.byId("surfing girl")!!.id)
     }
 

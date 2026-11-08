@@ -70,7 +70,7 @@ class RingActivity : androidx.activity.ComponentActivity() {
                         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
                     ) {
                         androidx.compose.material3.Text(title, fontSize = 30.sp, color = androidx.compose.ui.graphics.Color.White)
-                        androidx.compose.material3.Text((if (rawLine.isNotBlank()) "$rawLine\n" else "") + "🥁 Tap-tap-thump! Settai is drumming on the glass from below to wake you up!",
+                        androidx.compose.material3.Text((if (rawLine.isNotBlank()) "$rawLine\n" else "") + "🥁 Tap-tap-thump! ${com.combo.monkeycompanion.character.CharacterRegistry.current.name} is drumming on the glass from below to wake you up!",
                             fontSize = 18.sp, color = androidx.compose.ui.graphics.Color(0xFFFFF0D2),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxWidth().weight(1f), contentAlignment = androidx.compose.ui.Alignment.Center) {

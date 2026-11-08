@@ -59,7 +59,7 @@ data class AnimTuning(
     val leanDeg: Float = 5f,
     /** Appeal: happy squint + blush strength when petted (0..1). */
     val petSquint: Float = 1f,
-    /** The TAIL spring drives dangling legs instead (riders with no tail: Rocket Girl). */
+    /** The TAIL spring drives dangling legs instead (riders with no tail: Skye). */
     val legsDangle: Boolean = false,
 ) {
     fun of(a: Appendage): AppendageTuning = when (a) {
@@ -81,16 +81,16 @@ data class AnimTuning(
         /** Chittu the mouse: light and quick. */
         val MOUSE = CAT.copy(landingSquash = 0.12f, squashStiffness = 360f, tempo = 1.3f, anticipationSec = 0.08f, earTwitchEvery = 3.5f, lookAroundEvery = 5f,
             tail = AppendageTuning(stiffness = 180f, damping = 0.4f, lag = 0.03f, gain = 1.1f, maxDeg = 28f))
-        /** Superboy: firm hero body, cape trails. */
+        /** Zoom: firm hero body, cape trails. */
         val SUPERBOY = AnimTuning(squashMax = 0.82f, stretchMax = 1.18f, landingSquash = 0.10f, velocityStretch = 0.10f, squashDamping = 0.45f,
             easeStyle = EaseStyle.CUBIC, expressiveness = 1.05f, anticipationSec = 0.12f, earTwitchEvery = 0f, tailFlickEvery = 0f, leanDeg = 9f,
             cape = AppendageTuning(stiffness = 125f, damping = 0.38f, lag = 0.05f, gain = 1.2f, maxDeg = 30f),
             hair = AppendageTuning(stiffness = 160f, damping = 0.45f, lag = 0.03f, gain = 0.5f, maxDeg = 14f))
-        /** Armour Anna: heavy metal suit, barely squashes. */
+        /** Bolt: heavy metal suit, barely squashes. */
         val ARMOUR = AnimTuning(squashMax = 0.9f, stretchMax = 1.08f, landingSquash = 0.06f, velocityStretch = 0.05f, squashDamping = 0.5f,
             easeStyle = EaseStyle.CUBIC, overshoot = 1.3f, tempo = 0.85f, expressiveness = 0.8f, anticipationSec = 0.15f,
             earTwitchEvery = 0f, tailFlickEvery = 0f, lookAroundEvery = 11f, leanDeg = 4f, petSquint = 0.6f)
-        /** Mask Man: rubbery comedy. */
+        /** Masko: rubbery comedy. */
         val MASK = AnimTuning(squashMax = 0.72f, stretchMax = 1.28f, landingSquash = 0.16f, velocityStretch = 0.12f, squashDamping = 0.34f, overshoot = 1.9f,
             expressiveness = 1.25f, anticipationSec = 0.13f, earTwitchEvery = 0f, tailFlickEvery = 0f, lookAroundEvery = 7f)
         /** Gajju: heavy and soft, slow floppy ears and a lazy trunk. */
@@ -102,24 +102,24 @@ data class AnimTuning(
         /** Custom chibi look-alikes (long hair swings more). */
         val CHIBI = AnimTuning(hair = AppendageTuning(stiffness = 135f, damping = 0.4f, lag = 0.045f, gain = 1f, maxDeg = 26f),
             earTwitchEvery = 0f, tailFlickEvery = 0f)
-        /** v10.8 Rocket Girl: light, zippy and bouncy; TAIL spring = his dangling legs, CAPE spring = his scarf. */
+        /** v10.8 Skye: light, zippy and bouncy; TAIL spring = his dangling legs, CAPE spring = his scarf. */
         val ROCKET = AnimTuning(squashMax = 0.74f, stretchMax = 1.26f, landingSquash = 0.16f, velocityStretch = 0.12f, squashStiffness = 300f, squashDamping = 0.34f,
             easeStyle = EaseStyle.SMOOTHSTEP, overshoot = 1.9f, poseFrequency = 34f,
             tempo = 1.25f, expressiveness = 1.2f, anticipationSec = 0.09f, earTwitchEvery = 0f, tailFlickEvery = 0f, lookAroundEvery = 6f, leanDeg = 12f, legsDangle = true,
             tail = AppendageTuning(stiffness = 120f, damping = 0.33f, lag = 0.05f, gain = 1.1f, maxDeg = 30f),
             hair = AppendageTuning(stiffness = 150f, damping = 0.36f, lag = 0.03f, gain = 1.1f, maxDeg = 24f),
             cape = AppendageTuning(stiffness = 110f, damping = 0.34f, lag = 0.05f, gain = 1.3f, maxDeg = 34f))
-        /** v10.14 Hollow Man: smooth, silky (long slow-in/out), a floppy fedora that trails his moves; squash kept small. */
+        /** v10.14 Echo: smooth, silky (long slow-in/out), a floppy fedora that trails his moves; squash kept small. */
         val HOLLOW = AnimTuning(squashMax = 0.88f, stretchMax = 1.15f, landingSquash = 0.12f, velocityStretch = 0.06f, squashDamping = 0.45f,
             easeStyle = EaseStyle.SMOOTHSTEP, overshoot = 1.5f, poseFrequency = 24f, tempo = 1.0f, expressiveness = 1.1f, anticipationSec = 0.13f,
             earTwitchEvery = 0f, tailFlickEvery = 0f, lookAroundEvery = 7f, leanDeg = 8f,
             hair = AppendageTuning(stiffness = 120f, damping = 0.34f, lag = 0.05f, gain = 1.2f, maxDeg = 22f))
-        /** v10.16 Kutti Satan: soft and floaty (long slow-in/out), a light squash, a whippy tail with follow-through. */
+        /** v10.16 Tutty: soft and floaty (long slow-in/out), a light squash, a whippy tail with follow-through. */
         val DEVIL = AnimTuning(squashMax = 0.88f, stretchMax = 1.14f, landingSquash = 0.12f, velocityStretch = 0.08f, squashDamping = 0.4f,
             easeStyle = EaseStyle.SMOOTHSTEP, overshoot = 1.6f, poseFrequency = 26f, tempo = 1.0f, expressiveness = 1.15f, anticipationSec = 0.12f,
             earTwitchEvery = 0f, tailFlickEvery = 0f, lookAroundEvery = 6f, leanDeg = 8f,
             tail = AppendageTuning(stiffness = 110f, damping = 0.3f, lag = 0.06f, gain = 1.3f, maxDeg = 36f))
-        /** v10.14 Surfing Girl: bouncy and quick, a whippy ponytail, leans hard into carves. */
+        /** v10.14 Wavy: bouncy and quick, a whippy ponytail, leans hard into carves. */
         val SURF = AnimTuning(squashMax = 0.86f, stretchMax = 1.18f, landingSquash = 0.16f, velocityStretch = 0.1f, squashStiffness = 300f, squashDamping = 0.34f,
             easeStyle = EaseStyle.SMOOTHSTEP, overshoot = 1.8f, poseFrequency = 32f, tempo = 1.2f, expressiveness = 1.15f, anticipationSec = 0.1f,
             earTwitchEvery = 0f, tailFlickEvery = 0f, lookAroundEvery = 6f, leanDeg = 12f,

@@ -44,7 +44,7 @@ object ClockPowers {
     }
 
     private fun ownNotes(ctx: Context, inexact: Boolean): String = buildString {
-        if (inexact) append(" Exact alarms are off for me, so it may ring a little late — allow “Alarms & reminders” for Settai in Android settings.")
+        if (inexact) append(" Exact alarms are off for me, so it may ring a little late — allow “Alarms & reminders” for Set-Tai in Android settings.")
         if (!NotificationManagerCompat.from(ctx).areNotificationsEnabled()) append(" ⚠️ My notifications are off, so you won't hear it — please turn them on!")
     }
 
@@ -58,7 +58,7 @@ object ClockPowers {
         viaClockApp(ctx, s, i, what, why)?.let { return "Timer set in your Clock app: $nice ⏳" }
         val (item, inexact) = SettaiClock.add(ctx, "timer", System.currentTimeMillis() + sec * 1000L, label)
         val note = if (why.isNotEmpty()) " (I'm keeping this one myself: $why.)" else ""
-        ActionLog.add(ctx, what, "Settai's own timer #${item.id}${if (inexact) " (inexact)" else ""}${if (why.isNotEmpty()) "; Clock app skipped: $why" else ""}")
+        ActionLog.add(ctx, what, "Set-Tai timer #${item.id}${if (inexact) " (inexact)" else ""}${if (why.isNotEmpty()) "; Clock app skipped: $why" else ""}")
         return "Timer set: $nice ⏳ I'll ring and shout when it's done!$note" + ownNotes(ctx, inexact)
     }
 
@@ -84,7 +84,7 @@ object ClockPowers {
         val (item, inexact) = SettaiClock.add(ctx, "alarm", at, label)
         val inH = (at - System.currentTimeMillis()) / 60_000
         val note = if (why.isNotEmpty()) " (It's my own alarm: $why.)" else ""
-        ActionLog.add(ctx, what, "Settai's own alarm #${item.id}${if (inexact) " (inexact)" else ""}${if (why.isNotEmpty()) "; Clock app skipped: $why" else ""}")
+        ActionLog.add(ctx, what, "Set-Tai alarm #${item.id}${if (inexact) " (inexact)" else ""}${if (why.isNotEmpty()) "; Clock app skipped: $why" else ""}")
         return "Alarm set for $t ⏰ (in ${SettaiClock.fmtLeft(inH * 60)}). I'll ring and jump around!$note" + ownNotes(ctx, inexact)
     }
 
@@ -97,7 +97,7 @@ object ClockPowers {
     fun cancel(ctx: Context, kind: String): String {
         val gone = SettaiClock.cancel(ctx, kind)
         gone.forEach { SettaiClock.stop(ctx, it.id) }
-        ActionLog.add(ctx, "Cancel $kind", if (gone.isEmpty()) "nothing of Settai's to cancel" else "cancelled ${gone.size}")
+        ActionLog.add(ctx, "Cancel $kind", if (gone.isEmpty()) "nothing of Set-Tai's to cancel" else "cancelled ${gone.size}")
         val word = when (kind) { "timer" -> "timer"; "alarm" -> "alarm"; else -> "timer or alarm" }
         return if (gone.isEmpty()) "I don't have a $word of my own running. If it's in your Clock app, stop it there — I'm not allowed to touch those."
         else "Cancelled ${gone.size} $word${if (gone.size > 1) "s" else ""}: " + gone.joinToString("; ") { it.describe() }.replace(" left", " were left") + " 🛑"

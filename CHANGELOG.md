@@ -303,3 +303,11 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Script problems now come out in plain words with a hint, e.g. "On line 2: "jump" isn't a move I know. Use one of: …".
 - New `engine/script/ShowHelp.kt` (friendly errors, lint, templates) + `v1039/ShowTemplatesTest` (every template plays
   with every character; typed quotes can't break a show).
+
+## v10.39.2 (code 104): new names, and the Cloud keeps its 40 for your chats
+
+- New worldwide names (display names only; ids, saves, Studio characters and shows are unchanged): Kutti Satan → **Tutty**, Armour Anna → **Bolt**, Rocket Girl → **Skye**, Superboy → **Zoom**, Mask Man → **Masko**, Surfing Girl → **Wavy**, Skater Girl → **Rollie**, Hollow Man → **Echo**, Settai (the monkey) → **Pogo**. Billa, Chittu, Gajju and Angel keep their names. The app is still **Set-Tai**.
+- The old names are gone from lines, jokes, AI prompts, notifications, the bundled show (now "Tutty vs Angel") and screen labels. Chat can find characters by old or new name ("switch to Bolt" and "armour anna" both work).
+- Settings, Skills, Phone powers, Memory and Routines say "your character" instead of one character's name, because they work for every character. App-level things (Quit, Notification Access, the screen agent, notification channels) say Set-Tai.
+- Set-Tai Cloud (40 requests per phone per day, reset 5:30 AM India time): automatic lines (touch reactions, falls and landings, idle thoughts, quips, reaction-bank refills) no longer use the 40. They use the built-in lines, so only your own chats, chips and screen questions spend the cloud. New switch "Cloud also writes the automatic lines" turns the old behaviour back on. The Cloud card shows "Left today: N of 40" after the first reply. Your own API key and the on-device brain are unchanged.
+- Tests: two timing-flaky tests made robust (auto-rest now checks the rest timer itself, not any hide; the swipe test lets go a second time if the first let-go landed). New CloudBrainTest case for the cloud saver.

@@ -13,7 +13,7 @@ enum class Verb(val mood: Mood) {
     TAIL_YELP(Mood.STARTLED), TAIL_SWAT(Mood.ANNOYED), TAIL_CURL(Mood.AFFECTION),
     EAR_FLICK(Mood.ANNOYED), EAR_WIGGLE(Mood.PLAYFUL), TRUNK_BOOP(Mood.PLAYFUL),
     SPIN_LOOK(Mood.STARTLED), PAW_BAT(Mood.PLAYFUL), DODGE(Mood.STARTLED), HOP(Mood.PLAYFUL), DIZZY(Mood.STARTLED),
-    // Rocket Girl
+    // Skye
     ROCKET_SPUTTER(Mood.STARTLED), LOOP(Mood.PLAYFUL), SPARKLER(Mood.AFFECTION), BOOST(Mood.PLAYFUL),
     ;
     enum class Mood { NEUTRAL, PLAYFUL, AFFECTION, STARTLED, ANNOYED }
@@ -66,7 +66,7 @@ object ReactionLines {
     val DODGE = listOf("Missed me! 😜", "Too slow! 💨", "Hehe, nope! 😆")
     val HOP = listOf("Boing! 🐰", "Wheee! 😄")
     val DIZZY = listOf("Whoaaa, dizzy… 😵‍💫", "Everything is spinning! 🌀")
-    // Rocket Girl
+    // Skye
     val ROCKET_TAP = listOf("Hey! Don't poke the rocket! 🚀💨", "*pop pop sputter* Uh-oh! 😅", "It's ticklish, it coughs! 🎇")
     val LOOP = listOf("Loop-de-loop! 🎢", "Wheeeee! 🚀", "Did you see that loop?! 😎")
     val SPARKLER = listOf("Phuljhadi time! ✨🎇", "Look, sparkles! ✨", "Happy Deepavali vibes! 🪔")
@@ -120,7 +120,7 @@ object ReactionLibrary {
         ReactionEntry(Verb.TRUNK_BOOP, setOf(BodyPart.TRUNK), 1.3f, amp = 0.6f..1f, dur = 0.5f..0.8f, lines = ReactionLines.TRUNK, talkChance = 0.5f),
     )
 
-    /** Rocket Girl's own entries (referenced from his CharacterProfile). */
+    /** Skye's own entries (referenced from his CharacterProfile). */
     val ROCKET_GIRL = listOf(
         ReactionEntry(Verb.GIGGLE, setOf(BodyPart.HEAD), 1.3f, amp = 0.7f..1f, dur = 0.9f..1.4f, baseState = MonkeyState.GIGGLE, lines = ReactionLines.HEAD, talkChance = 0.55f),
         ReactionEntry(Verb.ROCKET_SPUTTER, setOf(BodyPart.PROP, BodyPart.FOOT), 1.6f, amp = 0.7f..1f, dur = 0.9f..1.3f, lines = ReactionLines.ROCKET_TAP, talkChance = 0.55f, antic = 0.05f),

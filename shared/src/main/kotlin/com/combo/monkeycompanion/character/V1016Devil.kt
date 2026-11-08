@@ -62,7 +62,7 @@ object DevilBlink {
 }
 
 /**
- * v10.16 Kutti Satan (id "devil"): the app's own cute little devil mascot and the default main character. Soft round
+ * v10.16 Tutty (id "devil"): the app's own cute little devil mascot and the default main character. Soft round
  * white head and body, two small horns, tall solid black oval eyes, stubby limbs and a long thin tail with a red heart
  * tip. He floats, blinks softly, swishes his tail and knows "black magic": vanishing into red smoke and popping out of a
  * red swirl portal on the other side of the screen, teleport hops, floating his friends, spell sparks, shadow clones.
@@ -86,7 +86,7 @@ object KuttiSatan : Character("devil") {
     override val signaturePower: Superpower get() = VanishPortalPower
     override val doubleTapTip: String get() = "Double-tap me and watch me vanish! 😈✨"
 
-    private val HELLO = listOf("Hee-hee! I'm Kutti Satan, your pocket devil 😈", "Psst! Want to see a magic trick? 😈✨", "Vanakkam! I live in your phone now. Kidding. Mostly 😏")
+    private val HELLO = listOf("Hee-hee! I'm Tutty, your pocket devil 😈", "Psst! Want to see a magic trick? 😈✨", "Vanakkam! I live in your phone now. Kidding. Mostly 😏")
     private val PAT = listOf("Hehe… okay, that's nice 😊", "Shh, don't tell anyone devils like head pats 🤫😈")
     private val TICKLE = listOf("Hee-hee! Not the tail! 🤣", "Stop stop, my horns are ticklish! 😂")
     private val POKED = listOf("Wha…? I was dreaming of mischief 😴😈", "*yawn* Five more minutes of evil plans… 💤")

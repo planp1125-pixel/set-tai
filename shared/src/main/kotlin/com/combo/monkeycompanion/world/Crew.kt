@@ -8,7 +8,7 @@ import com.combo.monkeycompanion.character.CustomCompanionRegistry
  * (never overridden by auto scoring); empty slots are filled by [Population] scoring.
  */
 object CrewRules {
-    /** Every character the user can put in a crew: all built-ins (incl. Gajju & Rocket Girl) + custom companions. */
+    /** Every character the user can put in a crew: all built-ins (incl. Gajju & Skye) + custom companions. */
     val roster: List<String>
         get() = CharacterRegistry.all.map { it.id } + runCatching { CustomCompanionRegistry.allCharacters().map { it.id } }.getOrDefault(emptyList())
 
