@@ -24,6 +24,25 @@ import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.combo.monkeycompanion.ai.ChatHub
 import com.combo.monkeycompanion.character.Character
 import com.combo.monkeycompanion.character.CharacterRegistry
@@ -95,395 +114,204 @@ class MoodBarsView(context: Context) : View(context) {
 }
 
 /**
- * v6 / v9 "Settai's diary & behaviour controls":
- * - Each character's diary (including custom companions like Kuttyma).
- * - User-configurable Diary Limits (`maxEntries`, `retentionDays`, category toggles, pinned memories/rules).
- * - Per-character Behaviour Sliders (`Playfulness`, `Chattiness`, `Curiosity`, `Energy`, `Boldness`, `Drama`).
+ * v10.38.14: Diary as one Material 3 screen. Character chips on top, then 4 tabs:
+ * Overview (what it's thinking, mood bars, favourites), Behaviour, Memory (limits & privacy) and Diary (moments).
+ * Everything is saved for the chosen character only (it never switches your active companion).
  */
-class DiaryActivity : Activity() {
-    private val d by lazy { resources.displayMetrics.density }
-    private val cream = com.combo.monkeycompanion.theme.Th.rgb(0xF3, 0xF4, 0xFA)
-    private val brown = com.combo.monkeycompanion.theme.Th.rgb(0x1E, 0x22, 0x40)
-    private val soft = com.combo.monkeycompanion.theme.Th.rgb(0x64, 0x6A, 0x8C)
-    private val accent = com.combo.monkeycompanion.theme.Th.rgb(0x6C, 0x5C, 0xE7)
-    private lateinit var who: Character
-    private var diaryTabIndex = 0
-
-    private fun dp(v: Int) = (v * d).toInt()
+class DiaryActivity : androidx.activity.ComponentActivity() {
+    private var whoId by androidx.compose.runtime.mutableStateOf("")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ChatHub.init(this)
         MindHub.init(this)
-        @Suppress("DEPRECATION")
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
-            (if (Build.VERSION.SDK_INT >= 26) View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0)
-        who = CharacterRegistry.byId(intent?.getStringExtra("character")) ?: CharacterRegistry.current
-        rebuild()
+        whoId = (CharacterRegistry.byId(intent?.getStringExtra("character")) ?: CharacterRegistry.current).id
+        setContent {
+            val dark = com.combo.monkeycompanion.theme.ThemeSkin.isDark(this)
+            androidx.compose.material3.MaterialTheme(colorScheme = SettaiDesignTokens.scheme(dark)) { DiaryScreen() }
+        }
     }
 
-    private fun sectionLabel(label: String) = TextView(this).apply {
-        text = label; textSize = 11f; setTypeface(typeface, Typeface.BOLD); setTextColor(accent)
-        setPadding(dp(4), dp(12), 0, dp(8))
+    @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+    @androidx.compose.runtime.Composable
+    private fun DiaryScreen() {
+        val who: Character = CharacterRegistry.byId(whoId) ?: CharacterRegistry.current
+        var tab by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+        val tabs = listOf("Overview", "Behaviour", "Memory", "Diary")
+        androidx.compose.material3.Scaffold(
+            topBar = {
+                androidx.compose.material3.TopAppBar(
+                    title = { androidx.compose.material3.Text("${who.name}'s diary") },
+                    navigationIcon = {
+                        androidx.compose.material3.TextButton(onClick = { finish() }) {
+                            androidx.compose.material3.Text("←", fontSize = 22.sp)
+                        }
+                    }
+                )
+            }
+        ) { pad ->
+            Column(Modifier.fillMaxSize().padding(pad)) {
+                // Which character
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    for (c in CharacterRegistry.allWithCustom) {
+                        androidx.compose.material3.FilterChip(
+                            selected = c.id == who.id,
+                            onClick = { whoId = c.id },
+                            label = { androidx.compose.material3.Text(c.name) }
+                        )
+                    }
+                }
+                androidx.compose.material3.TabRow(selectedTabIndex = tab) {
+                    tabs.forEachIndexed { i, t ->
+                        androidx.compose.material3.Tab(selected = tab == i, onClick = { tab = i },
+                            text = { androidx.compose.material3.Text(t) })
+                    }
+                }
+                Column(
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    androidx.compose.runtime.key(who.id) {
+                        when (tab) {
+                            0 -> OverviewTab(who)
+                            1 -> Panel { CharacterBehaviourPanel(who.id) }
+                            2 -> Panel { CharacterMemoryPanel(who.id) }
+                            else -> DiaryTab(who)
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    private fun rebuild() {
+    @androidx.compose.runtime.Composable
+    private fun Panel(content: @androidx.compose.runtime.Composable () -> Unit) {
+        androidx.compose.material3.Card(Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(SettaiDesignTokens.cornerCardDp.dp)) {
+            Column(Modifier.padding(16.dp)) { content() }
+        }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun OverviewTab(who: Character) {
         val m = MindHub.mindFor(who.id)
+        if (m == null) { androidx.compose.material3.Text("No diary for ${who.name} yet."); return }
         val now = System.currentTimeMillis()
-        val col = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(14), dp(18), dp(28))
+        Panel {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.ui.viewinterop.AndroidView(
+                    factory = { ctx -> CharacterPreviewView(ctx, who) },
+                    modifier = Modifier.size(width = 86.dp, height = 96.dp)
+                )
+                androidx.compose.material3.Text("💭 ${m.thinking(now)}",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 12.dp).weight(1f))
+            }
         }
-        col.addView(TextView(this).apply {
-            text = "📖 ${who.name}'s Diary & Behaviour"
-            textSize = 25f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
-            gravity = Gravity.CENTER_HORIZONTAL
-        })
-        col.addView(TextView(this).apply {
-            text = "Explore personality, remember moments and choose what stays on this phone."
-            textSize = 13f; setTextColor(soft); gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(0, dp(2), 0, dp(10))
-        })
-
-        // Character switcher pills (includes built-in + custom companions)
-        val tabScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
-        val tabs = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        for (c in CharacterRegistry.allWithCustom) {
-            val sel = c.id == who.id
-            tabs.addView(Button(this).apply {
-                text = c.name; isAllCaps = false; textSize = 13f
-                setTextColor(if (sel) Color.WHITE else brown)
-                background = GradientDrawable().apply {
-                    cornerRadius = dp(20).toFloat()
-                    setColor(if (sel) accent else Color.WHITE)
-                    setStroke(dp(1), if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
-                }
-                setPadding(dp(12), dp(6), dp(12), dp(6))
-                setOnClickListener { who = c; rebuild() }
-            }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { leftMargin = dp(3); rightMargin = dp(3) })
-        }
-        tabScroll.addView(tabs)
-        col.addView(tabScroll, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) })
-
-        if (m != null) {
-            val fav = m.personality.fav
-            val tr = m.traits
-            // 1. Personality & Mood Bars Card
-            val prof = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(16), dp(12), dp(16), dp(14))
-                background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.WHITE) }
-                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
-            }
-            val topRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            topRow.addView(CharacterPreviewView(this, who).apply {
-                layoutParams = LinearLayout.LayoutParams(dp(86), dp(96))
-            })
-            topRow.addView(TextView(this).apply {
-                text = "💭 ${m.thinking(now)}"
-                textSize = 13.5f; setTextColor(brown); setPadding(dp(10), 0, 0, 0)
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            prof.addView(topRow)
-
-            prof.addView(MoodBarsView(this).apply {
-                drives = m.drives; focus = m.focus(now)
-                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) }
-            })
-            prof.addView(TextView(this).apply {
-                text = "Favourites (seeded for your install):\n" +
-                    "• Hangout: ${fav.corner.label} · Nap spot: ${fav.napSpot.label}\n" +
-                    "• Loves: ${fav.favApp.label} apps · Dislikes: ${fav.hatedApp.label} apps\n" +
-                    "• Snack: ${fav.snack}" + (if (fav.power.isNotBlank()) " · Power: ${fav.power}" else "")
-                textSize = 12.5f; setTextColor(soft); setPadding(0, dp(8), 0, 0)
-            })
-            col.addView(prof)
-            col.addView(sectionLabel("PERSONALITY"))
-
-            // 2. Per-Character Behaviour Sliders Card
-            val behCard = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(16), dp(12), dp(16), dp(14))
-                background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.WHITE) }
-                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
-            }
-            behCard.addView(TextView(this).apply {
-                text = "Behaviour & personality"
-                textSize = 16f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
-                setPadding(0, 0, 0, dp(4))
-            })
-            fun updateTrait(mod: (Traits) -> Traits) {
-                val cur = Personality.getCustomTraits(who.id) ?: m.traits
-                Personality.setCustomTraits(who.id, mod(cur))
-                MindHub.flush()
-            }
-            behCard.addView(traitSlider("🎉 Playfulness (dances & gags)", tr.playfulness) { v -> updateTrait { it.copy(playfulness = v) } })
-            behCard.addView(traitSlider("💬 Chattiness (how often they speak)", tr.chattiness) { v -> updateTrait { it.copy(chattiness = v) } })
-            behCard.addView(traitSlider("🧭 Curiosity (explores new apps)", tr.curiosity) { v -> updateTrait { it.copy(curiosity = v) } })
-            behCard.addView(traitSlider("⚡ Energy / Activity (active vs napping)", tr.energy) { v -> updateTrait { it.copy(laziness = (1f - v).coerceIn(0.05f, 0.95f)) } })
-            behCard.addView(traitSlider("🦁 Boldness (heroic stunts & powers)", tr.boldness) { v -> updateTrait { it.copy(boldness = v) } })
-            behCard.addView(traitSlider("🎭 Drama (expressive reactions)", tr.drama) { v -> updateTrait { it.copy(drama = v) } })
-            behCard.addView(Button(this).apply {
-                text = "Reset behaviour to ${who.name}'s default"; isAllCaps = false; textSize = 12.5f; setTextColor(brown)
-                setOnClickListener {
-                    Personality.clearCustomTraits(who.id)
-                    MindHub.flush()
-                    rebuild()
-                }
-            })
-            col.addView(behCard)
-            col.addView(sectionLabel("MEMORY & PRIVACY"))
-
-            // 3. Diary Limits & Retention Controls Card
-            val diary = m.diary
-            val limCard = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(16), dp(12), dp(16), dp(14))
-                background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.WHITE) }
-                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
-            }
-            limCard.addView(TextView(this).apply {
-                text = "Memory preferences"
-                textSize = 16f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
-                setPadding(0, 0, 0, dp(4))
-            })
-            limCard.addView(TextView(this).apply {
-                text = "Max diary entries (pinned entries are never deleted):"
-                textSize = 12.5f; setTextColor(soft); setPadding(0, dp(4), 0, dp(4))
-            })
-            val capRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            for ((capVal, lbl) in listOf(0 to "Pause", 10 to "10", 30 to "30", 60 to "60", 150 to "150", 300 to "300")) {
-                val sel = diary.maxEntries == capVal
-                capRow.addView(Button(this).apply {
-                    text = lbl; isAllCaps = false; textSize = 12f
-                    setTextColor(if (sel) Color.WHITE else brown)
-                    background = GradientDrawable().apply {
-                        cornerRadius = dp(14).toFloat()
-                        setColor(if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF9, 0xEE))
-                    }
-                    setPadding(dp(6), dp(4), dp(6), dp(4))
-                    setOnClickListener {
-                        diary.maxEntries = capVal
-                        diary.enforceLimits(now)
-                        MindHub.flush()
-                        rebuild()
-                    }
-                }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-            }
-            limCard.addView(capRow)
-
-            limCard.addView(TextView(this).apply {
-                text = "Auto-expire old entries:"
-                textSize = 12.5f; setTextColor(soft); setPadding(0, dp(8), 0, dp(4))
-            })
-            val retRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            for ((days, lbl) in listOf(0 to "Forever", 1 to "1 Day", 7 to "7 Days", 30 to "30 Days")) {
-                val sel = diary.retentionDays == days
-                retRow.addView(Button(this).apply {
-                    text = lbl; isAllCaps = false; textSize = 12f
-                    setTextColor(if (sel) Color.WHITE else brown)
-                    background = GradientDrawable().apply {
-                        cornerRadius = dp(14).toFloat()
-                        setColor(if (sel) accent else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF9, 0xEE))
-                    }
-                    setPadding(dp(6), dp(4), dp(6), dp(4))
-                    setOnClickListener {
-                        diary.retentionDays = days
-                        diary.enforceLimits(now)
-                        MindHub.flush()
-                        rebuild()
-                    }
-                }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(3) })
-            }
-            limCard.addView(retRow)
-
-            limCard.addView(Switch(this).apply {
-                text = "🧭 Log app places & visits"; isChecked = diary.logPlaces; textSize = 13f; setTextColor(brown)
-                setOnCheckedChangeListener { _, b -> diary.logPlaces = b; MindHub.flush() }
-            })
-            limCard.addView(Switch(this).apply {
-                text = "💬 Log chats, head pats & games"; isChecked = diary.logChats; textSize = 13f; setTextColor(brown)
-                setOnCheckedChangeListener { _, b -> diary.logChats = b; MindHub.flush() }
-            })
-            limCard.addView(Switch(this).apply {
-                text = "🌙 Log naps & away traces"; isChecked = diary.logNight; textSize = 13f; setTextColor(brown)
-                setOnCheckedChangeListener { _, b -> diary.logNight = b; MindHub.flush() }
-            })
-            limCard.addView(Switch(this).apply {
-                text = "⚡ Log superpowers & world events"; isChecked = diary.logWorld; textSize = 13f; setTextColor(brown)
-                setOnCheckedChangeListener { _, b -> diary.logWorld = b; MindHub.flush() }
-            })
-
-            val noteBtnRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(6), 0, 0) }
-            noteBtnRow.addView(Button(this).apply {
-                text = "📌 + Add Memory / Rule"; isAllCaps = false; textSize = 13f; setTextColor(Color.WHITE)
-                background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(accent) }
-                setOnClickListener { promptAddCustomNote(diary) }
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
-            noteBtnRow.addView(Button(this).apply {
-                text = "🧹 Clear Unpinned"; isAllCaps = false; textSize = 13f; setTextColor(brown)
-                background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(com.combo.monkeycompanion.theme.Th.rgb(0xF5, 0xE6, 0xD0)) }
-                setOnClickListener {
-                    diary.clearUnpinned()
-                    MindHub.flush()
-                    rebuild()
-                }
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            limCard.addView(noteBtnRow)
-            col.addView(limCard)
-            col.addView(sectionLabel("RECENT MOMENTS"))
-
-            // 4. Diary Entries Card (with Pin & Delete on each row)
-            val diaryCard = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(16), dp(12), dp(16), dp(14))
-                background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(Color.WHITE) }
-                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) }
-            }
-            diaryCard.addView(TextView(this).apply {
-                text = "Dear diary… (${diary.all.size}/${if (diary.maxEntries == 0) "Paused" else diary.maxEntries.toString()} memories)"
-                textSize = 16f; setTypeface(typeface, Typeface.BOLD); setTextColor(brown)
-                setPadding(0, 0, 0, dp(6))
-            })
-            val pageRows = diary.pageEntries(who.id, now, 60)
-            if (pageRows.isEmpty()) {
-                diaryCard.addView(TextView(this).apply {
-                    text = "No entries yet! Tap '+ Add Memory / Rule' above, or poke ${who.name} and open a few apps."
-                    textSize = 13.5f; setTextColor(soft)
-                })
-            } else {
-                for ((entry, whenStr, body) in pageRows) {
-                    val item = LinearLayout(this).apply {
-                        orientation = LinearLayout.VERTICAL
-                        setPadding(dp(12), dp(8), dp(12), dp(8))
-                        background = GradientDrawable().apply {
-                            cornerRadius = dp(12).toFloat()
-                            setColor(if (entry.pinned) com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF3, 0xD6) else com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xF9, 0xEE))
-                            setStroke(dp(1), if (entry.pinned) accent else com.combo.monkeycompanion.theme.Th.rgb(0xF0, 0xDF, 0xC4))
-                        }
-                        layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) }
-                    }
-                    val headRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-                    headRow.addView(TextView(this).apply {
-                        text = whenStr; textSize = 11.5f; setTypeface(typeface, Typeface.BOLD); setTextColor(accent)
-                    }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-                    headRow.addView(TextView(this).apply {
-                        text = if (entry.pinned) "📌 Unpin" else "📍 Pin"
-                        textSize = 11.5f; setTextColor(brown); setPadding(dp(8), dp(2), dp(8), dp(2))
-                        setOnClickListener {
-                            diary.togglePin(entry.ts)
-                            MindHub.flush()
-                            rebuild()
-                        }
-                    })
-                    headRow.addView(TextView(this).apply {
-                        text = "🗑️"
-                        textSize = 12f; setPadding(dp(6), dp(2), dp(2), dp(2))
-                        setOnClickListener {
-                            diary.deleteEntry(entry.ts)
-                            MindHub.flush()
-                            rebuild()
-                        }
-                    })
-                    item.addView(headRow)
-                    item.addView(TextView(this).apply {
-                        text = body; textSize = 13.5f; setTextColor(brown); setPadding(0, dp(2), 0, 0)
-                    })
-                    diaryCard.addView(item)
+        Panel {
+            androidx.compose.material3.Text("Mood right now", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+            androidx.compose.foundation.layout.Spacer(Modifier.height(8.dp))
+            val dr = m.drives
+            val rows = listOf(
+                Triple("⚡ Energy", dr.energy, 0xFF43A047), Triple("🧭 Curiosity", dr.curiosity, 0xFF1E88E5),
+                Triple("💛 Social", dr.social, 0xFFFB8C00), Triple("😈 Boredom", dr.boredom, 0xFF8E24AA),
+                Triple("😌 Content", dr.contentment, 0xFF00897B), Triple("😤 Grumpy", dr.annoyance, 0xFFE53935),
+                Triple("🤫 Focus respect", m.focus(now), 0xFF546E7A)
+            )
+            for ((name, v, col) in rows) {
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Text(name, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.width(120.dp))
+                    androidx.compose.material3.LinearProgressIndicator(
+                        progress = { v.coerceIn(0f, 1f) },
+                        color = androidx.compose.ui.graphics.Color(col),
+                        modifier = Modifier.weight(1f).height(8.dp)
+                    )
+                    androidx.compose.material3.Text("${(v.coerceIn(0f, 1f) * 100).toInt()}%",
+                        style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.width(44.dp).padding(start = 8.dp))
                 }
             }
-            col.addView(diaryCard)
         }
-
-        // Keep per-character persistence and the existing controls, but group them
-        // into focused tabs rather than one long configuration form.
-        val sections = (0 until col.childCount).map { col.getChildAt(it) }
-        val panels = listOfNotNull(sections.getOrNull(3), sections.getOrNull(5),
-            sections.getOrNull(7), sections.getOrNull(9))
-        if (panels.size == 4) {
-            val names = listOf("Overview", "Behaviour", "Memory", "Diary")
-            val tabStrip = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
-            val tabRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            tabStrip.addView(tabRow)
-            val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-            for (v in sections.drop(3)) col.removeView(v)
-            col.addView(tabStrip, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(12) })
-            col.addView(content)
-            fun showTab(index: Int) {
-                diaryTabIndex = index
-                tabRow.removeAllViews()
-                content.removeAllViews()
-                names.forEachIndexed { i, name ->
-                    tabRow.addView(Button(this).apply {
-                        text = name; isAllCaps = false; textSize = 13f
-                        setTextColor(if (i == diaryTabIndex) Color.WHITE else brown)
-                        background = GradientDrawable().apply {
-                            cornerRadius = dp(20).toFloat()
-                            setColor(if (i == diaryTabIndex) accent else Color.WHITE)
-                        }
-                        setOnClickListener { showTab(i) }
-                    }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { rightMargin = dp(6) })
+        val fav = m.personality.fav
+        Panel {
+            androidx.compose.material3.Text("Favourites", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+            androidx.compose.foundation.layout.Spacer(Modifier.height(6.dp))
+            val lines = listOf(
+                "Hangout" to fav.corner.label, "Nap spot" to fav.napSpot.label,
+                "Loves" to "${fav.favApp.label} apps", "Dislikes" to "${fav.hatedApp.label} apps",
+                "Snack" to fav.snack
+            ) + (if (fav.power.isNotBlank()) listOf("Power" to fav.power) else emptyList())
+            for ((k, v) in lines) {
+                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                    androidx.compose.material3.Text(k, color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(96.dp))
+                    androidx.compose.material3.Text(v)
                 }
-                val panel = panels[diaryTabIndex]
-                (panel.parent as? android.view.ViewGroup)?.removeView(panel)
-                content.addView(panel)
             }
-            showTab(diaryTabIndex.coerceIn(names.indices))
         }
-
-        val scroll = ScrollView(this).apply {
-            setBackgroundColor(cream)
-            isFillViewport = true
-            addView(col)
-        }
-        scroll.setOnApplyWindowInsetsListener { v, insets ->
-            @Suppress("DEPRECATION")
-            v.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
-            insets
-        }
-        setContentView(scroll)
-        MaterialScreenPolish.apply(this, preserveCustomButtons = true)
     }
 
-    private fun promptAddCustomNote(diary: com.combo.monkeycompanion.mind.Diary) {
-        val input = EditText(this).apply {
-            hint = "E.g. Always call me Appa and cheer me on before meetings!"
-        }
-        AlertDialog.Builder(this)
-            .setTitle("📌 Add Pinned Memory / Rule for ${who.name}")
-            .setView(input)
-            .setPositiveButton("Save & Pin") { _, _ ->
-                val txt = input.text?.toString()?.trim().orEmpty()
-                if (txt.isNotEmpty()) {
-                    diary.addCustomNote(txt, System.currentTimeMillis(), pinned = true)
-                    MindHub.flush()
-                    rebuild()
-                    Toast.makeText(this, "Pinned to ${who.name}'s diary!", Toast.LENGTH_SHORT).show()
-                }
+    @androidx.compose.runtime.Composable
+    private fun DiaryTab(who: Character) {
+        val m = MindHub.mindFor(who.id)
+        if (m == null) { androidx.compose.material3.Text("No diary for ${who.name} yet."); return }
+        val diary = m.diary
+        var rev by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+        var adding by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+        var clearing by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+        var note by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            androidx.compose.material3.Button(onClick = { note = ""; adding = true }, modifier = Modifier.weight(1f)) {
+                androidx.compose.material3.Text("Add memory")
             }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun traitSlider(label: String, value: Float, onChange: (Float) -> Unit): View {
-        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(3), 0, dp(3)) }
-        val tv = TextView(this).apply {
-            text = "$label: ${(value * 100).toInt()}%"
-            textSize = 12.5f; setTextColor(brown)
+            androidx.compose.material3.OutlinedButton(onClick = { clearing = true }, modifier = Modifier.weight(1f)) {
+                androidx.compose.material3.Text("Clear unpinned")
+            }
         }
-        val sb = SeekBar(this).apply {
-            max = 100
-            progress = (value * 100).toInt().coerceIn(5, 100)
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    val v = (progress.coerceIn(5, 100)) / 100f
-                    tv.text = "$label: ${(v * 100).toInt()}%"
-                    if (fromUser) onChange(v)
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
+        androidx.compose.material3.Text(
+            "Pinned memories and rules are never deleted. Example: \"Always call me Appa and cheer me on before meetings.\"",
+            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        androidx.compose.runtime.key(rev) { CharacterDiaryTimeline(who.id) }
+        if (adding) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { adding = false },
+                title = { androidx.compose.material3.Text("Pin a memory or rule for ${who.name}") },
+                text = {
+                    androidx.compose.material3.OutlinedTextField(value = note, onValueChange = { note = it },
+                        placeholder = { androidx.compose.material3.Text("E.g. Always call me Appa") }, minLines = 2)
+                },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = {
+                        val t = note.trim()
+                        if (t.isNotEmpty()) {
+                            diary.addCustomNote(t, System.currentTimeMillis(), pinned = true)
+                            MindHub.flush(); rev++
+                            Toast.makeText(this, "Pinned to ${who.name}'s diary", Toast.LENGTH_SHORT).show()
+                        }
+                        adding = false
+                    }) { androidx.compose.material3.Text("Save & pin") }
+                },
+                dismissButton = { androidx.compose.material3.TextButton(onClick = { adding = false }) { androidx.compose.material3.Text("Cancel") } }
+            )
         }
-        wrap.addView(tv); wrap.addView(sb)
-        return wrap
+        if (clearing) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { clearing = false },
+                title = { androidx.compose.material3.Text("Clear unpinned memories?") },
+                text = { androidx.compose.material3.Text("Pinned memories stay. This can't be undone.") },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = {
+                        diary.clearUnpinned(); MindHub.flush(); rev++; clearing = false
+                    }) { androidx.compose.material3.Text("Clear") }
+                },
+                dismissButton = { androidx.compose.material3.TextButton(onClick = { clearing = false }) { androidx.compose.material3.Text("Cancel") } }
+            )
+        }
     }
 }
