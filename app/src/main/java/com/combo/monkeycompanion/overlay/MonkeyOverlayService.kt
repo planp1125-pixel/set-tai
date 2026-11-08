@@ -535,7 +535,7 @@ class MonkeyOverlayService : Service(), OverlayHost {
 
     private fun buildNotification(asleep: Boolean = false): Notification {
         val pi = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), pi)
+        val open = PendingIntent.getActivity(this, 0, Intent(this, com.combo.monkeycompanion.ui.SettaiDesignActivity::class.java), pi)
         val stop = PendingIntent.getService(this, 1, Intent(this, MonkeyOverlayService::class.java).setAction(ACTION_STOP), pi)
         val dance = PendingIntent.getService(this, 2, Intent(this, MonkeyOverlayService::class.java).setAction(ACTION_DANCE), pi)
         val chat = PendingIntent.getService(this, 3, Intent(this, MonkeyOverlayService::class.java).setAction(ACTION_CHAT), pi)

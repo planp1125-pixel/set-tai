@@ -84,7 +84,7 @@ object SettaiClock {
         val am = ctx.getSystemService(AlarmManager::class.java)
         val pi = firePi(ctx, item.id)
         return if (exactAllowed(ctx)) {
-            val show = PendingIntent.getActivity(ctx, 0, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+            val show = PendingIntent.getActivity(ctx, 0, Intent(ctx, com.combo.monkeycompanion.ui.SettaiDesignActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
             am.setAlarmClock(AlarmManager.AlarmClockInfo(item.at, show), pi)
             true
         } else {

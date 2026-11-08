@@ -128,7 +128,7 @@ object RoutineRunner {
     private fun notify(ctx: Context, id: Int, line: String) = runCatching {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CH, "Settai routines", NotificationManager.IMPORTANCE_DEFAULT))
-        val open = PendingIntent.getActivity(ctx, 3, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+        val open = PendingIntent.getActivity(ctx, 3, Intent(ctx, com.combo.monkeycompanion.ui.SettaiDesignActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         nm.notify(30000 + id, NotificationCompat.Builder(ctx, CH).let { com.combo.monkeycompanion.overlay.CharacterIcon.applyTo(it, ctx) }.setContentTitle(com.combo.monkeycompanion.character.CharacterRegistry.current.name.let { if (it == "Settai") "🐒 Settai" else "✨ $it" }).setContentText(line)
             .setStyle(NotificationCompat.BigTextStyle().bigText(line)).setContentIntent(open).setAutoCancel(true).build())
     }
