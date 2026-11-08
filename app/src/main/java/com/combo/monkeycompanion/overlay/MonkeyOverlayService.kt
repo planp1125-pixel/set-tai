@@ -94,6 +94,8 @@ class MonkeyOverlayService : Service(), OverlayHost {
         // v10.31: the notification (status bar + always-on display) icon follows the chosen character.
         com.combo.monkeycompanion.character.CharacterRegistry.onSelect = { android.os.Handler(mainLooper).post { sleepyNotification(false) } }
         addOverlay()
+        // v10.38.25: every setting applies the moment you change it (no Save, no restart)
+        getSharedPreferences(SETTINGS_PREFS, MODE_PRIVATE).registerOnSharedPreferenceChangeListener(settingsListener)
         val f = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF); addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_USER_PRESENT)
         }
@@ -182,6 +184,25 @@ class MonkeyOverlayService : Service(), OverlayHost {
      * - DUO:  2 independent MonkeyView windows on screen (e.g. Billa + Chittu chasing around all 4 screen edges!)
      * - TRIO: 3 independent MonkeyView windows on screen!
      */
+    /** Kept as a field: SharedPreferences holds listeners weakly. */
+    private val settingsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        settingsHandler.removeCallbacks(applySettingsRun)
+        if (key == "character" || key?.startsWith("wear_") == true) characterChanged = true
+        settingsHandler.postDelayed(applySettingsRun, 150L)   // a burst of changes = one refresh
+    }
+    private val settingsHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    @Volatile private var characterChanged = false
+    private val applySettingsRun = Runnable {
+        if (!running) return@Runnable
+        if (characterChanged) {
+            characterChanged = false
+            runCatching { com.combo.monkeycompanion.ai.ChatHub.settings.applyCharacter() }
+            runCatching { syncCompanionWindows() }
+        }
+        view?.applySettingsNow()
+        secondarySlots.forEach { it.slotView?.applySettingsNow() }
+    }
+
     fun syncCompanionWindows() {
         val primary = view ?: return
         com.combo.monkeycompanion.mind.MindHub.init(this)
@@ -472,6 +493,7 @@ class MonkeyOverlayService : Service(), OverlayHost {
     }
 
     override fun onDestroy() {
+        runCatching { getSharedPreferences(SETTINGS_PREFS, MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(settingsListener) }
         com.combo.monkeycompanion.agent.Voice.listenHook = null
         com.combo.monkeycompanion.character.CharacterRegistry.onSelect = null
         com.combo.monkeycompanion.agent.RoutineEvents.stop()
@@ -575,6 +597,8 @@ class MonkeyOverlayService : Service(), OverlayHost {
             }
         }
         const val PREFS = "settai_v3"
+        /** [com.combo.monkeycompanion.ai.AppSettings] file. */
+        const val SETTINGS_PREFS = "monkey_settings"
         /** Set when the user quit Settai with the long-press popup; cleared when it's brought back. */
         const val KEY_QUIT = "quitByUser"
 

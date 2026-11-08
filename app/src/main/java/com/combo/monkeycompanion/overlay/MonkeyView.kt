@@ -1648,6 +1648,13 @@ class MonkeyView(
      * Re-read settings now and then (once a minute while animating; they can change in Settings) and
      * the phone temperature from the sticky battery broadcast (no polling while resting: events wake us).
      */
+    /** v10.38.25: a setting changed in the app: use it right away (the service calls this). */
+    fun applySettingsNow() {
+        runCatching { refreshQuipSettings() }
+        invalidate()
+        if (!running && live && !paused) start()
+    }
+
     private fun refreshQuipSettings() {
         val st = ChatHub.settings
         sysSaver = runCatching { (context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager).isPowerSaveMode }.getOrDefault(false)

@@ -137,7 +137,8 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
 
     @Composable
     private fun SettingsScreen(target: String?, @Suppress("UNUSED_PARAMETER") r: Int) {
-        SettaiScreen(title = titles[target] ?: "Settings", onBack = { finish() }, rev = r) {
+        SettaiScreen(title = titles[target] ?: "Settings", onBack = { finish() }, rev = r,
+            subtitle = "Changes apply right away") {
             if (visible(target, "brainType")) BrainPickerCard(r)
             if (visible(target, "character")) CharacterCard(r)
             if (visible(target, "brain") && s.brainType == BrainType.ONLINE) OnlineCard(r)
@@ -537,7 +538,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             SSwitch("Chat buttons", s.chatButton, "Faint 💬 on the left and 🎤 on the right of each character.") { s.chatButton = it; bump() }
             SSubhead("Energy")
             SNote(energyText)
-            SNote("Changes apply within a minute.")
+            SNote("Every change here applies to your companion right away. No need to save or restart.")
         }
     }
 
@@ -636,13 +637,10 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
                 s.proactiveLevel = levels[it].name; bump()
             }
             SNote(PL.of(s.proactiveLevel).help)
+            // v10.38.25: saved as you type (a time like 23:00 is used as soon as it's complete)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                SField(qStart, { qStart = it }, "Quiet from", "23:00", modifier = Modifier.weight(1f))
-                SField(qEnd, { qEnd = it }, "to", "07:00", modifier = Modifier.weight(1f))
-            }
-            SSecondary("Save quiet hours") {
-                s.quietStart = QH.parse(qStart, s.quietStart); s.quietEnd = QH.parse(qEnd, s.quietEnd)
-                qStart = QH.fmt(s.quietStart); qEnd = QH.fmt(s.quietEnd); bump()
+                SField(qStart, { qStart = it; QH.parse(it, -1).takeIf { v -> v >= 0 }?.let { v -> s.quietStart = v } }, "Quiet from", "23:00", modifier = Modifier.weight(1f))
+                SField(qEnd, { qEnd = it; QH.parse(it, -1).takeIf { v -> v >= 0 }?.let { v -> s.quietEnd = v } }, "to", "07:00", modifier = Modifier.weight(1f))
             }
             SSubhead("What may it pipe up about?")
             for (c in com.combo.monkeycompanion.agent.ProCat.entries) {
@@ -651,8 +649,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             SNote("Messages, bursts and important people need the Notification reader power; chat-list digests need the Screen agent power. OTPs are shown only to you (never spoken or sent to a brain).")
             val usageMins = listOf(15, 20, 30, 45, 60, 90)
             SChoice("Break nudge", usageMins.map { "After $it min in one go" }, usageMins.indexOf(s.usageMinutes).coerceAtLeast(2)) { s.usageMinutes = usageMins[it]; bump() }
-            SField(usage, { usage = it }, "Break-nudge apps", "com.instagram.android, com.google.android.youtube")
-            SSecondary("Save break-nudge apps") { s.usageApps = usage; bump() }
+            SField(usage, { usage = it; s.usageApps = it }, "Break-nudge apps", "com.instagram.android, com.google.android.youtube")
             val ents = listOf("off", "sometimes", "often")
             SChoice("Power entrances", listOf("Off", "Sometimes (~30% of pipe-ups)", "Often (~60%)"), ents.indexOf(s.powerEntrances).coerceAtLeast(1)) { s.powerEntrances = ents[it]; bump() }
             SNote("Message summaries fly in, important ones arrive with a power strike, jokes come in on rockets / jets. Never with battery saver or with superpowers Off.")
