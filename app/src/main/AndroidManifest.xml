@@ -70,19 +70,19 @@
         <uses-native-library android:name="libvndksupport.so" android:required="false" />
         <uses-native-library android:name="libOpenCL.so" android:required="false" />
 
-        <activity android:name=".ui.SettaiDesignActivity" android:exported="true">
+        <activity android:name=".ui.SettaiDesignActivity" android:exported="true" android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- v10.38.20: static shortcuts must sit on the launcher activity -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop">
-            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
-        </activity>
+            android:launchMode="singleTop" />
 
         <activity
             android:name=".ui.ChatActivity"

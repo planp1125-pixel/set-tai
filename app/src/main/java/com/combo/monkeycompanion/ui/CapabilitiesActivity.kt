@@ -154,11 +154,7 @@ class CapabilitiesActivity : androidx.activity.ComponentActivity() {
             }
             val caps = Capabilities.all.filter { it.group == g }
             if (caps.isNotEmpty()) androidx.compose.material3.Text(caps.joinToString("\n") { "• " + it.title + if (it.change) "  (asks first)" else "" })
-            // Group-specific extras (blocked apps, VIP list, …) keep their existing controls for now.
-            androidx.compose.ui.viewinterop.AndroidView(
-                factory = { AgentExtras.extras(this@CapabilitiesActivity, g) ?: android.view.View(it) },
-                modifier = androidx.compose.ui.Modifier.fillMaxWidth()
-            )
+            AgentExtrasPanel(this@CapabilitiesActivity, g)
         }
     }
 }

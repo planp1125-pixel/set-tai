@@ -9,6 +9,6 @@
         <intent
             android:action="com.combo.monkeycompanion.BRING_BACK"
             android:targetPackage="com.combo.monkeycompanion"
-            android:targetClass="com.combo.monkeycompanion.MainActivity" />
+            android:targetClass="com.combo.monkeycompanion.ui.SettaiDesignActivity" />
     </shortcut>
 </shortcuts>

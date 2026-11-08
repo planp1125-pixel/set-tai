@@ -2,6 +2,8 @@ package com.combo.monkeycompanion.ui
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import android.graphics.Color
 import android.text.InputType
 import android.view.View
@@ -47,3 +49,38 @@ object AgentExtras {
     }
 }
 
+
+/** v10.38.20: the same per-group extras as [AgentExtras.extras], in Material 3 (used on "What can Set-Tai do?"). */
+@androidx.compose.runtime.Composable
+internal fun AgentExtrasPanel(a: Activity, g: CapGroup) {
+    val s = ChatHub.settings
+    var rev by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    @Suppress("UNUSED_VARIABLE") val r = rev
+    when (g) {
+        CapGroup.SCREEN -> {
+            var blocked by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(s.agentBlocked) }
+            var allowed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(s.agentAllowed) }
+            SSwitch("Ask before every tap", s.agentConfirmEach) { s.agentConfirmEach = it; rev++ }
+            SNote("Typing always asks. Buttons like Send / Pay / Delete / Post / Buy always ask, even with this off.")
+            SNote("Never driven: lock screen, password fields, Settai itself, and banking / UPI / wallet apps (${AgentSafety.DEFAULT_BLOCKED.size} built in, plus any package with bank / upi / wallet in its name).")
+            SField(blocked, { blocked = it; s.agentBlocked = it }, "More apps to block", "package names, comma separated")
+            SField(allowed, { allowed = it; s.agentAllowed = it }, "Allow anyway", "package names that were wrongly blocked")
+        }
+        CapGroup.MEMORY -> SSecondary("Open Settai's notebook (view / delete)") { a.startActivity(android.content.Intent(a, MemoryActivity::class.java)) }
+        CapGroup.ROUTINES -> SSecondary("Open routines") { a.startActivity(android.content.Intent(a, RoutinesActivity::class.java)) }
+        CapGroup.VOICE -> {
+            SSwitch("Speak replies out loud", s.speakReplies) { s.speakReplies = it; rev++ }
+            SSecondary("Test voice") { com.combo.monkeycompanion.agent.Voice.speak(a, "Vanakkam! I'm Settai, your naughty monkey. Banana time?") }
+            SNote("The 🎤 button appears in the chat once the mic is granted. Settai listens only while you press it. No always-on wake word.")
+        }
+        CapGroup.WEB -> {
+            var url by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(s.searchUrl) }
+            SNote("Lookups use DuckDuckGo Instant Answers + Wikipedia (no key). For full web results, paste a search API URL with {q} where the query goes (e.g. https://searx.example/search?format=json&q={q}).")
+            SField(url, { url = it; s.searchUrl = it.trim() }, "Optional search URL with {q}")
+            SNote("Weather: Open-Meteo (free, no key). Location is only read when you ask for weather without a city.")
+        }
+        CapGroup.PIM -> SNote("Also gives a 9 am birthday reminder from your contacts. Calls are never placed: Settai only opens the dialer.")
+        CapGroup.DOCTOR -> SNote("Android doesn't share per-app battery numbers with apps, so \"battery hogs\" = the apps you used most today (screen-on time).")
+        else -> {}
+    }
+}

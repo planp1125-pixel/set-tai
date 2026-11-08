@@ -64,6 +64,20 @@ class SettaiDesignActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { DesignApp() }
+        bringBack(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        bringBack(intent)
+    }
+
+    /** v10.38.20: the home-screen "Bring back" shortcut opens this new home and calls the companion out. */
+    private fun bringBack(i: Intent?) {
+        if (i?.action != com.combo.monkeycompanion.MainActivity.ACTION_BRING_BACK || MonkeyOverlayService.running) return
+        if (com.combo.monkeycompanion.wallpaper.SettaiWallpaperService.isActive(this)) return   // lives in the wallpaper: just open home
+        if (Settings.canDrawOverlays(this)) MonkeyOverlayService.start(this)
+        else startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName")))
     }
 
     private fun open(type: Class<out Activity>) = startActivity(Intent(this, type))
