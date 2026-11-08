@@ -9,8 +9,13 @@ import com.combo.monkeycompanion.engine.script.ShowTemplates
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** v10.39.1: every fill-in show plays with every character, and script problems come out in plain words. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class ShowTemplatesTest {
     @Test fun everyTemplatePlaysWithEveryCharacter() {
         val ids = CharacterRegistry.all.map { it.id }
