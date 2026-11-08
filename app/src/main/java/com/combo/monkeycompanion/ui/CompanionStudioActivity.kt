@@ -1,6 +1,8 @@
 package com.combo.monkeycompanion.ui
 
 import android.annotation.SuppressLint
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
@@ -1105,11 +1107,11 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
             )
             setContent {
                 androidx.compose.material3.MaterialTheme {
-                    StudioGenderControls(draft.gender) { gender ->
+                    StudioGenderControls(draft.gender, onSelect = { gender ->
                         val updated = draft.applyGenderAndAge(newGender = gender)
                         CustomCompanionStore.save(this@CompanionStudioActivity, updated)
                         updateDraft(updated, rebuild = true)
-                    }
+                    })
                 }
             }
         }
@@ -1121,7 +1123,7 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
             )
             setContent {
                 androidx.compose.material3.MaterialTheme {
-                    StudioAgeControls(draft.ageGroup) { age ->
+                    StudioAgeControls(draft.ageGroup, onSelect = { age ->
                         val nextGender = when {
                             age == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.FEMALE -> CompanionGender.GIRL_CHILD
                             age == AgeGroup.CHILD_KUTTY && draft.gender == CompanionGender.MALE -> CompanionGender.BOY_CHILD
@@ -1132,7 +1134,7 @@ class CompanionStudioActivity : androidx.activity.ComponentActivity() {
                         val updated = draft.applyGenderAndAge(newGender = nextGender, newAge = age)
                         CustomCompanionStore.save(this@CompanionStudioActivity, updated)
                         updateDraft(updated, rebuild = true)
-                    }
+                    })
                 }
             }
         }
