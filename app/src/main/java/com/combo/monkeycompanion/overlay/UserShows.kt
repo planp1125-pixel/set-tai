@@ -29,7 +29,11 @@ object UserShows {
     /** Parses and checks every cast id exists (throws [ScriptError]). */
     fun validate(text: String): ShowScript { val sc = ShowScript.parse(text); com.combo.monkeycompanion.engine.script.ScriptPlayer(sc); return sc }
 
-    fun message(e: ScriptError): String = if (e.line > 0) "Script problem on line ${e.line}: ${e.message?.substringAfter(": ")}" else "Script problem: ${e.message?.substringAfter(": ")}"
+    /** v10.39.1: plain words with a hint (still says "line N"). */
+    fun message(e: ScriptError): String = com.combo.monkeycompanion.engine.script.ShowHelp.friendly(e)
+
+    /** Things that would silently do nothing (unknown face / action / prop, say without quotes). */
+    fun warnings(text: String): List<String> = com.combo.monkeycompanion.engine.script.ShowHelp.lint(text).map { "Line ${it.line}: ${it.text}" }
 
     /** Parses and saves [text] (same title = overwrite). Throws [ScriptError] if it doesn't parse. */
     fun save(ctx: Context, text: String): Entry {

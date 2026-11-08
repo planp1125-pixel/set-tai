@@ -293,3 +293,13 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Fresh installs start Solo; Duo / Trio choices are kept.
 - Shows, Skills, What can Set-Tai do?, Notebook, Routines, Reports, Wardrobe, Two phones, alarm screen, wallpaper
   picker and spots editor all redesigned. Old main screen and long-press menu settings removed.
+
+## v10.39.1 (code 103): making a show is easy
+- Shows › **Make a show**: 6 fill-in stories (Say hello, The chase, Magic duel, Laddu fight, Surprise!, Sorry friend).
+  Pick who plays each part (any character, Studio ones too), type what they say, tap ▶ Play it now or Save.
+- **How shows work**: a short plain-words guide on the Shows screen.
+- The script box moved under **Advanced: write the script yourself**, with warnings for things that would do nothing
+  (a face, action or prop it doesn't know, words without quotes).
+- Script problems now come out in plain words with a hint, e.g. "On line 2: "jump" isn't a move I know. Use one of: …".
+- New `engine/script/ShowHelp.kt` (friendly errors, lint, templates) + `v1039/ShowTemplatesTest` (every template plays
+  with every character; typed quotes can't break a show).

@@ -10,6 +10,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -40,9 +43,23 @@ class ShowsActivity : androidx.activity.ComponentActivity() {
     private var paste by mutableStateOf("")
     private var url by mutableStateOf("")
     private var rev by mutableIntStateOf(0)
+    private var advancedOpen by mutableStateOf(false)
+    private var guideOpen by mutableStateOf(false)
+    private var template by mutableStateOf<com.combo.monkeycompanion.engine.script.ShowTemplates.Template?>(null)
 
     companion object {
         const val PICK = 4711
+        /** v10.39.1: the plain-words guide on the Shows screen. */
+        const val GUIDE = "A show is a short cartoon your characters act out on your screen.\n\n" +
+            "1. Pick a story under \"Make a show\" (a chase, a duel, a surprise…).\n" +
+            "2. Choose who plays each part, any of your characters, even ones you made in the Studio.\n" +
+            "3. Type what they say. Emojis are fine.\n" +
+            "4. Tap ▶ Play it now. Tap the screen any time to stop.\n" +
+            "5. Like it? Save it. It appears in \"Your shows\" to play again.\n\n" +
+            "Want more control? Open \"Open in the script editor\": every line is a time and what happens, for example\n" +
+            "at 2: billa walk to 0.5 0.86 in 1.5   (x 0 = left … 1 = right, y 0.86 = the floor)\n" +
+            "at 3: billa say \"Hello!\" for 2\n" +
+            "Moves: enter, exit, walk, fly, hover, vanish, appear, say, face, do, look, turn, hold, drop, throw, ray."
         /** Play a show script on the overlay stage after this screen closes. Returns an error message or null. */
         fun play(ctx: Context, text: String): String? {
             val dm = ctx.resources.displayMetrics
@@ -71,26 +88,77 @@ class ShowsActivity : androidx.activity.ComponentActivity() {
                 }
                 if (status.isNotBlank()) Text(status, color = MaterialTheme.colorScheme.primary)
             }
-            SCard("Add a show", "Paste the whole script, fetch a link, or pick a file.") {
-                OutlinedTextField(
-                    value = paste, onValueChange = { paste = it }, minLines = 5, modifier = Modifier.fillMaxWidth(),
-                    textStyle = TextStyle(fontFamily = FontFamily.Monospace),
-                    placeholder = { Text("title: Wave hello\ncast: hero=monkey, pal=gajju\nat 0: hero enter left to 0.3 0.86 in 1.5\n…") }
-                )
-                SPrimary("Save & play") { addText(paste, playNow = true) }
-                SSecondary("Save") { addText(paste, playNow = false) }
-                OutlinedTextField(value = url, onValueChange = { url = it }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Link (GitHub or any https text file)") },
-                    placeholder = { Text("https://github.com/you/repo/blob/main/my.show") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
-                SSecondary("Fetch link") { fetch(url) }
-                SSecondary("Pick a .show / .txt file") {
-                    runCatching {
-                        @Suppress("DEPRECATION")
-                        startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
-                            .putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("text/*", "application/octet-stream")), PICK)
-                    }.onFailure { say("No file picker on this phone") }
+            SCard("Make a show", "Pick a story, choose who plays, type what they say. That's it.") {
+                for (t in com.combo.monkeycompanion.engine.script.ShowTemplates.all) {
+                    androidx.compose.material3.OutlinedCard(onClick = { template = t }, modifier = Modifier.fillMaxWidth()) {
+                        androidx.compose.foundation.layout.Column(Modifier.padding(14.dp)) {
+                            Text(t.title, style = MaterialTheme.typography.titleSmall)
+                            SNote(t.blurb)
+                        }
+                    }
                 }
+            }
+            SCard("How shows work") {
+                androidx.compose.material3.TextButton(onClick = { guideOpen = !guideOpen }) { Text(if (guideOpen) "Hide the guide" else "Show the guide (2 minutes)") }
+                if (guideOpen) SNote(GUIDE)
+            }
+            SCard("Advanced: write the script yourself") {
+                androidx.compose.material3.TextButton(onClick = { advancedOpen = !advancedOpen }) { Text(if (advancedOpen) "Hide" else "Open the script editor, links and files") }
+                if (advancedOpen) {
+                    OutlinedTextField(
+                        value = paste, onValueChange = { paste = it }, minLines = 5, modifier = Modifier.fillMaxWidth(),
+                        textStyle = TextStyle(fontFamily = FontFamily.Monospace),
+                        placeholder = { Text("title: Wave hello\ncast: hero=monkey, pal=gajju\nat 0: hero enter left to 0.3 0.86 in 1.5\n…") }
+                    )
+                    val warns = UserShows.warnings(paste)
+                    if (warns.isNotEmpty()) SNote("⚠ " + warns.joinToString("\n⚠ "))
+                    SPrimary("Save & play") { addText(paste, playNow = true) }
+                    SSecondary("Save") { addText(paste, playNow = false) }
+                    OutlinedTextField(value = url, onValueChange = { url = it }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Link (GitHub or any https text file)") },
+                        placeholder = { Text("https://github.com/you/repo/blob/main/my.show") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+                    SSecondary("Fetch link") { fetch(url) }
+                    SSecondary("Pick a .show / .txt file") {
+                        runCatching {
+                            @Suppress("DEPRECATION")
+                            startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
+                                .putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("text/*", "application/octet-stream")), PICK)
+                        }.onFailure { say("No file picker on this phone") }
+                    }
+                }
+            }
+        }
+        template?.let { TemplateSheet(it) }
+    }
+
+    /** Fill in a template: characters as drop-downs, lines as text boxes. Preview plays it; Save keeps it. */
+    @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+    @androidx.compose.runtime.Composable
+    private fun TemplateSheet(t: com.combo.monkeycompanion.engine.script.ShowTemplates.Template) {
+        val chars = com.combo.monkeycompanion.character.CharacterRegistry.allWithCustom
+        val values = androidx.compose.runtime.remember(t.id) { androidx.compose.runtime.mutableStateMapOf<String, String>().apply { putAll(t.defaults()) } }
+        var name by androidx.compose.runtime.remember(t.id) { mutableStateOf(t.title) }
+        androidx.compose.material3.ModalBottomSheet(onDismissRequest = { template = null }) {
+            androidx.compose.foundation.layout.Column(
+                Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 32.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+            ) {
+                Text(t.title, style = MaterialTheme.typography.titleLarge)
+                SNote(t.blurb)
+                SField(name, { name = it }, "Show name")
+                for (f in t.fields) {
+                    if (f.kind == com.combo.monkeycompanion.engine.script.ShowTemplates.Kind.CHARACTER) {
+                        val idx = chars.indexOfFirst { it.id == values[f.key] }.coerceAtLeast(0)
+                        SChoice(f.label, chars.map { it.name }, idx) { values[f.key] = chars[it].id }
+                    } else {
+                        SField(values[f.key].orEmpty(), { values[f.key] = it }, f.label)
+                    }
+                }
+                fun script() = t.render(values).replaceFirst(Regex("(?m)^title:.*$"), "title: " + name.ifBlank { t.title }.replace('"', '’'))
+                SPrimary("▶ Play it now") { template = null; playLater(script()) }
+                SSecondary("Save to my shows") { if (addText(script(), playNow = false)) template = null }
+                androidx.compose.material3.TextButton(onClick = { paste = script(); advancedOpen = true; template = null }) { Text("Open in the script editor") }
             }
         }
     }
