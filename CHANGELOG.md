@@ -318,3 +318,8 @@ Every character now feels like a little body in your hand (the phone's vibration
 - One flag decides it: `brain/Distribution.screenAgent`, set from `BuildConfig.FLAVOR` at start. The full build (GitHub) is unchanged.
 - Every main build publishes both APKs again: `set-tai-full-release.apk` and `set-tai-play-release.apk` (same app id, so installing one replaces the other). The Play AAB stays off to save build time.
 - New PlayBuildTest.
+
+## v10.39.4 (code 106): Play build only
+
+- From now on only the Play build is made and published (`set-tai-play-release.apk` on every ci-N release). The screen agent is off in it: Android's Accessibility service is not in the app at all (removed from the Play manifest) and every button, chip, switch and AI tool for it is hidden (v10.39.3).
+- `play` is now the default build flavor. The old `full` flavor stays in the source only so the existing unit tests keep running; it is never built for release or published.

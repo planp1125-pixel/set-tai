@@ -1,6 +1,11 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.39.3 (versionCode 105)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.39.4 (versionCode 106)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.39.4 Play only
+
+- The owner ships ONLY the Play build (Google Play). CI builds/publishes `assemblePlayRelease` only; `play` is the
+  default flavor; `full` exists only for `testFullDebugUnitTest`. Do not re-enable the screen agent for release.
 
 ## v10.39.3 Play build
 

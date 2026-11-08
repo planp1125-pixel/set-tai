@@ -13,8 +13,8 @@ android {
         applicationId = "com.combo.monkeycompanion"
         minSdk = 26
         targetSdk = 35
-        versionCode = 105
-        versionName = "10.39.3"
+        versionCode = 106
+        versionName = "10.39.4"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
     signingConfigs {
@@ -36,12 +36,14 @@ android {
     }
     flavorDimensions += "distribution"
     productFlavors {
+        // v10.39.4: "full" (with the screen agent) is kept only so the old unit tests still run; it is never published.
         create("full") {
             dimension = "distribution"
-            isDefault = true
         }
+        // The only build we ship (Google Play): no screen agent, no restricted permissions.
         create("play") {
             dimension = "distribution"
+            isDefault = true
         }
     }
     packaging {

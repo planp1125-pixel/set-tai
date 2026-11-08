@@ -80,13 +80,13 @@ jobs:
           # The Play AAB (for the store upload) is still off to save CI time; set to "true" to build it too.
           BUILD_PLAY_BUNDLE: "false"
         run: |
-          if [ "$BUILD_PLAY_BUNDLE" = "true" ]; then ./gradlew :app:assembleFullRelease :app:assemblePlayRelease :app:bundlePlayRelease --stacktrace
-          else ./gradlew :app:assembleFullRelease :app:assemblePlayRelease --stacktrace; fi
+          # v10.39.4: Play build only. The full (screen agent) build is no longer built or published.
+          if [ "$BUILD_PLAY_BUNDLE" = "true" ]; then ./gradlew :app:assemblePlayRelease :app:bundlePlayRelease --stacktrace
+          else ./gradlew :app:assemblePlayRelease --stacktrace; fi
       - name: Collect APKs + AAB
         run: |
           set -e
           mkdir -p out
-          cp "$(find app/build/outputs/apk/full/release -name '*.apk' | head -1)" out/set-tai-full-release.apk
           if [ -d app/build/outputs/apk/play/release ]; then
             cp "$(find app/build/outputs/apk/play/release -name '*.apk' | head -1)" out/set-tai-play-release.apk
           fi
@@ -106,9 +106,7 @@ jobs:
           # shown at the TOP of the Releases page as "Latest", so the newest build is always the first one you see
           prerelease: false
           make_latest: "true"
-          files: |
-            out/set-tai-full-release.apk
-            out/set-tai-play-release.apk
+          files: out/set-tai-play-release.apk
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
