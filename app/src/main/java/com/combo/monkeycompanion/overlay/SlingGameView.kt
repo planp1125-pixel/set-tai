@@ -86,8 +86,10 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
     // ---------------- frame loop ----------------
     override fun doFrame(frameTimeNanos: Long) {
         if (!on) return
-        val dt = if (lastNs == 0L) 0f else ((frameTimeNanos - lastNs) / 1e9f).coerceIn(0f, 0.05f)
-        lastNs = frameTimeNanos
+        // real elapsed time, not the frame counter: game time can never run ahead of the clock
+        val now = SystemClock.uptimeMillis() * 1_000_000L
+        val dt = if (lastNs == 0L) 0f else ((now - lastNs) / 1e9f).coerceIn(0f, 0.05f)
+        lastNs = now
         advance(dt)
         invalidate()
         Choreographer.getInstance().postFrameCallback(this)
