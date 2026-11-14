@@ -33,7 +33,9 @@ import java.time.Duration
 class SlingStartTest {
     private val ctx = ApplicationProvider.getApplicationContext<android.app.Application>()
 
-    @Before fun clean() { ChatHub.init(ctx); MindHub.init(ctx); ActivityScheduler.resetForTest(ctx); ChatHub.settings.slingGame = true; ShadowSettings.setCanDrawOverlays(true) }
+    @Before fun clean() { ChatHub.init(ctx); MindHub.init(ctx); ActivityScheduler.resetForTest(ctx); ChatHub.settings.slingGame = true; ShadowSettings.setCanDrawOverlays(true)
+        com.combo.monkeycompanion.overlay.ScriptShowHub.finish(ctx); com.combo.monkeycompanion.overlay.ChaseShowHub.finish(ctx)   // no show left over from another test
+    }
     @After fun after() { SlingGameHub.finish(ctx); SlingGameView.close(ctx); CharacterRegistry.select("monkey"); ChatHub.settings.slingGame = true; ShadowSettings.setCanDrawOverlays(false) }
 
     private fun view(id: String = "devil"): MonkeyView {
@@ -90,7 +92,7 @@ class SlingStartTest {
         f.down(); idle(v, MonkeyView.SLING_HOLD_MS + 30)
         f.move(pullDown)
         idle(v, MonkeyView.SLING_COUNT_MS + 150)
-        assertTrue("GO: the game is open", SlingGameView.showing)
+        assertTrue("GO: the game is open (sling=${v.debugSling} live=${v.debugSlingGameLive} err=${v.debugSlingGameError})", SlingGameView.showing)
         val gv = SlingGameView.current; assertNotNull(gv); gv!!.layout(0, 0, 1080, 2340)
         assertEquals("the character you pulled is the stone", "armour", gv.game.bulletId)
         assertTrue(v.debugSlingGameLive); assertFalse("the live band is gone", v.debugSling)

@@ -6975,6 +6975,7 @@ class MonkeyView(
     }
     private fun startSlingGame() {
         val err = SlingGameHub.start(context, character.id, deferHide = true)
+        debugSlingGameError = err
         if (err != null) { say(err, 2600L); return }   // can't play right now: it stays a plain slingshot
         slingOn = false; dragging = false; slingGameLive = true
         mx = downMx; my = downMy; clampPosition(); syncFx()
@@ -6983,6 +6984,8 @@ class MonkeyView(
         invalidate()
     }
     val debugSlingGameLive: Boolean get() = slingGameLive
+    /** Why the last hold-and-pull could not start the game (null = it started, or never tried). */
+    var debugSlingGameError: String? = null; private set
     val debugSlingArmed: Boolean get() = slingArmed
 
     private fun releaseSling() {
