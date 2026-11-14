@@ -26,18 +26,31 @@ object SlingGameHub {
         val dm = ctx.resources.displayMetrics
         val aspect = (dm.heightPixels.toFloat() / dm.widthPixels.coerceAtLeast(1)).coerceIn(1.2f, 2.6f)
         val fliers = all.filter { it.can(Locomotion.FLY) || it.can(Locomotion.FLOAT) }.map { it.id }.toSet()
-        return SlingGame(aspect, stone, all.map { it.id }, fliers, seed = SystemClock.uptimeMillis())
+        return SlingGame(aspect, stone, all.map { it.id }, fliers, seed = SystemClock.uptimeMillis(), tricks = all.associate { it.id to trickFor(it) })
     }
 
-    /** Starts a round. null = playing; otherwise a plain message saying why not. */
-    fun start(ctx: Context, bulletId: String? = null): String? {
+    /** v10.41 each character's own escape (Studio characters hop). */
+    fun trickFor(c: com.combo.monkeycompanion.character.Character): SlingGame.Trick = when (c.id) {
+        "devil", "angel", "hollowman", "mask" -> SlingGame.Trick.VANISH
+        "superboy", "armour", "rocketgirl" -> SlingGame.Trick.FLY_UP
+        "chittu", "billa", "skater", "surfer" -> SlingGame.Trick.DASH
+        "gajju" -> SlingGame.Trick.NONE
+        else -> SlingGame.Trick.HOP
+    }
+
+    /**
+     * Starts a round. null = playing; otherwise a plain message saying why not.
+     * [deferHide] (hold-and-pull start): the live character's window must stay until the finger lifts, because it is
+     * still sending that finger to the game; the caller then calls [hideCompanionsNow].
+     */
+    fun start(ctx: Context, bulletId: String? = null, deferHide: Boolean = false): String? {
         val app = ctx.applicationContext
         if (running) return null
         if (!Settings.canDrawOverlays(app)) return "Allow \"Display over other apps\" first"
         if (ScriptShowHub.running || ChaseShowHub.show != null) return "A show is playing. Try again when it ends."
         val game = newGame(app, bulletId) ?: return "Couldn't start the game"
         if (!SlingGameView.open(app, game)) return "The game couldn't open (is Set-Tai allowed to draw over apps?)"
-        hideCompanions(app, true)
+        if (!deferHide) hideCompanions(app, true)
         runCatching { com.combo.monkeycompanion.audio.Sfx.warm(app) }
         runCatching {
             val r = object : BroadcastReceiver() { override fun onReceive(c: Context, i: Intent) { finish(c) } }
@@ -53,6 +66,8 @@ object SlingGameHub {
         screenOff?.let { r -> runCatching { app?.unregisterReceiver(r) } }; screenOff = null
         if (app != null) hideCompanions(app, false)
     }
+
+    fun hideCompanionsNow(ctx: Context) { if (running) hideCompanions(ctx.applicationContext, true) }
 
     private fun hideCompanions(app: Context, hide: Boolean) {
         if (!MonkeyOverlayService.running) return

@@ -538,6 +538,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             SSwitch("Living reactions (beta)", s.livingReactions, "Every touch gets a fresh reaction, never the same one twice in a row.") { s.livingReactions = it; bump() }
             SSwitch("Sound effects", s.soundEffects, "Smash game, fireworks. Always quiet when your phone is on silent or vibrate.") { s.soundEffects = it; bump() }
             SSwitch("Touch feel", s.touchFeel, "Feel them in your hand: a bump when picked up, a rattle when shaken, a purr when petted, a heartbeat when you keep holding, slingshot clicks, landing thumps.") { s.touchFeel = it; bump() }
+            SSwitch("Slingshot starts the game", s.slingGame, "Hold your character a moment, pull back and keep holding through 3, 2, 1: the Slingshot game starts with that pull. Let go before GO for a plain fling. Off = always a plain fling (the game stays in the long-press menu › Games).") { s.slingGame = it; bump() }
             SSwitch("Throw on fast flick", s.flickThrow, "A very fast flick throws the character (SPLAT, THWACK, PANCAKE). Off: any swipe makes it travel with its own power.") { s.flickThrow = it; bump() }
             SSwitch("Double-tap for power", s.doubleTapPower, "Double-tap a character and it fires one of its powers. Off: double-tap opens the chat.") { s.doubleTapPower = it; bump() }
             SSwitch("Chat buttons", s.chatButton, "Faint 💬 on the left and 🎤 on the right of each character.") { s.chatButton = it; bump() }

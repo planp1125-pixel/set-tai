@@ -61,6 +61,13 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
     private var word = ""; private var wordT = -9f; private var wordX = 0f; private var wordY = 0f
     private var best = 0; private var newBest = false; private var overAt = -1f
     private val puffs = ArrayList<FloatArray>()   // x, y, vx, vy, age
+    // v10.41 effects
+    private var freeze = 0f                        // hit-stop: game time stands still for a blink
+    private var shakeUntil = -1f
+    private var crack: com.combo.monkeycompanion.engine.stagefx.StageFx.Crack? = null
+    private var crackT = -9f
+    private var banner = ""; private var bannerT = -9f
+    private val trail = ArrayList<FloatArray>()   // x, y, age
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; isFakeBoldText = true }
@@ -89,8 +96,12 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
     /** One step of game time (tests call this directly). */
     fun advance(dt: Float) {
         clock += dt
-        game.step(dt)
+        if (freeze > 0f) freeze -= dt else game.step(dt)
         for (e in game.drain()) onEvent(e)
+        if (game.phase == SlingGame.Phase.FLY && freeze <= 0f) trail.add(floatArrayOf(px(game.bx), px(game.by - SlingGame.BODY_H / 2f), 0f))
+        val tr = trail.iterator()
+        while (tr.hasNext()) { val q = tr.next(); q[2] += dt; if (q[2] > 0.25f) tr.remove() }
+        if (crack != null && clock - crackT > 1.6f) crack = null
         val it = puffs.iterator()
         while (it.hasNext()) { val p = it.next(); p[4] += dt; p[0] += p[2] * dt; p[1] += p[3] * dt; p[3] += 900f * d * dt; if (p[4] > 0.7f) it.remove() }
         for (b in bodies.values) if (b.scatter.active) {
@@ -103,12 +114,15 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
     private fun onEvent(e: SlingGame.Event) {
         when (e) {
             SlingGame.Event.SNAP -> { sfx(Sfx.S.WHOOSH, 0.5f); buzz { Feel.play(context, TouchFeel.slingSnap(lastTension)) } }
-            SlingGame.Event.HIT -> { sfx(Sfx.S.BONK, 0.7f); say("BONK!", game.bx, game.by - SlingGame.BODY_H) }
+            SlingGame.Event.HIT -> { sfx(Sfx.S.BONK, 0.7f); say("BONK!", game.bx, game.by - SlingGame.BODY_H); freeze = 0.07f }
             SlingGame.Event.DOUBLE_SPLAT -> {
                 sfx(Sfx.S.SPLAT, 0.9f); sfx(Sfx.S.CRACK, 0.35f)
                 buzz { Feel.playSharpHit(context, 1f, 0.8f) }
-                say("DOUBLE SPLAT!", game.bx, game.by - SlingGame.BODY_H * 1.1f)
+                say(when { game.streak >= 3 -> "ON FIRE! 🔥"; game.streak == 2 -> "2 in a row!"; else -> "DOUBLE SPLAT!" }, game.bx, game.by - SlingGame.BODY_H * 1.1f)
                 burst(18); shed(game.bulletId); game.target?.let { shed(it.id) }
+                shakeUntil = clock + 0.35f
+                crack = com.combo.monkeycompanion.engine.stagefx.StageFx.Crack(game.bx, (game.by - SlingGame.BODY_H / 2f) / game.aspect, 7L + game.score); crackT = clock
+                banner = "+${SlingGame.BONUS_SEC.toInt()} s ⏱"; bannerT = clock
             }
             SlingGame.Event.SPLAT -> {
                 sfx(Sfx.S.SPLAT, 0.6f); buzz { Feel.playSharpHit(context, 0.6f, 0.5f) }
@@ -116,6 +130,8 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
             }
             SlingGame.Event.TARGET_IN -> sfx(Sfx.S.POP, 0.4f)
             SlingGame.Event.TARGET_OUT -> Unit
+            SlingGame.Event.LEVEL_UP -> { banner = "LEVEL ${game.level}!"; bannerT = clock; sfx(Sfx.S.TADA, 0.5f) }
+            SlingGame.Event.TRICK -> sfx(if (game.target?.trick == SlingGame.Trick.VANISH) Sfx.S.POP else Sfx.S.ZIP, 0.35f)
             SlingGame.Event.LAST_SECONDS -> sfx(Sfx.S.PLUCK, 0.5f)
             SlingGame.Event.OVER -> {
                 overAt = clock
@@ -173,9 +189,21 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         return true
     }
 
+    /** v10.41: the pull started on the live character (hold and pull); its window keeps sending the finger here. */
+    fun externalPull(dxPx: Float, dyPx: Float) {
+        if (game.over || game.phase != SlingGame.Phase.AIM) return
+        game.pull(dxPx / w, dyPx / w)
+        lastTension = game.tension
+        val n = (game.tension * 8f).toInt()
+        if (n > notch) buzz { Feel.play(context, TouchFeel.slingTick(game.tension)) }
+        notch = n
+        invalidate()
+    }
+    fun externalRelease() { if (game.phase == SlingGame.Phase.AIM) { lastTension = game.tension; game.release() } }
+
     private fun restart() {
         game = SlingGameHub.newGame(context, game.bulletId) ?: return
-        overAt = -1f; word = ""; puffs.clear(); newBest = false
+        overAt = -1f; word = ""; puffs.clear(); newBest = false; trail.clear(); crack = null; banner = ""; freeze = 0f
         for (b in bodies.values) { b.scatter.clear(); (b.renderer as? ArmourRenderer)?.shed = 0f }
     }
 
@@ -191,10 +219,20 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         val h = height.toFloat()
         c.drawColor(Color.argb(170, 0x12, 0x14, 0x22))
         drawHud(c, g)
+        c.save()
+        if (clock < shakeUntil) c.translate(7f * d * sin(clock * 70f), 5f * d * sin(clock * 83f))
+        crack?.draw(c, w, h, min(1f, (clock - crackT) / 0.3f) * 0.55f)
         g.target?.let { drawTarget(c, g, it) }
         drawSlingBack(c, g)
+        drawTrail(c)
         drawStone(c, g)
         drawSlingFront(c, g)
+        if (g.phase == SlingGame.Phase.SPLAT) {
+            stars(c, px(g.bx), px(g.by - SlingGame.BODY_H * 1.05f))
+            g.target?.takeIf { it.carried }?.let { stars(c, px(it.x), px(it.y - SlingGame.BODY_H * 1.05f)) }
+        }
+        c.restore()
+        drawBanner(c)
         if (g.pulling) drawAim(c, g)
         for (b in bodies.values) if (b.scatter.active) b.scatter.draw(c, b.rig, 0f, 0f)
         fill.color = Color.WHITE
@@ -202,6 +240,7 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         fill.alpha = 255
         drawWord(c)
         if (g.shots == 0 && !g.over && !g.pulling) hint(c, "Pull back anywhere and let go! 🎯", h * 0.93f)
+        else if (g.shots in 1..2 && !g.over && g.target?.warning == true) hint(c, "! means it is about to escape", h * 0.93f)
         if (g.over) drawEndCard(c, g)
     }
 
@@ -248,11 +287,38 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         c.restore()
     }
 
+    /** Dizzy stars circling a head after a splat. */
+    private fun stars(c: Canvas, x: Float, y: Float) {
+        text.textSize = 15f * d; text.color = Color.rgb(0xFF, 0xD5, 0x4A)
+        for (i in 0 until 3) { val a = clock * 5f + i * 2.094f; c.drawText("★", x + cos(a) * 26f * d, y + sin(a) * 8f * d, text) }
+    }
+
+    /** Speed streak behind the flying stone. */
+    private fun drawTrail(c: Canvas) {
+        fill.color = Color.WHITE
+        for (q in trail) { val k = 1f - q[2] / 0.25f; fill.alpha = (110 * k).toInt().coerceIn(0, 255); c.drawCircle(q[0], q[1], (16f * k + 3f) * d, fill) }
+        fill.alpha = 255
+    }
+
+    private fun drawBanner(c: Canvas) {
+        val age = clock - bannerT
+        if (banner.isEmpty() || age > 1.1f) return
+        text.textSize = 26f * d * (1f + 0.4f * (1f - min(1f, age / 0.15f)))
+        text.color = Color.WHITE; text.alpha = (255 * (1f - (age / 1.1f) * (age / 1.1f))).toInt()
+        c.drawText(banner, w / 2f, topPad + 100f * d, text)
+        text.alpha = 255
+    }
+
     private fun drawTarget(c: Canvas, g: SlingGame, tg: SlingGame.Target) {
         val b = body(tg.id) ?: return
         val bob = if (tg.flies && !tg.carried) sin(clock * 3f) * 0.012f else 0f
-        val x = px(tg.x); val y = px(tg.y + bob)
-        if (!tg.flies && !tg.carried) {   // walkers ride a little cloud so they can cross the sky
+        val x = px(tg.x); val y = px(tg.y + tg.yOff + bob)
+        if (tg.alpha < 0.98f) com.combo.monkeycompanion.engine.stagefx.StageFx.smoke(c, x, y - px(SlingGame.BODY_H) / 2f, px(0.10f), b.ch.vanishStyle, 1f - tg.alpha, clock)
+        if (tg.warning) {   // the warning before an escape
+            text.textSize = 24f * d; text.color = Color.rgb(0xFF, 0x5A, 0x1F)
+            c.drawText("!", x, y - px(SlingGame.BODY_H) - 8f * d, text)
+        }
+        if (!tg.flies && !tg.carried && tg.yOff > -0.01f) {   // walkers ride a little cloud so they can cross the sky
             fill.color = Color.argb(230, 0xF4, 0xF6, 0xFF)
             val r = px(0.045f)
             c.drawCircle(x - r * 1.3f, y + r * 0.5f, r * 0.8f, fill); c.drawCircle(x, y + r * 0.35f, r, fill); c.drawCircle(x + r * 1.3f, y + r * 0.5f, r * 0.8f, fill)
@@ -262,9 +328,10 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
             tg.carried && g.phase == SlingGame.Phase.SPLAT -> { pose(b, MonkeyState.STARTLED, "shocked"); splatTransform(c, g, x, y) }
             tg.carried -> { pose(b, MonkeyState.FALLING, "scream"); c.rotate(clock * 540f % 360f, x, y - px(SlingGame.BODY_H) / 2f) }
             g.t < tg.laughUntil -> pose(b, MonkeyState.GIGGLE, "happy")
+            tg.warning -> pose(b, MonkeyState.STARTLED, "fear")
             else -> pose(b, if (tg.flies) MonkeyState.IDLE else MonkeyState.WALK, "smug")
         }
-        drawBody(c, b, x, y, tg.facing)
+        drawBody(c, b, x, y, tg.facing, tg.alpha)
         c.restore()
     }
 

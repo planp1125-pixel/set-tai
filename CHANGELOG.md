@@ -342,3 +342,13 @@ Every character now feels like a little body in your hand (the phone's vibration
 - How it is built: the rules are pure code (`shared/engine/game/SlingGame`, own seeded random, no frame-loop random calls). `overlay/SlingGameView` is one full-screen game window that draws both characters through their own renderers (any character, Studio ones too); `overlay/SlingGameHub` starts/stops it and hides + pauses the live companion windows the same way Screen Smash does. MonkeyView only got the menu line.
 - Coming in the next builds: each character's own escape (Zoom flies off, Tutty and Angel vanish) with a small warning, battered costumes for everyone, friendship points, a daily challenge, and the special power shot.
 - Tests: SlingGameTest (rules), SlingGameViewTest (every character drawn as stone and as target through a whole shot, end card, today's best, menu entry).
+
+## v10.41 (code 109): Slingshot game, build 2: hold-and-pull start, 60 s, levels, escapes, effects
+
+- **Start by slinging**: hold your character a short moment (0.28 s), pull back and keep holding: 3, 2, 1 shows by the fork, and at GO the game opens with that pull as the first shot (the same finger keeps pulling the game's band). Let go before GO = the plain fling as before, no game. A quick drag still moves / pets / throws; holding without moving still opens the menu. Settings › "Slingshot starts the game" turns it off. The Games menu item and the Home tile stay.
+- **60-second rounds, +3 s for every hit** (shown as "+3 s ⏱"; the clock never goes above 99).
+- **Levels**: every 3 hits is a level ("LEVEL 2!"): targets move faster (up to 2x), turn more often and escape more often.
+- **Each character's own escape, always with a "!" warning first (0.35 s)**: Tutty, Angel, Echo and Masko vanish and pop up somewhere else (they can't be hit while gone); Zoom, Bolt and Skye shoot up and drift back; Chittu, Billa, Rollie and Wavy sprint; Pogo and Studio characters hop; Gajju never escapes.
+- **Effects**: a tiny freeze at the moment of the hit, screen shake and a glass crack on the double splat, dizzy stars over both heads, a speed trail behind the stone, streak words ("2 in a row!", "ON FIRE! 🔥").
+- Code: rules in `SlingGame` (Trick, level, bonus); `SlingGameView.externalPull/externalRelease`; `SlingGameHub.start(deferHide)` + `hideCompanionsNow`; MonkeyView `slingArm` / `slingCount` / `startSlingGame` and a touch pass-through while `slingGameLive`.
+- Tests: SlingGameTest (+ levels, bonus, escapes), new SlingStartTest (quick drag, short hold, early release, GO hand-over, switch off).

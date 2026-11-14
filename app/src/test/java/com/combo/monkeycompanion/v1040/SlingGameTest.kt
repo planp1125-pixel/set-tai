@@ -114,11 +114,60 @@ class SlingGameTest {
     @Test fun theRoundEndsWhenTimeRunsOut() {
         val g = game(sec = 3f)
         g.run(2.2f)
-        g.pull(0f, 0.3f); g.release()   // still flying when the time ends: the shot finishes first
+        g.pull(0f, -0.3f); g.release()   // fired at the floor; still flying when the time ends: the shot finishes first
         g.run(3f)
         assertTrue(g.over); assertEquals(0f, g.timeLeft, 1e-4f)
         assertTrue(SlingGame.Event.OVER in g.drain())
         g.pull(0f, 0.3f); assertFalse("no shooting after the end", g.release())
+    }
+
+    // ---------------- v10.41 ----------------
+    @Test fun aRoundIsSixtySecondsAndAHitAddsThreeAndLevelsGoUp() {
+        assertEquals(60f, SlingGame.ROUND_SEC, 0f)
+        var done = false
+        for (seed in 1L..8L) {
+            val g = game(seed, sec = 60f)
+            val seen = ArrayList<SlingGame.Event>()
+            repeat(40) {
+                if (g.score >= SlingGame.HITS_PER_LEVEL || g.over) return@repeat
+                g.run(1.3f); seen += g.drain()
+                val tg = g.target
+                if (g.phase == SlingGame.Phase.AIM && tg != null && !tg.leaving && tg.trickPhase == 0 && tg.x in 0.2f..0.8f) {
+                    val before = g.timeLeft; val s0 = g.score
+                    g.shootAtTarget(); g.run(0.2f)
+                    val flightStart = g.timeLeft
+                    g.run(2.2f); seen += g.drain()
+                    if (g.score > s0) assertEquals("a hit gives ${SlingGame.BONUS_SEC} s back", SlingGame.BONUS_SEC, g.bonus - (s0 * SlingGame.BONUS_SEC), 1e-3f)
+                    assertTrue(before >= flightStart)
+                }
+            }
+            if (g.score >= SlingGame.HITS_PER_LEVEL) {
+                assertEquals(2, g.level); assertTrue(SlingGame.Event.LEVEL_UP in seen)
+                assertEquals(g.score * SlingGame.BONUS_SEC, g.bonus, 1e-3f)
+                done = true; break
+            }
+        }
+        assertTrue("three hits reach level 2 within a round", done)
+    }
+
+    @Test fun anEscapeAlwaysWarnsFirstAndAVanishedTargetCannotBeHit() {
+        val g = SlingGame(2.17f, "monkey", listOf("monkey", "devil"), emptySet(), 9L, 60f, mapOf("devil" to SlingGame.Trick.VANISH))
+        var warned = false; var vanished = false; var trickEvents = 0
+        repeat(60 * 12) {
+            g.step(1f / 60f)
+            val tg = g.target ?: return@repeat
+            if (tg.warning) { warned = true; assertTrue("still solid while warning", tg.hittable) }
+            if (tg.trickPhase == 2) assertTrue("the warning came first", warned)
+            if (!tg.hittable) vanished = true
+            trickEvents += g.drain().count { it == SlingGame.Event.TRICK }
+        }
+        assertTrue(warned); assertTrue(vanished); assertTrue(trickEvents >= 1)
+        assertEquals(SlingGame.TELL_SEC, 0.35f, 0f)
+    }
+
+    @Test fun aCharacterWithNoTrickNeverEscapes() {
+        val g = SlingGame(2.17f, "monkey", listOf("monkey", "gajju"), emptySet(), 9L, 60f, mapOf("gajju" to SlingGame.Trick.NONE))
+        repeat(60 * 7) { g.step(1f / 60f); g.target?.let { assertEquals(0, it.trickPhase); assertEquals(0f, it.yOff, 0f) } }
     }
 
     @Test fun sameSeedSameGame() {

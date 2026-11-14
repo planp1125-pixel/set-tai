@@ -202,6 +202,10 @@ class AppSettings(ctx: Context) {
     var touchFeel: Boolean
         get() = p.getBoolean("touch_feel", true)
         set(v) = p.edit().putBoolean("touch_feel", v).apply()
+    /** v10.41: hold and pull a character, keep holding through 3-2-1 = the Slingshot game starts. Off = always a plain fling. */
+    var slingGame: Boolean
+        get() = p.getBoolean("sling_game", true)
+        set(v) = p.edit().putBoolean("sling_game", v).apply()
 
     /** v10.9 Settings › "Double-tap for power": double-tap a character = one of its powers (random, never the same twice in a row). Off = double-tap opens chat (v10.8). */
     var doubleTapPower: Boolean

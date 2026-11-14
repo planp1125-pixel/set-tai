@@ -19,9 +19,17 @@ class SlingGame(
     private val fliers: Set<String> = emptySet(),
     seed: Long = 1L,
     val roundSec: Float = ROUND_SEC,
+    /** v10.41: how each character escapes (default [Trick.HOP]). */
+    private val tricks: Map<String, Trick> = emptyMap(),
 ) {
     enum class Phase { AIM, FLY, SPLAT, RETURN, OVER }
-    enum class Event { SNAP, HIT, SPLAT, DOUBLE_SPLAT, TARGET_IN, TARGET_OUT, LAST_SECONDS, OVER }
+    enum class Event { SNAP, HIT, SPLAT, DOUBLE_SPLAT, TARGET_IN, TARGET_OUT, LAST_SECONDS, OVER, LEVEL_UP, TRICK }
+    /**
+     * v10.41 each character's own escape. It always shows a short warning first ([Target.warning]), so a hit is skill:
+     * FLY_UP shoots up and drifts back, VANISH disappears (can't be hit) and pops up somewhere else, DASH sprints,
+     * HOP jumps, NONE never escapes (big and slow).
+     */
+    enum class Trick { NONE, HOP, DASH, FLY_UP, VANISH }
     enum class Wall { LEFT, RIGHT, TOP, FLOOR }
 
     class Target(val id: String, val flies: Boolean, var x: Float, var y: Float, var vx: Float) {
@@ -33,6 +41,19 @@ class SlingGame(
         var offX = 0f; var offY = 0f
         var laughUntil = -1f
         var nextTurn = 0f
+        // v10.41 escape trick
+        var trick = Trick.HOP
+        /** 0 = no trick now, 1 = warning, 2 = escaping. */
+        var trickPhase = 0
+        var trickT = 0f
+        var nextTrick = 0f
+        /** Extra height from a hop / fly-up (screen widths, negative = up). */
+        var yOff = 0f
+        /** 1 = solid, 0 = vanished. */
+        var alpha = 1f
+        var dash = 1f
+        val warning: Boolean get() = trickPhase == 1
+        val hittable: Boolean get() = alpha > 0.5f
         val facing: Float get() = if (vx >= 0f) 1f else -1f
     }
 
@@ -56,6 +77,10 @@ class SlingGame(
     var streak = 0; private set
     var bestStreak = 0; private set
     var shots = 0; private set
+    /** v10.41: 1, 2, 3… one level every [HITS_PER_LEVEL] hits: faster targets, more escapes. */
+    val level: Int get() = 1 + score / HITS_PER_LEVEL
+    /** Seconds added to the clock so far by hits. */
+    var bonus = 0f; private set
     var target: Target? = null; private set
     /** Where the last splat was (valid in [Phase.SPLAT]). */
     var wall = Wall.TOP; private set
@@ -141,7 +166,8 @@ class SlingGame(
             bx += bvx * h; by += bvy * h
             val tg = target
             if (tg != null && tg.carried) { tg.x = bx + tg.offX; tg.y = by + tg.offY }
-            else if (tg != null && !tg.leaving && hits(tg)) {
+            else if (tg != null && !tg.leaving && tg.hittable && hits(tg)) {
+                tg.y += tg.yOff; tg.yOff = 0f; tg.trickPhase = 0; tg.dash = 1f; tg.alpha = 1f
                 tg.carried = true; tg.offX = (tg.x - bx) * 0.6f; tg.offY = (tg.y - by) * 0.6f
                 pending.add(Event.HIT)
             }
@@ -157,7 +183,7 @@ class SlingGame(
         }
     }
 
-    private fun hits(tg: Target): Boolean = hypot(tg.x - bx, tg.y - by) < HIT_R
+    private fun hits(tg: Target): Boolean = hypot(tg.x - bx, tg.y + tg.yOff - by) < HIT_R
 
     private fun splat(w: Wall) {
         wall = w; phase = Phase.SPLAT; splatT = 0f
@@ -167,8 +193,11 @@ class SlingGame(
         splatDouble = tg != null && tg.carried
         if (splatDouble) {
             tg!!.x = bx + tg.offX; tg.y = by + tg.offY
+            val before = level
             score++; streak++; if (streak > bestStreak) bestStreak = streak
+            timeLeft = (timeLeft + BONUS_SEC).coerceAtMost(MAX_SEC); bonus += BONUS_SEC
             pending.add(Event.DOUBLE_SPLAT)
+            if (level > before) pending.add(Event.LEVEL_UP)
         } else {
             streak = 0
             tg?.laughUntil = t + 1.2f
@@ -181,25 +210,54 @@ class SlingGame(
         if (tg == null) { if (phase == Phase.AIM || phase == Phase.RETURN) spawn(); return }
         if (tg.carried) return
         tg.age += dt
-        tg.x += tg.vx * dt
+        tg.x += tg.vx * tg.dash * dt
         if (tg.leaving) {
+            tg.trickPhase = 0; tg.dash = 1f; tg.alpha = 1f; tg.yOff *= 0.9f
             if (tg.x < -OFF || tg.x > 1f + OFF) { target = null; pending.add(Event.TARGET_OUT) }
             return
         }
         // inside the play area: bounce off the sides, change its mind now and then
         if (tg.x < LANE_MIN && tg.vx < 0f) tg.vx = -tg.vx
         if (tg.x > LANE_MAX && tg.vx > 0f) tg.vx = -tg.vx
+        stepTrick(tg, dt)
         if (tg.age >= tg.nextTurn && tg.x in LANE_MIN..LANE_MAX) {
-            tg.nextTurn = tg.age + 0.9f + rng.nextFloat() * 1.4f
+            tg.nextTurn = tg.age + (0.9f + rng.nextFloat() * 1.4f) / (1f + 0.1f * (level - 1))
             val sp = speedFor()
             tg.vx = if (rng.nextFloat() < 0.45f) -sign(tg.vx) * sp else sign(tg.vx) * sp
         }
         if (tg.age >= TARGET_LIFE && phase == Phase.AIM) { tg.leaving = true; tg.vx = (if (tg.x < 0.5f) -1f else 1f) * 0.6f }
     }
 
+    /** v10.41 the escape: wait, warn ([TELL_SEC]), then do it. More often on higher levels. */
+    private fun stepTrick(tg: Target, dt: Float) {
+        if (tg.trick == Trick.NONE) return
+        when (tg.trickPhase) {
+            0 -> if (tg.age >= tg.nextTrick && tg.x in LANE_MIN..LANE_MAX) { tg.trickPhase = 1; tg.trickT = 0f }
+            1 -> { tg.trickT += dt; if (tg.trickT >= TELL_SEC) { tg.trickPhase = 2; tg.trickT = 0f; pending.add(Event.TRICK) } }
+            else -> {
+                tg.trickT += dt
+                val k = (tg.trickT / TRICK_SEC).coerceIn(0f, 1f)
+                when (tg.trick) {
+                    Trick.HOP -> tg.yOff = -0.20f * 4f * k * (1f - k)
+                    Trick.FLY_UP -> tg.yOff = -0.30f * (if (k < 0.3f) k / 0.3f else 1f - (k - 0.3f) / 0.7f)
+                    Trick.DASH -> tg.dash = if (k < 0.8f) 3f else 1f
+                    Trick.VANISH -> {
+                        tg.alpha = if (k < 0.15f) 1f - k / 0.15f else if (k > 0.85f) (k - 0.85f) / 0.15f else 0f
+                        if (k >= 0.5f && tg.trickT - dt < TRICK_SEC * 0.5f) tg.x = LANE_MIN + rng.nextFloat() * (LANE_MAX - LANE_MIN)
+                    }
+                    Trick.NONE -> Unit
+                }
+                if (k >= 1f) { tg.trickPhase = 0; tg.yOff = 0f; tg.alpha = 1f; tg.dash = 1f; tg.nextTrick = tg.age + trickGap() }
+            }
+        }
+    }
+
+    /** Seconds until the next escape: about 3.5 s on level 1, down to about 1.6 s. */
+    private fun trickGap(): Float = (3.5f - 0.45f * (level - 1)).coerceAtLeast(1.6f) * (0.8f + 0.4f * rng.nextFloat())
+
     private fun sign(v: Float) = if (v >= 0f) 1f else -1f
-    /** Targets get a little faster as the score grows (never more than 1.5x). */
-    private fun speedFor(): Float = (TARGET_SPEED_MIN + rng.nextFloat() * (TARGET_SPEED_MAX - TARGET_SPEED_MIN)) * (1f + 0.04f * score).coerceAtMost(1.5f)
+    /** Targets get faster with every level (never more than 2x). */
+    private fun speedFor(): Float = (TARGET_SPEED_MIN + rng.nextFloat() * (TARGET_SPEED_MAX - TARGET_SPEED_MIN)) * (1f + 0.15f * (level - 1)).coerceAtMost(2f)
 
     private fun spawn() {
         val choices = others.filter { it != lastTargetId }.ifEmpty { others }
@@ -209,12 +267,21 @@ class SlingGame(
         val y = aspect * (LANE_TOP + rng.nextFloat() * (LANE_BOTTOM - LANE_TOP))
         val tg = Target(id, id in fliers, if (fromLeft) -OFF else 1f + OFF, y, (if (fromLeft) 1f else -1f) * speedFor())
         tg.nextTurn = 1.2f + rng.nextFloat()
+        tg.trick = tricks[id] ?: Trick.HOP
+        tg.nextTrick = 1.5f + trickGap() * 0.5f
         target = tg
         pending.add(Event.TARGET_IN)
     }
 
     companion object {
-        const val ROUND_SEC = 30f
+        const val ROUND_SEC = 60f
+        /** v10.41: every hit adds this to the clock (never above [MAX_SEC]). */
+        const val BONUS_SEC = 3f
+        const val MAX_SEC = 99f
+        const val HITS_PER_LEVEL = 3
+        /** The warning before an escape, and how long the escape lasts. */
+        const val TELL_SEC = 0.35f
+        const val TRICK_SEC = 0.9f
         /** Character height (screen widths). */
         const val BODY_H = 0.21f
         const val HOME_Y = 0.80f

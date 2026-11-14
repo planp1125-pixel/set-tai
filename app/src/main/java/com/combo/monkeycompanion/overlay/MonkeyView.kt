@@ -5307,7 +5307,7 @@ class MonkeyView(
     fun debugRefreshSettings() = refreshQuipSettings()
 
     override fun onDraw(canvas: Canvas) {
-        if (ScriptShowHub.running && !wp) return   // v10.32: the scripted show draws the cast on its own stage
+        if ((ScriptShowHub.running || SlingGameHub.running) && !wp) return   // v10.32 / v10.41: the show / the game draws the cast on its own stage
         val c0 = Debug.threadCpuTimeNanos()
         drawAll(canvas)
         if (!hiddenTab) drawFeel(canvas)
@@ -6945,11 +6945,48 @@ class MonkeyView(
     /** Long-press, then pull: the character becomes the stone of a slingshot. */
     private fun beginSling() {
         slingOn = true; slingNotch = 0
-        say(pickLine(listOf("Pull back… and let go! 🎯", "Slingshot?! Okay… aim well 😬", "Not too hard!! 😆")), 1600L)
+        val game = slingGameOn()
+        say(if (game) "Keep holding… 3, 2, 1! 🎯" else pickLine(listOf("Pull back… and let go! 🎯", "Slingshot?! Okay… aim well 😬", "Not too hard!! 😆")), 1600L)
+        slingStartMs = SystemClock.uptimeMillis()
+        ui.removeCallbacks(slingCount)
+        if (game) ui.postDelayed(slingCount, SLING_COUNT_MS / 3)
         syncFx()
     }
 
+    // ---------------- v10.41 hold-and-pull starts the Slingshot game ----------------
+    /** A short hold arms the slingshot (the long-press menu still opens at its own, longer time). */
+    private var slingArmed = false
+    private val slingArm = Runnable {
+        if (tracking && !dragging && host != null && !wp && !hiddenTab) slingArmed = true   // silent on purpose: the first band click is the signal
+    }
+    private var slingStartMs = 0L
+    /** This finger now pulls the band in the game window (see [onTouchEvent]). */
+    private var slingGameLive = false
+    private fun slingGameOn(): Boolean = host != null && !wp && runCatching { ChatHub.settings.slingGame }.getOrDefault(true)
+    /** 3, 2, 1 while the band is held; at GO the game opens with this pull as the first shot. Let go earlier = a plain fling. */
+    private val slingCount = object : Runnable {
+        override fun run() {
+            if (!slingOn || !dragging) return
+            if (SystemClock.uptimeMillis() - slingStartMs >= SLING_COUNT_MS - 20L) { startSlingGame(); return }
+            performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+            syncFx()
+            ui.postDelayed(this, SLING_COUNT_MS / 3)
+        }
+    }
+    private fun startSlingGame() {
+        val err = SlingGameHub.start(context, character.id, deferHide = true)
+        if (err != null) { say(err, 2600L); return }   // can't play right now: it stays a plain slingshot
+        slingOn = false; dragging = false; slingGameLive = true
+        mx = downMx; my = downMy; clampPosition(); syncFx()
+        if (hideAnim < 0f) controller.onDragEnd(settleAfterDrag(0f, 0f))
+        SlingGameView.current?.externalPull(lastMoveRawX - downRawX, lastMoveRawY - downRawY)
+        invalidate()
+    }
+    val debugSlingGameLive: Boolean get() = slingGameLive
+    val debugSlingArmed: Boolean get() = slingArmed
+
     private fun releaseSling() {
+        ui.removeCallbacks(slingCount)
         dragging = false; slingOn = false
         val pdx = mx - downMx; val pdy = my - downMy
         val pull = hypot(pdx, pdy) / d
@@ -7002,7 +7039,15 @@ class MonkeyView(
         slingPaint.color = Color.rgb(0xD0, 0x3A, 0x2A); slingPaint.strokeWidth = (5f - 2.5f * tn) * d
         c.drawLine(ax - 26f * d, ay - 10f * d, cx, cy, slingPaint)
         c.drawLine(ax + 26f * d, ay - 10f * d, cx, cy, slingPaint)
+        if (slingGameOn()) {   // v10.41 the 3, 2, 1 before the game starts
+            val left = SLING_COUNT_MS - (SystemClock.uptimeMillis() - slingStartMs)
+            val n = ((left + SLING_COUNT_MS / 3 - 1) / (SLING_COUNT_MS / 3)).coerceIn(1L, 3L)
+            slingText.textSize = 44f * d
+            slingText.color = Color.rgb(0x22, 0x18, 0x10); c.drawText("$n", ax + 2f * d, ay - 46f * d + 2f * d, slingText)
+            slingText.color = Color.rgb(0xFF, 0xD5, 0x4A); c.drawText("$n", ax, ay - 46f * d, slingText)
+        }
     }
+    private val slingText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; isFakeBoldText = true }
 
     /** Heartbeat heart on the chest, petting hearts, dizzy stars (view pixels). */
     private fun drawFeel(c: Canvas) {
@@ -7188,6 +7233,18 @@ class MonkeyView(
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
+        if (slingGameLive) {   // v10.41: this finger started the Slingshot game; it now pulls the game's band until it lifts
+            when (e.actionMasked) {
+                MotionEvent.ACTION_MOVE -> SlingGameView.current?.externalPull(e.rawX - downRawX, e.rawY - downRawY)
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    slingGameLive = false; tracking = false; fingerDown = false
+                    runCatching { living.fingerUp() }
+                    SlingGameView.current?.externalRelease()
+                    SlingGameHub.hideCompanionsNow(context)
+                }
+            }
+            return true
+        }
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> { fingerDown = true; fingerDownT = t; gestureDragged = false; attDownX = e.rawX; attDownY = e.rawY }
             MotionEvent.ACTION_MOVE -> if (hypot(e.rawX - attDownX, e.rawY - attDownY) > 10 * d) gestureDragged = true
@@ -7365,6 +7422,8 @@ class MonkeyView(
                 lastMoveRawX = e.rawX; lastMoveRawY = e.rawY; lastMoveTime = e.eventTime; vx = 0f; vyDrag = 0f; flickFelt = false
                 gN = 0; gPush(e.eventTime, e.rawX, e.rawY)
                 ui.removeCallbacks(heartHold); stopHeartbeat(); slingOn = false
+                slingArmed = false; ui.removeCallbacks(slingArm); ui.removeCallbacks(slingCount)
+                ui.postDelayed(slingArm, SLING_HOLD_MS)   // v10.41: a short hold, then pull = slingshot
                 if (pinchSpring) endPinchQuiet()
                 // v4.3 gesture map (see brain/Gestures): long-press = options menu; moving past the slop cancels it.
                 ui.postDelayed(longPress, com.combo.monkeycompanion.brain.Gestures.LONG_PRESS_MS)
@@ -7409,9 +7468,9 @@ class MonkeyView(
                 if (v5On && stage.onFinger(e.rawX)) return true   // v5 banana game: drag steers
                 val dx = e.rawX - downRawX; val dy = e.rawY - downRawY
                 if (!dragging && com.combo.monkeycompanion.brain.Gestures.isDrag(hypot(dx, dy), slop.toFloat())) {
-                    ui.removeCallbacks(longPress); ui.removeCallbacks(heartHold)
+                    ui.removeCallbacks(longPress); ui.removeCallbacks(heartHold); ui.removeCallbacks(slingArm)
                     if (heartBeatOn) { stopHeartbeat(); tracking = false; return true }   // moving ends the heartbeat (no drag)
-                    val sling = longPressed && host != null && !wp && !hiddenTab   // v10.27: long-press, then pull = slingshot
+                    val sling = (longPressed || slingArmed) && host != null && !wp && !hiddenTab   // v10.27: hold, then pull = slingshot (v10.41: a short hold is enough)
                     if (host != null && !wp) beginDrag()
                     if (sling && dragging) beginSling()
                 }
@@ -7438,7 +7497,7 @@ class MonkeyView(
                 }
             }
             MotionEvent.ACTION_UP -> {
-                ui.removeCallbacks(longPress)
+                ui.removeCallbacks(longPress); ui.removeCallbacks(slingArm); ui.removeCallbacks(slingCount)
                 if (pinchOn) { endPinch(); tracking = false; return true }
                 if (notifTouchActive) {
                     val wasScrolling = notifScrolling
@@ -8634,6 +8693,10 @@ class MonkeyView(
     }
 
     companion object {
+        /** v10.41: hold this long, then pull = slingshot (the long-press menu opens later, at Gestures.LONG_PRESS_MS). */
+        const val SLING_HOLD_MS = 280L
+        /** v10.41: the 3-2-1 before the Slingshot game starts. */
+        const val SLING_COUNT_MS = 1500L
         /** v10.19.1 how long the tapped friendship heart stays up. */
         const val HEART_POPUP_SECS = 2.8f
         /** v10.18 Body Sense event texts that come from touches (voiced by the reaction engine instead). */
