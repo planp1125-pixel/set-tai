@@ -1,6 +1,16 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.39.5 (versionCode 107)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.40 (versionCode 108)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.40 Slingshot game (build 1 of 3)
+
+- Rules: `shared/engine/game/SlingGame` (width units, feet positions, own Random). View: `overlay/SlingGameView`
+  (full-screen touchable overlay, draws stone + target via `Character.newRenderer()` like ScriptStageRenderer).
+  Hub: `overlay/SlingGameHub` (start/finish, ACTION_SMASH_HIDE/SHOW to hide + pause companions, today's best in prefs
+  `sling_game`). Entry: LongPressMenu `g_games` item `sling_game`, Home tile + Explore row.
+- Owner's plan: build 2 = per-character escapes with a tell + difficulty tuning; build 3 = battered costumes for all,
+  friendship points, daily challenge, special power shot. The owner's bigger question (the app's purpose / daily hook)
+  is open; he will watch his daughter play this build.
 
 ## v10.39.5 Describe a show
 

@@ -171,6 +171,15 @@ class SettaiDesignActivity : ComponentActivity() {
     private fun usePowerNow() = withCompanion {
         startService(Intent(this, MonkeyOverlayService::class.java).setAction(MonkeyOverlayService.ACTION_POWER))
     }
+    /** v10.40: the Slingshot game plays on top of whatever is on screen, with the selected character as the stone. */
+    private fun slingGame() {
+        if (!Settings.canDrawOverlays(this)) {
+            Toast.makeText(this, "Allow \"Display over other apps\" first", Toast.LENGTH_LONG).show()
+            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName")))
+            return
+        }
+        com.combo.monkeycompanion.overlay.SlingGameHub.start(applicationContext)?.let { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
+    }
     private fun screenSmash() {
         moveTaskToBack(true)
         Handler(Looper.getMainLooper()).postDelayed({ SmashActivity.launch(applicationContext) }, 450L)
@@ -343,6 +352,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                         Triple("▶", "Make a show") { page = 2 },
                                         Triple("✧", "Give Brain") { settings("brain") },
                                         Triple("⚡", "Use a power") { usePowerNow() },
+                                        Triple("🎯", "Slingshot game") { slingGame() },
                                     )
                                     items(tiles.size) { k ->
                                         val (sym, label, act) = tiles[k]
@@ -577,6 +587,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 Triple("Cheer-up Sign", "Focus & Care", "A little encouragement"),
                                 Triple("Filter Coffee", "Focus & Care", "Coffee with your companion"),
                                 Triple("Mini-games", "Play & Shows", "Play together"),
+                                Triple("Slingshot Game", "Play & Shows", "Sling your character at a moving friend"),
                                 Triple("Screen Smash", "Play & Shows", "Smash the previous screen"),
                                 Triple("Record a 5s Clip", "Play & Shows", "Capture a shareable clip"),
                                 Triple("Two Phones", "Connect", "Connect companions on Wi-Fi"),
@@ -618,6 +629,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                         "Cheer-up Sign" -> v5("comfort_sign")
                                         "Filter Coffee" -> v5("comfort_coffee")
                                         "Mini-games" -> v5("games")
+                                        "Slingshot Game" -> slingGame()
                                         "Screen Smash" -> screenSmash()
                                         "Record a 5s Clip" -> v5("clip")
                                         "Two Phones" -> open(PairActivity::class.java)

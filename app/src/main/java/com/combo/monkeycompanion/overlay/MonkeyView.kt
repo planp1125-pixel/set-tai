@@ -1448,6 +1448,7 @@ class MonkeyView(
                 "comfort_coffee" -> com.combo.monkeycompanion.mind.MindHub.triggerComfort(forceKind = com.combo.monkeycompanion.heart.ComfortKind.OFFER_COFFEE)
                 "games" -> stage.showGames()
                 "smash" -> com.combo.monkeycompanion.smash.SmashActivity.launch(context)
+                "sling_game" -> SlingGameHub.start(context, character.id)?.let { say(it, 2600L) }   // v10.40
                 "clip" -> makeClip("")
                 "context" -> ChatHub.contextChips().firstOrNull()?.let { tapChip(it) } ?: doSomethingFunny()
                 "quit" -> askQuit()

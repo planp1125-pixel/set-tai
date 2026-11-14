@@ -330,3 +330,15 @@ Every character now feels like a little body in your hand (the phone's vibration
 - The brain writes a few short story lines ("t throw fireball at a"); the app (`engine/script/ShowWriter`) adds the timings, places and endings, fixes small mistakes (misspelt faces, numbering, code fences, a cut-off last line), checks the result with the real player, asks the brain once more with the problems if needed, and otherwise falls back to the closest ready-made story with the characters you named. So you always get a show that plays.
 - Needs Give Brain. On Set-Tai Cloud each show uses 1 or 2 of the 40 daily requests. The gateway got a `task: "show"` mode (story-line guard, 600 tokens, 1400 characters); until the worker is redeployed the cloud writes shorter shows (200-character cap), which still play.
 - New ShowWriterTest; worker test for the show mode.
+
+## v10.40 (code 108): 🎯 Slingshot game (build 1 of 3)
+
+- New game: long-press › Games › **🎯 Slingshot**, or the **Slingshot game** tile on Home. It never starts by itself.
+- A 30-second round. The character you use sits in a slingshot; a random other character crosses the screen (flyers fly, walkers ride a little cloud) and changes direction now and then. Pull back anywhere and let go.
+  - **Hit**: both fly on together and splat on the screen edge: "DOUBLE SPLAT!", strong buzz, +1, streak grows, a new random target comes in. Bolt's armour plates scatter, as outside the game.
+  - **Miss**: only your character splats, the target laughs, the streak goes back to 0. Your character is back in the sling in about a second.
+- Top bar: time left, hits, streak, ✕ to stop. End card: hits, best streak, today's best, Play again / Done. The round also stops when the screen turns off.
+- Aim dots show the start of the flight; the flight is nearly straight so aiming is fair. Targets get a little faster as you score.
+- How it is built: the rules are pure code (`shared/engine/game/SlingGame`, own seeded random, no frame-loop random calls). `overlay/SlingGameView` is one full-screen game window that draws both characters through their own renderers (any character, Studio ones too); `overlay/SlingGameHub` starts/stops it and hides + pauses the live companion windows the same way Screen Smash does. MonkeyView only got the menu line.
+- Coming in the next builds: each character's own escape (Zoom flies off, Tutty and Angel vanish) with a small warning, battered costumes for everyone, friendship points, a daily challenge, and the special power shot.
+- Tests: SlingGameTest (rules), SlingGameViewTest (every character drawn as stone and as target through a whole shot, end card, today's best, menu entry).

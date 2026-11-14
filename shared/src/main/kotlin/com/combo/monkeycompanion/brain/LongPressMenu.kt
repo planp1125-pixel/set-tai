@@ -164,7 +164,7 @@ object LongPressMenu {
     fun groupedMain(): List<String> = GROUPS.map { it.id } + listOf("hide", "quit")
     fun isGroup(id: String) = id.startsWith("g_")
     fun groupItems(id: String): List<String> = when (id) {
-        "g_games" -> listOf("smash", "banana_game", "eater")
+        "g_games" -> listOf("sling_game", "smash", "banana_game", "eater")
         "g_show" -> listOf("show", "story", "clip", "selfie")
         "g_modes" -> listOf("sleep", "focus", "breathe", "comfort_hug", "comfort_sign", "comfort_coffee")
         "g_tools" -> CareTools.Tool.entries.map { it.id }
@@ -172,7 +172,7 @@ object LongPressMenu {
         else -> emptyList()
     }
     private val SUB = mapOf(
-        "smash" to ("💥" to "Smash"), "banana_game" to ("🍌" to "Bananas"), "eater" to ("😋" to "Eat screen"),
+        "sling_game" to ("🎯" to "Slingshot"), "smash" to ("💥" to "Smash"), "banana_game" to ("🍌" to "Bananas"), "eater" to ("😋" to "Eat screen"),
         "show" to ("🐱🐭" to "Start show"), "story" to ("🎭" to "Shows"), "clip" to ("🎥" to "Record"), "selfie" to ("🤳" to "Photobomb"),
         "sleep" to ("😴" to "Sleep"), "focus" to ("📚" to "Study"), "breathe" to ("🫧" to "Breathe"),
         "comfort_hug" to ("🫂" to "Hug"), "comfort_sign" to ("📣" to "Cheer"), "comfort_coffee" to ("☕" to "Coffee"),
