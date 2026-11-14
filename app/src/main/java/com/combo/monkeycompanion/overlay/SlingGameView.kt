@@ -212,7 +212,7 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
     /** Test hook: pull by ([dx], [dy]) screen widths and let go. */
     fun debugShoot(dx: Float, dy: Float): Boolean { game.pull(dx, dy); lastTension = game.tension; return game.release() }
 
-    override fun onAttachedToWindow() { super.onAttachedToWindow(); on = true; lastNs = 0L; Choreographer.getInstance().postFrameCallback(this) }
+    override fun onAttachedToWindow() { super.onAttachedToWindow(); on = !debugNoLoop; lastNs = 0L; if (on) Choreographer.getInstance().postFrameCallback(this) }
     override fun onDetachedFromWindow() { on = false; Choreographer.getInstance().removeFrameCallback(this); super.onDetachedFromWindow() }
 
     // ---------------- drawing ----------------
@@ -428,6 +428,11 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
     companion object {
         /** The end card closes by itself after this long. */
         const val END_CARD_SEC = 25f
+        /**
+         * Tests only: don't run the frame loop (the test steps the game with [advance]). Robolectric runs a
+         * self-reposting frame callback in a tight loop and pushes its clock forward, which plays a whole round at once.
+         */
+        @Volatile var debugNoLoop = false
         private var cur: SlingGameView? = null
         val showing get() = cur != null
         val current: SlingGameView? get() = cur

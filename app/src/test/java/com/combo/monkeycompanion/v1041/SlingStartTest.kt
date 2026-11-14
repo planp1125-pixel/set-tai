@@ -33,10 +33,10 @@ import java.time.Duration
 class SlingStartTest {
     private val ctx = ApplicationProvider.getApplicationContext<android.app.Application>()
 
-    @Before fun clean() { ChatHub.init(ctx); MindHub.init(ctx); ActivityScheduler.resetForTest(ctx); ChatHub.settings.slingGame = true; ShadowSettings.setCanDrawOverlays(true)
+    @Before fun clean() { SlingGameView.debugNoLoop = true; ChatHub.init(ctx); MindHub.init(ctx); ActivityScheduler.resetForTest(ctx); ChatHub.settings.slingGame = true; ShadowSettings.setCanDrawOverlays(true)
         com.combo.monkeycompanion.overlay.ScriptShowHub.finish(ctx); com.combo.monkeycompanion.overlay.ChaseShowHub.finish(ctx)   // no show left over from another test
     }
-    @After fun after() { SlingGameHub.finish(ctx); SlingGameView.close(ctx); CharacterRegistry.select("monkey"); ChatHub.settings.slingGame = true; ShadowSettings.setCanDrawOverlays(false) }
+    @After fun after() { SlingGameView.debugNoLoop = false; SlingGameHub.finish(ctx); SlingGameView.close(ctx); CharacterRegistry.select("monkey"); ChatHub.settings.slingGame = true; ShadowSettings.setCanDrawOverlays(false) }
 
     private fun view(id: String = "devil"): MonkeyView {
         ctx.getSharedPreferences("settai_v3", 0).edit().clear().commit()
