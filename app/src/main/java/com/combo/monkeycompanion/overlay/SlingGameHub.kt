@@ -49,18 +49,23 @@ object SlingGameHub {
         if (!Settings.canDrawOverlays(app)) return "Allow \"Display over other apps\" first"
         if (ScriptShowHub.running || ChaseShowHub.show != null) return "A show is playing. Try again when it ends."
         val game = newGame(app, bulletId) ?: return "Couldn't start the game"
+        lastFinish = null
         if (!SlingGameView.open(app, game)) return "The game couldn't open (is Set-Tai allowed to draw over apps?)"
         if (!deferHide) hideCompanions(app, true)
         runCatching { com.combo.monkeycompanion.audio.Sfx.warm(app) }
         runCatching {
-            val r = object : BroadcastReceiver() { override fun onReceive(c: Context, i: Intent) { finish(c) } }
+            val r = object : BroadcastReceiver() { override fun onReceive(c: Context, i: Intent) { if (i.action == Intent.ACTION_SCREEN_OFF) finish(c, "screen off") } }
             app.registerReceiver(r, IntentFilter(Intent.ACTION_SCREEN_OFF)); screenOff = r
         }
         return null
     }
 
-    fun finish(ctx: Context?) {
+    /** Why the last game closed (for tests and bug reports). */
+    @Volatile var lastFinish: String? = null; private set
+
+    fun finish(ctx: Context?, why: String = "asked") {
         if (!running) return
+        lastFinish = why
         val app = (ctx ?: SlingGameView.current?.context)?.applicationContext
         SlingGameView.close(app)
         screenOff?.let { r -> runCatching { app?.unregisterReceiver(r) } }; screenOff = null

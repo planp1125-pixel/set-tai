@@ -92,7 +92,7 @@ class SlingStartTest {
         f.down(); idle(v, MonkeyView.SLING_HOLD_MS + 30)
         f.move(pullDown)
         idle(v, MonkeyView.SLING_COUNT_MS + 150)
-        assertTrue("GO: the game is open (sling=${v.debugSling} live=${v.debugSlingGameLive} err=${v.debugSlingGameError})", SlingGameView.showing)
+        assertTrue("GO: the game is open (sling=${v.debugSling} live=${v.debugSlingGameLive} err=${v.debugSlingGameError} closedBy=${SlingGameHub.lastFinish})", SlingGameView.showing)
         val gv = SlingGameView.current; assertNotNull(gv); gv!!.layout(0, 0, 1080, 2340)
         assertEquals("the character you pulled is the stone", "armour", gv.game.bulletId)
         assertTrue(v.debugSlingGameLive); assertFalse("the live band is gone", v.debugSling)

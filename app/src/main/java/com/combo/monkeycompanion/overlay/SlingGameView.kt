@@ -108,7 +108,7 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
             b.scatter.step(dt, game.phase == SlingGame.Phase.SPLAT || game.phase == SlingGame.Phase.FLY)
             (b.renderer as? ArmourRenderer)?.shed = if (b.scatter.active) 1f else 0f
         }
-        if (game.over && overAt >= 0f && clock - overAt > END_CARD_SEC) SlingGameHub.finish(context)
+        if (game.over && overAt >= 0f && clock - overAt > END_CARD_SEC) SlingGameHub.finish(context, "end card timed out")
     }
 
     private fun onEvent(e: SlingGame.Event) {
@@ -179,9 +179,9 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
                 if (grabbing) { grabbing = false; lastTension = game.tension; game.release() }
                 else if (e.actionMasked == MotionEvent.ACTION_UP) {
                     when {
-                        closeBtn.contains(e.x, e.y) && closeBtn.contains(downX, downY) -> SlingGameHub.finish(context)
+                        closeBtn.contains(e.x, e.y) && closeBtn.contains(downX, downY) -> SlingGameHub.finish(context, "close button")
                         game.over && againBtn.contains(e.x, e.y) -> restart()
-                        game.over && doneBtn.contains(e.x, e.y) -> SlingGameHub.finish(context)
+                        game.over && doneBtn.contains(e.x, e.y) -> SlingGameHub.finish(context, "done button")
                     }
                 }
             }
