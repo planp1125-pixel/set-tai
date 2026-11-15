@@ -361,3 +361,14 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Stars fly out where they meet, dust where each one lands, a short shake at the knock and a bigger one with the glass crack when both are down. Flying bodies stretch a little along their path.
 - The hit now counts (score, streak, +3 s, level) at the moment of the knock, not at the wall.
 - Rules: `SlingGame.knock()` (mass = 0.6 + TouchFeel.weight, restitution 0.6), `WALL_STONE` / `WALL_TARGET` events, `stoneSpin`, per-body slam state. Tests: knock scores at once, both slam separately, heavy vs light.
+
+## v10.43 (code 111): Slingshot game: soft, medium, hard (carrom bounces)
+
+- **The pull now has three powers, shown in words while you pull** (a coloured pill above the sling, the band and the aim dots in the same colour, and a click in the hand when you cross from one to the next):
+  - 🟢 **SOFT · bounces twice**: the stone bounces off two edges like a carrom coin, then the next edge is a splat.
+  - 🟡 **MEDIUM · bounces once**.
+  - 🔴 **HARD · splat!**: splats on the first edge, as before.
+- A bounce keeps 80 % of the speed, with a boing, a tick and a little dust. For soft and medium pulls the aim dots go on past the edge and show the bounce.
+- **Bank shot**: hit the target after bouncing off an edge = "BANK SHOT!" and double time (+6 s).
+- A gently knocked target also bounces off one edge before it slams; a hard knock slams it flat.
+- Rules: `SlingGame.Power`, `powerFor(tension)`, `stoneBounces`, `banked`, `BOUNCE_STONE` / `BOUNCE_TARGET`, `aimPoint` follows bounces. Tests: three powers, 2 / 1 / 0 bounces then one splat, the dots follow a bounce.

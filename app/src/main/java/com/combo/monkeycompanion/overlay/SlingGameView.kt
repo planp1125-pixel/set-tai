@@ -119,10 +119,15 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
             SlingGame.Event.HIT -> {   // v10.42 the knock itself: no freeze, a sharp click you feel, sparks where they meet
                 sfx(Sfx.S.BONK, 0.5f + 0.4f * game.hitForce)
                 buzz { Feel.playSharpHit(context, game.hitForce, TouchFeel.weight(game.target?.id ?: game.bulletId)) }
-                say("BONK!", game.hitX, game.hitY - SlingGame.BODY_H * 0.5f)
+                say(if (game.banked) "BANK SHOT!" else "BONK!", game.hitX, game.hitY - SlingGame.BODY_H * 0.5f)
                 sparks(px(game.hitX), px(game.hitY), 10 + (10 * game.hitForce).toInt())
                 shakeUntil = clock + 0.12f
-                banner = "+${SlingGame.BONUS_SEC.toInt()} s ⏱"; bannerT = clock
+                banner = "+${(if (game.banked) SlingGame.BONUS_SEC * 2f else SlingGame.BONUS_SEC).toInt()} s ⏱"; bannerT = clock
+            }
+            SlingGame.Event.BOUNCE_STONE, SlingGame.Event.BOUNCE_TARGET -> {   // v10.43 off the edge like a carrom coin
+                sfx(Sfx.S.BOING, 0.45f)
+                buzz { Feel.play(context, TouchFeel.slingTick(1f)) }
+                burstAt(px(game.bounceX), px(game.bounceY), 5)
             }
             SlingGame.Event.WALL_STONE -> slam(game.bx, game.by, game.bulletId, game.slamForce)
             SlingGame.Event.WALL_TARGET -> game.target?.let { slam(it.x, it.y, it.id, game.slamForce) }
@@ -194,7 +199,7 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
             MotionEvent.ACTION_DOWN -> {
                 downX = e.x; downY = e.y
                 grabbing = !game.over && !closeBtn.contains(e.x, e.y) && game.phase == SlingGame.Phase.AIM && e.y > topPad + 60f * d
-                notch = 0
+                notch = 0; lastPower = null
             }
             MotionEvent.ACTION_MOVE -> if (grabbing) {
                 game.pull((e.x - downX) / w, (e.y - downY) / w)
@@ -202,6 +207,7 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
                 val n = (game.tension * 8f).toInt()
                 if (n > notch) buzz { Feel.play(context, TouchFeel.slingTick(game.tension)) }
                 notch = n
+                powerClick()
                 invalidate()
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -226,9 +232,17 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         val n = (game.tension * 8f).toInt()
         if (n > notch) buzz { Feel.play(context, TouchFeel.slingTick(game.tension)) }
         notch = n
+        powerClick()
         invalidate()
     }
-    fun externalRelease() { if (game.phase == SlingGame.Phase.AIM) { lastTension = game.tension; game.release() } }
+    private var lastPower: SlingGame.Power? = null
+    /** A clear click when the pull crosses from soft to medium to hard (or back), so the hand knows too. */
+    private fun powerClick() {
+        val p = game.power
+        if (lastPower != null && p != lastPower) buzz { Feel.playPop(context) }
+        lastPower = p
+    }
+    fun externalRelease() { lastPower = null; if (game.phase == SlingGame.Phase.AIM) { lastTension = game.tension; game.release() } }
 
     private fun restart() {
         game = SlingGameHub.newGame(context, game.bulletId) ?: return
@@ -260,13 +274,14 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         g.target?.takeIf { it.carried && it.down }?.let { stars(c, px(it.x), px(it.y - SlingGame.BODY_H * 1.05f)) }
         c.restore()
         drawBanner(c)
-        if (g.pulling) drawAim(c, g)
+        if (g.pulling) { drawAim(c, g); drawPower(c, g) }
         for (b in bodies.values) if (b.scatter.active) b.scatter.draw(c, b.rig, 0f, 0f)
         fill.color = Color.WHITE
         for (p in puffs) { fill.alpha = (200 * (1f - p[4] / 0.7f)).toInt().coerceIn(0, 255); c.drawCircle(p[0], p[1], (5f + 9f * p[4]) * d, fill) }
         fill.alpha = 255
         drawWord(c)
         if (g.shots == 0 && !g.over && !g.pulling) hint(c, "Pull back anywhere and let go! 🎯", h * 0.93f)
+        else if (g.shots < 3 && !g.over && g.pulling) hint(c, "Soft pull bounces off the edges · hard pull splats", h * 0.93f)
         else if (g.shots in 1..2 && !g.over && g.target?.warning == true) hint(c, "! means it is about to escape", h * 0.93f)
         if (g.over) drawEndCard(c, g)
     }
@@ -390,19 +405,45 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         else { line.color = Color.rgb(0x2A, 0x1E, 0x1A); line.strokeWidth = 5f * d; c.drawLine(t[0], t[1], t[2], t[3], line) }
     }
     private fun band(c: Canvas, x0: Float, y0: Float, x1: Float, y1: Float, tension: Float) {
-        line.color = Color.rgb((0x2A + 150 * tension).toInt().coerceAtMost(255), 0x1E, 0x1A)
+        line.color = if (tension < SlingGame.MIN_PULL / SlingGame.MAX_PULL) Color.rgb(0x2A, 0x1E, 0x1A) else powerColor(SlingGame.powerFor(tension))
         line.strokeWidth = (6f - 2.5f * tension) * d
         c.drawLine(x0, y0, x1, y1, line)
     }
 
+    private fun powerColor(p: SlingGame.Power) = when (p) {
+        SlingGame.Power.SOFT -> Color.rgb(0x3D, 0xC9, 0x6B)
+        SlingGame.Power.MEDIUM -> Color.rgb(0xF5, 0xB7, 0x1F)
+        SlingGame.Power.HARD -> Color.rgb(0xF0, 0x4E, 0x37)
+    }
+    private fun powerLabel(p: SlingGame.Power) = when (p) {
+        SlingGame.Power.SOFT -> "SOFT · bounces twice"
+        SlingGame.Power.MEDIUM -> "MEDIUM · bounces once"
+        SlingGame.Power.HARD -> "HARD · splat!"
+    }
+
+    /** Aim dots in the power colour; a soft or medium pull shows the path on past its edge bounces. */
     private fun drawAim(c: Canvas, g: SlingGame) {
-        fill.color = Color.WHITE
-        for (i in 1..6) {
-            val p = g.aimPoint(i * 0.035f) ?: return
-            fill.alpha = 230 - i * 28
-            c.drawCircle(px(p.first), px(p.second - SlingGame.BODY_H * 0.45f), (5.5f - i * 0.5f) * d, fill)
+        val p = g.power
+        fill.color = powerColor(p)
+        val n = if (p == SlingGame.Power.HARD) 6 else 14
+        for (i in 1..n) {
+            val q = g.aimPoint(i * 0.035f) ?: break
+            fill.alpha = (235 - i * (if (n == 6) 28 else 13)).coerceAtLeast(40)
+            c.drawCircle(px(q.first), px(q.second - SlingGame.BODY_H * 0.45f), (5.5f - i * 0.22f).coerceAtLeast(2.5f) * d, fill)
         }
         fill.alpha = 255
+    }
+
+    /** v10.43 the power of the pull in words, on a pill under the fork: the player always knows bounce or splat. */
+    private fun drawPower(c: Canvas, g: SlingGame) {
+        if (g.tension < SlingGame.MIN_PULL / SlingGame.MAX_PULL) return
+        val p = g.power; val label = powerLabel(p)
+        text.textSize = 17f * d
+        val tw = text.measureText(label) + 30f * d; val th = 36f * d
+        val cx = w / 2f; val cy = (px(g.homeY) - px(SlingGame.BODY_H) - 78f * d).coerceAtLeast(topPad + 130f * d)
+        rect.set(cx - tw / 2f, cy - th / 2f, cx + tw / 2f, cy + th / 2f)
+        fill.color = powerColor(p); c.drawRoundRect(rect, th / 2f, th / 2f, fill)
+        text.color = Color.WHITE; c.drawText(label, cx, cy + text.textSize * 0.36f, text)
     }
 
     private fun drawHud(c: Canvas, g: SlingGame) {

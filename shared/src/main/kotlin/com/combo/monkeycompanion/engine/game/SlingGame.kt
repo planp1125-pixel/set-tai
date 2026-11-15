@@ -29,7 +29,12 @@ class SlingGame(
      * HIT = the stone knocked the target (scores here). WALL_STONE / WALL_TARGET = that one slammed into an edge after
      * a hit. DOUBLE_SPLAT = both are down. SPLAT = a miss: the stone slammed alone.
      */
-    enum class Event { SNAP, HIT, SPLAT, DOUBLE_SPLAT, TARGET_IN, TARGET_OUT, LAST_SECONDS, OVER, LEVEL_UP, TRICK, WALL_STONE, WALL_TARGET }
+    enum class Event { SNAP, HIT, SPLAT, DOUBLE_SPLAT, TARGET_IN, TARGET_OUT, LAST_SECONDS, OVER, LEVEL_UP, TRICK, WALL_STONE, WALL_TARGET, BOUNCE_STONE, BOUNCE_TARGET }
+    /**
+     * v10.43 how hard the band is pulled decides what an edge does, like a carrom coin: a SOFT shot bounces off two
+     * edges, a MEDIUM one off one, a HARD one splats at once. After its bounces are used the next edge is a splat.
+     */
+    enum class Power(val bounces: Int) { SOFT(2), MEDIUM(1), HARD(0) }
     /**
      * v10.41 each character's own escape. It always shows a short warning first ([Target.warning]), so a hit is skill:
      * FLY_UP shoots up and drifts back, VANISH disappears (can't be hit) and pops up somewhere else, DASH sprints,
@@ -46,6 +51,8 @@ class SlingGame(
         var kvx = 0f; var kvy = 0f
         var spin = 0f; var omega = 0f
         var down = false
+        /** v10.43 edge bounces left before it slams. */
+        var bounces = 0
         var wall = Wall.TOP
         var splatT = 0f
         var leaving = false
@@ -124,6 +131,18 @@ class SlingGame(
     val pulling: Boolean get() = phase == Phase.AIM && (pullX != 0f || pullY != 0f)
     /** 0..1: how hard the band is pulled. */
     val tension: Float get() = (hypot(pullX, pullY) / MAX_PULL).coerceIn(0f, 1f)
+    /** v10.43 the power of the pull right now (while aiming) or of the shot in the air. */
+    val power: Power get() = if (phase == Phase.AIM) powerFor(tension) else shotPower
+    private var shotPower = Power.HARD
+    /** Edge bounces the stone still has in this shot. */
+    var stoneBounces = 0; private set
+    /** The stone bounced off an edge before it knocked the target: a bank shot. */
+    var banked = false; private set
+    private var stoneBounced = false
+    private var flyT = 0f
+    /** Where the last bounce was (screen widths; y is the body centre). */
+    var bounceX = 0f; private set
+    var bounceY = 0f; private set
     val over: Boolean get() = phase == Phase.OVER
 
     /** Finger moved: the stone follows by ([dx], [dy]) screen widths from home, up to [MAX_PULL]. */
@@ -145,18 +164,31 @@ class SlingGame(
         pullX = 0f; pullY = 0f
         phase = Phase.FLY; shots++
         stoneDown = false; stoneSplatT = 0f; stoneOmega = 0f; knockT = 0f
+        shotPower = powerFor((len / MAX_PULL).coerceIn(0f, 1f)); stoneBounces = shotPower.bounces; stoneBounced = false; banked = false; flyT = 0f
         stoneSpin = Math.toDegrees(atan2(bvy, bvx).toDouble()).toFloat() + 90f
         pending.add(Event.SNAP)
         return true
     }
 
-    /** Where the stone would be [s] seconds after letting go now (for the aim dots). null when not pulling enough. */
+    /**
+     * Where the stone would be [s] seconds after letting go now (for the aim dots), following its edge bounces
+     * (v10.43). null when not pulling enough, or when it would already have splatted by then.
+     */
     fun aimPoint(s: Float): Pair<Float, Float>? {
         val len = hypot(pullX, pullY)
         if (phase != Phase.AIM || len < MIN_PULL) return null
         val sp = launchSpeed(tension)
-        val vx = -pullX / len * sp; val vy = -pullY / len * sp
-        return (bx + vx * s) to (by + vy * s + 0.5f * GRAVITY * s * s)
+        var vx = -pullX / len * sp; var vy = -pullY / len * sp
+        var x = bx; var y = by; var left = powerFor(tension).bounces
+        var t0 = 0f
+        while (t0 < s) {
+            val h = minOf(1f / 120f, s - t0); t0 += h
+            vy += GRAVITY * h; x += vx * h; y += vy * h
+            val w = wallOf(x, y) ?: continue
+            if (left <= 0) return null
+            val v = reflect(w, x, y, vx, vy); x = v[0]; y = v[1]; vx = v[2]; vy = v[3]; left--
+        }
+        return x to y
     }
 
     fun step(dt0: Float) {
@@ -199,14 +231,15 @@ class SlingGame(
                 bvy += (if (knocked) KNOCK_GRAVITY else GRAVITY) * h
                 bx += bvx * h; by += bvy * h
                 if (knocked) stoneSpin += stoneOmega * h else stoneSpin = Math.toDegrees(atan2(bvy, bvx).toDouble()).toFloat() + 90f
-                wallOf(bx, by)?.let { stoneSlam(it) }
+                flyT += h
+                wallOf(bx, by)?.let { w -> if (stoneBounces > 0 && flyT < FLY_MAX_SEC) bounceStone(w) else stoneSlam(w) }
             } else stoneSplatT += h
             if (tg != null && knocked) {
                 if (!tg.down) {
                     tg.kvy += KNOCK_GRAVITY * h
                     tg.x += tg.kvx * h; tg.y += tg.kvy * h; tg.spin += tg.omega * h
                     val w = wallOf(tg.x, tg.y) ?: if (knockT > KNOCK_MAX_SEC) Wall.FLOOR else null
-                    if (w != null) targetSlam(tg, w)
+                    if (w != null) { if (tg.bounces > 0 && knockT <= KNOCK_MAX_SEC) bounceTarget(tg, w) else targetSlam(tg, w) }
                 } else tg.splatT += h
             } else if (tg != null && !stoneDown && !tg.leaving && tg.hittable && hits(tg)) knock(tg)
             if (stoneDown && (tg == null || !tg.carried || tg.down)) rest()
@@ -244,13 +277,40 @@ class SlingGame(
         val turn = if (nx >= 0f) 1f else -1f
         tg.omega = turn * (520f + 380f * rng.nextFloat()); stoneOmega = -turn * (300f + 260f * rng.nextFloat())
         tg.carried = true; tg.down = false; tg.splatT = 0f; tg.spin = 0f; knockT = 0f
+        // v10.43: a gentle knock lets the target bounce off one edge before it slams; a hard one slams it flat
+        tg.bounces = if (hypot(tg.kvx, tg.kvy) < TARGET_BOUNCE_BELOW) 1 else 0
+        banked = stoneBounced
         hitX = (bx + tg.x) / 2f; hitY = (by + tg.y) / 2f - BODY_H / 2f
         hitForce = (vrel / SPEED_MAX).coerceIn(0.3f, 1f)
         val before = level
         score++; streak++; if (streak > bestStreak) bestStreak = streak
-        timeLeft = (timeLeft + BONUS_SEC).coerceAtMost(MAX_SEC); bonus += BONUS_SEC
+        val gain = if (banked) BONUS_SEC * 2f else BONUS_SEC   // a bank shot gives double time
+        timeLeft = (timeLeft + gain).coerceAtMost(MAX_SEC); bonus += gain
         pending.add(Event.HIT)
         if (level > before) pending.add(Event.LEVEL_UP)
+    }
+
+    /** v10.43 bounce off an edge like a carrom coin: mirror the speed into the screen, lose a little of it. */
+    private fun bounceStone(w: Wall) {
+        val v = reflect(w, bx, by, bvx, bvy)
+        bx = v[0]; by = v[1]; bvx = v[2]; bvy = v[3]
+        stoneBounces--; stoneBounced = true
+        bounceX = bx; bounceY = by - BODY_H / 2f
+        pending.add(Event.BOUNCE_STONE)
+    }
+    private fun bounceTarget(tg: Target, w: Wall) {
+        val v = reflect(w, tg.x, tg.y, tg.kvx, tg.kvy)
+        tg.x = v[0]; tg.y = v[1]; tg.kvx = v[2]; tg.kvy = v[3]
+        tg.bounces--; tg.omega = -tg.omega * 0.7f
+        bounceX = tg.x; bounceY = tg.y - BODY_H / 2f
+        pending.add(Event.BOUNCE_TARGET)
+    }
+    /** (x, y, vx, vy) after bouncing off [w]: back inside the screen, the speed into the edge turned around. */
+    private fun reflect(w: Wall, x: Float, y: Float, vx: Float, vy: Float): FloatArray = when (w) {
+        Wall.LEFT -> floatArrayOf(EDGE + 0.002f, y, kotlin.math.abs(vx) * BOUNCE_KEEP, vy * BOUNCE_SLIDE)
+        Wall.RIGHT -> floatArrayOf(1f - EDGE - 0.002f, y, -kotlin.math.abs(vx) * BOUNCE_KEEP, vy * BOUNCE_SLIDE)
+        Wall.TOP -> floatArrayOf(x, TOP_EDGE + BODY_H / 2f + 0.002f, vx * BOUNCE_SLIDE, kotlin.math.abs(vy) * BOUNCE_KEEP)
+        Wall.FLOOR -> floatArrayOf(x, aspect - FLOOR_EDGE - 0.002f, vx * BOUNCE_SLIDE, -kotlin.math.abs(vy) * BOUNCE_KEEP)
     }
 
     private fun stoneSlam(w: Wall) {
@@ -376,6 +436,18 @@ class SlingGame(
         const val KNOCK_GRAVITY = 2.4f
         /** Safety: a knocked target is put down after this long even if it found no edge. */
         const val KNOCK_MAX_SEC = 2.5f
+        // v10.43 carrom bounces
+        /** Pull below this (0..1) = SOFT, below [HARD_FROM] = MEDIUM, else HARD. */
+        const val SOFT_BELOW = 0.45f
+        const val HARD_FROM = 0.78f
+        /** Speed kept across the edge / along it at a bounce. */
+        const val BOUNCE_KEEP = 0.80f
+        const val BOUNCE_SLIDE = 0.94f
+        /** A knocked target slower than this bounces off one edge first. */
+        const val TARGET_BOUNCE_BELOW = 1.75f
+        /** Safety: a shot still in the air after this long splats at the next edge. */
+        const val FLY_MAX_SEC = 5f
+        fun powerFor(tension: Float): Power = when { tension < SOFT_BELOW -> Power.SOFT; tension < HARD_FROM -> Power.MEDIUM; else -> Power.HARD }
         const val EDGE = 0.07f
         const val TOP_EDGE = 0.09f
         const val FLOOR_EDGE = 0.03f

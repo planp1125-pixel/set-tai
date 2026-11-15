@@ -226,6 +226,49 @@ class SlingGameTest {
         assertTrue("the stone keeps more speed against the light one", light.second > heavy.second)
     }
 
+    // ---------------- v10.43 carrom bounces ----------------
+    @Test fun thePullHasThreePowers() {
+        assertEquals(SlingGame.Power.SOFT, SlingGame.powerFor(0.2f)); assertEquals(2, SlingGame.Power.SOFT.bounces)
+        assertEquals(SlingGame.Power.MEDIUM, SlingGame.powerFor(0.6f)); assertEquals(1, SlingGame.Power.MEDIUM.bounces)
+        assertEquals(SlingGame.Power.HARD, SlingGame.powerFor(0.9f)); assertEquals(0, SlingGame.Power.HARD.bounces)
+        val g = game(); g.step(0.016f)
+        g.pull(-0.09f, 0f); assertEquals(SlingGame.Power.SOFT, g.power)
+        g.pull(-0.18f, 0f); assertEquals(SlingGame.Power.MEDIUM, g.power)
+        g.pull(-0.30f, 0f); assertEquals(SlingGame.Power.HARD, g.power)
+    }
+
+    /** Fire along the floor line (far below the target) with [pull] and count the bounces before the splat. */
+    private fun bouncesOf(pull: Float): Pair<Int, List<SlingGame.Event>> {
+        val g = game(); g.run(1f); g.drain()
+        g.pull(-pull, 0f); assertTrue(g.release())
+        val ev = ArrayList<SlingGame.Event>()
+        var n = 0
+        while (g.phase == SlingGame.Phase.FLY && n++ < 240 * 8) { g.step(1f / 240f); ev += g.drain() }
+        return ev.count { it == SlingGame.Event.BOUNCE_STONE } to ev
+    }
+
+    @Test fun aSoftShotBouncesTwiceAMediumOnceAHardOneSplatsAtOnce() {
+        val soft = bouncesOf(0.10f); val medium = bouncesOf(0.18f); val hard = bouncesOf(0.30f)
+        assertEquals(2, soft.first); assertEquals(1, medium.first); assertEquals(0, hard.first)
+        for (r in listOf(soft, medium, hard)) assertEquals("every missed shot ends in one splat", 1, r.second.count { it == SlingGame.Event.SPLAT })
+    }
+
+    @Test fun aBounceTurnsTheStoneAroundAndTheAimDotsFollowIt() {
+        val g = game(); g.run(1f)
+        g.pull(-0.10f, 0f)   // soft, to the right
+        val far = g.aimPoint(0.45f)
+        assertNotNull("the dots go on past the edge for a soft pull", far)
+        assertTrue("and come back into the screen", far!!.first < 1f - SlingGame.EDGE)
+        g.pull(-0.30f, 0f)
+        assertEquals("a hard pull has no dots past the edge", null, g.aimPoint(0.45f))
+        g.pull(-0.10f, 0f); g.release()
+        var n = 0
+        while (g.stoneBounces == 2 && n++ < 240 * 3) g.step(1f / 240f)
+        assertEquals(1, g.stoneBounces)
+        assertTrue("moving left after bouncing off the right edge", g.bvx < 0f)
+        assertEquals(SlingGame.Phase.FLY, g.phase)
+    }
+
     @Test fun sameSeedSameGame() {
         val a = game(11L); val b = game(11L)
         a.run(6f); b.run(6f)
