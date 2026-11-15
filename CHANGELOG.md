@@ -408,3 +408,9 @@ Every character now feels like a little body in your hand (the phone's vibration
   - Level 4 and up: four targets.
 - Targets are drawn full size on levels 1–2, 90 % on level 3, 82 % from level 4.
 - `SlingGame.POWER_STAGE = 3`, `targetCountFor(stage) = stage (1..4)`, `targetScaleFor`.
+
+## v10.45.2 (code 115): Slingshot game: the power can miss
+
+- The thrown power was aimed at the nearest target and never missed, which was boring. Now it is **not aimed**: it flies back into the screen from the edge your character bounced off, in a random direction (up to 65° either side of straight out), so it may knock somebody or nobody.
+- It still bounces as often as the pull allows, so a harder pull gives it more chances. Measured over 400 shots per case: a soft pull hits about 20–25 % of the time, medium about 37–44 %, hard about 51–55 %.
+- `SlingGame.firePower(wall)`, `POWER_SPREAD_DEG`. Test: over 80 shots it sometimes hits, misses more often, and goes in many directions.

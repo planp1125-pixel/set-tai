@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.45.1 (versionCode 114)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.45.2 (versionCode 115)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.40 Slingshot game (build 1 of 3)
 

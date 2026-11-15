@@ -307,19 +307,20 @@ class SlingGame(
     private fun hits(tg: Target): Boolean = hypot(tg.x - bx, tcy(tg) - (by - BODY_H / 2f)) < HIT_R * (1f + targetScale) / 2f
 
     // ---------------- v10.45 the power shot ----------------
-    /** Thrown by itself at the first bounce, at the nearest target (a little ahead of it); straight on if nobody is there. */
-    private fun firePower() {
+    /**
+     * Thrown by itself at the first bounce. v10.45.2: NOT aimed at anyone (aimed, it never missed, which was boring).
+     * It flies back into the screen from the edge the stone bounced off, in a random direction up to
+     * [POWER_SPREAD_DEG] either side of straight out, so it may hit somebody or nobody. More bounces (a harder pull)
+     * give it more chances.
+     */
+    private fun firePower(w: Wall) {
         powerFired = true
         val sx = bx; val sy = by - BODY_H / 2f
         val sp = powerSpeedFor(bulletId)
-        val tg = targets.filter { !it.carried && !it.leaving }.minByOrNull { hypot(it.x - sx, tcy(it) - sy) + if (it.hittable) 0f else 5f }
-        var dx: Float; var dy: Float
-        if (tg != null) {
-            val tf = hypot(tg.x - sx, tcy(tg) - sy) / sp
-            dx = tg.x + tg.vx * tg.dash * tf - sx; dy = tcy(tg) - sy
-        } else { dx = bvx; dy = bvy }
-        val len = hypot(dx, dy).coerceAtLeast(1e-4f)
-        powerShots.add(Shot(sx, sy, dx / len * sp, dy / len * sp, shotPower.bounces))
+        // straight out of the edge it bounced off
+        val base = when (w) { Wall.LEFT -> 0.0; Wall.RIGHT -> Math.PI; Wall.TOP -> Math.PI / 2; Wall.FLOOR -> -Math.PI / 2 }
+        val a = base + Math.toRadians(((rng.nextFloat() * 2f - 1f) * POWER_SPREAD_DEG).toDouble())
+        powerShots.add(Shot(sx, sy, Math.cos(a).toFloat() * sp, Math.sin(a).toFloat() * sp, shotPower.bounces))
         pending.add(Event.POWER_FIRE)
     }
 
@@ -420,7 +421,7 @@ class SlingGame(
         if (stoneBounces <= 0) startFalling()   // v10.44: that was its last bounce; now it drops
         bounceX = bx; bounceY = by - BODY_H / 2f
         pending.add(Event.BOUNCE_STONE)
-        if (powersOn && !powerFired) firePower()   // v10.45: the first bounce throws the power
+        if (powersOn && !powerFired) firePower(w)   // v10.45: the first bounce throws the power
     }
     private fun bounceTarget(tg: Target, w: Wall) {
         val v = reflect(w, tg.x, tg.y, tg.kvx, tg.kvy)
@@ -571,6 +572,8 @@ class SlingGame(
         const val SHOT_EDGE = 0.03f
         const val SHOT_MAX_SEC = 3f
         const val POWER_KNOCK_SPEED = 1.6f
+        /** The power leaves the edge within this many degrees either side of straight out. */
+        const val POWER_SPREAD_DEG = 65f
         /** A power hit adds this much time (a body hit adds [BONUS_SEC]). */
         const val POWER_BONUS_SEC = 2f
         /** How fast each character's power flies (Tutty's fireball is the fast one). */

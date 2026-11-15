@@ -337,7 +337,7 @@ class SlingGameTest {
 
     @Test fun fromLevelThreeThePowerIsThrownOnceAtTheFirstBounceAndCanKnockATarget() {
         var knocked = false
-        for (seed in 1L..12L) {
+        for (seed in 1L..80L) {
             val g = SlingGame(2.17f, "armour", pool, emptySet(), seed, 60f, emptyMap(), stage = 3); g.run(4f); g.drain()
             assertTrue(g.powersOn); assertEquals(3, g.targets.size)
             val before = g.score; val t0 = g.timeLeft
@@ -364,6 +364,25 @@ class SlingGameTest {
             }
         }
         assertTrue("the power knocks a target within a few tries", knocked)
+    }
+
+    /** v10.45.2: the power is not aimed, so over many shots it sometimes knocks somebody and sometimes nobody. */
+    @Test fun thePowerSometimesHitsAndSometimesMisses() {
+        var hits = 0; var misses = 0; var differentWays = HashSet<Int>()
+        for (seed in 1L..80L) {
+            val g = SlingGame(2.17f, "armour", pool, emptySet(), seed, 60f, emptyMap(), stage = 4); g.run(4f); g.drain()
+            g.pull(-0.20f, 0f); assertTrue(g.release())
+            val ev = ArrayList<SlingGame.Event>()
+            var n = 0
+            while (g.phase == SlingGame.Phase.FLY && n++ < 240 * 12) {
+                g.step(1f / 240f); val now = g.drain(); ev += now
+                if (SlingGame.Event.POWER_FIRE in now) g.powerShots.firstOrNull()?.let { differentWays.add((Math.toDegrees(kotlin.math.atan2(it.vy, it.vx).toDouble()) / 10).toInt()) }
+            }
+            if (SlingGame.Event.POWER_HIT in ev) hits++ else misses++
+        }
+        assertTrue("it hits sometimes ($hits of 80)", hits >= 5)
+        assertTrue("and misses more often than not, so a hit is a nice surprise ($misses of 80)", misses > hits)
+        assertTrue("thrown in many different directions (${differentWays.size})", differentWays.size >= 6)
     }
 
     @Test fun tuttysFireballIsTheFastOne() {
