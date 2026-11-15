@@ -108,7 +108,7 @@ class SlingGameViewTest {
         v.debugChangeLevel(-1)
         assertEquals(3, v.debugLevel); assertEquals("a fresh round on level 3", 3, v.game.stage); assertEquals(3, SlingGameHub.level(ctx))
         repeat(200) { v.advance(1f / 60f) }; v.draw(c)
-        assertEquals(2, v.game.targets.size)
+        assertEquals(3, v.game.targets.size)
         assertTrue(v.debugShoot(0.02f, 0.28f))
         var n = 0
         while (v.game.phase == SlingGame.Phase.FLY && n++ < 700) { v.advance(1f / 60f); if (n % 5 == 0) v.draw(c) }

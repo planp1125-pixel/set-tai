@@ -398,3 +398,13 @@ Every character now feels like a little body in your hand (the phone's vibration
 - A shot only counts as a miss when neither the character nor its power hit anything ("MISS!" waits for the power to finish).
 - Level plan now: 1 = one target; 2–3 = two targets + escapes; 3+ = flying styles; 4+ = four targets + powers.
 - Rules: `SlingGame.Shot`, `powerShots`, `firePower()`, `powerKnock()`, `targetScale`, `POWER_STAGE`, `STYLE_STAGE`; events POWER_FIRE / POWER_HIT / POWER_BOUNCE / MISS. Tests: no power below level 4, thrown once at the first bounce, can knock a target, every character's style and power draws.
+
+## v10.45.1 (code 114): Slingshot game: powers and three targets start at level 3
+
+- The owner expected the powers on level 3 (v10.45 had them from level 4, with only two targets on level 3). Now the levels step up one target at a time:
+  - Level 1: one target, no escapes.
+  - Level 2: two targets, and they escape with their own powers.
+  - Level 3: **three targets**, your character flies in its own style and **throws its power at the first bounce**.
+  - Level 4 and up: four targets.
+- Targets are drawn full size on levels 1–2, 90 % on level 3, 82 % from level 4.
+- `SlingGame.POWER_STAGE = 3`, `targetCountFor(stage) = stage (1..4)`, `targetScaleFor`.

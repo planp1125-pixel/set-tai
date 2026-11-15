@@ -296,7 +296,7 @@ class SlingGameTest {
 
     @Test fun levelOneIsOneTargetWithNoEscapesAndHigherLevelsAddTargetsAndEscapes() {
         assertEquals(1, SlingGame.targetCountFor(1)); assertEquals(2, SlingGame.targetCountFor(2))
-        assertEquals(2, SlingGame.targetCountFor(3)); assertEquals(4, SlingGame.targetCountFor(4))
+        assertEquals(3, SlingGame.targetCountFor(3)); assertEquals(4, SlingGame.targetCountFor(4)); assertEquals(4, SlingGame.targetCountFor(9))
         val tricks = pool.associateWith { SlingGame.Trick.DASH }
         val one = SlingGame(2.17f, "devil", pool, emptySet(), 3L, 60f, tricks, stage = 1); one.run(6f)
         assertEquals(1, one.targets.size); assertTrue(one.targets.all { it.trick == SlingGame.Trick.NONE })
@@ -306,6 +306,9 @@ class SlingGameTest {
         val four = SlingGame(2.17f, "devil", pool, emptySet(), 3L, 60f, tricks, stage = 4); four.run(5f)
         assertEquals(4, four.targets.size); assertEquals(4, four.targets.map { it.id }.distinct().size)
         assertEquals("smaller targets from level 4", SlingGame.SMALL_TARGET, four.targetScale, 0f); assertEquals(1f, two.targetScale, 0f)
+        val three = SlingGame(2.17f, "devil", pool, emptySet(), 3L, 60f, tricks, stage = 3); three.run(5f)
+        assertEquals("level 3 = three targets", 3, three.targets.size); assertEquals(SlingGame.MID_TARGET, three.targetScale, 0f)
+        assertTrue("and the power is on from level 3", three.powersOn); assertFalse(two.powersOn)
     }
 
     @Test fun starsAtEightFifteenAndTwentyFive() {
@@ -324,19 +327,19 @@ class SlingGameTest {
         return ev
     }
 
-    @Test fun belowLevelFourNoPowerIsThrown() {
-        val g = SlingGame(2.17f, "devil", pool, emptySet(), 3L, 60f, emptyMap(), stage = 3); g.run(3f); g.drain()
+    @Test fun belowLevelThreeNoPowerIsThrown() {
+        val g = SlingGame(2.17f, "devil", pool, emptySet(), 3L, 60f, emptyMap(), stage = 2); g.run(3f); g.drain()
         assertFalse(g.powersOn)
         val ev = softShot(g)
         assertTrue(SlingGame.Event.BOUNCE_STONE in ev)
         assertFalse(SlingGame.Event.POWER_FIRE in ev); assertTrue(g.powerShots.isEmpty())
     }
 
-    @Test fun fromLevelFourThePowerIsThrownOnceAtTheFirstBounceAndCanKnockATarget() {
+    @Test fun fromLevelThreeThePowerIsThrownOnceAtTheFirstBounceAndCanKnockATarget() {
         var knocked = false
         for (seed in 1L..12L) {
-            val g = SlingGame(2.17f, "armour", pool, emptySet(), seed, 60f, emptyMap(), stage = 4); g.run(4f); g.drain()
-            assertTrue(g.powersOn); assertEquals(4, g.targets.size)
+            val g = SlingGame(2.17f, "armour", pool, emptySet(), seed, 60f, emptyMap(), stage = 3); g.run(4f); g.drain()
+            assertTrue(g.powersOn); assertEquals(3, g.targets.size)
             val before = g.score; val t0 = g.timeLeft
             g.pull(-0.20f, 0f); assertTrue(g.release())   // medium: two bounces, so the power bounces twice too
             val ev = ArrayList<SlingGame.Event>()

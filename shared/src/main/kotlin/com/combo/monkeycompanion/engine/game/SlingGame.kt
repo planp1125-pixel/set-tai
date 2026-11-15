@@ -24,8 +24,9 @@ class SlingGame(
     /** v10.41: how each character escapes (default [Trick.HOP]). */
     private val tricks: Map<String, Trick> = emptyMap(),
     /**
-     * v10.44 the saved level being played (1..[MAX_STAGE]). Level 1: one target, no escapes. From level 2: two targets
-     * and they escape with their own powers. From level 4: three targets. Every level is a little faster.
+     * The saved level being played (1..[MAX_STAGE]). Level 1: one target, no escapes. Level 2: two targets, and they
+     * escape with their own powers. Level 3: three targets, the stone flies in its own style and throws its power.
+     * Level 4 and up: four targets. Every level is a little faster.
      */
     val stage: Int = 1,
 ) {
@@ -137,7 +138,7 @@ class SlingGame(
     private var powerFired = false
     private var missPending = false
     /** From level [POWER_STAGE] four smaller targets roam; this is their size (1 = full). */
-    val targetScale: Float get() = if (stage >= POWER_STAGE) SMALL_TARGET else 1f
+    val targetScale: Float get() = targetScaleFor(stage)
     /** Where the stone slammed (valid once [stoneDown]). */
     var wall = Wall.TOP; private set
     /** Time since everything came to rest (the [Phase.SPLAT] clock). */
@@ -555,12 +556,16 @@ class SlingGame(
         /** Hits in one round for 1, 2 and 3 stars. One star unlocks the next level. */
         val STAR_GOALS = intArrayOf(8, 15, 25)
         fun starsFor(score: Int): Int = STAR_GOALS.count { score >= it }
-        fun targetCountFor(stage: Int): Int = when { stage <= 1 -> 1; stage < POWER_STAGE -> 2; else -> 4 }
+        /** v10.45.1: as many targets as the level number, up to four (level 1 = 1, 2 = 2, 3 = 3, 4 and up = 4). */
+        fun targetCountFor(stage: Int): Int = stage.coerceIn(1, 4)
+        /** More targets are drawn a little smaller so the screen is not crowded. */
+        fun targetScaleFor(stage: Int): Float = when { stage <= 2 -> 1f; stage == 3 -> MID_TARGET; else -> SMALL_TARGET }
+        const val MID_TARGET = 0.9f
         // v10.45 flying styles and power shots
         /** From this level the stone flies in its own style (looks only). */
         const val STYLE_STAGE = 3
-        /** From this level: four smaller targets, and the stone throws its power at its first bounce. */
-        const val POWER_STAGE = 4
+        /** From this level the stone throws its power at its first bounce (v10.45.1: level 3, with the flying styles). */
+        const val POWER_STAGE = 3
         const val SMALL_TARGET = 0.82f
         const val SHOT_R = 0.045f
         const val SHOT_EDGE = 0.03f
