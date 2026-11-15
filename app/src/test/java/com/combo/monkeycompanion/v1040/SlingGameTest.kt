@@ -311,6 +311,23 @@ class SlingGameTest {
         assertTrue("and the power is on from level 3", three.powersOn); assertFalse(two.powersOn)
     }
 
+    /** v10.45.3: every level is clearly faster (it was only 7 % a level, which nobody noticed). */
+    @Test fun everyLevelIsClearlyFaster() {
+        assertEquals(1f, SlingGame.stageSpeedFor(1), 1e-4f); assertEquals(1.18f, SlingGame.stageSpeedFor(2), 1e-4f)
+        assertEquals(1.54f, SlingGame.stageSpeedFor(4), 1e-4f); assertEquals(2f, SlingGame.stageSpeedFor(10), 1e-4f)
+        fun meanSpeed(stage: Int): Float {   // the average walking speed of everyone who comes in over many rounds
+            var sum = 0f; var n = 0
+            for (seed in 1L..40L) {
+                val g = SlingGame(2.17f, "devil", pool, emptySet(), seed, 60f, emptyMap(), stage)
+                repeat(60) { g.step(1f / 60f) }
+                for (tg in g.targets) { sum += kotlin.math.abs(tg.vx); n++ }
+            }
+            return sum / n
+        }
+        val l1 = meanSpeed(1); val l4 = meanSpeed(4)
+        assertTrue("level 4 targets move at least 1.4x as fast as level 1 ($l4 vs $l1)", l4 > l1 * 1.4f)
+    }
+
     @Test fun starsAtEightFifteenAndTwentyFive() {
         assertEquals(0, SlingGame.starsFor(7)); assertEquals(1, SlingGame.starsFor(8)); assertEquals(1, SlingGame.starsFor(14))
         assertEquals(2, SlingGame.starsFor(15)); assertEquals(3, SlingGame.starsFor(25)); assertEquals(3, SlingGame.starsFor(60))

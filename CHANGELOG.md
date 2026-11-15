@@ -414,3 +414,9 @@ Every character now feels like a little body in your hand (the phone's vibration
 - The thrown power was aimed at the nearest target and never missed, which was boring. Now it is **not aimed**: it flies back into the screen from the edge your character bounced off, in a random direction (up to 65° either side of straight out), so it may knock somebody or nobody.
 - It still bounces as often as the pull allows, so a harder pull gives it more chances. Measured over 400 shots per case: a soft pull hits about 20–25 % of the time, medium about 37–44 %, hard about 51–55 %.
 - `SlingGame.firePower(wall)`, `POWER_SPREAD_DEG`. Test: over 80 shots it sometimes hits, misses more often, and goes in many directions.
+
+## v10.45.3 (code 116): Slingshot game: every level is clearly faster
+
+- Targets were only 7 % faster per level (21 % at level 4), and each target's own speed varies by 2x, so nobody noticed. Now it is **+18 % a level, up to 2x**: level 2 = 1.18x, level 3 = 1.36x, level 4 = 1.54x, level 7 and up = 2x.
+- Inside a round they still speed up every 5 hits (up to 1.5x on top).
+- `SlingGame.stageSpeedFor(stage)`. Test: level 4 targets move at least 1.4x as fast as level 1 on average.

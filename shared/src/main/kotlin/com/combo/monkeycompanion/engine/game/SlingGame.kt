@@ -522,9 +522,9 @@ class SlingGame(
     private fun trickGap(): Float = (3.5f - 0.35f * (pace - 1) - 0.15f * (stage - 2)).coerceIn(1.6f, 3.5f) * (0.8f + 0.4f * rng.nextFloat())
 
     private fun sign(v: Float) = if (v >= 0f) 1f else -1f
-    /** Targets get faster through the round and with every saved level (never more than about 2.2x). */
+    /** Targets get faster through the round (up to 1.5x) and clearly faster with every saved level ([stageSpeedFor]). */
     private fun speedFor(): Float = (TARGET_SPEED_MIN + rng.nextFloat() * (TARGET_SPEED_MAX - TARGET_SPEED_MIN)) *
-        (1f + 0.10f * (pace - 1)).coerceAtMost(1.5f) * (1f + 0.07f * (stage - 1)).coerceAtMost(1.5f)
+        (1f + 0.10f * (pace - 1)).coerceAtMost(1.5f) * stageSpeedFor(stage)
 
     private fun spawn() {
         val here = targets.map { it.id }
@@ -562,6 +562,11 @@ class SlingGame(
         /** More targets are drawn a little smaller so the screen is not crowded. */
         fun targetScaleFor(stage: Int): Float = when { stage <= 2 -> 1f; stage == 3 -> MID_TARGET; else -> SMALL_TARGET }
         const val MID_TARGET = 0.9f
+        /**
+         * v10.45.3 how much faster the targets are on a saved level: +18 % a level, up to 2x (level 1 = 1.0,
+         * 2 = 1.18, 3 = 1.36, 4 = 1.54 … 7 and up = 2.0). It was +7 % a level, too little to notice.
+         */
+        fun stageSpeedFor(stage: Int): Float = (1f + 0.18f * (stage.coerceAtLeast(1) - 1)).coerceAtMost(2f)
         // v10.45 flying styles and power shots
         /** From this level the stone flies in its own style (looks only). */
         const val STYLE_STAGE = 3
