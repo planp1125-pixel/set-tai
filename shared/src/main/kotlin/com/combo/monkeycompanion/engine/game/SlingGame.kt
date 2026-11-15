@@ -23,18 +23,24 @@ class SlingGame(
     val roundSec: Float = ROUND_SEC,
     /** v10.41: how each character escapes (default [Trick.HOP]). */
     private val tricks: Map<String, Trick> = emptyMap(),
+    /**
+     * v10.44 the saved level being played (1..[MAX_STAGE]). Level 1: one target, no escapes. From level 2: two targets
+     * and they escape with their own powers. From level 4: three targets. Every level is a little faster.
+     */
+    val stage: Int = 1,
 ) {
     enum class Phase { AIM, FLY, SPLAT, RETURN, OVER }
     /**
      * HIT = the stone knocked the target (scores here). WALL_STONE / WALL_TARGET = that one slammed into an edge after
      * a hit. DOUBLE_SPLAT = both are down. SPLAT = a miss: the stone slammed alone.
      */
-    enum class Event { SNAP, HIT, SPLAT, DOUBLE_SPLAT, TARGET_IN, TARGET_OUT, LAST_SECONDS, OVER, LEVEL_UP, TRICK, WALL_STONE, WALL_TARGET, BOUNCE_STONE, BOUNCE_TARGET }
+    enum class Event { SNAP, HIT, SPLAT, DOUBLE_SPLAT, TARGET_IN, TARGET_OUT, LAST_SECONDS, OVER, FASTER, TRICK, WALL_STONE, WALL_TARGET, BOUNCE_STONE, BOUNCE_TARGET, COMBO }
     /**
-     * v10.43 how hard the band is pulled decides what an edge does, like a carrom coin: a SOFT shot bounces off two
-     * edges, a MEDIUM one off one, a HARD one splats at once. After its bounces are used the next edge is a splat.
+     * v10.43 / v10.44 every shot bounces off the edges like a carrom coin, and a harder pull has more energy: SOFT
+     * bounces once, MEDIUM twice, HARD three times. After its last bounce the stone drops and the splat is that last
+     * fall. A full pull never splats at once any more.
      */
-    enum class Power(val bounces: Int) { SOFT(2), MEDIUM(1), HARD(0) }
+    enum class Power(val bounces: Int) { SOFT(1), MEDIUM(2), HARD(3) }
     /**
      * v10.41 each character's own escape. It always shows a short warning first ([Target.warning]), so a hit is skill:
      * FLY_UP shoots up and drifts back, VANISH disappears (can't be hit) and pops up somewhere else, DASH sprints,
@@ -53,6 +59,7 @@ class SlingGame(
         var down = false
         /** v10.43 edge bounces left before it slams. */
         var bounces = 0
+        var knockT = 0f
         var wall = Wall.TOP
         var splatT = 0f
         var leaving = false
@@ -96,11 +103,26 @@ class SlingGame(
     var streak = 0; private set
     var bestStreak = 0; private set
     var shots = 0; private set
-    /** v10.41: 1, 2, 3… one level every [HITS_PER_LEVEL] hits: faster targets, more escapes. */
-    val level: Int get() = 1 + score / HITS_PER_LEVEL
+    /** v10.44 (was "level"): 1, 2, 3… inside one round the targets speed up every [HITS_PER_PACE] hits. */
+    val pace: Int get() = 1 + score / HITS_PER_PACE
     /** Seconds added to the clock so far by hits. */
     var bonus = 0f; private set
-    var target: Target? = null; private set
+    /** v10.44 everyone roaming or knocked right now ([wanted] of them on this level). */
+    val targets = ArrayList<Target>()
+    /** The first target (kept for one-target code and tests). */
+    val target: Target? get() = targets.firstOrNull()
+    val wanted: Int get() = targetCountFor(stage)
+    /** Stars earned so far this round (0..3) and the hits needed for the next one (null = all three). */
+    val stars: Int get() = starsFor(score)
+    val nextGoal: Int? get() = STAR_GOALS.firstOrNull { it > score }
+    /** Targets knocked by this shot so far (2+ = a combo). The clock stands still from the first knock until the stone is back. */
+    var shotHits = 0; private set
+    /** The target of the last HIT / WALL_TARGET / BOUNCE_TARGET event. */
+    var lastKnocked: Target? = null; private set
+    var lastSlammed: Target? = null; private set
+    /** After its last bounce (or when a knock took its speed) the stone just falls; the next edge is the splat. */
+    var stoneFalling = false; private set
+    private var spawnWait = 0f
     /** Where the stone slammed (valid once [stoneDown]). */
     var wall = Wall.TOP; private set
     /** Time since everything came to rest (the [Phase.SPLAT] clock). */
@@ -163,7 +185,7 @@ class SlingGame(
         bvx = -pullX / len * sp; bvy = -pullY / len * sp
         pullX = 0f; pullY = 0f
         phase = Phase.FLY; shots++
-        stoneDown = false; stoneSplatT = 0f; stoneOmega = 0f; knockT = 0f
+        stoneDown = false; stoneSplatT = 0f; stoneOmega = 0f; shotHits = 0; stoneFalling = false
         shotPower = powerFor((len / MAX_PULL).coerceIn(0f, 1f)); stoneBounces = shotPower.bounces; stoneBounced = false; banked = false; flyT = 0f
         stoneSpin = Math.toDegrees(atan2(bvy, bvx).toDouble()).toFloat() + 90f
         pending.add(Event.SNAP)
@@ -183,7 +205,7 @@ class SlingGame(
         var t0 = 0f
         while (t0 < s) {
             val h = minOf(1f / 120f, s - t0); t0 += h
-            vy += GRAVITY * h; x += vx * h; y += vy * h
+            vy += (if (left <= 0) KNOCK_GRAVITY else GRAVITY) * h; x += vx * h; y += vy * h
             val w = wallOf(x, y) ?: continue
             if (left <= 0) return null
             val v = reflect(w, x, y, vx, vy); x = v[0]; y = v[1]; vx = v[2]; vy = v[3]; left--
@@ -195,55 +217,63 @@ class SlingGame(
         if (phase == Phase.OVER) return
         val dt = dt0.coerceIn(0f, 0.05f)
         t += dt
-        timeLeft = (timeLeft - dt).coerceAtLeast(0f)
+        // v10.44: the clock stands still from a knock until the stone is back in the sling (no time lost to the tumble)
+        if (phase == Phase.AIM || shotHits == 0) timeLeft = (timeLeft - dt).coerceAtLeast(0f)
         if (!warned && timeLeft <= 5f) { warned = true; pending.add(Event.LAST_SECONDS) }
-        stepTarget(dt)
+        stepTargets(dt)
         when (phase) {
             Phase.AIM -> if (timeLeft <= 0f) finish()
             Phase.FLY -> stepFlight(dt)
             Phase.SPLAT -> {
                 splatT += dt; stoneSplatT += dt
                 if (wall == Wall.LEFT || wall == Wall.RIGHT) by += SLIDE * dt
-                target?.takeIf { it.down }?.let { it.splatT += dt; if (it.wall == Wall.LEFT || it.wall == Wall.RIGHT) it.y += SLIDE * dt }
+                for (tg in targets) if (tg.down) { tg.splatT += dt; if (tg.wall == Wall.LEFT || tg.wall == Wall.RIGHT) tg.y += SLIDE * dt }
                 if (splatT >= (if (splatDouble) SPLAT_HIT_SEC else SPLAT_MISS_SEC)) {
-                    if (splatDouble) target = null
+                    targets.removeAll { it.carried }
                     resetStone(); phase = Phase.RETURN; returnT = 0f
                 }
             }
-            Phase.RETURN -> { returnT += dt; if (returnT >= RETURN_SEC) { if (timeLeft <= 0f) finish() else phase = Phase.AIM } }
+            Phase.RETURN -> { returnT += dt; if (returnT >= RETURN_SEC) { shotHits = 0; if (timeLeft <= 0f) finish() else phase = Phase.AIM } }
             Phase.OVER -> Unit
         }
     }
 
     private fun finish() { phase = Phase.OVER; pending.add(Event.OVER) }
-    private fun resetStone() { pullX = 0f; pullY = 0f; bx = homeX; by = homeY; bvx = 0f; bvy = 0f; stoneDown = false; stoneSpin = 0f; stoneOmega = 0f }
-    private var knockT = 0f
+    private fun resetStone() { pullX = 0f; pullY = 0f; bx = homeX; by = homeY; bvx = 0f; bvy = 0f; stoneDown = false; stoneSpin = 0f; stoneOmega = 0f; stoneFalling = false }
 
     private fun stepFlight(dt: Float) {
-        // small sub-steps so a fast stone can't jump over the target
+        // small sub-steps so a fast stone can't jump over a target
         var left = dt
         while (left > 0f && phase == Phase.FLY) {
             val h = minOf(left, 1f / 240f); left -= h
-            val tg = target
-            val knocked = tg != null && tg.carried
-            if (knocked) knockT += h
             if (!stoneDown) {
-                bvy += (if (knocked) KNOCK_GRAVITY else GRAVITY) * h
+                bvy += (if (stoneFalling) KNOCK_GRAVITY else GRAVITY) * h
                 bx += bvx * h; by += bvy * h
-                if (knocked) stoneSpin += stoneOmega * h else stoneSpin = Math.toDegrees(atan2(bvy, bvx).toDouble()).toFloat() + 90f
+                if (shotHits > 0 || stoneFalling) stoneSpin += stoneOmega * h else stoneSpin = Math.toDegrees(atan2(bvy, bvx).toDouble()).toFloat() + 90f
                 flyT += h
-                wallOf(bx, by)?.let { w -> if (stoneBounces > 0 && flyT < FLY_MAX_SEC) bounceStone(w) else stoneSlam(w) }
+                if (!stoneFalling && (flyT >= FLY_MAX_SEC || (shotHits > 0 && hypot(bvx, bvy) < FALL_BELOW))) startFalling()
+                wallOf(bx, by)?.let { w -> if (!stoneFalling && stoneBounces > 0) bounceStone(w) else stoneSlam(w) }
             } else stoneSplatT += h
-            if (tg != null && knocked) {
-                if (!tg.down) {
-                    tg.kvy += KNOCK_GRAVITY * h
-                    tg.x += tg.kvx * h; tg.y += tg.kvy * h; tg.spin += tg.omega * h
-                    val w = wallOf(tg.x, tg.y) ?: if (knockT > KNOCK_MAX_SEC) Wall.FLOOR else null
-                    if (w != null) { if (tg.bounces > 0 && knockT <= KNOCK_MAX_SEC) bounceTarget(tg, w) else targetSlam(tg, w) }
-                } else tg.splatT += h
-            } else if (tg != null && !stoneDown && !tg.leaving && tg.hittable && hits(tg)) knock(tg)
-            if (stoneDown && (tg == null || !tg.carried || tg.down)) rest()
+            for (k in targets.indices) {
+                val tg = targets[k]
+                if (tg.carried) {
+                    if (!tg.down) {
+                        tg.knockT += h
+                        tg.kvy += KNOCK_GRAVITY * h
+                        tg.x += tg.kvx * h; tg.y += tg.kvy * h; tg.spin += tg.omega * h
+                        val w = wallOf(tg.x, tg.y) ?: if (tg.knockT > KNOCK_MAX_SEC) Wall.FLOOR else null
+                        if (w != null) { if (tg.bounces > 0 && tg.knockT <= KNOCK_MAX_SEC) bounceTarget(tg, w) else targetSlam(tg, w) }
+                    } else tg.splatT += h
+                } else if (!stoneDown && !tg.leaving && tg.hittable && hits(tg)) knock(tg)
+            }
+            if (stoneDown && targets.none { it.carried && !it.down }) rest()
         }
+    }
+
+    /** The stone has no bounce or speed left: it tumbles down, and the next edge it meets is the splat. */
+    private fun startFalling() {
+        stoneFalling = true
+        if (stoneOmega == 0f) stoneOmega = if (bvx >= 0f) 380f else -380f
     }
 
     private fun wallOf(x: Float, y: Float): Wall? = when {
@@ -276,18 +306,22 @@ class SlingGame(
         if (ts < KNOCK_MIN_SPEED) { val k = KNOCK_MIN_SPEED / ts.coerceAtLeast(1e-4f); tg.kvx *= k; tg.kvy *= k }
         val turn = if (nx >= 0f) 1f else -1f
         tg.omega = turn * (520f + 380f * rng.nextFloat()); stoneOmega = -turn * (300f + 260f * rng.nextFloat())
-        tg.carried = true; tg.down = false; tg.splatT = 0f; tg.spin = 0f; knockT = 0f
+        tg.carried = true; tg.down = false; tg.splatT = 0f; tg.spin = 0f; tg.knockT = 0f
         // v10.43: a gentle knock lets the target bounce off one edge before it slams; a hard one slams it flat
         tg.bounces = if (hypot(tg.kvx, tg.kvy) < TARGET_BOUNCE_BELOW) 1 else 0
         banked = stoneBounced
         hitX = (bx + tg.x) / 2f; hitY = (by + tg.y) / 2f - BODY_H / 2f
         hitForce = (vrel / SPEED_MAX).coerceIn(0.3f, 1f)
-        val before = level
+        val before = pace
+        shotHits++; lastKnocked = tg
         score++; streak++; if (streak > bestStreak) bestStreak = streak
-        val gain = if (banked) BONUS_SEC * 2f else BONUS_SEC   // a bank shot gives double time
+        // a bank shot gives double time; every extra target in the same shot (a combo) gives double too
+        val gain = BONUS_SEC * (if (banked) 2f else 1f) * (if (shotHits >= 2) 2f else 1f)
+        lastGain = gain
         timeLeft = (timeLeft + gain).coerceAtMost(MAX_SEC); bonus += gain
         pending.add(Event.HIT)
-        if (level > before) pending.add(Event.LEVEL_UP)
+        if (shotHits >= 2) pending.add(Event.COMBO)
+        if (pace > before) pending.add(Event.FASTER)
     }
 
     /** v10.43 bounce off an edge like a carrom coin: mirror the speed into the screen, lose a little of it. */
@@ -295,6 +329,7 @@ class SlingGame(
         val v = reflect(w, bx, by, bvx, bvy)
         bx = v[0]; by = v[1]; bvx = v[2]; bvy = v[3]
         stoneBounces--; stoneBounced = true
+        if (stoneBounces <= 0) startFalling()   // v10.44: that was its last bounce; now it drops
         bounceX = bx; bounceY = by - BODY_H / 2f
         pending.add(Event.BOUNCE_STONE)
     }
@@ -302,7 +337,7 @@ class SlingGame(
         val v = reflect(w, tg.x, tg.y, tg.kvx, tg.kvy)
         tg.x = v[0]; tg.y = v[1]; tg.kvx = v[2]; tg.kvy = v[3]
         tg.bounces--; tg.omega = -tg.omega * 0.7f
-        bounceX = tg.x; bounceY = tg.y - BODY_H / 2f
+        bounceX = tg.x; bounceY = tg.y - BODY_H / 2f; lastSlammed = tg
         pending.add(Event.BOUNCE_TARGET)
     }
     /** (x, y, vx, vy) after bouncing off [w]: back inside the screen, the speed into the edge turned around. */
@@ -318,48 +353,52 @@ class SlingGame(
         wall = w; stoneDown = true; stoneSplatT = 0f
         bx = bx.coerceIn(EDGE, 1f - EDGE); by = by.coerceIn(TOP_EDGE + BODY_H / 2f, aspect - FLOOR_EDGE)
         bvx = 0f; bvy = 0f; stoneSpin = 0f
-        val tg = target
-        if (tg != null && tg.carried) pending.add(Event.WALL_STONE)
-        else { streak = 0; tg?.laughUntil = t + 1.2f; pending.add(Event.SPLAT) }
+        if (shotHits > 0) pending.add(Event.WALL_STONE)
+        else { streak = 0; for (tg in targets) tg.laughUntil = t + 1.2f; pending.add(Event.SPLAT) }
     }
 
     private fun targetSlam(tg: Target, w: Wall) {
         slamForce = (hypot(tg.kvx, tg.kvy) / SPEED_MAX).coerceIn(0.35f, 1f)
         tg.wall = w; tg.down = true; tg.splatT = 0f; tg.spin = 0f
         tg.x = tg.x.coerceIn(EDGE, 1f - EDGE); tg.y = tg.y.coerceIn(TOP_EDGE + BODY_H / 2f, aspect - FLOOR_EDGE)
-        tg.kvx = 0f; tg.kvy = 0f
+        tg.kvx = 0f; tg.kvy = 0f; lastSlammed = tg
         pending.add(Event.WALL_TARGET)
     }
 
     /** Everything that was flying has slammed: hold the splat for a moment, then the stone goes home. */
     private fun rest() {
         phase = Phase.SPLAT; splatT = 0f
-        val tg = target
-        splatDouble = tg != null && tg.carried
+        splatDouble = shotHits > 0
         if (splatDouble) pending.add(Event.DOUBLE_SPLAT)
     }
 
-    private fun stepTarget(dt: Float) {
-        val tg = target
-        if (tg == null) { if (phase == Phase.AIM || phase == Phase.RETURN) spawn(); return }
-        if (tg.carried) return
-        tg.age += dt
-        tg.x += tg.vx * tg.dash * dt
-        if (tg.leaving) {
-            tg.trickPhase = 0; tg.dash = 1f; tg.alpha = 1f; tg.yOff *= 0.9f
-            if (tg.x < -OFF || tg.x > 1f + OFF) { target = null; pending.add(Event.TARGET_OUT) }
-            return
+    private fun stepTargets(dt: Float) {
+        var k = 0
+        while (k < targets.size) {
+            val tg = targets[k]
+            if (tg.carried) { k++; continue }
+            tg.age += dt
+            tg.x += tg.vx * tg.dash * dt
+            if (tg.leaving) {
+                tg.trickPhase = 0; tg.dash = 1f; tg.alpha = 1f; tg.yOff *= 0.9f
+                if (tg.x < -OFF || tg.x > 1f + OFF) { targets.removeAt(k); pending.add(Event.TARGET_OUT); continue }
+                k++; continue
+            }
+            // inside the play area: bounce off the sides, change its mind now and then
+            if (tg.x < LANE_MIN && tg.vx < 0f) tg.vx = -tg.vx
+            if (tg.x > LANE_MAX && tg.vx > 0f) tg.vx = -tg.vx
+            stepTrick(tg, dt)
+            if (tg.age >= tg.nextTurn && tg.x in LANE_MIN..LANE_MAX) {
+                tg.nextTurn = tg.age + (0.9f + rng.nextFloat() * 1.4f) / (1f + 0.1f * (pace - 1))
+                val sp = speedFor()
+                tg.vx = if (rng.nextFloat() < 0.45f) -sign(tg.vx) * sp else sign(tg.vx) * sp
+            }
+            if (tg.age >= TARGET_LIFE && phase == Phase.AIM) { tg.leaving = true; tg.vx = (if (tg.x < 0.5f) -1f else 1f) * 0.6f }
+            k++
         }
-        // inside the play area: bounce off the sides, change its mind now and then
-        if (tg.x < LANE_MIN && tg.vx < 0f) tg.vx = -tg.vx
-        if (tg.x > LANE_MAX && tg.vx > 0f) tg.vx = -tg.vx
-        stepTrick(tg, dt)
-        if (tg.age >= tg.nextTurn && tg.x in LANE_MIN..LANE_MAX) {
-            tg.nextTurn = tg.age + (0.9f + rng.nextFloat() * 1.4f) / (1f + 0.1f * (level - 1))
-            val sp = speedFor()
-            tg.vx = if (rng.nextFloat() < 0.45f) -sign(tg.vx) * sp else sign(tg.vx) * sp
-        }
-        if (tg.age >= TARGET_LIFE && phase == Phase.AIM) { tg.leaving = true; tg.vx = (if (tg.x < 0.5f) -1f else 1f) * 0.6f }
+        // keep [wanted] of them roaming; new ones walk in one after another
+        spawnWait -= dt
+        if ((phase == Phase.AIM || phase == Phase.RETURN) && spawnWait <= 0f && targets.count { !it.carried } < wanted) { spawn(); spawnWait = SPAWN_GAP }
     }
 
     /** v10.41 the escape: wait, warn ([TELL_SEC]), then do it. More often on higher levels. */
@@ -386,33 +425,50 @@ class SlingGame(
         }
     }
 
-    /** Seconds until the next escape: about 3.5 s on level 1, down to about 1.6 s. */
-    private fun trickGap(): Float = (3.5f - 0.45f * (level - 1)).coerceAtLeast(1.6f) * (0.8f + 0.4f * rng.nextFloat())
+    /** Seconds until the next escape: about 3.5 s at first, down to about 1.6 s as the round and the levels go on. */
+    private fun trickGap(): Float = (3.5f - 0.35f * (pace - 1) - 0.15f * (stage - 2)).coerceIn(1.6f, 3.5f) * (0.8f + 0.4f * rng.nextFloat())
 
     private fun sign(v: Float) = if (v >= 0f) 1f else -1f
-    /** Targets get faster with every level (never more than 2x). */
-    private fun speedFor(): Float = (TARGET_SPEED_MIN + rng.nextFloat() * (TARGET_SPEED_MAX - TARGET_SPEED_MIN)) * (1f + 0.15f * (level - 1)).coerceAtMost(2f)
+    /** Targets get faster through the round and with every saved level (never more than about 2.2x). */
+    private fun speedFor(): Float = (TARGET_SPEED_MIN + rng.nextFloat() * (TARGET_SPEED_MAX - TARGET_SPEED_MIN)) *
+        (1f + 0.10f * (pace - 1)).coerceAtMost(1.5f) * (1f + 0.07f * (stage - 1)).coerceAtMost(1.5f)
 
     private fun spawn() {
-        val choices = others.filter { it != lastTargetId }.ifEmpty { others }
+        val here = targets.map { it.id }
+        val choices = others.filter { it != lastTargetId && it !in here }.ifEmpty { others.filter { it !in here }.ifEmpty { others } }
         val id = choices[rng.nextInt(choices.size)]
         lastTargetId = id
         val fromLeft = rng.nextBoolean()
-        val y = aspect * (LANE_TOP + rng.nextFloat() * (LANE_BOTTOM - LANE_TOP))
+        // its own height, away from the others so two targets don't walk on top of each other
+        var y = aspect * (LANE_TOP + rng.nextFloat() * (LANE_BOTTOM - LANE_TOP))
+        repeat(6) { if (targets.any { !it.carried && kotlin.math.abs(it.y - y) < BODY_H * 0.9f }) y = aspect * (LANE_TOP + rng.nextFloat() * (LANE_BOTTOM - LANE_TOP)) }
         val tg = Target(id, id in fliers, if (fromLeft) -OFF else 1f + OFF, y, (if (fromLeft) 1f else -1f) * speedFor())
         tg.nextTurn = 1.2f + rng.nextFloat()
-        tg.trick = tricks[id] ?: Trick.HOP
+        tg.trick = if (stage >= 2) tricks[id] ?: Trick.HOP else Trick.NONE   // level 1: no escapes, just aiming
         tg.nextTrick = 1.5f + trickGap() * 0.5f
-        target = tg
+        targets.add(tg)
         pending.add(Event.TARGET_IN)
     }
+
+    /** Seconds the last knock added to the clock. */
+    var lastGain = 0f; private set
 
     companion object {
         const val ROUND_SEC = 60f
         /** v10.41: every hit adds this to the clock (never above [MAX_SEC]). */
         const val BONUS_SEC = 3f
         const val MAX_SEC = 99f
-        const val HITS_PER_LEVEL = 3
+        const val HITS_PER_PACE = 5
+        // v10.44 saved levels
+        const val MAX_STAGE = 10
+        /** Hits in one round for 1, 2 and 3 stars. One star unlocks the next level. */
+        val STAR_GOALS = intArrayOf(8, 15, 25)
+        fun starsFor(score: Int): Int = STAR_GOALS.count { score >= it }
+        fun targetCountFor(stage: Int): Int = when { stage <= 1 -> 1; stage <= 3 -> 2; else -> 3 }
+        /** New targets walk in this many seconds apart. */
+        const val SPAWN_GAP = 0.7f
+        /** A stone slower than this after a knock has lost its energy and drops. */
+        const val FALL_BELOW = 0.9f
         /** The warning before an escape, and how long the escape lasts. */
         const val TELL_SEC = 0.35f
         const val TRICK_SEC = 0.9f
@@ -452,8 +508,8 @@ class SlingGame(
         const val TOP_EDGE = 0.09f
         const val FLOOR_EDGE = 0.03f
         const val SLIDE = 0.06f
-        const val SPLAT_HIT_SEC = 1.15f
-        const val SPLAT_MISS_SEC = 0.7f
+        const val SPLAT_HIT_SEC = 0.8f
+        const val SPLAT_MISS_SEC = 0.55f
         const val RETURN_SEC = 0.35f
         const val TARGET_LIFE = 8f
         const val TARGET_SPEED_MIN = 0.16f

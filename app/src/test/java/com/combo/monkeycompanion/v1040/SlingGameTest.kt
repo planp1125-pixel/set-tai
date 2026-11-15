@@ -59,12 +59,11 @@ class SlingGameTest {
         val g = game(); g.run(2f)
         g.pull(-0.3f, 0f)   // pulled left = fires right along the floor, far below the target
         assertTrue(g.release())
-        g.run(1f)
+        g.run(7f)   // v10.44: it bounces off the edges first; the splat is the last fall
         val ev = g.drain()
         assertTrue(ev.toString(), SlingGame.Event.SPLAT in ev)
         assertFalse(SlingGame.Event.DOUBLE_SPLAT in ev)
         assertEquals(0, g.score); assertEquals(0, g.streak)
-        assertEquals(SlingGame.Wall.RIGHT, g.wall)
         g.run(1.5f)
         assertEquals("the stone is back home, ready again", SlingGame.Phase.AIM, g.phase)
         assertEquals(g.homeX, g.bx, 1e-4f)
@@ -106,7 +105,9 @@ class SlingGameTest {
         }
         if (g.score > 0) {
             assertTrue(SlingGame.Event.HIT in seen); assertTrue(SlingGame.Event.DOUBLE_SPLAT in seen)
-            g.run(1f)
+            var n = 0
+            while (g.phase != SlingGame.Phase.AIM && n++ < 600) g.step(1f / 60f)
+            g.run(1.5f)
             assertNotNull(g.target); assertNotEquals("a different character comes next", firstId, g.target!!.id)
         }
     }
@@ -115,21 +116,21 @@ class SlingGameTest {
         val g = game(sec = 3f)
         g.run(2.2f)
         g.pull(0f, -0.3f); g.release()   // fired at the floor; still flying when the time ends: the shot finishes first
-        g.run(3f)
+        g.run(10f)
         assertTrue(g.over); assertEquals(0f, g.timeLeft, 1e-4f)
         assertTrue(SlingGame.Event.OVER in g.drain())
         g.pull(0f, 0.3f); assertFalse("no shooting after the end", g.release())
     }
 
     // ---------------- v10.41 ----------------
-    @Test fun aRoundIsSixtySecondsAndAHitAddsThreeAndLevelsGoUp() {
+    @Test fun aRoundIsSixtySecondsAndAHitAddsTimeAndTargetsSpeedUp() {
         assertEquals(60f, SlingGame.ROUND_SEC, 0f)
         var done = false
         for (seed in 1L..8L) {
             val g = game(seed, sec = 60f)
             val seen = ArrayList<SlingGame.Event>()
-            repeat(40) {
-                if (g.score >= SlingGame.HITS_PER_LEVEL || g.over) return@repeat
+            repeat(70) {
+                if (g.score >= SlingGame.HITS_PER_PACE || g.over) return@repeat
                 g.run(1.3f); seen += g.drain()
                 val tg = g.target
                 if (g.phase == SlingGame.Phase.AIM && tg != null && !tg.leaving && tg.trickPhase == 0 && tg.x in 0.2f..0.8f) {
@@ -137,21 +138,21 @@ class SlingGameTest {
                     g.shootAtTarget(); g.run(0.2f)
                     val flightStart = g.timeLeft
                     g.run(2.2f); seen += g.drain()
-                    if (g.score > s0) assertEquals("a hit gives ${SlingGame.BONUS_SEC} s back", SlingGame.BONUS_SEC, g.bonus - (s0 * SlingGame.BONUS_SEC), 1e-3f)
+                    if (g.score > s0) assertTrue("a hit gives at least ${SlingGame.BONUS_SEC} s back", g.lastGain >= SlingGame.BONUS_SEC)
                     assertTrue(before >= flightStart)
                 }
             }
-            if (g.score >= SlingGame.HITS_PER_LEVEL) {
-                assertEquals(2, g.level); assertTrue(SlingGame.Event.LEVEL_UP in seen)
-                assertEquals(g.score * SlingGame.BONUS_SEC, g.bonus, 1e-3f)
+            if (g.score >= SlingGame.HITS_PER_PACE) {
+                assertEquals(2, g.pace); assertTrue(SlingGame.Event.FASTER in seen)
+                assertTrue(g.bonus >= g.score * SlingGame.BONUS_SEC - 1e-3f)
                 done = true; break
             }
         }
-        assertTrue("three hits reach level 2 within a round", done)
+        assertTrue("five hits speed the round up", done)
     }
 
     @Test fun anEscapeAlwaysWarnsFirstAndAVanishedTargetCannotBeHit() {
-        val g = SlingGame(2.17f, "monkey", listOf("monkey", "devil"), emptySet(), 9L, 60f, mapOf("devil" to SlingGame.Trick.VANISH))
+        val g = SlingGame(2.17f, "monkey", listOf("monkey", "devil"), emptySet(), 9L, 60f, mapOf("devil" to SlingGame.Trick.VANISH), stage = 2)
         var warned = false; var vanished = false; var trickEvents = 0
         repeat(60 * 12) {
             g.step(1f / 60f)
@@ -199,10 +200,10 @@ class SlingGameTest {
             assertTrue("it tumbles", tg.omega != 0f)
             assertTrue(g.hitForce in 0.3f..1f)
             assertEquals("the hit counts at the moment of the knock", 1, g.score)
-            assertEquals(SlingGame.BONUS_SEC, g.bonus, 1e-3f)
+            assertTrue(g.bonus >= SlingGame.BONUS_SEC)
             val ev = ArrayList(g.drain())
             assertTrue(SlingGame.Event.HIT in ev)
-            g.run(3f); ev += g.drain()
+            g.run(9f); ev += g.drain()
             assertTrue("the stone slams", SlingGame.Event.WALL_STONE in ev)
             assertTrue("the target slams", SlingGame.Event.WALL_TARGET in ev)
             assertTrue(ev.indexOf(SlingGame.Event.DOUBLE_SPLAT) > ev.indexOf(SlingGame.Event.HIT))
@@ -228,9 +229,9 @@ class SlingGameTest {
 
     // ---------------- v10.43 carrom bounces ----------------
     @Test fun thePullHasThreePowers() {
-        assertEquals(SlingGame.Power.SOFT, SlingGame.powerFor(0.2f)); assertEquals(2, SlingGame.Power.SOFT.bounces)
-        assertEquals(SlingGame.Power.MEDIUM, SlingGame.powerFor(0.6f)); assertEquals(1, SlingGame.Power.MEDIUM.bounces)
-        assertEquals(SlingGame.Power.HARD, SlingGame.powerFor(0.9f)); assertEquals(0, SlingGame.Power.HARD.bounces)
+        assertEquals(SlingGame.Power.SOFT, SlingGame.powerFor(0.2f)); assertEquals(1, SlingGame.Power.SOFT.bounces)
+        assertEquals(SlingGame.Power.MEDIUM, SlingGame.powerFor(0.6f)); assertEquals(2, SlingGame.Power.MEDIUM.bounces)
+        assertEquals(SlingGame.Power.HARD, SlingGame.powerFor(0.9f)); assertEquals(3, SlingGame.Power.HARD.bounces)
         val g = game(); g.step(0.016f)
         g.pull(-0.09f, 0f); assertEquals(SlingGame.Power.SOFT, g.power)
         g.pull(-0.18f, 0f); assertEquals(SlingGame.Power.MEDIUM, g.power)
@@ -243,13 +244,13 @@ class SlingGameTest {
         g.pull(-pull, 0f); assertTrue(g.release())
         val ev = ArrayList<SlingGame.Event>()
         var n = 0
-        while (g.phase == SlingGame.Phase.FLY && n++ < 240 * 8) { g.step(1f / 240f); ev += g.drain() }
+        while (g.phase == SlingGame.Phase.FLY && n++ < 240 * 12) { g.step(1f / 240f); ev += g.drain() }
         return ev.count { it == SlingGame.Event.BOUNCE_STONE } to ev
     }
 
-    @Test fun aSoftShotBouncesTwiceAMediumOnceAHardOneSplatsAtOnce() {
+    @Test fun everyShotBouncesAHarderPullBouncesMoreAndTheSplatIsTheLastFall() {
         val soft = bouncesOf(0.10f); val medium = bouncesOf(0.18f); val hard = bouncesOf(0.30f)
-        assertEquals(2, soft.first); assertEquals(1, medium.first); assertEquals(0, hard.first)
+        assertEquals(1, soft.first); assertEquals(2, medium.first); assertEquals(3, hard.first)
         for (r in listOf(soft, medium, hard)) assertEquals("every missed shot ends in one splat", 1, r.second.count { it == SlingGame.Event.SPLAT })
     }
 
@@ -259,14 +260,57 @@ class SlingGameTest {
         val far = g.aimPoint(0.45f)
         assertNotNull("the dots go on past the edge for a soft pull", far)
         assertTrue("and come back into the screen", far!!.first < 1f - SlingGame.EDGE)
-        g.pull(-0.30f, 0f)
-        assertEquals("a hard pull has no dots past the edge", null, g.aimPoint(0.45f))
         g.pull(-0.10f, 0f); g.release()
         var n = 0
-        while (g.stoneBounces == 2 && n++ < 240 * 3) g.step(1f / 240f)
-        assertEquals(1, g.stoneBounces)
+        while (g.stoneBounces == 1 && n++ < 240 * 3) g.step(1f / 240f)
+        assertEquals(0, g.stoneBounces)
         assertTrue("moving left after bouncing off the right edge", g.bvx < 0f)
         assertEquals(SlingGame.Phase.FLY, g.phase)
+        assertTrue("that was its last bounce: now it falls, and the fall is the splat", g.stoneFalling)
+    }
+
+    // ---------------- v10.44 clock, levels, stars ----------------
+    @Test fun theClockStandsStillFromAKnockUntilTheStoneIsBack() {
+        var checked = false
+        for (seed in 1L..8L) {
+            val g = game(seed, 60f)
+            if (!knockOnce(g)) continue
+            val atKnock = g.timeLeft
+            var n = 0
+            while (g.phase != SlingGame.Phase.AIM && n++ < 60 * 12) g.step(1f / 60f)
+            assertEquals(SlingGame.Phase.AIM, g.phase)
+            assertEquals("no time was lost to the tumble, the splat and the walk back", atKnock, g.timeLeft, 0.05f)
+            g.run(1f)
+            assertEquals("and it runs again while aiming", atKnock - 1f, g.timeLeft, 0.08f)
+            checked = true; break
+        }
+        assertTrue(checked)
+    }
+
+    @Test fun aMissStillCostsTime() {
+        val g = game(); g.run(1f)
+        val t0 = g.timeLeft
+        g.pull(-0.10f, 0f); g.release(); g.run(2f)
+        assertEquals(t0 - 2f, g.timeLeft, 0.08f)
+    }
+
+    @Test fun levelOneIsOneTargetWithNoEscapesAndHigherLevelsAddTargetsAndEscapes() {
+        assertEquals(1, SlingGame.targetCountFor(1)); assertEquals(2, SlingGame.targetCountFor(2))
+        assertEquals(2, SlingGame.targetCountFor(3)); assertEquals(3, SlingGame.targetCountFor(4))
+        val tricks = pool.associateWith { SlingGame.Trick.DASH }
+        val one = SlingGame(2.17f, "devil", pool, emptySet(), 3L, 60f, tricks, stage = 1); one.run(6f)
+        assertEquals(1, one.targets.size); assertTrue(one.targets.all { it.trick == SlingGame.Trick.NONE })
+        val two = SlingGame(2.17f, "devil", pool, emptySet(), 3L, 60f, tricks, stage = 2); two.run(4f)
+        assertEquals(2, two.targets.size); assertTrue(two.targets.all { it.trick == SlingGame.Trick.DASH })
+        assertNotEquals("two different characters", two.targets[0].id, two.targets[1].id)
+        val four = SlingGame(2.17f, "devil", pool, emptySet(), 3L, 60f, tricks, stage = 4); four.run(5f)
+        assertEquals(3, four.targets.size); assertEquals(3, four.targets.map { it.id }.distinct().size)
+    }
+
+    @Test fun starsAtEightFifteenAndTwentyFive() {
+        assertEquals(0, SlingGame.starsFor(7)); assertEquals(1, SlingGame.starsFor(8)); assertEquals(1, SlingGame.starsFor(14))
+        assertEquals(2, SlingGame.starsFor(15)); assertEquals(3, SlingGame.starsFor(25)); assertEquals(3, SlingGame.starsFor(60))
+        val g = game(); assertEquals(8, g.nextGoal); assertEquals(0, g.stars)
     }
 
     @Test fun sameSeedSameGame() {

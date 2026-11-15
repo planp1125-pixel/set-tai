@@ -20,13 +20,14 @@ object SlingGameHub {
     private var screenOff: BroadcastReceiver? = null
 
     /** A fresh round with [bulletId] (default: the character in use) as the stone and every other character as targets. */
-    fun newGame(ctx: Context, bulletId: String? = null): SlingGame? {
+    fun newGame(ctx: Context, bulletId: String? = null, stage: Int = level(ctx)): SlingGame? {
         val all = CharacterRegistry.allWithCustom
         val stone = bulletId?.takeIf { id -> all.any { it.id == id } } ?: CharacterRegistry.current.id
         val dm = ctx.resources.displayMetrics
         val aspect = (dm.heightPixels.toFloat() / dm.widthPixels.coerceAtLeast(1)).coerceIn(1.2f, 2.6f)
         val fliers = all.filter { it.can(Locomotion.FLY) || it.can(Locomotion.FLOAT) }.map { it.id }.toSet()
-        return SlingGame(aspect, stone, all.map { it.id }, fliers, seed = SystemClock.uptimeMillis(), tricks = all.associate { it.id to trickFor(it) })
+        return SlingGame(aspect, stone, all.map { it.id }, fliers, seed = SystemClock.uptimeMillis(), tricks = all.associate { it.id to trickFor(it) },
+            stage = stage.coerceIn(1, SlingGame.MAX_STAGE))
     }
 
     /** v10.41 each character's own escape (Studio characters hop). */
@@ -80,6 +81,32 @@ object SlingGameHub {
             app.startService(Intent(app, MonkeyOverlayService::class.java)
                 .setAction(if (hide) MonkeyOverlayService.ACTION_SMASH_HIDE else MonkeyOverlayService.ACTION_SMASH_SHOW))
         }
+    }
+
+    // ---------------- v10.44 saved levels ----------------
+    private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    /** The highest level the player may play (1 at first; one star on a level opens the next). */
+    fun unlocked(ctx: Context): Int = prefs(ctx).getInt("unlocked", 1).coerceIn(1, SlingGame.MAX_STAGE)
+    /** The level the next round is played on (any unlocked one; the player can go back to an earlier level). */
+    fun level(ctx: Context): Int = prefs(ctx).getInt("level", unlocked(ctx)).coerceIn(1, unlocked(ctx))
+    fun setLevel(ctx: Context, n: Int): Int { val v = n.coerceIn(1, unlocked(ctx)); prefs(ctx).edit().putInt("level", v).apply(); return v }
+    /** Best stars (0..3) and best hits ever on [level]. */
+    fun stars(ctx: Context, level: Int): Int = prefs(ctx).getInt("stars_$level", 0)
+    fun bestOn(ctx: Context, level: Int): Int = prefs(ctx).getInt("best_$level", 0)
+
+    /** What a finished round earned. [unlockedNow] = the level it has just opened (null = none). */
+    class RoundResult(val stars: Int, val bestStars: Int, val unlockedNow: Int?)
+
+    /** Saves a finished round on [level]: best hits, best stars, and opens the next level at one star. */
+    fun finishRound(ctx: Context, level: Int, score: Int): RoundResult {
+        val p = prefs(ctx)
+        val st = SlingGame.starsFor(score)
+        val bestStars = maxOf(st, p.getInt("stars_$level", 0))
+        val e = p.edit().putInt("stars_$level", bestStars).putInt("best_$level", maxOf(score, p.getInt("best_$level", 0)))
+        var opened: Int? = null
+        if (st >= 1 && level >= unlocked(ctx) && level < SlingGame.MAX_STAGE) { opened = level + 1; e.putInt("unlocked", opened) }
+        e.apply()
+        return RoundResult(st, bestStars, opened)
     }
 
     /** Saves [score] for today. Returns (today's best, this round is a new best). */

@@ -45,7 +45,7 @@ class SlingGameViewTest {
             assertTrue(v.debugShoot(0.05f, 0.25f))
             repeat(8) { v.advance(1f / 60f) }; v.draw(c)                         // flying
             var n = 0
-            while (v.game.phase == SlingGame.Phase.FLY && n++ < 300) { v.advance(1f / 60f); if (n % 6 == 0) v.draw(c) }   // flight, a knock, the slams
+            while (v.game.phase == SlingGame.Phase.FLY && n++ < 700) { v.advance(1f / 60f); if (n % 6 == 0) v.draw(c) }   // flight, bounces, a knock, the slams
             v.draw(c)                                                             // splat
             assertTrue("$id has shot and splatted or returned", v.game.shots == 1 && v.game.phase != SlingGame.Phase.FLY)
             repeat(150) { v.advance(1f / 60f) }; v.draw(c)                       // back home
@@ -71,13 +71,48 @@ class SlingGameViewTest {
                 val ax = tg.x + tg.vx * tf - g.bx; val ay = tg.y - g.by; val len = kotlin.math.hypot(ax, ay)
                 v.debugShoot(-ax / len * SlingGame.MAX_PULL, -ay / len * SlingGame.MAX_PULL)
                 var n = 0
-                while (v.game.phase == SlingGame.Phase.FLY && n++ < 400) { v.advance(1f / 120f); if (n % 4 == 0) v.draw(c) }
+                while (v.game.phase == SlingGame.Phase.FLY && n++ < 1400) { v.advance(1f / 120f); if (n % 8 == 0) v.draw(c) }
                 v.draw(c)
                 repeat(150) { v.advance(1f / 60f) }; v.draw(c)
             }
             if (v.game.score > 0) knocks++
         }
         assertTrue("most pairs got a real knock drawn ($knocks of ${ids.size})", knocks >= ids.size / 2)
+    }
+
+    // ---------------- v10.44 saved levels ----------------
+    @Test fun oneStarOpensTheNextLevelAndAnyOpenLevelCanBePlayedAgain() {
+        ctx.getSharedPreferences("sling_game", 0).edit().clear().commit()
+        assertEquals(1, SlingGameHub.unlocked(ctx)); assertEquals(1, SlingGameHub.level(ctx))
+        val miss = SlingGameHub.finishRound(ctx, 1, 7)
+        assertEquals(0, miss.stars); assertEquals(null, miss.unlockedNow); assertEquals(1, SlingGameHub.unlocked(ctx))
+        val pass = SlingGameHub.finishRound(ctx, 1, 8)
+        assertEquals(1, pass.stars); assertEquals(2, pass.unlockedNow); assertEquals(2, SlingGameHub.unlocked(ctx))
+        assertEquals("two stars later; the best is kept", 2, SlingGameHub.finishRound(ctx, 1, 16).bestStars)
+        assertEquals(2, SlingGameHub.finishRound(ctx, 1, 3).bestStars); assertEquals(2, SlingGameHub.stars(ctx, 1)); assertEquals(16, SlingGameHub.bestOn(ctx, 1))
+        assertEquals("replaying level 1 opens nothing new", null, SlingGameHub.finishRound(ctx, 1, 30).unlockedNow)
+        assertEquals(2, SlingGameHub.setLevel(ctx, 2)); assertEquals(2, SlingGameHub.newGame(ctx)!!.stage)
+        assertEquals("level 1 can still be played", 1, SlingGameHub.setLevel(ctx, 1)); assertEquals(1, SlingGameHub.newGame(ctx)!!.stage)
+        assertEquals("a locked level can't be picked", 2, SlingGameHub.setLevel(ctx, 7))
+    }
+
+    @Test fun aLevelWithThreeTargetsDrawsAndTheArrowsSwitchLevelBeforeTheFirstShot() {
+        ctx.getSharedPreferences("sling_game", 0).edit().clear().commit()
+        SlingGameHub.finishRound(ctx, 1, 8); SlingGameHub.finishRound(ctx, 2, 8); SlingGameHub.finishRound(ctx, 3, 8)
+        assertEquals(4, SlingGameHub.unlocked(ctx))
+        SlingGameHub.setLevel(ctx, 4)
+        val v = SlingGameView(ctx, SlingGameHub.newGame(ctx, "devil")!!); v.layout(0, 0, 1080, 2340)
+        val c = Canvas(Bitmap.createBitmap(1080, 2340, Bitmap.Config.ARGB_8888))
+        repeat(300) { v.advance(1f / 60f) }; v.draw(c)
+        assertEquals(4, v.game.stage); assertEquals(3, v.game.targets.size)
+        v.debugChangeLevel(-1)
+        assertEquals(3, v.debugLevel); assertEquals("a fresh round on level 3", 3, v.game.stage); assertEquals(3, SlingGameHub.level(ctx))
+        repeat(200) { v.advance(1f / 60f) }; v.draw(c)
+        assertEquals(2, v.game.targets.size)
+        assertTrue(v.debugShoot(0.02f, 0.28f))
+        var n = 0
+        while (v.game.phase == SlingGame.Phase.FLY && n++ < 700) { v.advance(1f / 60f); if (n % 5 == 0) v.draw(c) }
+        v.draw(c)
     }
 
     @Test fun theEndCardDrawsAndTodaysBestIsKept() {

@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.43 (versionCode 111)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.44 (versionCode 112)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.40 Slingshot game (build 1 of 3)
 
@@ -10,7 +10,13 @@ Updated for **v10.43 (versionCode 111)**, 8 Nov 2026. Owner: Manikandan Gopalakr
   `sling_game`). Entry: LongPressMenu `g_games` item `sling_game`, Home tile + Explore row.
 - v10.41 (build 2) is done: hold-and-pull + 3-2-1 start (MonkeyView.SLING_HOLD_MS / SLING_COUNT_MS, setting
   `slingGame`), 60 s + 3 s per hit, levels, escapes with a warning (SlingGame.Trick, SlingGameHub.trickFor), effects.
-- Owner's plan: build 3 = battered costumes for all,
+- v10.42–v10.44: real two-body knock (SlingGame.knock), carrom bounces by pull power (SOFT 1 / MEDIUM 2 / HARD 3, the
+  splat is the last fall), combos, the clock pauses from a knock until the stone is home, saved levels with stars
+  (8/15/25; SlingGameHub.finishRound; level 1 = one target no escapes, 2–3 = two targets + escapes, 4+ = three).
+- NEXT (v10.45, agreed with the owner): each character's own flying style (looks) and an EARNED special power shot
+  (3 hits in a row) from level 3: Tutty teleport hit, Bolt mid-air boost, Zoom pierces, Skye burst, Gajju slam, Rollie
+  edge skate. The owner wants the game to be the app's front door ("a slingshot game with your own character").
+- Older plan: build 3 = battered costumes for all,
   friendship points, daily challenge, special power shot. The owner's bigger question (the app's purpose / daily hook)
   is open; he will watch his daughter play this build.
 

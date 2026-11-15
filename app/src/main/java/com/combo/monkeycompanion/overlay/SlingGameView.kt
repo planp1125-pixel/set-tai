@@ -73,6 +73,11 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; isFakeBoldText = true }
     private val rect = RectF()
     private val closeBtn = RectF(); private val againBtn = RectF(); private val doneBtn = RectF()
+    // v10.44 levels: the arrows that pick a level (before the first shot, and on the end card)
+    private val prevBtn = RectF(); private val nextBtn = RectF()
+    private var selLevel = game0.stage
+    private var result: SlingGameHub.RoundResult? = null
+    private var gainText = ""; private var gainT = -9f
     private val topPad: Float = run {
         val id = resources.getIdentifier("status_bar_height", "dimen", "android")
         (if (id > 0) runCatching { resources.getDimensionPixelSize(id) }.getOrDefault(0) else 0) + 10f * d
@@ -118,21 +123,22 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
             SlingGame.Event.SNAP -> { sfx(Sfx.S.WHOOSH, 0.5f); buzz { Feel.play(context, TouchFeel.slingSnap(lastTension)) } }
             SlingGame.Event.HIT -> {   // v10.42 the knock itself: no freeze, a sharp click you feel, sparks where they meet
                 sfx(Sfx.S.BONK, 0.5f + 0.4f * game.hitForce)
-                buzz { Feel.playSharpHit(context, game.hitForce, TouchFeel.weight(game.target?.id ?: game.bulletId)) }
+                buzz { Feel.playSharpHit(context, game.hitForce, TouchFeel.weight(game.lastKnocked?.id ?: game.bulletId)) }
                 say(if (game.banked) "BANK SHOT!" else "BONK!", game.hitX, game.hitY - SlingGame.BODY_H * 0.5f)
                 sparks(px(game.hitX), px(game.hitY), 10 + (10 * game.hitForce).toInt())
                 shakeUntil = clock + 0.12f
-                banner = "+${(if (game.banked) SlingGame.BONUS_SEC * 2f else SlingGame.BONUS_SEC).toInt()} s ⏱"; bannerT = clock
+                gainText = "+${game.lastGain.toInt()}"; gainT = clock   // shown beside the timer, so a banner can never hide it
             }
+            SlingGame.Event.COMBO -> { banner = "COMBO x${game.shotHits}!"; bannerT = clock; sfx(Sfx.S.TADA, 0.4f) }
             SlingGame.Event.BOUNCE_STONE, SlingGame.Event.BOUNCE_TARGET -> {   // v10.43 off the edge like a carrom coin
                 sfx(Sfx.S.BOING, 0.45f)
                 buzz { Feel.play(context, TouchFeel.slingTick(1f)) }
                 burstAt(px(game.bounceX), px(game.bounceY), 5)
             }
             SlingGame.Event.WALL_STONE -> slam(game.bx, game.by, game.bulletId, game.slamForce)
-            SlingGame.Event.WALL_TARGET -> game.target?.let { slam(it.x, it.y, it.id, game.slamForce) }
+            SlingGame.Event.WALL_TARGET -> game.lastSlammed?.let { slam(it.x, it.y, it.id, game.slamForce) }
             SlingGame.Event.DOUBLE_SPLAT -> {
-                val tg = game.target
+                val tg = game.lastSlammed
                 val x = tg?.x ?: game.bx; val y = tg?.y ?: game.by
                 sfx(Sfx.S.CRACK, 0.35f)
                 say(when { game.streak >= 3 -> "ON FIRE! 🔥"; game.streak == 2 -> "2 in a row!"; else -> "DOUBLE SPLAT!" }, x, y - SlingGame.BODY_H * 1.1f)
@@ -146,14 +152,16 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
             }
             SlingGame.Event.TARGET_IN -> sfx(Sfx.S.POP, 0.4f)
             SlingGame.Event.TARGET_OUT -> Unit
-            SlingGame.Event.LEVEL_UP -> { banner = "LEVEL ${game.level}!"; bannerT = clock; sfx(Sfx.S.TADA, 0.5f) }
-            SlingGame.Event.TRICK -> sfx(if (game.target?.trick == SlingGame.Trick.VANISH) Sfx.S.POP else Sfx.S.ZIP, 0.35f)
+            SlingGame.Event.FASTER -> { banner = "Faster! 💨"; bannerT = clock }
+            SlingGame.Event.TRICK -> sfx(Sfx.S.ZIP, 0.35f)
             SlingGame.Event.LAST_SECONDS -> sfx(Sfx.S.PLUCK, 0.5f)
             SlingGame.Event.OVER -> {
                 overAt = clock
                 val r = SlingGameHub.record(context, game.score)
                 best = r.first; newBest = r.second
-                sfx(if (newBest && game.score > 0) Sfx.S.TADA else Sfx.S.WAHWAH, 0.6f)
+                val rr = SlingGameHub.finishRound(context, game.stage, game.score); result = rr
+                rr.unlockedNow?.let { selLevel = SlingGameHub.setLevel(context, it) }   // the new level is offered first
+                sfx(if (rr.stars > 0 || (newBest && game.score > 0)) Sfx.S.TADA else Sfx.S.WAHWAH, 0.6f)
             }
         }
     }
@@ -198,7 +206,8 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 downX = e.x; downY = e.y
-                grabbing = !game.over && !closeBtn.contains(e.x, e.y) && game.phase == SlingGame.Phase.AIM && e.y > topPad + 60f * d
+                grabbing = !game.over && !closeBtn.contains(e.x, e.y) && !(levelRowOn() && (prevBtn.contains(e.x, e.y) || nextBtn.contains(e.x, e.y))) &&
+                    game.phase == SlingGame.Phase.AIM && e.y > topPad + 60f * d
                 notch = 0; lastPower = null
             }
             MotionEvent.ACTION_MOVE -> if (grabbing) {
@@ -215,6 +224,8 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
                 else if (e.actionMasked == MotionEvent.ACTION_UP) {
                     when {
                         closeBtn.contains(e.x, e.y) && closeBtn.contains(downX, downY) -> SlingGameHub.finish(context, "close button")
+                        levelRowOn() && prevBtn.contains(e.x, e.y) && prevBtn.contains(downX, downY) -> changeLevel(-1)
+                        levelRowOn() && nextBtn.contains(e.x, e.y) && nextBtn.contains(downX, downY) -> changeLevel(1)
                         game.over && againBtn.contains(e.x, e.y) -> restart()
                         game.over && doneBtn.contains(e.x, e.y) -> SlingGameHub.finish(context, "done button")
                     }
@@ -244,8 +255,21 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
     }
     fun externalRelease() { lastPower = null; if (game.phase == SlingGame.Phase.AIM) { lastTension = game.tension; game.release() } }
 
+    /** The level arrows show before the first shot of a round and on the end card, once a second level is open. */
+    private fun levelRowOn(): Boolean = (game.over || (game.shots == 0 && game.phase == SlingGame.Phase.AIM && !game.pulling)) && SlingGameHub.unlocked(context) > 1
+    private fun changeLevel(by: Int) {
+        val n = SlingGameHub.setLevel(context, selLevel + by)
+        if (n == selLevel) return
+        selLevel = n
+        sfx(Sfx.S.POP, 0.3f)
+        if (!game.over) restart() else invalidate()   // before the first shot: switch at once; on the end card: Play uses it
+    }
+    val debugLevel: Int get() = selLevel
+    fun debugChangeLevel(by: Int) = changeLevel(by)
+
     private fun restart() {
-        game = SlingGameHub.newGame(context, game.bulletId) ?: return
+        game = SlingGameHub.newGame(context, game.bulletId, selLevel) ?: return
+        result = null; gainText = ""
         overAt = -1f; word = ""; puffs.clear(); newBest = false; trail.clear(); crack = null; banner = ""; freeze = 0f
         for (b in bodies.values) { b.scatter.clear(); (b.renderer as? ArmourRenderer)?.shed = 0f }
     }
@@ -265,13 +289,13 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         c.save()
         if (clock < shakeUntil) c.translate(7f * d * sin(clock * 70f), 5f * d * sin(clock * 83f))
         crack?.draw(c, w, h, min(1f, (clock - crackT) / 0.3f) * 0.55f)
-        g.target?.let { drawTarget(c, g, it) }
+        for (k in g.targets.indices) drawTarget(c, g, g.targets[k])
         drawSlingBack(c, g)
         drawTrail(c)
         drawStone(c, g)
         drawSlingFront(c, g)
         if (g.stoneDown && (g.phase == SlingGame.Phase.SPLAT || g.phase == SlingGame.Phase.FLY)) stars(c, px(g.bx), px(g.by - SlingGame.BODY_H * 1.05f))
-        g.target?.takeIf { it.carried && it.down }?.let { stars(c, px(it.x), px(it.y - SlingGame.BODY_H * 1.05f)) }
+        for (k in g.targets.indices) { val it = g.targets[k]; if (it.carried && it.down) stars(c, px(it.x), px(it.y - SlingGame.BODY_H * 1.05f)) }
         c.restore()
         drawBanner(c)
         if (g.pulling) { drawAim(c, g); drawPower(c, g) }
@@ -281,8 +305,9 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         fill.alpha = 255
         drawWord(c)
         if (g.shots == 0 && !g.over && !g.pulling) hint(c, "Pull back anywhere and let go! 🎯", h * 0.93f)
-        else if (g.shots < 3 && !g.over && g.pulling) hint(c, "Soft pull bounces off the edges · hard pull splats", h * 0.93f)
-        else if (g.shots in 1..2 && !g.over && g.target?.warning == true) hint(c, "! means it is about to escape", h * 0.93f)
+        else if (g.shots < 3 && !g.over && g.pulling) hint(c, "Every shot bounces off the edges · a harder pull bounces more", h * 0.93f)
+        else if (g.shots in 1..4 && !g.over && g.targets.any { it.warning }) hint(c, "! means it is about to escape", h * 0.93f)
+        if (levelRowOn() && !g.over) drawLevelRow(c, topPad + 62f * d)
         if (g.over) drawEndCard(c, g)
     }
 
@@ -416,16 +441,16 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         SlingGame.Power.HARD -> Color.rgb(0xF0, 0x4E, 0x37)
     }
     private fun powerLabel(p: SlingGame.Power) = when (p) {
-        SlingGame.Power.SOFT -> "SOFT · bounces twice"
-        SlingGame.Power.MEDIUM -> "MEDIUM · bounces once"
-        SlingGame.Power.HARD -> "HARD · splat!"
+        SlingGame.Power.SOFT -> "SOFT · 1 bounce"
+        SlingGame.Power.MEDIUM -> "MEDIUM · 2 bounces"
+        SlingGame.Power.HARD -> "HARD · 3 bounces"
     }
 
     /** Aim dots in the power colour; a soft or medium pull shows the path on past its edge bounces. */
     private fun drawAim(c: Canvas, g: SlingGame) {
         val p = g.power
         fill.color = powerColor(p)
-        val n = if (p == SlingGame.Power.HARD) 6 else 14
+        val n = 14
         for (i in 1..n) {
             val q = g.aimPoint(i * 0.035f) ?: break
             fill.alpha = (235 - i * (if (n == 6) 28 else 13)).coerceAtLeast(40)
@@ -448,19 +473,47 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
 
     private fun drawHud(c: Canvas, g: SlingGame) {
         val hh = 44f * d; val y0 = topPad
-        rect.set(w * 0.08f, y0, w * 0.80f, y0 + hh)
+        rect.set(w * 0.05f, y0, w * 0.82f, y0 + hh)
         fill.color = Color.argb(235, 0xFF, 0xFF, 0xFF); c.drawRoundRect(rect, hh / 2, hh / 2, fill)
-        text.textSize = 18f * d
+        text.textSize = 17f * d
         val secs = kotlin.math.ceil(g.timeLeft.toDouble()).toInt()
         text.color = if (secs <= 5 && !g.over) Color.rgb(0xD3, 0x2F, 0x2F) else Color.rgb(0x22, 0x22, 0x2A)
         val ty = y0 + hh / 2 + text.textSize * 0.36f
-        c.drawText("⏱ $secs", rect.left + rect.width() * 0.18f, ty, text)
+        val tx = rect.left + rect.width() * 0.15f
+        c.drawText("⏱ $secs", tx, ty, text)
+        val ga = clock - gainT   // "+3" floats up beside the timer
+        if (gainText.isNotEmpty() && ga < 1.0f) {
+            text.color = Color.rgb(0x1E, 0x9E, 0x4A); text.alpha = (255 * (1f - ga)).toInt().coerceIn(0, 255)
+            c.drawText(gainText, tx + 44f * d, ty - ga * 16f * d, text); text.alpha = 255
+        }
         text.color = Color.rgb(0x22, 0x22, 0x2A)
-        c.drawText("🎯 ${g.score}", rect.centerX(), ty, text)
-        c.drawText("🔥 ${g.streak}", rect.left + rect.width() * 0.82f, ty, text)
-        closeBtn.set(w * 0.84f, y0, w * 0.84f + hh, y0 + hh)
+        // level, hits and the next star goal: "L2 🎯 4/8"
+        val goal = g.nextGoal
+        c.drawText("L${g.stage} 🎯 ${g.score}${if (goal != null) "/$goal" else ""}", rect.left + rect.width() * 0.52f, ty, text)
+        c.drawText("🔥 ${g.streak}", rect.left + rect.width() * 0.87f, ty, text)
+        closeBtn.set(w * 0.85f, y0, w * 0.85f + hh, y0 + hh)
         fill.color = Color.argb(235, 0xFF, 0xFF, 0xFF); c.drawOval(closeBtn, fill)
         text.color = Color.rgb(0x44, 0x44, 0x55); c.drawText("✕", closeBtn.centerX(), ty, text)
+    }
+
+    private fun starText(n: Int) = "★".repeat(n.coerceIn(0, 3)) + "☆".repeat(3 - n.coerceIn(0, 3))
+
+    /** "◀  Level 2 ★★☆  ▶": pick any level that is open (replay an easier one, or go back up). */
+    private fun drawLevelRow(c: Canvas, cy: Float, dark: Boolean = false) {
+        val open = SlingGameHub.unlocked(context)
+        val bh = 40f * d
+        text.textSize = 16f * d
+        val label = "Level $selLevel  ${starText(SlingGameHub.stars(context, selLevel))}"
+        val tw = text.measureText(label) + 28f * d
+        rect.set(w / 2f - tw / 2f, cy - bh / 2f, w / 2f + tw / 2f, cy + bh / 2f)
+        fill.color = if (dark) Color.rgb(0xF1, 0xF0, 0xFA) else Color.argb(235, 0xFF, 0xFF, 0xFF); c.drawRoundRect(rect, bh / 2f, bh / 2f, fill)
+        text.color = Color.rgb(0x33, 0x2B, 0x7A); c.drawText(label, w / 2f, cy + text.textSize * 0.36f, text)
+        prevBtn.set(rect.left - bh - 8f * d, cy - bh / 2f, rect.left - 8f * d, cy + bh / 2f)
+        nextBtn.set(rect.right + 8f * d, cy - bh / 2f, rect.right + 8f * d + bh, cy + bh / 2f)
+        for ((btn, on, ch) in listOf(Triple(prevBtn, selLevel > 1, "◀"), Triple(nextBtn, selLevel < open, "▶"))) {
+            fill.color = if (on) Color.rgb(0x5B, 0x4B, 0xD6) else Color.argb(90, 0x99, 0x99, 0xAA); c.drawOval(btn, fill)
+            text.color = Color.WHITE; c.drawText(ch, btn.centerX(), cy + text.textSize * 0.36f, text)
+        }
     }
 
     private fun drawWord(c: Canvas) {
@@ -481,23 +534,36 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
     }
 
     private fun drawEndCard(c: Canvas, g: SlingGame) {
-        val cw = w * 0.78f; val ch = 250f * d
-        val x0 = (w - cw) / 2f; val y0 = height * 0.30f
+        val rr = result
+        val cw = w * 0.84f; val ch = 340f * d
+        val x0 = (w - cw) / 2f; val y0 = height * 0.26f
         rect.set(x0, y0, x0 + cw, y0 + ch)
         fill.color = Color.WHITE; c.drawRoundRect(rect, 26f * d, 26f * d, fill)
+        text.color = Color.rgb(0x77, 0x77, 0x88); text.textSize = 14f * d
+        c.drawText("Level ${g.stage}", w / 2f, y0 + 30f * d, text)
+        text.color = Color.rgb(0xF5, 0xB7, 0x1F); text.textSize = 40f * d
+        c.drawText(starText(rr?.stars ?: g.stars), w / 2f, y0 + 76f * d, text)
         text.color = Color.rgb(0x22, 0x22, 0x2A); text.textSize = 24f * d
-        c.drawText(if (g.score == 0) "Time's up!" else "${g.score} ${if (g.score == 1) "hit" else "hits"}! 🎯", w / 2f, y0 + 50f * d, text)
-        text.textSize = 15f * d; text.color = Color.rgb(0x55, 0x55, 0x66)
-        c.drawText("Best streak: ${g.bestStreak} 🔥", w / 2f, y0 + 84f * d, text)
-        text.color = if (newBest && g.score > 0) Color.rgb(0xE6, 0x7E, 0x00) else Color.rgb(0x55, 0x55, 0x66)
-        c.drawText(if (newBest && g.score > 0) "🏆 New best today!" else "Today's best: $best", w / 2f, y0 + 110f * d, text)
-        val bw = cw * 0.40f; val bh = 50f * d; val by = y0 + ch - bh - 26f * d
-        againBtn.set(x0 + cw * 0.07f, by, x0 + cw * 0.07f + bw, by + bh)
-        doneBtn.set(x0 + cw * 0.93f - bw, by, x0 + cw * 0.93f, by + bh)
+        c.drawText(if (g.score == 0) "Time's up!" else "${g.score} ${if (g.score == 1) "hit" else "hits"}! 🎯", w / 2f, y0 + 116f * d, text)
+        text.textSize = 15f * d
+        val opened = rr?.unlockedNow
+        val goal = SlingGame.STAR_GOALS.firstOrNull { it > g.score }
+        text.color = if (opened != null) Color.rgb(0x1E, 0x9E, 0x4A) else Color.rgb(0x55, 0x55, 0x66)
+        c.drawText(when {
+            opened != null -> "🔓 Level $opened is open!"
+            goal != null -> "${goal - g.score} more ${if (goal - g.score == 1) "hit" else "hits"} for the next star"
+            else -> "All three stars! 🏆"
+        }, w / 2f, y0 + 146f * d, text)
+        text.color = Color.rgb(0x55, 0x55, 0x66)
+        c.drawText("Best streak ${g.bestStreak} 🔥   ·   " + (if (newBest && g.score > 0) "new best today!" else "today's best $best"), w / 2f, y0 + 172f * d, text)
+        if (SlingGameHub.unlocked(context) > 1) drawLevelRow(c, y0 + 216f * d, dark = true)
+        val bw = cw * 0.42f; val bh = 50f * d; val by = y0 + ch - bh - 22f * d
+        againBtn.set(x0 + cw * 0.06f, by, x0 + cw * 0.06f + bw, by + bh)
+        doneBtn.set(x0 + cw * 0.94f - bw, by, x0 + cw * 0.94f, by + bh)
         fill.color = Color.rgb(0x5B, 0x4B, 0xD6); c.drawRoundRect(againBtn, bh / 2, bh / 2, fill)
         fill.color = Color.rgb(0xE8, 0xE8, 0xF0); c.drawRoundRect(doneBtn, bh / 2, bh / 2, fill)
         text.textSize = 16f * d
-        text.color = Color.WHITE; c.drawText("▶ Play again", againBtn.centerX(), againBtn.centerY() + 6f * d, text)
+        text.color = Color.WHITE; c.drawText(if (selLevel == g.stage) "▶ Play again" else "▶ Play level $selLevel", againBtn.centerX(), againBtn.centerY() + 6f * d, text)
         text.color = Color.rgb(0x33, 0x33, 0x44); c.drawText("Done", doneBtn.centerX(), doneBtn.centerY() + 6f * d, text)
     }
 

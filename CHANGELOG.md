@@ -372,3 +372,17 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Bank shot**: hit the target after bouncing off an edge = "BANK SHOT!" and double time (+6 s).
 - A gently knocked target also bounces off one edge before it slams; a hard knock slams it flat.
 - Rules: `SlingGame.Power`, `powerFor(tension)`, `stoneBounces`, `banked`, `BOUNCE_STONE` / `BOUNCE_TARGET`, `aimPoint` follows bounces. Tests: three powers, 2 / 1 / 0 bounces then one splat, the dots follow a bounce.
+
+## v10.44 (code 112): Slingshot game: saved levels with stars, more targets, always-bounce, combos, a fair clock
+
+- **The clock stands still from a knock until your character is back in the sling.** Before, the tumble + splat + walk back took about as long as the +3 s you had just earned. A miss still costs time. "+3" now floats beside the timer, so a banner can't hide it. The splat pause is shorter.
+- **Every shot bounces; the splat is the last fall.** SOFT · 1 bounce, MEDIUM · 2 bounces, HARD · 3 bounces. After its last bounce the character drops and splats where it lands. A full pull no longer splats at once.
+- **Combos**: after knocking one target your character keeps flying and bouncing and can knock another: "COMBO x2!" with double time.
+- **Saved levels with stars**: 8 hits in one round = ⭐ (opens the next level), 15 = ⭐⭐, 25 = ⭐⭐⭐. 10 levels.
+  - Level 1: one target, no escapes (just aiming and bouncing).
+  - Level 2–3: two targets roaming, and they escape with their own powers (with the "!" warning).
+  - Level 4 and up: three targets. Every level is a little faster.
+- **Level picker**: "◀ Level 2 ★★☆ ▶" shows before the first shot and on the end card. Any open level can be played again, including level 1.
+- The top bar shows the level and the next star goal ("L2 🎯 4/8"). The end card shows the stars, how many hits to the next star, and "🔓 Level 3 is open!".
+- Inside a round the targets still speed up every 5 hits ("Faster! 💨").
+- Rules: `SlingGame(stage=…)`, `targets` list, `shotHits`, `stoneFalling`, `STAR_GOALS`, `targetCountFor`; `SlingGameHub.unlocked/level/setLevel/finishRound`. Outside the game nothing changes (the plain fling has its own code).
