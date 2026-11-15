@@ -96,7 +96,7 @@ class SlingGameViewTest {
         assertEquals("a locked level can't be picked", 2, SlingGameHub.setLevel(ctx, 7))
     }
 
-    @Test fun aLevelWithThreeTargetsDrawsAndTheArrowsSwitchLevelBeforeTheFirstShot() {
+    @Test fun levelFourDrawsFourTargetsAndTheArrowsSwitchLevelBeforeTheFirstShot() {
         ctx.getSharedPreferences("sling_game", 0).edit().clear().commit()
         SlingGameHub.finishRound(ctx, 1, 8); SlingGameHub.finishRound(ctx, 2, 8); SlingGameHub.finishRound(ctx, 3, 8)
         assertEquals(4, SlingGameHub.unlocked(ctx))
@@ -104,7 +104,7 @@ class SlingGameViewTest {
         val v = SlingGameView(ctx, SlingGameHub.newGame(ctx, "devil")!!); v.layout(0, 0, 1080, 2340)
         val c = Canvas(Bitmap.createBitmap(1080, 2340, Bitmap.Config.ARGB_8888))
         repeat(300) { v.advance(1f / 60f) }; v.draw(c)
-        assertEquals(4, v.game.stage); assertEquals(3, v.game.targets.size)
+        assertEquals(4, v.game.stage); assertEquals(4, v.game.targets.size)
         v.debugChangeLevel(-1)
         assertEquals(3, v.debugLevel); assertEquals("a fresh round on level 3", 3, v.game.stage); assertEquals(3, SlingGameHub.level(ctx))
         repeat(200) { v.advance(1f / 60f) }; v.draw(c)
@@ -113,6 +113,28 @@ class SlingGameViewTest {
         var n = 0
         while (v.game.phase == SlingGame.Phase.FLY && n++ < 700) { v.advance(1f / 60f); if (n % 5 == 0) v.draw(c) }
         v.draw(c)
+    }
+
+    // ---------------- v10.45 flying styles and power shots ----------------
+    @Test fun everyCharactersFlyingStyleAndPowerShotDraw() {
+        val c = Canvas(Bitmap.createBitmap(1080, 2340, Bitmap.Config.ARGB_8888))
+        val ids = CharacterRegistry.all.map { it.id }
+        val fliers = CharacterRegistry.all.filter { it.can(Locomotion.FLY) || it.can(Locomotion.FLOAT) }.map { it.id }.toSet()
+        var fired = 0
+        for (id in ids) {
+            val v = SlingGameView(ctx, SlingGame(2.17f, id, ids, fliers, 5L, 60f, emptyMap(), stage = 4)); v.layout(0, 0, 1080, 2340)
+            repeat(240) { v.advance(1f / 60f) }; v.draw(c)
+            assertEquals(4, v.game.targets.size)
+            assertTrue(v.debugShoot(0.12f, 0.02f))   // soft, to the left edge: one bounce, then the power is thrown
+            var n = 0; var sawShot = false
+            while (v.game.phase == SlingGame.Phase.FLY && n++ < 1500) {
+                v.advance(1f / 120f)
+                if (v.game.powerShots.any { it.alive }) { sawShot = true; v.draw(c) } else if (n % 6 == 0) v.draw(c)
+            }
+            v.draw(c)
+            if (sawShot) fired++
+        }
+        assertEquals("every character threw and drew its power", ids.size, fired)
     }
 
     @Test fun theEndCardDrawsAndTodaysBestIsKept() {

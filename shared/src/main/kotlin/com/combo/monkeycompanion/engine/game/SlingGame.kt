@@ -34,7 +34,15 @@ class SlingGame(
      * HIT = the stone knocked the target (scores here). WALL_STONE / WALL_TARGET = that one slammed into an edge after
      * a hit. DOUBLE_SPLAT = both are down. SPLAT = a miss: the stone slammed alone.
      */
-    enum class Event { SNAP, HIT, SPLAT, DOUBLE_SPLAT, TARGET_IN, TARGET_OUT, LAST_SECONDS, OVER, FASTER, TRICK, WALL_STONE, WALL_TARGET, BOUNCE_STONE, BOUNCE_TARGET, COMBO }
+    enum class Event { SNAP, HIT, SPLAT, DOUBLE_SPLAT, TARGET_IN, TARGET_OUT, LAST_SECONDS, OVER, FASTER, TRICK, WALL_STONE, WALL_TARGET, BOUNCE_STONE, BOUNCE_TARGET, COMBO,
+        /** v10.45 the stone threw its power / the power knocked a target / it bounced off an edge / a shot that hit nothing at all. */
+        POWER_FIRE, POWER_HIT, POWER_BOUNCE, MISS }
+    /**
+     * v10.45 the stone character's own power, thrown by itself at its first edge bounce (from level [POWER_STAGE]):
+     * a fire blast, a red beam, a fireball, a water splash… It flies straight at the nearest target, bounces off the
+     * edges as often as the pull allows, and knocks whoever it touches. Position = its centre.
+     */
+    class Shot(var x: Float, var y: Float, var vx: Float, var vy: Float, var bounces: Int) { var age = 0f; var alive = true }
     /**
      * v10.43 / v10.44 every shot bounces off the edges like a carrom coin, and a harder pull has more energy: SOFT
      * bounces once, MEDIUM twice, HARD three times. After its last bounce the stone drops and the splat is that last
@@ -123,6 +131,13 @@ class SlingGame(
     /** After its last bounce (or when a knock took its speed) the stone just falls; the next edge is the splat. */
     var stoneFalling = false; private set
     private var spawnWait = 0f
+    // v10.45 power shots
+    val powerShots = ArrayList<Shot>()
+    val powersOn: Boolean get() = stage >= POWER_STAGE
+    private var powerFired = false
+    private var missPending = false
+    /** From level [POWER_STAGE] four smaller targets roam; this is their size (1 = full). */
+    val targetScale: Float get() = if (stage >= POWER_STAGE) SMALL_TARGET else 1f
     /** Where the stone slammed (valid once [stoneDown]). */
     var wall = Wall.TOP; private set
     /** Time since everything came to rest (the [Phase.SPLAT] clock). */
@@ -186,6 +201,7 @@ class SlingGame(
         pullX = 0f; pullY = 0f
         phase = Phase.FLY; shots++
         stoneDown = false; stoneSplatT = 0f; stoneOmega = 0f; shotHits = 0; stoneFalling = false
+        powerShots.clear(); powerFired = false; missPending = false
         shotPower = powerFor((len / MAX_PULL).coerceIn(0f, 1f)); stoneBounces = shotPower.bounces; stoneBounced = false; banked = false; flyT = 0f
         stoneSpin = Math.toDegrees(atan2(bvy, bvx).toDouble()).toFloat() + 90f
         pending.add(Event.SNAP)
@@ -229,7 +245,7 @@ class SlingGame(
                 if (wall == Wall.LEFT || wall == Wall.RIGHT) by += SLIDE * dt
                 for (tg in targets) if (tg.down) { tg.splatT += dt; if (tg.wall == Wall.LEFT || tg.wall == Wall.RIGHT) tg.y += SLIDE * dt }
                 if (splatT >= (if (splatDouble) SPLAT_HIT_SEC else SPLAT_MISS_SEC)) {
-                    targets.removeAll { it.carried }
+                    targets.removeAll { it.carried }; powerShots.clear()
                     resetStone(); phase = Phase.RETURN; returnT = 0f
                 }
             }
@@ -266,7 +282,8 @@ class SlingGame(
                     } else tg.splatT += h
                 } else if (!stoneDown && !tg.leaving && tg.hittable && hits(tg)) knock(tg)
             }
-            if (stoneDown && targets.none { it.carried && !it.down }) rest()
+            stepShots(h)
+            if (stoneDown && targets.none { it.carried && !it.down } && powerShots.none { it.alive }) rest()
         }
     }
 
@@ -284,7 +301,77 @@ class SlingGame(
         else -> null
     }
 
-    private fun hits(tg: Target): Boolean = hypot(tg.x - bx, tg.y + tg.yOff - by) < HIT_R
+    /** Centre of a target (it is drawn [targetScale] big, standing on its feet). */
+    private fun tcy(tg: Target): Float = tg.y + tg.yOff - BODY_H * targetScale / 2f
+    private fun hits(tg: Target): Boolean = hypot(tg.x - bx, tcy(tg) - (by - BODY_H / 2f)) < HIT_R * (1f + targetScale) / 2f
+
+    // ---------------- v10.45 the power shot ----------------
+    /** Thrown by itself at the first bounce, at the nearest target (a little ahead of it); straight on if nobody is there. */
+    private fun firePower() {
+        powerFired = true
+        val sx = bx; val sy = by - BODY_H / 2f
+        val sp = powerSpeedFor(bulletId)
+        val tg = targets.filter { !it.carried && !it.leaving }.minByOrNull { hypot(it.x - sx, tcy(it) - sy) + if (it.hittable) 0f else 5f }
+        var dx: Float; var dy: Float
+        if (tg != null) {
+            val tf = hypot(tg.x - sx, tcy(tg) - sy) / sp
+            dx = tg.x + tg.vx * tg.dash * tf - sx; dy = tcy(tg) - sy
+        } else { dx = bvx; dy = bvy }
+        val len = hypot(dx, dy).coerceAtLeast(1e-4f)
+        powerShots.add(Shot(sx, sy, dx / len * sp, dy / len * sp, shotPower.bounces))
+        pending.add(Event.POWER_FIRE)
+    }
+
+    private fun stepShots(h: Float) {
+        for (i in powerShots.indices) {
+            val sh = powerShots[i]
+            if (!sh.alive) continue
+            sh.age += h; sh.x += sh.vx * h; sh.y += sh.vy * h
+            val hit = targets.firstOrNull { !it.carried && !it.leaving && it.hittable && hypot(it.x - sh.x, tcy(it) - sh.y) < SHOT_R + BODY_H * targetScale * 0.3f }
+            if (hit != null) { powerKnock(hit, sh); continue }
+            val out = when {
+                sh.x <= SHOT_EDGE -> Wall.LEFT
+                sh.x >= 1f - SHOT_EDGE -> Wall.RIGHT
+                sh.y <= TOP_EDGE * 0.6f -> Wall.TOP
+                sh.y >= aspect - SHOT_EDGE -> Wall.FLOOR
+                else -> null
+            }
+            if (sh.age > SHOT_MAX_SEC) sh.alive = false
+            else if (out != null) {
+                if (sh.bounces <= 0) { sh.alive = false; continue }
+                sh.bounces--
+                when (out) {
+                    Wall.LEFT -> { sh.x = SHOT_EDGE + 0.002f; sh.vx = kotlin.math.abs(sh.vx) }
+                    Wall.RIGHT -> { sh.x = 1f - SHOT_EDGE - 0.002f; sh.vx = -kotlin.math.abs(sh.vx) }
+                    Wall.TOP -> { sh.y = TOP_EDGE * 0.6f + 0.002f; sh.vy = kotlin.math.abs(sh.vy) }
+                    Wall.FLOOR -> { sh.y = aspect - SHOT_EDGE - 0.002f; sh.vy = -kotlin.math.abs(sh.vy) }
+                }
+                bounceX = sh.x; bounceY = sh.y
+                pending.add(Event.POWER_BOUNCE)
+            }
+        }
+    }
+
+    /** The power knocks a target away along its path. Scores like a hit, with a smaller time bonus. */
+    private fun powerKnock(tg: Target, sh: Shot) {
+        sh.alive = false
+        tg.y += tg.yOff; tg.yOff = 0f; tg.trickPhase = 0; tg.alpha = 1f
+        val tvx = tg.vx * tg.dash; tg.dash = 1f
+        val sp = hypot(sh.vx, sh.vy).coerceAtLeast(1e-4f)
+        tg.kvx = sh.vx / sp * POWER_KNOCK_SPEED + tvx * 0.3f; tg.kvy = sh.vy / sp * POWER_KNOCK_SPEED
+        tg.omega = (if (sh.vx >= 0f) 1f else -1f) * (480f + 300f * rng.nextFloat())
+        tg.carried = true; tg.down = false; tg.splatT = 0f; tg.spin = 0f; tg.knockT = 0f; tg.bounces = 1
+        hitX = tg.x; hitY = tg.y - BODY_H * targetScale / 2f; hitForce = 0.6f
+        val before = pace
+        shotHits++; lastKnocked = tg
+        score++; streak++; if (streak > bestStreak) bestStreak = streak
+        val gain = POWER_BONUS_SEC * (if (shotHits >= 2) 2f else 1f)
+        lastGain = gain
+        timeLeft = (timeLeft + gain).coerceAtMost(MAX_SEC); bonus += gain
+        pending.add(Event.POWER_HIT)
+        if (shotHits >= 2) pending.add(Event.COMBO)
+        if (pace > before) pending.add(Event.FASTER)
+    }
 
     /**
      * v10.42 the knock: a real two-body bounce along the line between them. A heavy target (Gajju) hardly moves and
@@ -293,7 +380,7 @@ class SlingGame(
     private fun knock(tg: Target) {
         tg.y += tg.yOff; tg.yOff = 0f; tg.trickPhase = 0; tg.alpha = 1f
         val tvx = tg.vx * tg.dash; tg.dash = 1f
-        var nx = tg.x - bx; var ny = tg.y - by
+        var nx = tg.x - bx; var ny = (tg.y - BODY_H * targetScale / 2f) - (by - BODY_H / 2f)
         val d = hypot(nx, ny)
         if (d < 1e-4f) { val sp = hypot(bvx, bvy).coerceAtLeast(1e-4f); nx = bvx / sp; ny = bvy / sp } else { nx /= d; ny /= d }
         val ms = MASS_BASE + TouchFeel.weight(bulletId); val mt = MASS_BASE + TouchFeel.weight(tg.id)
@@ -310,7 +397,7 @@ class SlingGame(
         // v10.43: a gentle knock lets the target bounce off one edge before it slams; a hard one slams it flat
         tg.bounces = if (hypot(tg.kvx, tg.kvy) < TARGET_BOUNCE_BELOW) 1 else 0
         banked = stoneBounced
-        hitX = (bx + tg.x) / 2f; hitY = (by + tg.y) / 2f - BODY_H / 2f
+        hitX = (bx + tg.x) / 2f; hitY = ((by - BODY_H / 2f) + (tg.y - BODY_H * targetScale / 2f)) / 2f
         hitForce = (vrel / SPEED_MAX).coerceIn(0.3f, 1f)
         val before = pace
         shotHits++; lastKnocked = tg
@@ -332,6 +419,7 @@ class SlingGame(
         if (stoneBounces <= 0) startFalling()   // v10.44: that was its last bounce; now it drops
         bounceX = bx; bounceY = by - BODY_H / 2f
         pending.add(Event.BOUNCE_STONE)
+        if (powersOn && !powerFired) firePower()   // v10.45: the first bounce throws the power
     }
     private fun bounceTarget(tg: Target, w: Wall) {
         val v = reflect(w, tg.x, tg.y, tg.kvx, tg.kvy)
@@ -354,6 +442,7 @@ class SlingGame(
         bx = bx.coerceIn(EDGE, 1f - EDGE); by = by.coerceIn(TOP_EDGE + BODY_H / 2f, aspect - FLOOR_EDGE)
         bvx = 0f; bvy = 0f; stoneSpin = 0f
         if (shotHits > 0) pending.add(Event.WALL_STONE)
+        else if (powerShots.any { it.alive }) { missPending = true; pending.add(Event.WALL_STONE) }   // its power is still flying: not a miss yet
         else { streak = 0; for (tg in targets) tg.laughUntil = t + 1.2f; pending.add(Event.SPLAT) }
     }
 
@@ -368,6 +457,8 @@ class SlingGame(
     /** Everything that was flying has slammed: hold the splat for a moment, then the stone goes home. */
     private fun rest() {
         phase = Phase.SPLAT; splatT = 0f
+        if (shotHits == 0 && missPending) { streak = 0; for (tg in targets) tg.laughUntil = t + 1.2f; pending.add(Event.MISS) }
+        missPending = false
         splatDouble = shotHits > 0
         if (splatDouble) pending.add(Event.DOUBLE_SPLAT)
     }
@@ -441,7 +532,7 @@ class SlingGame(
         val fromLeft = rng.nextBoolean()
         // its own height, away from the others so two targets don't walk on top of each other
         var y = aspect * (LANE_TOP + rng.nextFloat() * (LANE_BOTTOM - LANE_TOP))
-        repeat(6) { if (targets.any { !it.carried && kotlin.math.abs(it.y - y) < BODY_H * 0.9f }) y = aspect * (LANE_TOP + rng.nextFloat() * (LANE_BOTTOM - LANE_TOP)) }
+        repeat(6) { if (targets.any { !it.carried && kotlin.math.abs(it.y - y) < BODY_H * targetScale * 0.9f }) y = aspect * (LANE_TOP + rng.nextFloat() * (LANE_BOTTOM - LANE_TOP)) }
         val tg = Target(id, id in fliers, if (fromLeft) -OFF else 1f + OFF, y, (if (fromLeft) 1f else -1f) * speedFor())
         tg.nextTurn = 1.2f + rng.nextFloat()
         tg.trick = if (stage >= 2) tricks[id] ?: Trick.HOP else Trick.NONE   // level 1: no escapes, just aiming
@@ -464,7 +555,21 @@ class SlingGame(
         /** Hits in one round for 1, 2 and 3 stars. One star unlocks the next level. */
         val STAR_GOALS = intArrayOf(8, 15, 25)
         fun starsFor(score: Int): Int = STAR_GOALS.count { score >= it }
-        fun targetCountFor(stage: Int): Int = when { stage <= 1 -> 1; stage <= 3 -> 2; else -> 3 }
+        fun targetCountFor(stage: Int): Int = when { stage <= 1 -> 1; stage < POWER_STAGE -> 2; else -> 4 }
+        // v10.45 flying styles and power shots
+        /** From this level the stone flies in its own style (looks only). */
+        const val STYLE_STAGE = 3
+        /** From this level: four smaller targets, and the stone throws its power at its first bounce. */
+        const val POWER_STAGE = 4
+        const val SMALL_TARGET = 0.82f
+        const val SHOT_R = 0.045f
+        const val SHOT_EDGE = 0.03f
+        const val SHOT_MAX_SEC = 3f
+        const val POWER_KNOCK_SPEED = 1.6f
+        /** A power hit adds this much time (a body hit adds [BONUS_SEC]). */
+        const val POWER_BONUS_SEC = 2f
+        /** How fast each character's power flies (Tutty's fireball is the fast one). */
+        fun powerSpeedFor(id: String): Float = if (id == "devil") 3.9f else 3.2f
         /** New targets walk in this many seconds apart. */
         const val SPAWN_GAP = 0.7f
         /** A stone slower than this after a knock has lost its energy and drops. */

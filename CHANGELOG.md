@@ -386,3 +386,15 @@ Every character now feels like a little body in your hand (the phone's vibration
 - The top bar shows the level and the next star goal ("L2 🎯 4/8"). The end card shows the stars, how many hits to the next star, and "🔓 Level 3 is open!".
 - Inside a round the targets still speed up every 5 hits ("Faster! 💨").
 - Rules: `SlingGame(stage=…)`, `targets` list, `shotHits`, `stoneFalling`, `STAR_GOALS`, `targetCountFor`; `SlingGameHub.unlocked/level/setLevel/finishRound`. Outside the game nothing changes (the plain fling has its own code).
+
+## v10.45 (code 113): Slingshot game: flying styles (level 3) and auto-thrown powers (level 4)
+
+- **Level 3 and up: each character flies in its own style.** Bolt and Skye leave thruster / rocket flames, Zoom's red cape streams behind, Tutty, Masko and Echo trail smoke, Rollie throws sparks off her wheels, Wavy rides a wave, Angel glows gold, Gajju kicks up a dust cloud, the others get speed lines. Looks only: it does not change who wins.
+- **Level 4 and up: four targets roam (drawn a little smaller), and your character throws its own power by itself at its first edge bounce.** No tap, nothing to learn: bounce, then fire.
+  - It is thrown at the nearest target, a little ahead of where that target is going. A target that is escaping (vanished, flying up, sprinting) can still dodge it.
+  - The power bounces off the edges as often as your pull allows (soft 1, medium 2, hard 3) and knocks whoever it touches.
+  - A power hit scores 1 and adds 2 s (a body hit adds 3 s); hits in the same shot are a combo.
+  - Looks: Bolt a fire blast, Zoom a red beam, Tutty a fast fireball, Gajju and Wavy a water splash, Angel a ring of light, Masko a throwing star, Pogo a banana, Skye a spark, Echo a wisp, Billa a yarn ball, Chittu cheese, Rollie a wheel.
+- A shot only counts as a miss when neither the character nor its power hit anything ("MISS!" waits for the power to finish).
+- Level plan now: 1 = one target; 2–3 = two targets + escapes; 3+ = flying styles; 4+ = four targets + powers.
+- Rules: `SlingGame.Shot`, `powerShots`, `firePower()`, `powerKnock()`, `targetScale`, `POWER_STAGE`, `STYLE_STAGE`; events POWER_FIRE / POWER_HIT / POWER_BOUNCE / MISS. Tests: no power below level 4, thrown once at the first bounce, can knock a target, every character's style and power draws.

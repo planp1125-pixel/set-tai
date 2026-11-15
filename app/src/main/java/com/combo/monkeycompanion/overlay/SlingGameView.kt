@@ -150,6 +150,20 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
                 postDelayed({ if (isAttachedToWindow) buzz { Feel.play(context, TouchFeel.thump(game.slamForce, TouchFeel.weight(game.bulletId))) } }, 45L)
                 say("MISS!", game.bx, game.by - SlingGame.BODY_H * 1.1f); burst(8); shed(game.bulletId)
             }
+            SlingGame.Event.POWER_FIRE -> {   // v10.45 the character throws its own power at the first bounce
+                sfx(Sfx.S.ZIP, 0.5f); buzz { Feel.playPop(context) }
+                burstAt(px(game.bx), px(game.by - SlingGame.BODY_H / 2f), 6)
+            }
+            SlingGame.Event.POWER_HIT -> {
+                sfx(Sfx.S.BONK, 0.7f); sfx(Sfx.S.POP, 0.4f)
+                buzz { Feel.playSharpHit(context, 0.7f, TouchFeel.weight(game.lastKnocked?.id ?: game.bulletId)) }
+                say("ZAP!", game.hitX, game.hitY - SlingGame.BODY_H * 0.5f)
+                sparks(px(game.hitX), px(game.hitY), 14)
+                shakeUntil = clock + 0.12f
+                gainText = "+${game.lastGain.toInt()}"; gainT = clock
+            }
+            SlingGame.Event.POWER_BOUNCE -> { sfx(Sfx.S.BOING, 0.2f); burstAt(px(game.bounceX), px(game.bounceY), 4) }
+            SlingGame.Event.MISS -> say("MISS!", game.bx, game.by - SlingGame.BODY_H * 1.1f)
             SlingGame.Event.TARGET_IN -> sfx(Sfx.S.POP, 0.4f)
             SlingGame.Event.TARGET_OUT -> Unit
             SlingGame.Event.FASTER -> { banner = "Faster! 💨"; bannerT = clock }
@@ -294,6 +308,7 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         drawTrail(c)
         drawStone(c, g)
         drawSlingFront(c, g)
+        for (k in g.powerShots.indices) { val sh = g.powerShots[k]; if (sh.alive) drawPowerShot(c, g, sh) }
         if (g.stoneDown && (g.phase == SlingGame.Phase.SPLAT || g.phase == SlingGame.Phase.FLY)) stars(c, px(g.bx), px(g.by - SlingGame.BODY_H * 1.05f))
         for (k in g.targets.indices) { val it = g.targets[k]; if (it.carried && it.down) stars(c, px(it.x), px(it.y - SlingGame.BODY_H * 1.05f)) }
         c.restore()
@@ -307,6 +322,7 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         if (g.shots == 0 && !g.over && !g.pulling) hint(c, "Pull back anywhere and let go! 🎯", h * 0.93f)
         else if (g.shots < 3 && !g.over && g.pulling) hint(c, "Every shot bounces off the edges · a harder pull bounces more", h * 0.93f)
         else if (g.shots in 1..4 && !g.over && g.targets.any { it.warning }) hint(c, "! means it is about to escape", h * 0.93f)
+        else if (g.powersOn && g.shots < 4 && !g.over && !g.pulling) hint(c, "Your power fires at the first bounce ⚡", h * 0.93f)
         if (levelRowOn() && !g.over) drawLevelRow(c, topPad + 62f * d)
         if (g.over) drawEndCard(c, g)
     }
@@ -370,11 +386,103 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         for (i in 0 until 3) { val a = clock * 5f + i * 2.094f; c.drawText("★", x + cos(a) * 26f * d, y + sin(a) * 8f * d, text) }
     }
 
-    /** Speed streak behind the flying stone. */
+    // v10.45 each character flies in its own style (from level SlingGame.STYLE_STAGE): what streams out behind it
+    private enum class Fly { PLAIN, FLAME, CAPE, SMOKE, SPARK, WAVE, GLOW, LINES, DUST }
+    private fun flyStyle(g: SlingGame): Fly = if (g.stage < SlingGame.STYLE_STAGE) Fly.PLAIN else when (g.bulletId) {
+        "armour", "rocketgirl" -> Fly.FLAME          // thrusters / rocket
+        "superboy" -> Fly.CAPE                        // the cape streams behind
+        "devil", "mask", "hollowman" -> Fly.SMOKE     // a wisp of smoke
+        "skater" -> Fly.SPARK                         // sparks off the wheels
+        "surfer" -> Fly.WAVE                          // rides a wave
+        "angel" -> Fly.GLOW                           // a soft golden glow
+        "gajju" -> Fly.DUST                           // a heavy dust cloud
+        else -> Fly.LINES                             // speed lines
+    }
+
+    /** What streams out behind the flying stone. */
     private fun drawTrail(c: Canvas) {
-        fill.color = Color.WHITE
-        for (q in trail) { val k = 1f - q[2] / 0.25f; fill.alpha = (110 * k).toInt().coerceIn(0, 255); c.drawCircle(q[0], q[1], (16f * k + 3f) * d, fill) }
+        if (trail.isEmpty()) return
+        val life = 0.25f
+        when (flyStyle(game)) {
+            Fly.PLAIN -> { fill.color = Color.WHITE
+                for (q in trail) { val k = 1f - q[2] / life; fill.alpha = (110 * k).toInt().coerceIn(0, 255); c.drawCircle(q[0], q[1], (16f * k + 3f) * d, fill) } }
+            Fly.FLAME -> for (q in trail) { val k = 1f - q[2] / life
+                fill.color = Color.rgb(0xFF, 0x7A, 0x1A); fill.alpha = (200 * k).toInt().coerceIn(0, 255); c.drawCircle(q[0], q[1], (20f * k + 4f) * d, fill)
+                fill.color = Color.rgb(0xFF, 0xE0, 0x66); fill.alpha = (230 * k).toInt().coerceIn(0, 255); c.drawCircle(q[0], q[1], (10f * k + 1f) * d, fill) }
+            Fly.CAPE -> { line.color = Color.rgb(0xD3, 0x2F, 0x2F)
+                for (n in 1 until trail.size) { val a = trail[n - 1]; val b = trail[n]; val k = 1f - a[2] / life
+                    line.strokeWidth = (26f * k + 4f) * d; line.alpha = (220 * k).toInt().coerceIn(0, 255); c.drawLine(a[0], a[1], b[0], b[1], line) }
+                line.alpha = 255 }
+            Fly.SMOKE -> { fill.color = if (game.bulletId == "devil") Color.rgb(0x8E, 0x44, 0xAD) else if (game.bulletId == "mask") Color.rgb(0x44, 0x48, 0x55) else Color.rgb(0xD8, 0xE4, 0xEE)
+                for (q in trail) { val k = 1f - q[2] / life; fill.alpha = (150 * k).toInt().coerceIn(0, 255); c.drawCircle(q[0] + sin(q[2] * 40f) * 6f * d, q[1], (10f + 22f * (1f - k)) * d, fill) } }
+            Fly.SPARK -> { fill.color = Color.rgb(0xFF, 0xE0, 0x66)
+                for ((n, q) in trail.withIndex()) { val k = 1f - q[2] / life; fill.alpha = (255 * k).toInt().coerceIn(0, 255)
+                    c.drawCircle(q[0] + (if (n % 2 == 0) 14f else -14f) * d * (1f - k), q[1] + 16f * d * (1f - k), (4.5f * k + 1f) * d, fill) } }
+            Fly.WAVE -> { line.color = Color.rgb(0x3F, 0xA9, 0xF5)
+                for (q in trail) { val k = 1f - q[2] / life; line.strokeWidth = (7f * k + 1f) * d; line.alpha = (210 * k).toInt().coerceIn(0, 255)
+                    rect.set(q[0] - 24f * d, q[1] - 6f * d, q[0] + 24f * d, q[1] + 26f * d); c.drawArc(rect, 20f, 140f, false, line) }
+                line.alpha = 255 }
+            Fly.GLOW -> { fill.color = Color.rgb(0xFF, 0xE9, 0xA8)
+                for (q in trail) { val k = 1f - q[2] / life; fill.alpha = (90 * k).toInt().coerceIn(0, 255); c.drawCircle(q[0], q[1], (30f * k + 8f) * d, fill) } }
+            Fly.DUST -> { fill.color = Color.rgb(0xD9, 0xC7, 0xA8)
+                for (q in trail) { val k = 1f - q[2] / life; fill.alpha = (170 * k).toInt().coerceIn(0, 255); c.drawCircle(q[0], q[1] + 10f * d, (14f + 26f * (1f - k)) * d, fill) } }
+            Fly.LINES -> { line.color = Color.WHITE
+                for (n in 1 until trail.size) { val a = trail[n - 1]; val b = trail[n]; val k = 1f - a[2] / life
+                    line.strokeWidth = 3f * d; line.alpha = (200 * k).toInt().coerceIn(0, 255)
+                    for (o in -1..1) c.drawLine(a[0] + o * 14f * d, a[1], b[0] + o * 14f * d, b[1], line) }
+                line.alpha = 255 }
+        }
         fill.alpha = 255
+    }
+
+    /** v10.45 the thrown power, in the character's own look (all drawn here, no pictures). */
+    private fun drawPowerShot(c: Canvas, g: SlingGame, sh: SlingGame.Shot) {
+        val x = px(sh.x); val y = px(sh.y)
+        val sp = hypot(sh.vx, sh.vy).coerceAtLeast(1e-4f); val ux = sh.vx / sp; val uy = sh.vy / sp
+        val r = px(SlingGame.SHOT_R)
+        val (main, core) = when (g.bulletId) {
+            "armour" -> Color.rgb(0xFF, 0x7A, 0x1A) to Color.rgb(0xFF, 0xF0, 0xA0)        // fire blast from the hand
+            "superboy" -> Color.rgb(0xE5, 0x1C, 0x23) to Color.rgb(0xFF, 0xC4, 0xC4)      // red beam from the eyes
+            "devil" -> Color.rgb(0xE5, 0x39, 0x1E) to Color.rgb(0xFF, 0xB3, 0x3D)         // fireball
+            "gajju", "surfer" -> Color.rgb(0x3F, 0xA9, 0xF5) to Color.rgb(0xD6, 0xF0, 0xFF)   // water splash
+            "angel" -> Color.rgb(0xFF, 0xD8, 0x6B) to Color.WHITE                         // ring of light
+            "mask" -> Color.rgb(0x9A, 0xA3, 0xB5) to Color.WHITE                          // throwing star
+            "monkey", "chittu" -> Color.rgb(0xFF, 0xD9, 0x3D) to Color.rgb(0xFF, 0xF4, 0xB0)  // banana / cheese
+            "rocketgirl" -> Color.rgb(0xFF, 0xC1, 0x07) to Color.WHITE                    // rocket spark
+            "hollowman" -> Color.rgb(0xCF, 0xE3, 0xEE) to Color.WHITE                     // ghost wisp
+            "billa" -> Color.rgb(0xFF, 0x8F, 0xB1) to Color.rgb(0xFF, 0xDD, 0xE8)         // yarn ball
+            "skater" -> Color.rgb(0x55, 0x5B, 0x6E) to Color.rgb(0xFF, 0xD5, 0x4A)        // a wheel
+            else -> Color.WHITE to Color.rgb(0xFF, 0xF4, 0xB0)                            // a star
+        }
+        // tail
+        fill.color = main
+        for (n in 1..4) { fill.alpha = 150 - n * 30; c.drawCircle(x - ux * r * 0.9f * n, y - uy * r * 0.9f * n, r * (1f - n * 0.17f), fill) }
+        fill.alpha = 255
+        when (g.bulletId) {
+            "superboy" -> {   // a beam: a thick red line with a bright core
+                line.color = main; line.strokeWidth = r * 1.1f; c.drawLine(x - ux * r * 3.2f, y - uy * r * 3.2f, x + ux * r, y + uy * r, line)
+                line.color = core; line.strokeWidth = r * 0.4f; c.drawLine(x - ux * r * 3.2f, y - uy * r * 3.2f, x + ux * r, y + uy * r, line)
+            }
+            "angel", "skater" -> {   // a ring
+                line.color = main; line.strokeWidth = r * 0.45f; c.drawCircle(x, y, r, line)
+                fill.color = core; c.drawCircle(x, y, r * 0.3f, fill)
+            }
+            "mask", "rocketgirl" -> {   // a spinning four-point star
+                line.color = main; line.strokeWidth = r * 0.5f
+                val a = clock * 14f
+                c.drawLine(x - cos(a) * r * 1.4f, y - sin(a) * r * 1.4f, x + cos(a) * r * 1.4f, y + sin(a) * r * 1.4f, line)
+                c.drawLine(x + sin(a) * r * 1.4f, y - cos(a) * r * 1.4f, x - sin(a) * r * 1.4f, y + cos(a) * r * 1.4f, line)
+                fill.color = core; c.drawCircle(x, y, r * 0.35f, fill)
+            }
+            "monkey" -> {   // a banana: a thick curved stroke
+                line.color = main; line.strokeWidth = r * 0.7f
+                rect.set(x - r * 1.3f, y - r * 1.3f, x + r * 1.3f, y + r * 1.3f); c.drawArc(rect, clock * 400f % 360f, 150f, false, line)
+            }
+            else -> {   // a glowing ball (fire blast, fireball, water, wisp, yarn, cheese)
+                fill.color = main; c.drawCircle(x, y, r * (if (g.bulletId == "devil") 1.25f else 1f), fill)
+                fill.color = core; c.drawCircle(x + ux * r * 0.2f, y + uy * r * 0.2f, r * 0.5f, fill)
+            }
+        }
     }
 
     private fun drawBanner(c: Canvas) {
@@ -390,6 +498,8 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         val b = body(tg.id) ?: return
         val bob = if (tg.flies && !tg.carried) sin(clock * 3f) * 0.012f else 0f
         val x = px(tg.x); val y = px(tg.y + tg.yOff + bob)
+        val outer = c.save()
+        if (g.targetScale != 1f) c.scale(g.targetScale, g.targetScale, x, y)
         if (tg.alpha < 0.98f) com.combo.monkeycompanion.engine.stagefx.StageFx.smoke(c, x, y - px(SlingGame.BODY_H) / 2f, px(0.10f), b.ch.vanishStyle, 1f - tg.alpha, clock)
         if (tg.warning) {   // the warning before an escape
             text.textSize = 24f * d; text.color = Color.rgb(0xFF, 0x5A, 0x1F)
@@ -410,6 +520,7 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         }
         drawBody(c, b, x, y, tg.facing, tg.alpha)
         c.restore()
+        c.restoreToCount(outer)
     }
 
     // The slingshot: a wooden fork at home, one band behind the stone and one in front.

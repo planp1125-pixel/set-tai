@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.44 (versionCode 112)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.45 (versionCode 113)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.40 Slingshot game (build 1 of 3)
 
@@ -13,7 +13,10 @@ Updated for **v10.44 (versionCode 112)**, 8 Nov 2026. Owner: Manikandan Gopalakr
 - v10.42–v10.44: real two-body knock (SlingGame.knock), carrom bounces by pull power (SOFT 1 / MEDIUM 2 / HARD 3, the
   splat is the last fall), combos, the clock pauses from a knock until the stone is home, saved levels with stars
   (8/15/25; SlingGameHub.finishRound; level 1 = one target no escapes, 2–3 = two targets + escapes, 4+ = three).
-- NEXT (v10.45, agreed with the owner): each character's own flying style (looks) and an EARNED special power shot
+- v10.45 done: flying styles from level 3 (SlingGameView.Fly, looks only); from level 4 four smaller targets and the
+  stone AUTO-throws its power at its first bounce (SlingGame.firePower/powerKnock; the owner rejected tap-to-fire:
+  too fast to tap and it must need no teaching). Ideas not built: battered costumes, friendship points, daily challenge.
+- (superseded plan) v10.45 was first going to be: each character's own flying style (looks) and an EARNED special power shot
   (3 hits in a row) from level 3: Tutty teleport hit, Bolt mid-air boost, Zoom pierces, Skye burst, Gajju slam, Rollie
   edge skate. The owner wants the game to be the app's front door ("a slingshot game with your own character").
 - Older plan: build 3 = battered costumes for all,
