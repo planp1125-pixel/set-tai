@@ -1,5 +1,7 @@
 package com.combo.monkeycompanion.engine.game
 
+import com.combo.monkeycompanion.engine.feel.TouchFeel
+import kotlin.math.atan2
 import kotlin.math.hypot
 import kotlin.random.Random
 
@@ -23,7 +25,11 @@ class SlingGame(
     private val tricks: Map<String, Trick> = emptyMap(),
 ) {
     enum class Phase { AIM, FLY, SPLAT, RETURN, OVER }
-    enum class Event { SNAP, HIT, SPLAT, DOUBLE_SPLAT, TARGET_IN, TARGET_OUT, LAST_SECONDS, OVER, LEVEL_UP, TRICK }
+    /**
+     * HIT = the stone knocked the target (scores here). WALL_STONE / WALL_TARGET = that one slammed into an edge after
+     * a hit. DOUBLE_SPLAT = both are down. SPLAT = a miss: the stone slammed alone.
+     */
+    enum class Event { SNAP, HIT, SPLAT, DOUBLE_SPLAT, TARGET_IN, TARGET_OUT, LAST_SECONDS, OVER, LEVEL_UP, TRICK, WALL_STONE, WALL_TARGET }
     /**
      * v10.41 each character's own escape. It always shows a short warning first ([Target.warning]), so a hit is skill:
      * FLY_UP shoots up and drifts back, VANISH disappears (can't be hit) and pops up somewhere else, DASH sprints,
@@ -34,8 +40,14 @@ class SlingGame(
 
     class Target(val id: String, val flies: Boolean, var x: Float, var y: Float, var vx: Float) {
         var age = 0f
-        /** Being carried by the stone after a hit. */
+        /** Knocked by the stone (v10.42: it flies off on its own, tumbling, until it slams into an edge). */
         var carried = false
+        /** v10.42 knock flight: speed, tumble angle (degrees) and its speed, and the slam. */
+        var kvx = 0f; var kvy = 0f
+        var spin = 0f; var omega = 0f
+        var down = false
+        var wall = Wall.TOP
+        var splatT = 0f
         var leaving = false
         /** Offset from the stone while carried. */
         var offX = 0f; var offY = 0f
@@ -82,9 +94,23 @@ class SlingGame(
     /** Seconds added to the clock so far by hits. */
     var bonus = 0f; private set
     var target: Target? = null; private set
-    /** Where the last splat was (valid in [Phase.SPLAT]). */
+    /** Where the stone slammed (valid once [stoneDown]). */
     var wall = Wall.TOP; private set
+    /** Time since everything came to rest (the [Phase.SPLAT] clock). */
     var splatT = 0f; private set
+    // v10.42 real collision: the stone tumbles after a hit and slams on its own
+    /** Stone body angle in degrees (0 = upright). Follows the flight direction, then tumbles after a hit. */
+    var stoneSpin = 0f; private set
+    private var stoneOmega = 0f
+    /** The stone has slammed into an edge; [stoneSplatT] counts from then. */
+    var stoneDown = false; private set
+    var stoneSplatT = 0f; private set
+    /** The last knock: where the bodies met, and how hard (0..1). */
+    var hitX = 0f; private set
+    var hitY = 0f; private set
+    var hitForce = 0f; private set
+    /** How hard the last wall slam was (0..1), for the buzz. */
+    var slamForce = 0f; private set
     /** The last splat carried the target (a hit). */
     var splatDouble = false; private set
     var returnT = 0f; private set
@@ -118,6 +144,8 @@ class SlingGame(
         bvx = -pullX / len * sp; bvy = -pullY / len * sp
         pullX = 0f; pullY = 0f
         phase = Phase.FLY; shots++
+        stoneDown = false; stoneSplatT = 0f; stoneOmega = 0f; knockT = 0f
+        stoneSpin = Math.toDegrees(atan2(bvy, bvx).toDouble()).toFloat() + 90f
         pending.add(Event.SNAP)
         return true
     }
@@ -142,8 +170,9 @@ class SlingGame(
             Phase.AIM -> if (timeLeft <= 0f) finish()
             Phase.FLY -> stepFlight(dt)
             Phase.SPLAT -> {
-                splatT += dt
-                if (wall == Wall.LEFT || wall == Wall.RIGHT) { by += SLIDE * dt; target?.takeIf { it.carried }?.let { it.y = by + it.offY } }
+                splatT += dt; stoneSplatT += dt
+                if (wall == Wall.LEFT || wall == Wall.RIGHT) by += SLIDE * dt
+                target?.takeIf { it.down }?.let { it.splatT += dt; if (it.wall == Wall.LEFT || it.wall == Wall.RIGHT) it.y += SLIDE * dt }
                 if (splatT >= (if (splatDouble) SPLAT_HIT_SEC else SPLAT_MISS_SEC)) {
                     if (splatDouble) target = null
                     resetStone(); phase = Phase.RETURN; returnT = 0f
@@ -155,54 +184,99 @@ class SlingGame(
     }
 
     private fun finish() { phase = Phase.OVER; pending.add(Event.OVER) }
-    private fun resetStone() { pullX = 0f; pullY = 0f; bx = homeX; by = homeY; bvx = 0f; bvy = 0f }
+    private fun resetStone() { pullX = 0f; pullY = 0f; bx = homeX; by = homeY; bvx = 0f; bvy = 0f; stoneDown = false; stoneSpin = 0f; stoneOmega = 0f }
+    private var knockT = 0f
 
     private fun stepFlight(dt: Float) {
         // small sub-steps so a fast stone can't jump over the target
         var left = dt
         while (left > 0f && phase == Phase.FLY) {
             val h = minOf(left, 1f / 240f); left -= h
-            bvy += GRAVITY * h
-            bx += bvx * h; by += bvy * h
             val tg = target
-            if (tg != null && tg.carried) { tg.x = bx + tg.offX; tg.y = by + tg.offY }
-            else if (tg != null && !tg.leaving && tg.hittable && hits(tg)) {
-                tg.y += tg.yOff; tg.yOff = 0f; tg.trickPhase = 0; tg.dash = 1f; tg.alpha = 1f
-                tg.carried = true; tg.offX = (tg.x - bx) * 0.6f; tg.offY = (tg.y - by) * 0.6f
-                pending.add(Event.HIT)
-            }
-            val cy = by - BODY_H / 2f
-            val w = when {
-                bx <= EDGE -> Wall.LEFT
-                bx >= 1f - EDGE -> Wall.RIGHT
-                cy <= TOP_EDGE -> Wall.TOP
-                by >= aspect - FLOOR_EDGE -> Wall.FLOOR
-                else -> null
-            }
-            if (w != null) splat(w)
+            val knocked = tg != null && tg.carried
+            if (knocked) knockT += h
+            if (!stoneDown) {
+                bvy += (if (knocked) KNOCK_GRAVITY else GRAVITY) * h
+                bx += bvx * h; by += bvy * h
+                if (knocked) stoneSpin += stoneOmega * h else stoneSpin = Math.toDegrees(atan2(bvy, bvx).toDouble()).toFloat() + 90f
+                wallOf(bx, by)?.let { stoneSlam(it) }
+            } else stoneSplatT += h
+            if (tg != null && knocked) {
+                if (!tg.down) {
+                    tg.kvy += KNOCK_GRAVITY * h
+                    tg.x += tg.kvx * h; tg.y += tg.kvy * h; tg.spin += tg.omega * h
+                    val w = wallOf(tg.x, tg.y) ?: if (knockT > KNOCK_MAX_SEC) Wall.FLOOR else null
+                    if (w != null) targetSlam(tg, w)
+                } else tg.splatT += h
+            } else if (tg != null && !stoneDown && !tg.leaving && tg.hittable && hits(tg)) knock(tg)
+            if (stoneDown && (tg == null || !tg.carried || tg.down)) rest()
         }
+    }
+
+    private fun wallOf(x: Float, y: Float): Wall? = when {
+        x <= EDGE -> Wall.LEFT
+        x >= 1f - EDGE -> Wall.RIGHT
+        y - BODY_H / 2f <= TOP_EDGE -> Wall.TOP
+        y >= aspect - FLOOR_EDGE -> Wall.FLOOR
+        else -> null
     }
 
     private fun hits(tg: Target): Boolean = hypot(tg.x - bx, tg.y + tg.yOff - by) < HIT_R
 
-    private fun splat(w: Wall) {
-        wall = w; phase = Phase.SPLAT; splatT = 0f
+    /**
+     * v10.42 the knock: a real two-body bounce along the line between them. A heavy target (Gajju) hardly moves and
+     * throws the stone back; a light one (Chittu) is sent flying. Both tumble. The hit scores here.
+     */
+    private fun knock(tg: Target) {
+        tg.y += tg.yOff; tg.yOff = 0f; tg.trickPhase = 0; tg.alpha = 1f
+        val tvx = tg.vx * tg.dash; tg.dash = 1f
+        var nx = tg.x - bx; var ny = tg.y - by
+        val d = hypot(nx, ny)
+        if (d < 1e-4f) { val sp = hypot(bvx, bvy).coerceAtLeast(1e-4f); nx = bvx / sp; ny = bvy / sp } else { nx /= d; ny /= d }
+        val ms = MASS_BASE + TouchFeel.weight(bulletId); val mt = MASS_BASE + TouchFeel.weight(tg.id)
+        val speed = hypot(bvx, bvy)
+        val vrel = ((bvx - tvx) * nx + bvy * ny).coerceAtLeast(speed * 0.5f)
+        val j = (1f + RESTITUTION) * vrel / (1f / ms + 1f / mt)
+        bvx -= j / ms * nx; bvy -= j / ms * ny
+        tg.kvx = tvx + j / mt * nx; tg.kvy = j / mt * ny
+        val ts = hypot(tg.kvx, tg.kvy)
+        if (ts < KNOCK_MIN_SPEED) { val k = KNOCK_MIN_SPEED / ts.coerceAtLeast(1e-4f); tg.kvx *= k; tg.kvy *= k }
+        val turn = if (nx >= 0f) 1f else -1f
+        tg.omega = turn * (520f + 380f * rng.nextFloat()); stoneOmega = -turn * (300f + 260f * rng.nextFloat())
+        tg.carried = true; tg.down = false; tg.splatT = 0f; tg.spin = 0f; knockT = 0f
+        hitX = (bx + tg.x) / 2f; hitY = (by + tg.y) / 2f - BODY_H / 2f
+        hitForce = (vrel / SPEED_MAX).coerceIn(0.3f, 1f)
+        val before = level
+        score++; streak++; if (streak > bestStreak) bestStreak = streak
+        timeLeft = (timeLeft + BONUS_SEC).coerceAtMost(MAX_SEC); bonus += BONUS_SEC
+        pending.add(Event.HIT)
+        if (level > before) pending.add(Event.LEVEL_UP)
+    }
+
+    private fun stoneSlam(w: Wall) {
+        slamForce = (hypot(bvx, bvy) / SPEED_MAX).coerceIn(0.35f, 1f)
+        wall = w; stoneDown = true; stoneSplatT = 0f
         bx = bx.coerceIn(EDGE, 1f - EDGE); by = by.coerceIn(TOP_EDGE + BODY_H / 2f, aspect - FLOOR_EDGE)
-        bvx = 0f; bvy = 0f
+        bvx = 0f; bvy = 0f; stoneSpin = 0f
+        val tg = target
+        if (tg != null && tg.carried) pending.add(Event.WALL_STONE)
+        else { streak = 0; tg?.laughUntil = t + 1.2f; pending.add(Event.SPLAT) }
+    }
+
+    private fun targetSlam(tg: Target, w: Wall) {
+        slamForce = (hypot(tg.kvx, tg.kvy) / SPEED_MAX).coerceIn(0.35f, 1f)
+        tg.wall = w; tg.down = true; tg.splatT = 0f; tg.spin = 0f
+        tg.x = tg.x.coerceIn(EDGE, 1f - EDGE); tg.y = tg.y.coerceIn(TOP_EDGE + BODY_H / 2f, aspect - FLOOR_EDGE)
+        tg.kvx = 0f; tg.kvy = 0f
+        pending.add(Event.WALL_TARGET)
+    }
+
+    /** Everything that was flying has slammed: hold the splat for a moment, then the stone goes home. */
+    private fun rest() {
+        phase = Phase.SPLAT; splatT = 0f
         val tg = target
         splatDouble = tg != null && tg.carried
-        if (splatDouble) {
-            tg!!.x = bx + tg.offX; tg.y = by + tg.offY
-            val before = level
-            score++; streak++; if (streak > bestStreak) bestStreak = streak
-            timeLeft = (timeLeft + BONUS_SEC).coerceAtMost(MAX_SEC); bonus += BONUS_SEC
-            pending.add(Event.DOUBLE_SPLAT)
-            if (level > before) pending.add(Event.LEVEL_UP)
-        } else {
-            streak = 0
-            tg?.laughUntil = t + 1.2f
-            pending.add(Event.SPLAT)
-        }
+        if (splatDouble) pending.add(Event.DOUBLE_SPLAT)
     }
 
     private fun stepTarget(dt: Float) {
@@ -292,6 +366,16 @@ class SlingGame(
         /** A little gravity: the flight is nearly straight, so aiming is fair. */
         const val GRAVITY = 0.35f
         const val HIT_R = 0.125f
+        // v10.42 collision
+        /** Body mass = this + TouchFeel.weight(id) (0..1). */
+        const val MASS_BASE = 0.6f
+        const val RESTITUTION = 0.6f
+        /** A knocked target always leaves at least this fast, so it reaches an edge. */
+        const val KNOCK_MIN_SPEED = 1.3f
+        /** After a knock both bodies fall properly (a heavy tumble), unlike the nearly straight aimed flight. */
+        const val KNOCK_GRAVITY = 2.4f
+        /** Safety: a knocked target is put down after this long even if it found no edge. */
+        const val KNOCK_MAX_SEC = 2.5f
         const val EDGE = 0.07f
         const val TOP_EDGE = 0.09f
         const val FLOOR_EDGE = 0.03f

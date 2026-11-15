@@ -170,6 +170,62 @@ class SlingGameTest {
         repeat(60 * 7) { g.step(1f / 60f); g.target?.let { assertEquals(0, it.trickPhase); assertEquals(0f, it.yOff, 0f) } }
     }
 
+    // ---------------- v10.42 real collision ----------------
+    /** Step until the stone has knocked the target, or give up. */
+    private fun knockOnce(g: SlingGame): Boolean {
+        repeat(14) {
+            g.run(1.4f)
+            val tg = g.target
+            if (g.phase == SlingGame.Phase.AIM && tg != null && !tg.leaving && tg.trickPhase == 0 && tg.x in 0.2f..0.8f) {
+                val s0 = g.score
+                g.shootAtTarget()
+                var n = 0
+                while (g.phase == SlingGame.Phase.FLY && g.score == s0 && n++ < 240) g.step(1f / 240f)
+                if (g.score > s0) return true
+                g.run(2.5f)
+            }
+        }
+        return false
+    }
+
+    @Test fun aKnockScoresAtOnceAndBothFlyOnAndSlamSeparately() {
+        var checked = false
+        for (seed in 1L..8L) {
+            val g = game(seed, 60f)
+            if (!knockOnce(g)) continue
+            val tg = g.target!!
+            assertTrue("the target is knocked, not glued", tg.carried && !tg.down)
+            assertTrue("it is sent flying", hypot(tg.kvx, tg.kvy) >= SlingGame.KNOCK_MIN_SPEED - 1e-3f)
+            assertTrue("it tumbles", tg.omega != 0f)
+            assertTrue(g.hitForce in 0.3f..1f)
+            assertEquals("the hit counts at the moment of the knock", 1, g.score)
+            assertEquals(SlingGame.BONUS_SEC, g.bonus, 1e-3f)
+            val ev = ArrayList(g.drain())
+            assertTrue(SlingGame.Event.HIT in ev)
+            g.run(3f); ev += g.drain()
+            assertTrue("the stone slams", SlingGame.Event.WALL_STONE in ev)
+            assertTrue("the target slams", SlingGame.Event.WALL_TARGET in ev)
+            assertTrue(ev.indexOf(SlingGame.Event.DOUBLE_SPLAT) > ev.indexOf(SlingGame.Event.HIT))
+            assertFalse("a hit is never also a miss", SlingGame.Event.SPLAT in ev)
+            checked = true; break
+        }
+        assertTrue(checked)
+    }
+
+    @Test fun aHeavyTargetThrowsTheStoneBackAndALightOneFliesFar() {
+        fun knock(targetId: String): Pair<Float, Float>? {   // (target speed, stone speed) right after the knock
+            for (seed in 1L..10L) {
+                val g = SlingGame(2.17f, "monkey", listOf("monkey", targetId), emptySet(), seed, 60f, mapOf(targetId to SlingGame.Trick.NONE))
+                if (knockOnce(g)) { val tg = g.target!!; return hypot(tg.kvx, tg.kvy) to hypot(g.bvx, g.bvy) }
+            }
+            return null
+        }
+        val heavy = knock("gajju"); val light = knock("chittu")
+        assertNotNull(heavy); assertNotNull(light)
+        assertTrue("the light one leaves faster ($light vs $heavy)", light!!.first > heavy!!.first)
+        assertTrue("the stone keeps more speed against the light one", light.second > heavy.second)
+    }
+
     @Test fun sameSeedSameGame() {
         val a = game(11L); val b = game(11L)
         a.run(6f); b.run(6f)

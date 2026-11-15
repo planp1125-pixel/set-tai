@@ -352,3 +352,12 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Effects**: a tiny freeze at the moment of the hit, screen shake and a glass crack on the double splat, dizzy stars over both heads, a speed trail behind the stone, streak words ("2 in a row!", "ON FIRE! 🔥").
 - Code: rules in `SlingGame` (Trick, level, bonus); `SlingGameView.externalPull/externalRelease`; `SlingGameHub.start(deferHide)` + `hideCompanionsNow`; MonkeyView `slingArm` / `slingCount` / `startSlingGame` and a touch pass-through while `slingGameLive`.
 - Tests: SlingGameTest (+ levels, bonus, escapes), new SlingStartTest (quick drag, short hold, early release, GO hand-over, switch off).
+
+## v10.42 (code 110): Slingshot game: a real knock you can feel
+
+- **No more delay at the hit.** The tiny freeze from v10.41 is gone.
+- **Real collision instead of "glued together".** The stone and the target bounce off each other along the line between them, by weight: a heavy target (Gajju) hardly moves and throws the stone back, a light one (Chittu) is sent flying. Both tumble, fall under real gravity, and slam into the screen edge **separately**, each with its own squash that springs back and settles.
+- **You feel three things now**: a sharp click at the moment they meet (harder shot = stronger), then a knock + short rumble for each body as it slams (heavier body = stronger). Two different vibration methods are used, so it is felt on more phones.
+- Stars fly out where they meet, dust where each one lands, a short shake at the knock and a bigger one with the glass crack when both are down. Flying bodies stretch a little along their path.
+- The hit now counts (score, streak, +3 s, level) at the moment of the knock, not at the wall.
+- Rules: `SlingGame.knock()` (mass = 0.6 + TouchFeel.weight, restitution 0.6), `WALL_STONE` / `WALL_TARGET` events, `stoneSpin`, per-body slam state. Tests: knock scores at once, both slam separately, heavy vs light.

@@ -44,11 +44,40 @@ class SlingGameViewTest {
             v.game.pull(0.05f, 0.25f); v.draw(c)                                 // pulled: bands + aim dots
             assertTrue(v.debugShoot(0.05f, 0.25f))
             repeat(8) { v.advance(1f / 60f) }; v.draw(c)                         // flying
-            repeat(60) { v.advance(1f / 60f) }; v.draw(c)                        // splat
+            var n = 0
+            while (v.game.phase == SlingGame.Phase.FLY && n++ < 300) { v.advance(1f / 60f); if (n % 6 == 0) v.draw(c) }   // flight, a knock, the slams
+            v.draw(c)                                                             // splat
             assertTrue("$id has shot and splatted or returned", v.game.shots == 1 && v.game.phase != SlingGame.Phase.FLY)
-            repeat(120) { v.advance(1f / 60f) }; v.draw(c)                       // back home
+            repeat(150) { v.advance(1f / 60f) }; v.draw(c)                       // back home
             assertEquals(SlingGame.Phase.AIM, v.game.phase)
         }
+    }
+
+    @Test fun aKnockDrawsBothTumblingAndSlammedForEveryCharacter() {
+        val bmp = Bitmap.createBitmap(1080, 2340, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
+        val ids = CharacterRegistry.all.map { it.id }
+        var knocks = 0
+        for ((i, id) in ids.withIndex()) {
+            val other = ids[(i + 3) % ids.size]
+            val v = view(id, listOf(id, other))
+            repeat(4) {
+                if (v.game.score > 0) return@repeat
+                repeat(100) { v.advance(1f / 60f) }
+                val g = v.game; val tg = g.target ?: return@repeat
+                if (g.phase != SlingGame.Phase.AIM || tg.leaving) return@repeat
+                val sp = SlingGame.launchSpeed(1f)
+                var tf = kotlin.math.hypot(tg.x - g.bx, tg.y - g.by) / sp
+                repeat(3) { tf = kotlin.math.hypot(tg.x + tg.vx * tf - g.bx, tg.y - g.by) / sp }
+                val ax = tg.x + tg.vx * tf - g.bx; val ay = tg.y - g.by; val len = kotlin.math.hypot(ax, ay)
+                v.debugShoot(-ax / len * SlingGame.MAX_PULL, -ay / len * SlingGame.MAX_PULL)
+                var n = 0
+                while (v.game.phase == SlingGame.Phase.FLY && n++ < 400) { v.advance(1f / 120f); if (n % 4 == 0) v.draw(c) }
+                v.draw(c)
+                repeat(150) { v.advance(1f / 60f) }; v.draw(c)
+            }
+            if (v.game.score > 0) knocks++
+        }
+        assertTrue("most pairs got a real knock drawn ($knocks of ${ids.size})", knocks >= ids.size / 2)
     }
 
     @Test fun theEndCardDrawsAndTodaysBestIsKept() {
