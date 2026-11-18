@@ -634,9 +634,24 @@ class OverlayRoot(ctx: Context, private val onOutsideOrBack: () -> Boolean) : an
     }
 }
 
+/** v10.47.1: pastes the clipboard text at the cursor (true = pasted). [oneLine] turns line breaks into spaces. */
+fun pasteClip(e: android.widget.EditText, oneLine: Boolean = true): Boolean {
+    val cm = e.context.getSystemService(android.content.ClipboardManager::class.java) ?: return false
+    val raw = runCatching { cm.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(e.context)?.toString() }.getOrNull()
+    val t = (if (oneLine) raw?.replace(Regex("\\s*\\n\\s*"), " ") else raw)?.takeIf { it.isNotBlank() } ?: return false
+    val ed = e.text ?: return false
+    val a = e.selectionStart.coerceIn(0, ed.length); val b = e.selectionEnd.coerceIn(0, ed.length)
+    ed.replace(minOf(a, b), maxOf(a, b), t)
+    e.setSelection((minOf(a, b) + t.length).coerceAtMost(ed.length))
+    return true
+}
+
 /** The in-bubble text box; BACK (even while the keyboard is up) ends typing. */
 @android.annotation.SuppressLint("ViewConstructor", "AppCompatCustomView")
 class ReplyEditText(ctx: Context, private val onBack: () -> Boolean) : android.widget.EditText(ctx) {
+    // v10.47.1: the copy/paste menu often can't open over other apps, so a long-press pastes straight away.
+    init { setOnLongClickListener { pasteClip(this) } }
+
     override fun onKeyPreIme(keyCode: Int, event: android.view.KeyEvent): Boolean {
         if (keyCode == android.view.KeyEvent.KEYCODE_BACK && event.action == android.view.KeyEvent.ACTION_DOWN && onBack()) return true
         return super.onKeyPreIme(keyCode, event)

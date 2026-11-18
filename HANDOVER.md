@@ -1,8 +1,10 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.47 (versionCode 119)**, 18 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.47.1 (versionCode 120)**, 18 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.47 Chat feel
+
+- v10.47.1: `ChatHub.testBrain` (tests only) replaces the real brain. `pasteClip()` in MonkeyOverlayService backs long-press paste. ChatPanelView `fitAboveKeyboard` caps the floating panel height.
 
 - `MonkeyView.chatting()` (chat open, thinking, ChatHub.busy, or within `CHAT_QUIET_MS` = 2 min of the last chat message) blocks every non-INFO `speak`.
 - Reply bubbles carry the user's last message as a quote (`CloudBubble.setText(quote=)`); tapping a quoted bubble opens the chat.

@@ -66,6 +66,8 @@ class ChatPanelView(
             if (floating) setStroke(dp(2), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0))
         }
         if (floating) elevation = dp(8).toFloat()
+        // v10.47.1: re-fit when the keyboard opens or closes
+        if (floating) setOnApplyWindowInsetsListener { v, ins -> v.requestLayout(); ins }
 
         // Header
         val header = LinearLayout(context).apply {
@@ -115,6 +117,8 @@ class ChatPanelView(
         input.setPadding(dp(14), dp(10), dp(14), dp(10))
         input.background = GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(22).toFloat(); setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0)) }
         input.setOnEditorActionListener { _, id, _ -> if (id == EditorInfo.IME_ACTION_SEND) { submit(); true } else false }
+        // v10.47.1: over other apps the paste menu may not open: long-press an empty box pastes (with text: the normal menu)
+        if (floating) input.setOnLongClickListener { input.text.isNullOrEmpty() && com.combo.monkeycompanion.overlay.pasteClip(input, oneLine = false) }
         row.addView(input, LayoutParams(0, WRAP_CONTENT, 1f))
         // v4 push-to-talk (only when the Voice power is on and the mic is granted)
         if (com.combo.monkeycompanion.agent.Voice.canListen(context)) row.addView(Button(context).apply {
@@ -151,8 +155,21 @@ class ChatPanelView(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val hs = if (floating) MeasureSpec.makeMeasureSpec(maxH, MeasureSpec.EXACTLY) else heightMeasureSpec
+        // v10.47.1: never taller than the space left above the keyboard, so the text box stays visible
+        val hs = if (floating) MeasureSpec.makeMeasureSpec(fitAboveKeyboard(maxH, heightMeasureSpec), MeasureSpec.EXACTLY) else heightMeasureSpec
         super.onMeasure(widthMeasureSpec, hs)
+    }
+
+    /** [want] capped to the window's room (the window already sits above the keyboard) and to the screen minus the keyboard. */
+    private fun fitAboveKeyboard(want: Int, spec: Int): Int {
+        var h = want
+        if (MeasureSpec.getMode(spec) != MeasureSpec.UNSPECIFIED) h = minOf(h, MeasureSpec.getSize(spec))
+        if (android.os.Build.VERSION.SDK_INT >= 30) rootWindowInsets?.let { ins ->
+            val ime = ins.getInsets(android.view.WindowInsets.Type.ime()).bottom
+            val bars = ins.getInsets(android.view.WindowInsets.Type.systemBars())
+            if (ime > 0) h = minOf(h, resources.displayMetrics.heightPixels - ime - bars.top - dp(24))
+        }
+        return h.coerceAtLeast(dp(180))
     }
 
     fun focusInput() {

@@ -199,7 +199,11 @@ object ChatHub {
     fun removeListener(l: Listener) { listeners.remove(l) }
 
     /** Current brain (rebuilt when settings change). */
+    /** Tests only: a fake brain used instead of the real one. */
+    @Volatile var testBrain: Brain? = null
+
     @Synchronized fun brain(): Brain {
+        testBrain?.let { return it }
         val sig = settings.brainSignature() + "|" + (settings.brainType == BrainType.OFFLINE && ModelStore.isDownloading(app))
         brain?.let { if (sig == brainSig) return it }
         brain?.close()

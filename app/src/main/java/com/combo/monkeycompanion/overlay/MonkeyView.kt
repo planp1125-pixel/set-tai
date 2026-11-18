@@ -982,8 +982,9 @@ class MonkeyView(
                            chips: List<com.combo.monkeycompanion.agent.QuickChip> = emptyList(), quote: String? = null) {
         val withReply = (reply ?: convoActive) && replyField != null && buttons.isEmpty() && chips.isEmpty()
         bubbleChips = chips; arcOn = false; lastShown = text
-        bubbleQuoted = quote != null && chips.isEmpty() && buttons.isEmpty()
-        if (chips.isNotEmpty()) bubble.setText(text, (230 * d).toInt(), chips.map { it.label }, false, chips = true)
+        bubbleQuoted = quote != null && buttons.isEmpty()
+        shownQuote = if (bubbleQuoted) quote else null
+        if (chips.isNotEmpty()) bubble.setText(text, ((if (bubbleQuoted) 250 else 230) * d).toInt(), chips.map { it.label }, false, chips = true, quote = shownQuote)
         else bubble.setText(text, ((if (bubbleQuoted) 250 else 210) * d).toInt(), buttons, withReply, quote = if (bubbleQuoted) quote else null)
         bubble.reportable = aiReply != null && buttons.isEmpty()
         val alreadyUp = bubbleOn && bubbleAge in POP..bubbleLife
@@ -1004,6 +1005,8 @@ class MonkeyView(
 
     /** v10.47: the bubble shows a chat reply with the user's message above it (a tap opens the full chat). */
     private var bubbleQuoted = false
+    private var shownQuote: String? = null
+    val debugBubbleQuote: String? get() = if (bubbleQuoted && bubbleOn) shownQuote else null
     val debugBubbleQuoted: Boolean get() = bubbleQuoted && bubbleOn
     /** The user's last chat message, for the quote above a reply. */
     private fun lastUserMessage(): String? = runCatching { ChatHub.memory.all().lastOrNull { it.fromUser }?.text }.getOrNull()
@@ -1048,7 +1051,7 @@ class MonkeyView(
     private fun nextPage() {
         val p = pages.removeFirstOrNull() ?: return
         showBubble(if (pages.isNotEmpty()) "$p …" else p, Speech.defaultDuration(p) / 1000f + 1f, quote = pageQuote)
-        pageQuote = null   // only the first page of a reply carries the quote
+        // v10.47.1: every page of a reply keeps your message above it
     }
     private var pageQuote: String? = null
 
@@ -1104,13 +1107,14 @@ class MonkeyView(
         if (done) { noteInteraction(); Lines.note(Lines.Event.CHATTED) }
         if (!done) {
             controller.startTalking()
-            if (!pendingShown) showBubble(paginate(text).last(), 600f, reply = false, quote = lastUserMessage())
+            // v10.47.1: while it streams, show the first page filling up (not the last page racing by)
+            if (!pendingShown) showBubble(paginate(text).first(), 600f, reply = false, quote = lastUserMessage())
             return
         }
         if (convoActive) touchConvo()
         aiReply = text.takeIf { it.isNotBlank() }
         val all = paginate(text)
-        val quick = t - replyStartT < 1.5f  // arrived all at once: page from the start
+        val quick = true  // v10.47.1: a long reply always pages from the start, so nothing is missed
         controller.endChat(3f)
         if (pendingShown) return
         if (com.combo.monkeycompanion.mind.MindHub.neighbourMode != "SOLO") {
@@ -1256,7 +1260,7 @@ class MonkeyView(
         val text = lastShown ?: return
         if (chips.isEmpty() || !bubbleOn || pendingShown || thinkingBubble || typing || pages.isNotEmpty() || hiddenTab) return
         val keep = aiReply
-        showBubble(text, max(6f, bubbleLife - bubbleAge) + 4f, chips = chips, reply = false)
+        showBubble(text, max(6f, bubbleLife - bubbleAge) + 4f, chips = chips, reply = false, quote = shownQuote)
         aiReply = keep; bubble.reportable = false
     }
 
@@ -2816,14 +2820,8 @@ class MonkeyView(
         stepBeats()
         stepHeldSpeech(dt)
         if (thinkingBubble) {
-            // v10.47: the character's own thinking words ("Scheming…", "Plotting mischief…"), a new one every 1.3 s
+            // v10.47.1: one thinking word per question (it no longer changes every second)
             thinkDots += dt
-            if (thinkDots > 1.3f) {
-                thinkDots = 0f
-                thinkIdx++
-                thinkWord = com.combo.monkeycompanion.speech.ThinkingWords.pick(character, thinkIdx)
-                bubble.setText(thinkWord, (210 * d).toInt(), listOf("✕ Stop"), false, chips = true); bubble.reportable = false
-            }
         }
         if (chatBtnUntil > 0f) chatBtnUntil -= dt
         if (hintUntil > 0f) hintUntil -= dt

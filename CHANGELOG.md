@@ -446,3 +446,11 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Friend-length replies.** ChatGPT, your own key and on-device brains now answer like a friend: about 40–80 words, sometimes asking something back, up to about 150 words when needed, never essays. Set-Tai Cloud stays short.
 - Desktop preview stand-ins got italic text, ellipsis and line width so the quote bubble draws there too.
 - Tests: v1047/ChatFeelTest.
+
+## v10.47.1 (code 120): chat fixes from testing
+
+- **Your message stays above the reply** on every page of a long reply, and when follow-up chips appear. While a reply streams in, the bubble fills the first page instead of racing to the last one; long replies always page from the start.
+- **One thinking word per question.** It no longer changes every second.
+- **Paste in the bubble:** long-press the bubble's text box to paste what you copied (the copy/paste menu often can't open over other apps). In the big chat, long-press the empty box to paste.
+- **Big chat stays above the keyboard:** the panel shrinks to the space left above the keyboard, so you can always see what you type.
+- Tests: ChatFeelTest now runs a real streamed chat through ChatHub (fake brain via `ChatHub.testBrain`) and checks the quote for 8 seconds, plus paste and the single thinking word.

@@ -74,11 +74,68 @@ class ChatFeelTest {
         assertTrue(v.debugBubbleQuoted)
     }
 
-    @Test fun thinkingShowsTheCharactersOwnWords() {
+    @Test fun thinkingShowsOneOfTheCharactersOwnWords() {
         val v = view("devil"); frame(v, 3)
         v.onThinking(); frame(v)
-        assertTrue(v.debugThinkWord, ThinkingWords.all(CharacterRegistry.current).contains(v.debugThinkWord))
-        assertNotEquals("Hmm…", v.debugThinkWord)
+        val w = v.debugThinkWord
+        assertTrue(w, ThinkingWords.all(CharacterRegistry.current).contains(w))
+        assertNotEquals("Hmm…", w)
+        // v10.47.1: one word per question, it does not keep changing
+        frame(v, 240)
+        assertEquals(w, v.debugThinkWord)
+        assertEquals(w, v.debugBubbleText)
+    }
+
+    /** A brain that streams its answer in pieces, like ChatGPT. */
+    private class StreamBrain(val answer: String) : com.combo.monkeycompanion.ai.Brain {
+        override val label = "test"
+        override val supportsTools = false
+        override fun cancel() {}
+        override fun chat(system: String, history: List<ChatMsg>, user: String, tools: com.combo.monkeycompanion.ai.ToolHost?, onText: (String) -> Unit): String {
+            var shown = ""
+            for (w in answer.split(" ")) { shown = if (shown.isEmpty()) w else "$shown $w"; onText(shown); Thread.sleep(2) }
+            return answer
+        }
+    }
+
+    private fun waitReply(v: MonkeyView) {
+        val end = System.currentTimeMillis() + 10_000
+        while ((ChatHub.busy || v.debugBubbleText == null || v.debugThinkWord == v.debugBubbleText) && System.currentTimeMillis() < end) {
+            Thread.sleep(20); org.robolectric.shadows.ShadowLooper.idleMainLooper(); frame(v)
+        }
+        org.robolectric.shadows.ShadowLooper.idleMainLooper(); frame(v, 2)
+    }
+
+    @Test fun realChatKeepsYourMessageAboveEveryPageOfTheReply() {
+        val long = "Oh I love that question! Honestly my day was a whirlwind of mischief and snacks. I hid the remote, " +
+            "swapped the sugar for salt, and then pretended to be very innocent when everyone looked at me. " +
+            "But enough about my crimes. What did you do today? Anything fun, or was it all meetings and boring stuff?"
+        ChatHub.testBrain = StreamBrain(long)
+        try {
+            ChatHub.settings.aiBrainEnabled = true
+            val v = view(); frame(v, 3)
+            ChatHub.send("tell me about the mischief from earlier")
+            waitReply(v)
+            assertFalse(ChatHub.busy)
+            assertEquals("tell me about the mischief from earlier", v.debugBubbleQuote)
+            assertTrue(v.debugBubbleText!!, v.debugBubbleText!!.startsWith("Oh I love that question"))
+            // keep watching for 8 seconds: pages turn, the quote stays, nothing else replaces the reply
+            repeat(8) {
+                frame(v, 60)
+                v.debugBubbleText?.let { t -> assertTrue(t, long.contains(t.removeSuffix(" …").trim())); assertEquals("tell me about the mischief from earlier", v.debugBubbleQuote) }
+            }
+        } finally { ChatHub.testBrain = null }
+    }
+
+    @Test fun longPressPastesIntoTheBubbleField() {
+        val cm = ctx.getSystemService(android.content.ClipboardManager::class.java)
+        cm.setPrimaryClip(android.content.ClipData.newPlainText("x", "pasted\ntext"))
+        val e = com.combo.monkeycompanion.overlay.ReplyEditText(ctx) { false }
+        e.setText("hi "); e.setSelection(3)
+        assertTrue(com.combo.monkeycompanion.overlay.pasteClip(e))
+        assertEquals("hi pasted text", e.text.toString())
+        cm.setPrimaryClip(android.content.ClipData.newPlainText("x", "  "))
+        assertFalse(com.combo.monkeycompanion.overlay.pasteClip(e))
     }
 
     @Test fun everyCharacterHasThinkingWords() {
