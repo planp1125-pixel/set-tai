@@ -56,6 +56,7 @@ class RestAndScreenTest {
     }
 
     @Test fun autoRestHidesAndStopsTheFrameLoop() {
+        val created = android.os.SystemClock.elapsedRealtime()   // the rest timer counts from the view's creation
         val (v, host) = newView(30)
         v.debugFrames(30)
         assertFalse(v.debugHidden)
@@ -65,7 +66,9 @@ class RestAndScreenTest {
         val looper = shadowOf(android.os.Looper.getMainLooper())
         looper.idleFor(Duration.ofSeconds(28))
         // v10.39.2: a story beat may make the character leave for a few seconds by itself; only the rest timer counts here
-        assertEquals("the rest timer did not fire before the timeout", 0L, v.debugLastRestAt)
+        // v10.46: debugFrames also moves the test clock, so check the rest time itself, not "nothing yet at 28 s"
+        assertTrue("the rest timer did not fire before the 30 s timeout (fired ${v.debugLastRestAt - created} ms after start)",
+            v.debugLastRestAt == 0L || v.debugLastRestAt - created >= 29_500L)
         var waited = 28
         while (!(v.debugHidden && v.debugLastRestAt > 0L) && waited < 150) { looper.idleFor(Duration.ofSeconds(1)); waited++ }
         assertTrue("hid after rest timeout (waited $waited s) ${v.debugRestBlock}", v.debugHidden)
