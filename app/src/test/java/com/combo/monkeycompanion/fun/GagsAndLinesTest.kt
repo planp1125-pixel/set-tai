@@ -148,7 +148,7 @@ class GagsAndLinesTest {
 
     @Test fun promptHasComedyAndGagTags() {
         val full = Persona.systemPrompt(false)
-        assertTrue(full.contains("COMEDY STYLE")); assertTrue(full.contains("[juggle]")); assertTrue(full.contains("never your human"))
+        assertTrue(full.contains("COMEDY STYLE")); assertTrue(full.contains("[juggle]")); assertTrue("v10.46: teases like a friend, but never about looks or worries", full.contains("Kidding, never hurting") && full.contains("never tease looks"))
         val compact = Persona.systemPrompt(false, compact = true)
         assertTrue(compact.contains("[airguitar]")); assertTrue(compact.length < full.length)
     }
