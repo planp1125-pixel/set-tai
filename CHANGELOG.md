@@ -420,3 +420,14 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Targets were only 7 % faster per level (21 % at level 4), and each target's own speed varies by 2x, so nobody noticed. Now it is **+18 % a level, up to 2x**: level 2 = 1.18x, level 3 = 1.36x, level 4 = 1.54x, level 7 and up = 2x.
 - Inside a round they still speed up every 5 hits (up to 1.5x on top).
 - `SlingGame.stageSpeedFor(stage)`. Test: level 4 targets move at least 1.4x as fast as level 1 on average.
+
+## v10.46 (code 117): 🧠 Give Tutty a brain, and Sign in with ChatGPT (test)
+
+- **Home has a big "🧠 Give <name> a brain" card** (it says which brain is in use) and the quick-action tile now opens the same screen.
+- **New brain screen**: the current character floats in a spotlight and vanishes in its own smoke and pops back, behind three choices: **Your ChatGPT plan**, **Set-Tai Cloud** (free, ~40 chats a day), **On this phone** (offline). "Done", and a note that games, powers and built-in lines work without any brain.
+- **Sign in with ChatGPT** (OpenAI's plan-usage flow for open-source / local apps, ChatGPT Plus and Pro): the browser opens OpenAI's sign-in, the app listens on 127.0.0.1 for the answer, checks it (state, PKCE, issuer, audience, nonce, expiry, the plan permission), and keeps the tokens encrypted on the phone only. Sign out any time. Untested on a real phone yet: OpenAI's guide is written for desktop apps.
+- **The ChatGPT brain** (`ChatGptBrain`): OpenAI Responses API with the user's token, `store: false`, `stream: true`, the full character persona as instructions, the chat history, and the body actions / phone powers as function tools, so ChatGPT can make the character dance, fly, hide and use its powers. A small fast model is picked from the account. Expired tokens refresh by themselves; plan limits and "needs Plus or Pro" are said in plain words. Automatic lines (touches, idle thoughts) don't spend the user's plan unless they allow it (same switch as the cloud).
+- **Tone for every brain**: a cheeky best friend who teases sharply but never about looks, body, family, money or worries, and stops teasing if the human seems hurt.
+- **The floating chat panel grows taller (64 % of the screen) for long replies** and shrinks back for short ones; the history scrolls as before.
+- Before the public Play release: the ChatGPT option may only be offered publicly once OpenAI approves the app (paid / hosted apps must apply: https://openai.com/form/sign-in-with-chatgpt-interest/).
+- Tests: ChatGptBrainTest (streaming + persona + model choice, a tool round, token refresh, plan errors, brain choice, ID token claims, the brain-screen background for every character).

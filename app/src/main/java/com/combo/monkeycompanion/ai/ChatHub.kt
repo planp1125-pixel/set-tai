@@ -175,6 +175,7 @@ object ChatHub {
     fun init(ctx: Context) {
         if (::app.isInitialized) return
         app = ctx.applicationContext
+        ChatGptAuth.init(app)
         settings = AppSettings(app)
         // v10.39.3: the Play build has no screen agent; hide it everywhere
         com.combo.monkeycompanion.brain.Distribution.screenAgent = com.combo.monkeycompanion.BuildConfig.FLAVOR != "play"
@@ -207,6 +208,9 @@ object ChatHub {
     private fun build(): Brain {
         val s = settings
         if (!s.aiBrainEnabled) return CannedBrain()
+        // v10.46: the user's own ChatGPT plan
+        if (onChatGpt()) return if (ChatGptAuth.signedIn) ChatGptBrain(ChatGptAuth, s.chatGptModel)
+            else CannedBrain("Sign in to ChatGPT first (Home › Give me a brain).")
         return when (s.brainType) {
             BrainType.NONE -> CannedBrain()
             BrainType.ONLINE -> {
@@ -238,12 +242,36 @@ object ChatHub {
     fun hasRealBrain(): Boolean = runCatching { settings.aiBrainEnabled && brain().isReal }.getOrDefault(false)
     fun isBrainEnabled(): Boolean = runCatching { settings.aiBrainEnabled && settings.brainType != BrainType.NONE }.getOrDefault(false)
     /** v10.39.2: the brain in use is the free Set-Tai Cloud (40 requests per phone per UTC day). */
-    fun onCloud(): Boolean = runCatching { settings.aiBrainEnabled && settings.brainType == BrainType.ONLINE && !settings.useOwnApiKey }.getOrDefault(false)
+    fun onCloud(): Boolean = runCatching { settings.aiBrainEnabled && settings.brainType == BrainType.ONLINE && !settings.useOwnApiKey && !settings.useChatGpt }.getOrDefault(false)
+    /** v10.46: the brain is the user's own ChatGPT plan (it has limits too, so automatic lines stay local like on the cloud). */
+    fun onChatGpt(): Boolean = runCatching { settings.aiBrainEnabled && settings.brainType == BrainType.ONLINE && settings.useChatGpt }.getOrDefault(false)
+
+    /** v10.46: which brain is chosen, for the brain screen. */
+    enum class BrainChoice { CHATGPT, CLOUD, OWN_KEY, OFFLINE, NONE }
+    fun brainChoice(): BrainChoice = when {
+        !isBrainEnabled() -> BrainChoice.NONE
+        onChatGpt() -> BrainChoice.CHATGPT
+        settings.brainType == BrainType.OFFLINE -> BrainChoice.OFFLINE
+        settings.useOwnApiKey -> BrainChoice.OWN_KEY
+        else -> BrainChoice.CLOUD
+    }
+    /** v10.46: pick a brain from the brain screen. */
+    fun chooseBrain(c: BrainChoice) {
+        val s = settings
+        when (c) {
+            BrainChoice.CHATGPT -> { s.useChatGpt = true; s.brainType = BrainType.ONLINE; s.aiBrainEnabled = true }
+            BrainChoice.CLOUD -> { s.useChatGpt = false; s.useOwnApiKey = false; s.brainType = BrainType.ONLINE; s.aiBrainEnabled = true }
+            BrainChoice.OWN_KEY -> { s.useChatGpt = false; s.useOwnApiKey = true; s.brainType = BrainType.ONLINE; s.aiBrainEnabled = true }
+            BrainChoice.OFFLINE -> { s.useChatGpt = false; s.brainType = BrainType.OFFLINE; s.aiBrainEnabled = true }
+            BrainChoice.NONE -> s.aiBrainEnabled = false
+        }
+        synchronized(this) { brainSig = "" }
+    }
     /**
      * v10.39.2: may the brain write lines nobody asked for (touch reactions, body moments, idle thoughts, quips)?
      * On Set-Tai Cloud only when the user allows it, so the 40 daily requests go to their own chats.
      */
-    fun autoAiAllowed(): Boolean = isBrainEnabled() && (!onCloud() || runCatching { settings.cloudAutoLines }.getOrDefault(false))
+    fun autoAiAllowed(): Boolean = isBrainEnabled() && ((!onCloud() && !onChatGpt()) || runCatching { settings.cloudAutoLines }.getOrDefault(false))
     /** v10.39.2: cloud requests left today (null until the first cloud reply today). */
     fun cloudLeftToday(): Int? = (brain as? GatewayBrain)?.leftToday
 

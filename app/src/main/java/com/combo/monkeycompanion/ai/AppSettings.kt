@@ -75,6 +75,15 @@ class AppSettings(ctx: Context) {
         get() = p.getBoolean("use_own_api_key", false)
         set(v) = p.edit().putBoolean("use_own_api_key", v).apply()
 
+    /** v10.46: think with the user's own ChatGPT Plus / Pro plan ("Sign in with ChatGPT"); wins over the other online brains. */
+    var useChatGpt: Boolean
+        get() = p.getBoolean("use_chatgpt", false)
+        set(v) = p.edit().putBoolean("use_chatgpt", v).apply()
+    /** v10.46: the ChatGPT model picked by the user ("" = a small fast one from the account's list). */
+    var chatGptModel: String
+        get() = p.getString("chatgpt_model", "").orEmpty()
+        set(v) = p.edit().putString("chatgpt_model", v).apply()
+
     /** Anonymous install ID, unrelated to Android ID, Gmail, or owner identity. */
     @Synchronized fun cloudUserId(): String {
         p.getString("cloud_user_id", null)?.takeIf { it.isNotBlank() }?.let { return it }
@@ -365,6 +374,6 @@ class AppSettings(ctx: Context) {
     /** Changes whenever anything that affects the brain changes (to rebuild it). */
     fun brainSignature(): String = listOf(
         aiBrainEnabled, brainType, useOwnApiKey, provider, modelFor(provider), customBaseUrl, apiKeyFor(provider).hashCode(),
-        offlineModelPath, offlineUseGpu
+        offlineModelPath, offlineUseGpu, useChatGpt, chatGptModel, ChatGptAuth.signature
     ).joinToString("|")
 }

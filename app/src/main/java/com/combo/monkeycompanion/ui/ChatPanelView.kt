@@ -49,7 +49,14 @@ class ChatPanelView(
     private val send = Button(context)
     private val pendingRow = LinearLayout(context)
     private val pendingText = TextView(context)
-    private val maxH = (resources.displayMetrics.heightPixels * if (floating) 0.42f else 1f).toInt()
+    /** v10.46: the floating panel grows taller when a reply is long (and shrinks back for short ones). */
+    private val smallH = (resources.displayMetrics.heightPixels * if (floating) 0.42f else 1f).toInt()
+    private val tallH = (resources.displayMetrics.heightPixels * if (floating) 0.64f else 1f).toInt()
+    private var maxH = smallH
+    private fun fitHeight(lastReply: String) {
+        val want = if (lastReply.length > LONG_REPLY) tallH else smallH
+        if (want != maxH) { maxH = want; requestLayout() }
+    }
 
     init {
         orientation = VERTICAL
@@ -196,6 +203,7 @@ class ChatPanelView(
         val msgs = ChatHub.memory.all()
         if (msgs.isEmpty()) list.addView(bubbleView(ChatMsg(false, "Hi! Ask me anything, or tell me to set a timer, open an app, check the battery… 🍌", note = true)))
         for (m in msgs) list.addView(bubbleView(m))
+        fitHeight(msgs.lastOrNull { !it.fromUser }?.text.orEmpty())
         send.isEnabled = !ChatHub.busy; send.alpha = if (ChatHub.busy) 0.5f else 1f
         scrollToEnd()
     }
@@ -246,6 +254,7 @@ class ChatPanelView(
 
     override fun onReply(text: String, done: Boolean) {
         findLive()?.text = text.ifEmpty { "…" }
+        fitHeight(text)
         if (done) { send.isEnabled = true; send.alpha = 1f; subtitle.text = "Brain: " + ChatHub.brainLabel() }
         scrollToEnd()
     }
@@ -260,5 +269,10 @@ class ChatPanelView(
     private fun findLive(): TextView? {
         val last = (0 until list.childCount).reversed().map { list.getChildAt(it) }.firstOrNull()
         return (last?.tag as? TextView)
+    }
+
+    companion object {
+        /** Replies longer than this make the floating chat panel taller. */
+        const val LONG_REPLY = 160
     }
 }

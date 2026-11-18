@@ -100,6 +100,9 @@ class SettaiDesignActivity : ComponentActivity() {
             .onFailure { runCatching { startActivity(Intent(android.app.WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)) } }
     }
     private var bgPickerOpen by mutableStateOf(false)
+    /** v10.46: bumped when Home comes back, so the brain card shows the brain chosen on the brain screen. */
+    private var homeRev by mutableStateOf(0)
+    override fun onResume() { super.onResume(); homeRev++ }
     private fun wallpaperBackground() { bgPickerOpen = true }
 
     @Composable
@@ -341,6 +344,8 @@ class SettaiDesignActivity : ComponentActivity() {
                                     TextButton(onClick = { page = 1 }) { Text("Manage companions") }
                                 }
                             }
+                            // v10.46: "Give Tutty a brain": a big card that opens the brain screen and says which brain is in use
+                            item { BrainCard(CharacterRegistry.byId(selectedCharacter)?.name ?: CharacterRegistry.current.name) { open(BrainActivity::class.java) } }
                             // v10.38.23: one swipeable row of shortcuts (add a tile for each new feature) + a small Care tools card.
                             item { Heading("Quick actions", ink) }
                             item {
@@ -350,7 +355,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                         Triple("✦", "Show tricks") { v5("onboard") },
                                         Triple("▤", "What you missed") { v5("notif_card") },
                                         Triple("▶", "Make a show") { page = 2 },
-                                        Triple("✧", "Give Brain") { settings("brain") },
+                                        Triple("🧠", "Give a brain") { open(BrainActivity::class.java) },
                                         Triple("⚡", "Use a power") { usePowerNow() },
                                         Triple("🎯", "Slingshot game") { slingGame() },
                                     )
@@ -777,6 +782,34 @@ class SettaiDesignActivity : ComponentActivity() {
     @Composable
     private fun Heading(value: String, color: Color) {
         Text(value, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = color)
+    }
+
+    /** v10.46 the Home card that opens "Give <name> a brain". */
+    @Composable
+    private fun BrainCard(name: String, action: () -> Unit) {
+        val seen = homeRev   // read so the card redraws when Home comes back
+        if (seen < 0) return
+        val choice = runCatching { com.combo.monkeycompanion.ai.ChatHub.init(this); com.combo.monkeycompanion.ai.ChatHub.brainChoice() }.getOrNull()
+        val status = when (choice) {
+            com.combo.monkeycompanion.ai.ChatHub.BrainChoice.CHATGPT -> "Thinking with your ChatGPT plan"
+            com.combo.monkeycompanion.ai.ChatHub.BrainChoice.CLOUD -> "Thinking with Set-Tai Cloud (free)"
+            com.combo.monkeycompanion.ai.ChatHub.BrainChoice.OFFLINE -> "Thinking on this phone"
+            com.combo.monkeycompanion.ai.ChatHub.BrainChoice.OWN_KEY -> "Thinking with your own API key"
+            else -> "No brain yet: tap to give one"
+        }
+        Surface(onClick = action, shape = RoundedCornerShape(24.dp), color = Color.Transparent, modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFF3A2A86), Color(0xFF7A5CFF)))).padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text("🧠", fontSize = 34.sp)
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Give $name a brain", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(2.dp))
+                    Text(status, color = Color(0xFFE2DCFF), fontSize = 13.sp)
+                }
+                Text("›", color = Color.White, fontSize = 28.sp)
+            }
+        }
     }
 
     @Composable

@@ -1,6 +1,18 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.45.3 (versionCode 116)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.46 (versionCode 117)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.46 Give a brain + Sign in with ChatGPT
+
+- `ui/BrainActivity` (+ `BrainStageView` background) opened from the Home `BrainCard` and the "Give a brain" tile.
+  `ChatHub.brainChoice()/chooseBrain()` switch between CHATGPT / CLOUD / OWN_KEY / OFFLINE / NONE.
+- `ai/ChatGptAuth` = OpenAI "Sign in with ChatGPT" plan usage (docs: developers.openai.com/siwc/token-sharing-open-source):
+  dynamic_agent_client registration, PKCE, loopback http://127.0.0.1:<port>/auth/callback, tokens encrypted with
+  SecureStore (never logged/committed). `shared/ai/ChatGptBrain` = Responses API (store false, stream true,
+  instructions = persona, function tools). Only ChatGPT Plus/Pro can use plan usage. Claude subscriptions are NOT
+  allowed in third-party apps (Anthropic, Feb 2026) - do not add a "Sign in with Claude".
+- The owner is the only user for now. For the public Play app OpenAI must approve it first (interest form), otherwise
+  hide the ChatGPT card. Untested on Android at the time of writing.
 
 ## v10.40 Slingshot game (build 1 of 3)
 
