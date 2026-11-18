@@ -151,6 +151,18 @@ class ChatGptBrainTest {
         assertNull(ChatGptAuth.jwtClaims("nonsense"))
     }
 
+    /** v10.46.1: OpenAI rejected "settai-android-…"; the host id must be urn:uuid:<UUIDv4>, and an old one is replaced. */
+    @Test fun theHostIdIsAUrnUuidAndAnOldOneIsReplaced() {
+        ChatGptAuth.init(context)
+        val p = context.getSharedPreferences("chatgpt_auth", Context.MODE_PRIVATE)
+        p.edit().putString("host_id", "settai-android-1234").commit()
+        val id = ChatGptAuth.hostId()
+        assertTrue(id, id.startsWith("urn:uuid:")); assertTrue(ChatGptAuth.isValidHostId(id))
+        assertEquals("kept the next time", id, ChatGptAuth.hostId())
+        assertFalse(ChatGptAuth.isValidHostId("settai-android-0f8fad5b-d9cb-469f-a165-70867728950e"))
+        assertTrue(ChatGptAuth.isValidHostId("urn:uuid:0f8fad5b-d9cb-469f-a165-70867728950e"))
+    }
+
     @Test fun theBrainScreenBackgroundDrawsEveryCharacter() {
         val c = Canvas(Bitmap.createBitmap(1080, 900, Bitmap.Config.ARGB_8888))
         for (ch in CharacterRegistry.all) {

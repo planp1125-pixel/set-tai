@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.46 (versionCode 117)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.46.1 (versionCode 118)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.46 Give a brain + Sign in with ChatGPT
 

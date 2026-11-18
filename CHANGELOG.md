@@ -431,3 +431,8 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **The floating chat panel grows taller (64 % of the screen) for long replies** and shrinks back for short ones; the history scrolls as before.
 - Before the public Play release: the ChatGPT option may only be offered publicly once OpenAI approves the app (paid / hosted apps must apply: https://openai.com/form/sign-in-with-chatgpt-interest/).
 - Tests: ChatGptBrainTest (streaming + persona + model choice, a tool round, token refresh, plan errors, brain choice, ID token claims, the brain-screen background for every character).
+
+## v10.46.1 (code 118): Sign in with ChatGPT: fix "Invalid authorize request (ext_agent_host_id)"
+
+- OpenAI's sign-in page rejected the phone's host id. OpenAI only accepts `urn:uuid:<UUIDv4>` (or a JWK thumbprint or did:key); v10.46 sent `settai-android-<uuid>`. Now it is `urn:uuid:<uuid>`, made once per phone and kept; a stored id of the old shape is replaced automatically.
+- Test: the host id is a urn:uuid and an old one is replaced.

@@ -62,8 +62,21 @@ object ChatGptAuth : ChatGptBrain.Tokens {
     /** Changes whenever the account changes (part of the brain signature). */
     val signature: String get() = if (signedIn) record()?.optString("subject").orEmpty() else ""
 
-    /** This phone's id for OpenAI's registration ("distinct per host"), made once. */
-    private fun hostId(): String = prefs.getString("host_id", null) ?: ("settai-android-" + java.util.UUID.randomUUID().toString()).also { prefs.edit().putString("host_id", it).apply() }
+    /**
+     * This phone's id for OpenAI's registration ("distinct per host"), made once and kept.
+     * v10.46.1: OpenAI only accepts `urn:uuid:<UUIDv4>` (or a JWK thumbprint / did:key); v10.46 sent
+     * "settai-android-…", which their sign-in page rejected (invalid_authorize_request, ext_agent_host_id).
+     * An old value of the wrong shape is replaced.
+     */
+    internal fun hostId(): String {
+        prefs.getString("host_id", null)?.takeIf { isValidHostId(it) }?.let { return it }
+        val id = "urn:uuid:" + java.util.UUID.randomUUID().toString()
+        prefs.edit().putString("host_id", id).apply()
+        return id
+    }
+    /** `urn:uuid:` + a hyphenated UUID version 4. */
+    fun isValidHostId(id: String): Boolean =
+        Regex("urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}").matches(id)
 
     // ---------------- sign in ----------------
     /**
