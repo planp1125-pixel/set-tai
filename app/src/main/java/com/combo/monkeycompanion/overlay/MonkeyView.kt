@@ -788,7 +788,7 @@ class MonkeyView(
     private fun chatting(): Boolean = chatOpen || thinkingBubble || ChatHub.busy ||
         (lastChatAt > 0L && SystemClock.elapsedRealtime() - lastChatAt < CHAT_QUIET_MS)
     val debugChatting: Boolean get() = chatting()
-    fun debugSay(text: String) = say(text, 3000L)
+    fun debugSpeak(text: String) = say(text, 3000L)
 
     /** v10.17: who wrote a line: a scripted (canned) line, an info/utility message, or the AI's own body-felt line. */
     private enum class Voice { SCRIPT, INFO, AI }

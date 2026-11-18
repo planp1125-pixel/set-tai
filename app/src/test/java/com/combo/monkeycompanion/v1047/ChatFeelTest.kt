@@ -58,7 +58,7 @@ class ChatFeelTest {
         v.onReply("Busy plotting, as always. And yours?", true); frame(v, 2)
         assertEquals("Busy plotting, as always. And yours?", v.debugBubbleText)
         // a built-in line now must not replace the reply
-        v.debugSay("Random built-in line!"); frame(v)
+        v.debugSpeak("Random built-in line!"); frame(v)
         assertEquals("Busy plotting, as always. And yours?", v.debugBubbleText)
         assertTrue(v.debugChatting)
         // two minutes later the character may talk on its own again
