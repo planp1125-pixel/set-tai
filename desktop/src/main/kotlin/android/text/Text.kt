@@ -11,7 +11,9 @@ open class Layout {
     enum class Alignment { ALIGN_NORMAL, ALIGN_CENTER, ALIGN_OPPOSITE }
 }
 
-class StaticLayout private constructor(text: String, private val paint: TextPaint, private val width: Int, private val align: Layout.Alignment) : Layout() {
+object TextUtils { enum class TruncateAt { START, MIDDLE, END, MARQUEE } }
+
+class StaticLayout private constructor(text: String, private val paint: TextPaint, val width: Int, private val align: Layout.Alignment, private val maxLines: Int = Int.MAX_VALUE) : Layout() {
     private val lines = ArrayList<String>()
     private val lineH = -paint.ascent() + paint.descent() + paint.textSize * 0.12f
     val height: Int
@@ -37,8 +39,11 @@ class StaticLayout private constructor(text: String, private val paint: TextPain
             }
             lines.add(cur)
         }
+        while (lines.size > maxLines) lines.removeAt(lines.size - 1)
         height = kotlin.math.ceil(lines.size * lineH).toInt()
     }
+
+    fun getLineWidth(i: Int): Float = paint.measureText(lines[i])
 
     fun draw(c: Canvas) {
         val old = paint.textAlign
@@ -58,8 +63,10 @@ class StaticLayout private constructor(text: String, private val paint: TextPain
         fun setAlignment(a: Alignment) = apply { align = a }
         fun setIncludePad(b: Boolean) = this
         fun setLineSpacing(add: Float, mult: Float) = this
-        fun setMaxLines(n: Int) = this
-        fun build() = StaticLayout(text.toString(), paint, width, align)
+        private var max = Int.MAX_VALUE
+        fun setMaxLines(n: Int) = apply { max = n }
+        fun setEllipsize(t: TextUtils.TruncateAt?) = this
+        fun build() = StaticLayout(text.toString(), paint, width, align, max)
         companion object {
             @JvmStatic fun obtain(text: CharSequence, start: Int, end: Int, paint: TextPaint, width: Int) = Builder(text.subSequence(start, end), paint, width)
         }

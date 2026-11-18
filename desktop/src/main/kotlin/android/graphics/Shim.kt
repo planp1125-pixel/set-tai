@@ -195,7 +195,7 @@ class Typeface private constructor(val bold: Boolean, val family: String) {
         @JvmField val DEFAULT_BOLD = Typeface(true, Font.SANS_SERIF)
         @JvmField val SANS_SERIF = DEFAULT
         @JvmField val MONOSPACE = Typeface(false, Font.MONOSPACED)
-        const val NORMAL = 0; const val BOLD = 1
+        const val NORMAL = 0; const val BOLD = 1; const val ITALIC = 2; const val BOLD_ITALIC = 3
         fun create(f: Typeface?, style: Int) = Typeface(style and 1 != 0, f?.family ?: Font.SANS_SERIF)
         /** Android family names map to the desktop's sans font ("-medium" renders bold-ish). */
         fun create(name: String?, style: Int) = Typeface(style and 1 != 0 || name?.endsWith("-medium") == true, if (name?.contains("mono") == true) Font.MONOSPACED else Font.SANS_SERIF)

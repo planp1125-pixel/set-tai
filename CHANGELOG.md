@@ -436,3 +436,13 @@ Every character now feels like a little body in your hand (the phone's vibration
 
 - OpenAI's sign-in page rejected the phone's host id. OpenAI only accepts `urn:uuid:<UUIDv4>` (or a JWK thumbprint or did:key); v10.46 sent `settai-android-<uuid>`. Now it is `urn:uuid:<uuid>`, made once per phone and kept; a stored id of the old shape is replaced automatically.
 - Test: the host id is a urn:uuid and an old one is replaced.
+
+## v10.47 (code 119): chats feel like talking to a friend
+
+- **Quiet while you chat.** While the chat is open, while the character is thinking or answering, and for 2 minutes after the last message, it says no built-in or random lines, so the reply you are reading is never replaced. Reminders still show.
+- **Your message above the reply.** The reply bubble shows what you said (small, grey, on the right) above the answer, like WhatsApp. Tap the bubble to open the full chat.
+- **Thinking words for each character** instead of "Hmm…": Tutty is "Scheming…", Angel is "Polishing my halo…", Gajju is "Trunk-storming…" and so on. It changes every second or so, with a ✕ Stop chip.
+- **"Fly" just flies.** "Fly", "fly around" or "take off" makes the character fly across the screen. "Use your power", "laser" or "magic" still fires a power.
+- **Friend-length replies.** ChatGPT, your own key and on-device brains now answer like a friend: about 40–80 words, sometimes asking something back, up to about 150 words when needed, never essays. Set-Tai Cloud stays short.
+- Desktop preview stand-ins got italic text, ellipsis and line width so the quote bubble draws there too.
+- Tests: v1047/ChatFeelTest.

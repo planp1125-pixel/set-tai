@@ -783,6 +783,13 @@ class MonkeyView(
         stepBodyVoice()
     }
 
+    /** v10.47: when the last chat message went or came (elapsedRealtime, 0 = never). */
+    private var lastChatAt = 0L
+    private fun chatting(): Boolean = chatOpen || thinkingBubble || ChatHub.busy ||
+        (lastChatAt > 0L && SystemClock.elapsedRealtime() - lastChatAt < CHAT_QUIET_MS)
+    val debugChatting: Boolean get() = chatting()
+    fun debugSay(text: String) = say(text, 3000L)
+
     /** v10.17: who wrote a line: a scripted (canned) line, an info/utility message, or the AI's own body-felt line. */
     private enum class Voice { SCRIPT, INFO, AI }
     /** Scripted lines: with Give Brain ON they are not shown; the moment asks the AI for its own line instead. */
@@ -928,6 +935,9 @@ class MonkeyView(
 
     private fun speak(text: String, durationMs: Long, voice: Voice) {
         if (debugQuiet) return
+        // v10.47: while you are chatting (and for 2 minutes after), no built-in or spontaneous lines: they used to
+        // pop up in the middle of a conversation and replace the reply you were reading. Reminders (INFO) still show.
+        if (voice != Voice.INFO && chatting()) return
         // v10.31: never cover the "Listening… tap me to send" bubble with AI / scripted chatter while the mic is open
         if (listenTap || com.combo.monkeycompanion.agent.Voice.listening) return
         if (voice == Voice.SCRIPT && aiVoiceOn()) { bodyMoment(controller.state.name.lowercase().replace('_', ' ')); return }
@@ -969,11 +979,12 @@ class MonkeyView(
      * long-press 💬, or within ~60 s of the last message); plain lines (quips, warnings, reactions) are text only.
      */
     private fun showBubble(text: String, life: Float, buttons: List<String> = emptyList(), talk: Boolean = true, reply: Boolean? = null,
-                           chips: List<com.combo.monkeycompanion.agent.QuickChip> = emptyList()) {
+                           chips: List<com.combo.monkeycompanion.agent.QuickChip> = emptyList(), quote: String? = null) {
         val withReply = (reply ?: convoActive) && replyField != null && buttons.isEmpty() && chips.isEmpty()
         bubbleChips = chips; arcOn = false; lastShown = text
+        bubbleQuoted = quote != null && chips.isEmpty() && buttons.isEmpty()
         if (chips.isNotEmpty()) bubble.setText(text, (230 * d).toInt(), chips.map { it.label }, false, chips = true)
-        else bubble.setText(text, (210 * d).toInt(), buttons, withReply)
+        else bubble.setText(text, ((if (bubbleQuoted) 250 else 210) * d).toInt(), buttons, withReply, quote = if (bubbleQuoted) quote else null)
         bubble.reportable = aiReply != null && buttons.isEmpty()
         val alreadyUp = bubbleOn && bubbleAge in POP..bubbleLife
         bubbleOn = true
@@ -990,6 +1001,12 @@ class MonkeyView(
         }
         talkFor = if (talk) (if (alreadyUp) POP else 0f) + min(2.5f, 0.4f + text.length * 0.05f) else 0f
     }
+
+    /** v10.47: the bubble shows a chat reply with the user's message above it (a tap opens the full chat). */
+    private var bubbleQuoted = false
+    val debugBubbleQuoted: Boolean get() = bubbleQuoted && bubbleOn
+    /** The user's last chat message, for the quote above a reply. */
+    private fun lastUserMessage(): String? = runCatching { ChatHub.memory.all().lastOrNull { it.fromUser }?.text }.getOrNull()
 
     // ---------------- v4.4 bubble chat dismissal ----------------
     private var chatOpen = false
@@ -1030,11 +1047,13 @@ class MonkeyView(
 
     private fun nextPage() {
         val p = pages.removeFirstOrNull() ?: return
-        showBubble(if (pages.isNotEmpty()) "$p …" else p, Speech.defaultDuration(p) / 1000f + 1f)
+        showBubble(if (pages.isNotEmpty()) "$p …" else p, Speech.defaultDuration(p) / 1000f + 1f, quote = pageQuote)
+        pageQuote = null   // only the first page of a reply carries the quote
     }
+    private var pageQuote: String? = null
 
     /** Split a reply into bubble-sized pages at sentence (or word) boundaries. */
-    private fun paginate(text: String, max: Int = 130): List<String> {
+    private fun paginate(text: String, max: Int = PAGE_CHARS): List<String> {
         val out = ArrayList<String>()
         val sentences = text.trim().split(Regex("(?<=[.!?…])\\s+"))
         val cur = StringBuilder()
@@ -1064,11 +1083,18 @@ class MonkeyView(
         thinkingBubble = true
         replyStartT = -1f
         controller.startThinking()
-        showBubble("Hmm… thinking", 600f, talk = false, reply = false, chips = listOf(com.combo.monkeycompanion.agent.QuickChip("menu", "✕ Stop", "think_stop")))
+        lastChatAt = SystemClock.elapsedRealtime()
+        thinkWord = com.combo.monkeycompanion.speech.ThinkingWords.pick(character, -1)
+        showBubble(thinkWord, 600f, talk = false, reply = false, chips = listOf(com.combo.monkeycompanion.agent.QuickChip("menu", "✕ Stop", "think_stop")))
     }
+
+    private var thinkWord = ""
+    private var thinkIdx = 0
+    val debugThinkWord: String get() = thinkWord
 
     override fun onReply(text: String, done: Boolean) {
         if (hiddenTab) return
+        lastChatAt = SystemClock.elapsedRealtime()
         if (movingNow && text.isNotBlank()) { heldReply = text; heldReplyDone = done; settledFor = 0f; return }   // v10.14: show it once settled
         if (text.isBlank() && !done) return
         if (replyStartT < 0f) replyStartT = t
@@ -1078,7 +1104,7 @@ class MonkeyView(
         if (done) { noteInteraction(); Lines.note(Lines.Event.CHATTED) }
         if (!done) {
             controller.startTalking()
-            if (!pendingShown) showBubble(paginate(text).last(), 600f, reply = false)
+            if (!pendingShown) showBubble(paginate(text).last(), 600f, reply = false, quote = lastUserMessage())
             return
         }
         if (convoActive) touchConvo()
@@ -1095,12 +1121,14 @@ class MonkeyView(
             }
         }
         pages.clear()
+        val quote = lastUserMessage()
         if (all.size > 1 && quick) {
             pages.addAll(all)
+            pageQuote = quote
             nextPage()
         } else {
             val last = all.last()
-            showBubble(last, Speech.defaultDuration(last) / 1000f + 1.5f)
+            showBubble(last, Speech.defaultDuration(last) / 1000f + 1.5f, quote = quote)
         }
         ChatHub.pending?.let { onPending(it) }
     }
@@ -2788,11 +2816,13 @@ class MonkeyView(
         stepBeats()
         stepHeldSpeech(dt)
         if (thinkingBubble) {
+            // v10.47: the character's own thinking words ("Scheming…", "Plotting mischief…"), a new one every 1.3 s
             thinkDots += dt
-            if (thinkDots > 0.35f) {
+            if (thinkDots > 1.3f) {
                 thinkDots = 0f
-                val n = ((t * 2.85f).toInt() % 3) + 1
-                bubble.setText("Hmm" + ".".repeat(n), (210 * d).toInt()); bubble.reportable = false
+                thinkIdx++
+                thinkWord = com.combo.monkeycompanion.speech.ThinkingWords.pick(character, thinkIdx)
+                bubble.setText(thinkWord, (210 * d).toInt(), listOf("✕ Stop"), false, chips = true); bubble.reportable = false
             }
         }
         if (chatBtnUntil > 0f) chatBtnUntil -= dt
@@ -4214,6 +4244,18 @@ class MonkeyView(
         if (abs(mx - fx) > 1f || abs(my - fy) > 1f) slideFrom(fx, fy, 0.45f)
         if (Random.nextFloat() < 0.35f) say(listOf("Hovering ✓", "I'll just float here 😎", "Swipe me down to land 👇").random(), 1600L)
     }
+
+    /** v10.47: asked to fly (no power): take off and fly to another spot on the screen (no random numbers of the frame loop). */
+    private fun flyAround() {
+        if (dragging || typing || hideAnim >= 0f || exiting) return
+        val w = sw()
+        val goRight = mx + boxW / 2f < w / 2f
+        val tx = if (goRight) w * 0.72f else w * 0.28f
+        val ty = hoverMinY() + boxH / 2f + (ground() - hoverMinY()) * 0.25f
+        controller.play(MonkeyState.FALLING)
+        flyTo(tx, ty, 1f, "asked to fly")
+    }
+    val debugFlyAround: () -> Unit get() = { flyAround() }
 
     /** Idle roaming for hovering heroes: a slow floating patrol to somewhere else on the screen. */
     private fun patrolFlight() {
@@ -7522,6 +7564,10 @@ class MonkeyView(
                         bubbleDragX = 0f
                         if (abs(dx) <= slop) {
                             if (wp) host?.openChat()   // wallpaper: tap the bubble to chat
+                            else if (bubbleQuoted && pages.isEmpty()) {   // v10.47: a chat reply: open the whole chat
+                                if (chatOpen) closeChat() else if (bubbleOn) bubbleLife = bubbleAge
+                                host?.openChat() ?: onChatRequest?.invoke()
+                            }
                             else if (chatOpen) closeChat()
                             else { if (pages.isEmpty()) convoUntil = -1f; hush() }
                         }
@@ -8144,7 +8190,11 @@ class MonkeyView(
         if (hiddenTab) { if (action != BodyAction.HIDE && action != BodyAction.SLEEP) autoUnhide(); return }
         if (controller.state == MonkeyState.ENTRANCE || dragging) return
         if (action != BodyAction.FLY && (movingNow || settledFor < SETTLE_SECS)) { heldAction = action; return }   // v10.15: act once settled
-        if (action == BodyAction.FLY) { usePower(explicit = true); return }
+        if (action == BodyAction.FLY) {
+            // v10.47: "fly" means fly (take off and fly somewhere); a power word ("use your power", "laser") fires a power
+            if (com.combo.monkeycompanion.brain.Superpowers.plainFly) { com.combo.monkeycompanion.brain.Superpowers.plainFly = false; flyAround(); return }
+            usePower(explicit = true); return
+        }
         val onFloor = surf.kind == SK.FLOOR && !falling
         fun onGround(f: () -> Unit) {
             if (onFloor) f() else { afterLand = f; controller.drop() }
@@ -8696,6 +8746,10 @@ class MonkeyView(
     }
 
     companion object {
+        /** v10.47: no built-in lines for this long after the last chat message. */
+        const val CHAT_QUIET_MS = 120_000L
+        /** v10.47: a reply page in the bubble (was 130 characters). */
+        const val PAGE_CHARS = 200
         /** v10.41: hold this long, then pull = slingshot (the long-press menu opens later, at Gestures.LONG_PRESS_MS). */
         const val SLING_HOLD_MS = 280L
         /** v10.41: the 3-2-1 before the Slingshot game starts. */

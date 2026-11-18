@@ -268,6 +268,15 @@ object Superpowers {
 
     /** Set when the user named a power; the next [choose] uses it once. */
     @Volatile var requested: Superpower? = null
+
+    /**
+     * v10.47 "fly" means fly: the user asked to fly with no power word ("fly", "fly around", "can you fly?"), so the
+     * character just takes off and flies somewhere; "use your power" / "laser eyes" / "magic" still fire a power.
+     */
+    @Volatile var plainFly = false
+    private val FLY_WORDS = Regex("\\b(fly|flying|flies|fly around|take off|takes off|soar)\\b")
+    private val POWER_WORDS = Regex("\\b(power|powers|superpower|superpowers|super ?power|laser|beam|heat ?vision|magic|thunder|lightning|ninja|fire|fireball|blast|boost|rocket|special|attack)\\b")
+    fun isPlainFly(text: String): Boolean { val t = text.lowercase(); return FLY_WORDS.containsMatchIn(t) && !POWER_WORDS.containsMatchIn(t) && named(t) == null }
     const val OFF = "off"
     const val RANDOM = "random"
     /** v10.38.23: own powers about twice as often. */

@@ -250,7 +250,11 @@ class ChatPanelView(
 
     override fun onHistoryChanged() = rebuild()
 
-    override fun onThinking() { send.isEnabled = false; send.alpha = 0.5f; findLive()?.text = "Hmm…" }
+    override fun onThinking() {
+        send.isEnabled = false; send.alpha = 0.5f
+        // v10.47: the character's own thinking words instead of "Hmm…"
+        findLive()?.text = com.combo.monkeycompanion.speech.ThinkingWords.pick(com.combo.monkeycompanion.character.CharacterRegistry.current, -1)
+    }
 
     override fun onReply(text: String, done: Boolean) {
         findLive()?.text = text.ifEmpty { "…" }

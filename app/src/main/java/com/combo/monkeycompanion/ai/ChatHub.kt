@@ -136,6 +136,9 @@ object ChatHub {
         if (acts.isEmpty() && !toolActed && userText != null) ActionParser.requestedByUser(userText)?.let { acts.add(it) }
         if (BodyAction.FLY in acts && userText != null && com.combo.monkeycompanion.brain.Superpowers.requested == null)
             com.combo.monkeycompanion.brain.Superpowers.requested = com.combo.monkeycompanion.brain.Superpowers.named(userText)
+        // v10.47: "fly" with no power word = just fly
+        com.combo.monkeycompanion.brain.Superpowers.plainFly = BodyAction.FLY in acts && userText != null &&
+            com.combo.monkeycompanion.brain.Superpowers.isPlainFly(userText)
         if (acts.isNotEmpty()) main.post { acts.forEach { a -> fire { it.onAction(a) } } }
         return p.text
     }
@@ -336,6 +339,7 @@ object ChatHub {
                 toolActed = false
                 val usePowers = powers.specs.isNotEmpty() && (!offline || settings.offlineTools)
                 val sys = Persona.systemPrompt(th != null && usePowers, bodyNow(facts = !usePowers), compact = offline || b is GatewayBrain, actionTool = th != null,
+                    longReplies = b !is GatewayBrain,   // v10.47: friend-style length, except the cloud (it cuts at 200 characters)
                     powerTags = if (usePowers && (th == null || offline)) powers.tagHelp() else "",
                     phoneState = if (usePowers) powers.state() else "",
                     extra = if (usePowers) AgentPrompt.build(settings, th != null && !offline, typed) else "")

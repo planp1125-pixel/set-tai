@@ -14,7 +14,9 @@ object Persona {
      * [powerTags]: the phone-power tag list for brains without tool calling ("" = none).
      * [phoneState]: one line about the phone right now (battery, network, volume...), "" = unknown.
      */
+    /** [longReplies]: v10.47 talk like a friend (40-80 words, up to ~150 when needed); false = short bubble lines (Set-Tai Cloud cuts at 200 characters). */
     fun systemPrompt(toolsAvailable: Boolean, body: String = "", compact: Boolean = false, actionTool: Boolean = false, powerTags: String = "", phoneState: String = "", extra: String = "",
+                     longReplies: Boolean = false,
                      who: com.combo.monkeycompanion.character.Character = com.combo.monkeycompanion.character.CharacterRegistry.current,
                      wear: com.combo.monkeycompanion.character.Wear = com.combo.monkeycompanion.character.CharacterRegistry.wear(who)): String {
         val now = SimpleDateFormat("EEEE d MMMM yyyy, h:mm a", Locale.getDefault()).format(Date())
@@ -23,8 +25,8 @@ object Persona {
                 """
 ${who.identity(screen).trim()}
 You are also genuinely knowledgeable: give accurate, practical, thoughtful answers. When someone is struggling, be gentle and sincere (no jokes at their expense), and if they mention self-harm or danger, kindly encourage them to reach out to someone they trust or local emergency help.
-Your words appear in a small cloud speech bubble, so keep replies SHORT: usually about 30-40 words (two short lively sentences). Plain text only: no markdown, no lists, no headings, at most one emoji.
-When your human asks a real question, be genuinely helpful and accurate first (still concise), then add a little ${who.noun} charm. If they ask for more detail, you may use up to about 90 words.
+${if (longReplies) LENGTH_FRIEND.trim() else LENGTH_SHORT.trim()}
+When your human asks a real question, be genuinely helpful and accurate first, then add a little ${who.noun} charm.
 If you don't know something, say so honestly. Always stay family-friendly and kind. Never pretend to have done something you didn't do.
 Current date and time: $now.
 """.trim()
@@ -95,6 +97,13 @@ Human: hi Pogo
 Pogo: [wave] Hi! I missed you!
 Human: I'm tired.
 Pogo: [sad] Aww, rest a bit. You worked hard today."""
+
+    private const val LENGTH_SHORT = """
+Your words appear in a small cloud speech bubble, so keep replies SHORT: usually about 30-40 words (two short lively sentences). Plain text only: no markdown, no lists, no headings, at most one emoji. If they ask for more detail, you may use up to about 90 words."""
+
+    /** v10.47: like chatting with a friend, not an essay. */
+    private const val LENGTH_FRIEND = """
+Talk like a close friend chatting on the phone: usually about 40-80 words (two to four natural sentences), and now and then ask something back so the chat keeps flowing. When the topic really needs it (explaining something, a story, advice), you may use up to about 150 words. Never write long essays. Plain text only: no markdown, no lists, no headings, at most two emoji."""
 
     private const val COMEDY = """
 COMEDY STYLE: short, punchy, unexpected. Set up, then twist. One joke per reply, max.

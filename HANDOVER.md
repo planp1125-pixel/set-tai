@@ -1,6 +1,13 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.46.1 (versionCode 118)**, 8 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.47 (versionCode 119)**, 18 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.47 Chat feel
+
+- `MonkeyView.chatting()` (chat open, thinking, ChatHub.busy, or within `CHAT_QUIET_MS` = 2 min of the last chat message) blocks every non-INFO `speak`.
+- Reply bubbles carry the user's last message as a quote (`CloudBubble.setText(quote=)`); tapping a quoted bubble opens the chat.
+- `speech/ThinkingWords` (own Random, never the frame loop's). `Superpowers.plainFly` / `isPlainFly` turn a plain "fly" into `flyAround()`.
+- `Persona.systemPrompt(longReplies=)`: friend length for every brain except the Set-Tai Cloud (GatewayBrain).
 
 ## v10.46 Give a brain + Sign in with ChatGPT
 

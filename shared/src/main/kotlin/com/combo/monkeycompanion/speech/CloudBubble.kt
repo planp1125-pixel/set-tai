@@ -73,6 +73,15 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
 
     private var layout: StaticLayout? = null
     private var textH = 0f
+    // v10.47: the user's last message, small and grey above the reply (like a quoted message in WhatsApp)
+    private var quoteLayout: StaticLayout? = null
+    private var quoteH = 0f
+    private val quoteGap = 6f * density
+    private val quotePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = textSizePx * 0.82f
+        typeface = Typeface.create("sans-serif", Typeface.ITALIC)
+    }
+    private val quoteFill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val puffs = ArrayList<FloatArray>() // x, y, r relative to bubble box
     private val core = RectF()
 
@@ -187,7 +196,8 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         }
     }
 
-    fun setText(text: String, maxTextWidth: Int, buttons: List<String> = emptyList(), reply: Boolean = false, chips: Boolean = false) {
+    /** [quote]: v10.47 the user's last message, shown small above [text] (null = none). */
+    fun setText(text: String, maxTextWidth: Int, buttons: List<String> = emptyList(), reply: Boolean = false, chips: Boolean = false, quote: String? = null) {
         arcMode = false
         this.buttons = buttons
         this.reply = reply
@@ -197,14 +207,21 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         else if (this.chips) buttons.maxOf { chipPaint.measureText(it) + 2 * chipPad }.toInt().coerceAtMost(maxTextWidth)
         else (buttons.size * (78 * density) + (buttons.size - 1) * btnGap).toInt()
         if (reply) minW = max(minW, (200 * density).toInt())
+        val q = quote?.trim()?.takeIf { it.isNotEmpty() }?.let { if (it.length > 90) it.take(88).trimEnd() + "…" else it }
+        if (q != null) minW = max(minW, minOf(maxTextWidth, ceil(StaticLayout.getDesiredWidth("“$q”", quotePaint)).toInt()))
         val w = natural.coerceIn(minW, maxOf(minW, maxTextWidth))
         val l = StaticLayout.Builder.obtain(text, 0, text.length, textPaint, w)
-            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+            .setAlignment(if (q != null) Layout.Alignment.ALIGN_NORMAL else Layout.Alignment.ALIGN_CENTER)
             .setIncludePad(false)
             .build()
         layout = l
         val tw = w.toFloat()
-        textH = l.height.toFloat()
+        if (q != null) {
+            val ql = StaticLayout.Builder.obtain("“$q”", 0, q.length + 2, quotePaint, w).setAlignment(Layout.Alignment.ALIGN_OPPOSITE)
+                .setIncludePad(false).setMaxLines(2).setEllipsize(android.text.TextUtils.TruncateAt.END).build()
+            quoteLayout = ql; quoteH = ql.height + quoteGap * 2
+        } else { quoteLayout = null; quoteH = 0f }
+        textH = l.height.toFloat() + quoteH
         // Chips: flow onto rows of pills inside the text width.
         val chipRects = ArrayList<RectF>()
         if (this.chips) {
@@ -309,7 +326,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
 
         if (reply) { drawReplyRow(c, a); drawClose(c, a) }
         if (reportable) drawFlag(c, a)
-        val textTop = if (buttons.isEmpty() && !reply) core.top + (core.height() - l.height) / 2f else core.top + pad
+        val textTop = if (buttons.isEmpty() && !reply) core.top + (core.height() - textH) / 2f else core.top + pad
         if (chips) for (i in btnRects.indices) {
             val r = btnRects[i]
             btnFill.color = com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xE9, 0xC9); btnFill.alpha = a
@@ -329,6 +346,15 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
             c.drawText(buttons[i], r.centerX(), r.centerY() - (btnPaint.descent() + btnPaint.ascent()) / 2, btnPaint)
         }
         c.translate(core.left + pad, textTop)
+        quoteLayout?.let { ql ->
+            // the user's message: a soft grey pill on the right, then a thin line, then the reply
+            quoteFill.color = com.combo.monkeycompanion.theme.Th.rgb(0xF1, 0xEE, 0xE8); quoteFill.alpha = a
+            val qw = (0 until ql.lineCount).maxOf { ql.getLineWidth(it) }
+            c.drawRoundRect(l.width - qw - 8 * density, -2 * density, l.width + 4 * density, ql.height + 2 * density, 8 * density, 8 * density, quoteFill)
+            quotePaint.color = com.combo.monkeycompanion.theme.Th.rgb(0x7A, 0x6A, 0x58); quotePaint.alpha = a
+            ql.draw(c)
+            c.translate(0f, quoteH)
+        }
         l.draw(c)
         c.restore()
     }
