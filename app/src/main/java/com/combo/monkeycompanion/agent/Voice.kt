@@ -100,6 +100,7 @@ object Voice {
         cancelListen()
         // v10.31: one delivery per listen, whatever ends it (result, error, tap-to-send timeout).
         val gen = ++session
+        stopping = false
         var delivered = false
         val once: (String?) -> Unit = { t -> if (!delivered && gen == session) { delivered = true; main.removeCallbacks(sendTimeout); listenHook?.invoke(false); onText(t) } }
         pendingText = once; pendingMiss = onMiss
@@ -120,7 +121,9 @@ object Voice {
 
     /** v10.49: when you stop talking for this long after some words, it sends by itself (some recognisers wait much longer). */
     const val AUTO_SEND_MS = 1800L
-    private val autoSend = Runnable { if (listening && !lastPartial.isNullOrBlank()) stopListening() }
+    private val autoSend = Runnable { if (listening && !stopping && !lastPartial.isNullOrBlank()) stopListening() }
+    /** A stop (tap-to-send or the pause) is already on its way: don't restart its wait. */
+    @Volatile private var stopping = false
 
     /** v10.49 voice chat: run [action] once the character has finished speaking (at most [maxMs] later). */
     fun whenQuiet(maxMs: Long = 45_000L, action: () -> Unit) {
@@ -224,6 +227,8 @@ object Voice {
 
     /** Hold released: finish and deliver what was said. */
     fun stopListening() {
+        if (stopping) return
+        stopping = true
         testEngine?.let { if (listening) { it.onStop(); main.removeCallbacks(sendTimeout); main.postDelayed(sendTimeout, SEND_TIMEOUT_MS) }; return }
         rec?.let { runCatching { it.stopListening() } }
         if (listening) { main.removeCallbacks(sendTimeout); main.postDelayed(sendTimeout, SEND_TIMEOUT_MS) }
@@ -244,7 +249,7 @@ object Voice {
         Miss.CANCELLED -> "Okay, cancelled. 🤐"
     }
 
-    private fun done() { listening = false; level = 0f; main.removeCallbacks(autoSend); rec?.let { runCatching { it.destroy() } }; rec = null }
+    private fun done() { listening = false; stopping = false; level = 0f; main.removeCallbacks(autoSend); rec?.let { runCatching { it.destroy() } }; rec = null }
     fun cancelListen() {
         val was = listening || rec != null
         session++; main.removeCallbacks(sendTimeout); pendingText = null; pendingMiss = null

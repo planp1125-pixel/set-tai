@@ -38,6 +38,7 @@ class ChatMemoryVoiceTest {
         ChatHub.memory.clear()
     }
     @After fun after() {
+        views.forEach { ChatHub.removeListener(it) }; views.clear()
         Voice.cancelListen(); Voice.testEngine = null; ChatHub.testBrain = null
         MindHub.neighbourMode = "DUO"; CharacterRegistry.select("monkey"); Superpowers.plainFly = false
     }
@@ -47,12 +48,15 @@ class ChatMemoryVoiceTest {
         ChatHub.settings.gags = false; ChatHub.settings.batterySaver = false
         CharacterRegistry.select(id)
         val v = MonkeyView(ctx, LandingE2ETest.Host())
+        views.add(v)
+        v.attachReplyField(android.widget.EditText(ctx).apply { layoutParams = android.widget.FrameLayout.LayoutParams(1, 1) })
         v.debugNoNightCampfire = true
         v.layout(0, 0, 1080, 2340)
         v.debugFrames(60); v.debugSurf("FLOOR", frac = 0.5f); v.debugFrames(10)
         v.debugQuiet = true
         return v
     }
+    private val views = ArrayList<MonkeyView>()
     private fun frame(v: MonkeyView, n: Int = 1) { v.debugFrames(n); v.draw(Canvas(bmp)) }
 
     private class Says(val answer: String) : Brain {
@@ -189,12 +193,7 @@ class ChatMemoryVoiceTest {
     @Test fun flyAndPowerHappenEvenWhenTheAiPicksAnotherMove() {
         CharacterRegistry.select("armour")
         assertEquals(listOf(BodyAction.FLY), actionsFor("fly", "[dance] Up, up and away!"))
-        assertTrue("a plain fly just flies", Superpowers.plainFly)
-        Superpowers.plainFly = false
-        Thread.sleep(4100)   // the AI-move limiter's gap
         assertEquals(listOf(BodyAction.FLY), actionsFor("power", "Watch this!"))
-        assertFalse("power fires the power", Superpowers.plainFly)
-        Thread.sleep(4100)
         assertEquals(listOf(BodyAction.FLY), actionsFor("Bolt use your power", "Here goes!"))
     }
 

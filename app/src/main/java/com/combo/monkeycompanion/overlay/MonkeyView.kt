@@ -1541,7 +1541,7 @@ class MonkeyView(
     val debugVoiceChat get() = voiceChat
     private fun stopVoiceChat() { voiceChat = false; voiceTurns = 0 }
     private fun listenAgainLater() {
-        if (!voiceChat) return
+        if (!voiceChat || voiceOwner?.get() !== this) return
         // waits for the spoken answer to finish (or a moment to read it when replies aren't spoken)
         com.combo.monkeycompanion.agent.Voice.whenQuiet(maxMs = 45_000L) {
             if (voiceChat && !typing && !ChatHub.busy && !listenTap && !pendingShown && !exiting && host != null) startListen(hold = false, again = true)
@@ -1551,7 +1551,7 @@ class MonkeyView(
     /** Listen once; it ends on its own after a pause, or when you tap Settai or the bubble. [again]: the voice chat's next turn. */
     private fun startListen(@Suppress("UNUSED_PARAMETER") hold: Boolean, again: Boolean = false) {
         val V = com.combo.monkeycompanion.agent.Voice
-        if (!again) { voiceChat = true; voiceTurns = 0 }
+        if (!again) { voiceChat = true; voiceTurns = 0; voiceOwner = java.lang.ref.WeakReference(this) }
         val lastReply = if (again) aiReply else null   // the voice chat keeps the answer on screen while it listens
         endTyping(); pages.clear(); beats.clear(); aiReply = null
         if (!com.combo.monkeycompanion.powers.Perm.MIC.granted(context)) {
@@ -8808,6 +8808,8 @@ class MonkeyView(
 
     companion object {
         /** v10.47: no built-in lines for this long after the last chat message. */
+        /** v10.49: the one view whose voice chat is running (other companion windows never take a turn). */
+        @Volatile private var voiceOwner: java.lang.ref.WeakReference<MonkeyView>? = null
         const val CHAT_QUIET_MS = 120_000L
         /** v10.47: a reply page in the bubble (was 130 characters). */
         const val PAGE_CHARS = 200
