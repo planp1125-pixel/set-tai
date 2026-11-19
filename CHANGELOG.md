@@ -468,3 +468,10 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Voice chat, hands-free.** Tap 🎤 and just talk: your words show live in the bubble and it sends by itself when you stop (about 2 seconds). After the answer (spoken out loud when spoken replies are on) it listens again by itself, like a voice call, with the answer still on screen. Say nothing, type, or tap ✕ to stop. Online it now uses the phone's regular speech recogniser (live words, ends by itself); offline the on-device one.
 - **Fly and power always happen.** "fly", "power", "Bolt use your power"… now always fly / fire the power, even when the AI also picks another move (before, any AI move cancelled your request, and "power" on its own wasn't understood). A plain "fly" also works with the chat box open.
 - Tests: v1049/ChatMemoryVoiceTest; V1031 listening texts updated.
+
+## v10.50 (code 123): you can see it hearing you
+
+- **Live listening bubble.** While it listens, the bubble shows your words as you speak and a sound meter that moves with your voice (▁▂▃▄▅▆▇█), with "getting ready…" / "speak now" / "hearing you". If the meter moves but no words come, the speech engine isn't catching them; if it doesn't move, the mic isn't hearing you.
+- **Google's speech engine first** (when it's on the phone): best at live words and quiet voices. If it can't start, the phone's default one is used. Tamil/English switching is only asked of the on-device engine now (it could stop live words on the online one).
+- **What you said stays on screen while it thinks** (above the thinking word), so after a voice message you can see what it heard.
+- Tests: v1050/LiveListeningTest; V1031 listening checks updated.

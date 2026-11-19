@@ -1109,7 +1109,8 @@ class MonkeyView(
         controller.startThinking()
         lastChatAt = SystemClock.elapsedRealtime()
         thinkWord = com.combo.monkeycompanion.speech.ThinkingWords.pick(character, -1)
-        showBubble(thinkWord, 600f, talk = false, reply = false, chips = listOf(com.combo.monkeycompanion.agent.QuickChip("menu", "✕ Stop", "think_stop")))
+        // v10.50: what you said stays above while it thinks (so a voice message shows what was heard)
+        showBubble(thinkWord, 600f, talk = false, reply = false, chips = listOf(com.combo.monkeycompanion.agent.QuickChip("menu", "✕ Stop", "think_stop")), quote = lastUserMessage())
     }
 
     private var thinkWord = ""
@@ -1561,18 +1562,20 @@ class MonkeyView(
         }
         if (ChatHub.busy) { listenTap = false; sayInfo("Wait wait, I'm still thinking! 🤔", 2500L); return }
         perkTarget = 1f; listenTap = true
-        val past = pastChats(beforeCurrent = false)
-        if (lastReply != null) showBubble("$lastReply\n\n🎤 Your turn… I'm listening", 60f, talk = false, reply = false, quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
-        else showBubble("🎤 Listening… just talk, I send when you stop", 30f, talk = false, reply = false, history = past)
+        // v10.50: one listening bubble, refreshed live: your words as they come + a sound meter
+        listenPartial = null; listenMeterT = 0f
+        if (lastReply != null) { listenBase = "$lastReply\n\n🎤 Your turn… I'm listening"; listenQuote = lastUserMessage(); listenHist = pastChats(beforeCurrent = true) }
+        else { listenBase = LISTEN_PROMPT; listenQuote = null; listenHist = pastChats(beforeCurrent = false) }
+        showListening()
         var miss: com.combo.monkeycompanion.agent.Voice.Miss? = null
-        V.listen(context, onPartial = { p -> if (perkTarget > 0f) showBubble(listenPartialLine(p), 30f, talk = false, reply = false, history = past) },
+        V.listen(context, onPartial = { p -> if (perkTarget > 0f) { listenPartial = p; showListening() } },
             onMiss = { miss = it }) { heard ->
             perkTarget = 0f; listenTap = false
             if (heard != null) {
                 debugLastHeard = heard
                 voiceTurns++
                 aiReply = null
-                showBubble("🗣️ “${heard.take(120)}”", 2f, talk = false, reply = false)
+                showBubble("🗣️ “${heard.take(160)}”", 2f, talk = false, reply = false)
                 touchConvo()
                 ChatHub.send(heard, lastLine, voice = true)
             } else {
@@ -1595,6 +1598,24 @@ class MonkeyView(
     }
 
     private fun listenPartialLine(p: String) = "🎤 “${p.takeLast(160)}”\n…I send when you stop"
+
+    // v10.50 live listening bubble
+    private var listenPartial: String? = null
+    private var listenBase = ""
+    private var listenQuote: String? = null
+    private var listenHist: List<Pair<Boolean, String>> = emptyList()
+    private var listenMeterT = 0f
+    /** The listening bubble: your words so far (or the prompt), then a sound meter and what the ears are doing. */
+    private fun showListening() {
+        val V = com.combo.monkeycompanion.agent.Voice
+        val words = listenPartial
+        val top = if (words != null) listenPartialLine(words) else listenBase
+        val n = (((V.level + 2f) / 12f) * 8f).toInt().coerceIn(0, 8)
+        val meter = "▁▂▃▄▅▆▇█".take(maxOf(1, n)) + "·".repeat(8 - maxOf(1, n))
+        val state = when (V.phase) { "hearing" -> "hearing you"; "ready" -> "speak now"; else -> "getting ready…" }
+        showBubble("$top\n$meter  $state", 30f, talk = false, reply = false, quote = listenQuote, history = listenHist)
+    }
+    val debugListenMeterLine: String? get() = if (listenTap) lastShown?.substringAfterLast('\n') else null
 
     private fun cancelListen(line: String?) {
         listenTap = false; perkTarget = 0f; stopVoiceChat()
@@ -2919,6 +2940,11 @@ class MonkeyView(
         if (micK > 0.02f) { drawPose.micGlow = micK; drawPose.earWiggle += 0.5f * micK * sin(t * 9f) }
         // v10.31: the shared library "listening for gossip" pose (hand at ear) — one action for every character
         if (com.combo.monkeycompanion.agent.Voice.listening) listenActT += dt else listenActT = 0f
+        // v10.50: the listening bubble's meter moves with your voice
+        if (listenTap && perkTarget > 0f && com.combo.monkeycompanion.agent.Voice.listening) {
+            listenMeterT += dt
+            if (listenMeterT >= 0.15f) { listenMeterT = 0f; showListening() }
+        }
         if (micK > 0.02f && !dragging && !falling && !powerOn)
             com.combo.monkeycompanion.engine.action.ActionLibrary.apply(com.combo.monkeycompanion.engine.action.ActionLibrary.ListenEar.id, drawPose, listenActT, micK)
         debugLastArmR = drawPose.armRRaise
@@ -8810,6 +8836,7 @@ class MonkeyView(
         /** v10.47: no built-in lines for this long after the last chat message. */
         /** v10.49: the one view whose voice chat is running (other companion windows never take a turn). */
         @Volatile private var voiceOwner: java.lang.ref.WeakReference<MonkeyView>? = null
+        const val LISTEN_PROMPT = "🎤 Listening… just talk, I send when you stop"
         const val CHAT_QUIET_MS = 120_000L
         /** v10.47: a reply page in the bubble (was 130 characters). */
         const val PAGE_CHARS = 200

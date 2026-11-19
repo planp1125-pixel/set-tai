@@ -1,6 +1,11 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.49 (versionCode 122)**, 19 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.50 (versionCode 123)**, 19 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.50 Live listening
+
+- `Voice.googleService()` (RecognitionService query, needs the existing `<queries>` entry) preferred online, `startDefault` fallback; `Voice.phase` ("ready"/"hearing") and `engineName`. Language switch extras only for on-device.
+- MonkeyView `showListening()` refreshed every 0.15 s while listening (words + meter + phase); `LISTEN_PROMPT`. The thinking bubble carries the user's message as its quote.
 
 ## v10.49 Bubble memory, voice chat, fly always
 

@@ -101,7 +101,7 @@ class V1031Test {
         assertNotNull("mic tap must start a real listen", eng.s)
         assertTrue(Voice.listening)
         assertTrue(v.debugListenTap)
-        assertEquals("🎤 Listening… just talk, I send when you stop", v.debugBubbleText)
+        assertTrue(v.debugBubbleText ?: "", (v.debugBubbleText ?: "").startsWith(MonkeyView.LISTEN_PROMPT))
         eng.s!!.partial("hello satan")
         frame(v)
         val shown = v.debugBubbleText ?: ""
@@ -141,7 +141,7 @@ class V1031Test {
         v.say("Wheee— slidiiing!", 1800L)
         v.sayInfo("some info", 1500L)
         frame(v, 2)
-        assertEquals("🎤 Listening… just talk, I send when you stop", v.debugBubbleText)
+        assertTrue(v.debugBubbleText ?: "", (v.debugBubbleText ?: "").startsWith(MonkeyView.LISTEN_PROMPT))
         v.debugQuiet = true
     }
 

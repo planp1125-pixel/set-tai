@@ -106,7 +106,7 @@ object Voice {
         pendingText = once; pendingMiss = onMiss
         listenHook?.invoke(true)
         testEngine?.let { eng ->
-            listening = true; lastPartial = null
+            listening = true; lastPartial = null; phase = "ready"; engineName = "test"
             eng.onStart(object : TestSession {
                 override fun partial(text: String) { lastPartial = text; onPartial(text); main.removeCallbacks(autoSend); main.postDelayed(autoSend, AUTO_SEND_MS) }
                 override fun result(text: String?) { done(); lastPartial = null; if (text == null) onMiss(Miss.NO_MATCH); once(text) }
@@ -156,15 +156,39 @@ object Voice {
     }
     const val SEND_TIMEOUT_MS = 2500L
 
+    /**
+     * v10.50: Google's recogniser when it's on the phone (it shows your words live and hears quiet voices
+     * best); else the phone's default one.
+     */
+    fun googleService(ctx: Context): android.content.ComponentName? = runCatching {
+        val found = ctx.packageManager.queryIntentServices(Intent(android.speech.RecognitionService.SERVICE_INTERFACE), 0)
+            .mapNotNull { it.serviceInfo }.filter { it.enabled }
+        PREFERRED.firstNotNullOfOrNull { pkg -> found.firstOrNull { it.packageName == pkg } }?.let { android.content.ComponentName(it.packageName, it.name) }
+    }.getOrNull()
+    private val PREFERRED = listOf("com.google.android.googlequicksearchbox", "com.google.android.tts", "com.google.android.as")
+
+    /** v10.50: what the ears are doing, for the listening bubble: "", "ready" (talk now), "hearing" (your voice is coming in). */
+    @Volatile var phase = ""; private set
+    /** Which recogniser is listening (for the listening bubble and bug reports). */
+    @Volatile var engineName = ""; private set
+
     private fun start(ctx: Context, preferOnDevice: Boolean, onPartial: (String) -> Unit, onMiss: (Miss) -> Unit, onText: (String?) -> Unit) {
         val useOnDevice = preferOnDevice && android.os.Build.VERSION.SDK_INT >= 31 && runCatching { SpeechRecognizer.isOnDeviceRecognitionAvailable(ctx) }.getOrDefault(false)
-        val r = runCatching { if (useOnDevice) SpeechRecognizer.createOnDeviceSpeechRecognizer(ctx) else SpeechRecognizer.createSpeechRecognizer(ctx) }.getOrNull()
+        val google = if (useOnDevice || skipGoogle) null else googleService(ctx)
+        val r = runCatching {
+            when {
+                useOnDevice -> SpeechRecognizer.createOnDeviceSpeechRecognizer(ctx)
+                google != null -> SpeechRecognizer.createSpeechRecognizer(ctx, google)
+                else -> SpeechRecognizer.createSpeechRecognizer(ctx)
+            }
+        }.getOrNull() ?: runCatching { SpeechRecognizer.createSpeechRecognizer(ctx) }.getOrNull()
             ?: run { onMiss(Miss.UNAVAILABLE); return onText(null) }
-        rec = r; listening = true; onDevice = useOnDevice
+        rec = r; listening = true; onDevice = useOnDevice; phase = ""
+        engineName = when { useOnDevice -> "on-device"; google != null -> "Google"; else -> "phone default" }
         var heard = false
         r.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(p: Bundle?) {}
-            override fun onBeginningOfSpeech() {}
+            override fun onReadyForSpeech(p: Bundle?) { phase = "ready" }
+            override fun onBeginningOfSpeech() { phase = "hearing" }
             override fun onRmsChanged(v: Float) { level = v }
             override fun onBufferReceived(b: ByteArray?) {}
             override fun onEndOfSpeech() {}
@@ -180,6 +204,10 @@ object Voice {
                 // On-device model missing for this language: try the regular recogniser once.
                 if (useOnDevice && !heard && (e == 12 || e == 13 || e == SpeechRecognizer.ERROR_CLIENT || e == SpeechRecognizer.ERROR_SERVER)) {
                     main.post { start(ctx, false, onPartial, onMiss, onText) }; return
+                }
+                // v10.50: Google's recogniser can't start (busy, missing language): the phone's default one, once
+                if (google != null && !heard && (e == SpeechRecognizer.ERROR_RECOGNIZER_BUSY || e == SpeechRecognizer.ERROR_SERVER || e == 12 || e == 13 || e == SpeechRecognizer.ERROR_CLIENT)) {
+                    main.post { startDefault(ctx, onPartial, onMiss, onText) }; return
                 }
                 // Released before the final result: keep what we heard.
                 val partial = lastPartial
@@ -213,13 +241,20 @@ object Voice {
             .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
             .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
         if (!useOnDevice && !online(ctx)) i.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-        if (android.os.Build.VERSION.SDK_INT >= 34) {
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en-IN").putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, ctx.packageName)
+        if (useOnDevice && android.os.Build.VERSION.SDK_INT >= 34) {
             // Tanglish: let the recogniser switch between Indian English and Tamil mid-sentence where supported.
             i.putExtra(RecognizerIntent.EXTRA_ENABLE_LANGUAGE_SWITCH, RecognizerIntent.LANGUAGE_SWITCH_BALANCED)
             i.putStringArrayListExtra(RecognizerIntent.EXTRA_LANGUAGE_SWITCH_ALLOWED_LANGUAGES, arrayListOf("en-IN", "ta-IN"))
         }
         runCatching { r.startListening(i) }.onFailure { done(); onMiss(Miss.UNAVAILABLE); onText(null) }
     }
+
+    private fun startDefault(ctx: Context, onPartial: (String) -> Unit, onMiss: (Miss) -> Unit, onText: (String?) -> Unit) {
+        skipGoogle = true
+        try { start(ctx, false, onPartial, onMiss, onText) } finally { skipGoogle = false }
+    }
+    @Volatile private var skipGoogle = false
 
     @Volatile private var lastPartial: String? = null
     /** Mic loudness (dB-ish, -2..10) for a little meter. */
@@ -249,7 +284,7 @@ object Voice {
         Miss.CANCELLED -> "Okay, cancelled. 🤐"
     }
 
-    private fun done() { listening = false; stopping = false; level = 0f; main.removeCallbacks(autoSend); rec?.let { runCatching { it.destroy() } }; rec = null }
+    private fun done() { listening = false; stopping = false; level = 0f; phase = ""; main.removeCallbacks(autoSend); rec?.let { runCatching { it.destroy() } }; rec = null }
     fun cancelListen() {
         val was = listening || rec != null
         session++; main.removeCallbacks(sendTimeout); pendingText = null; pendingMiss = null
