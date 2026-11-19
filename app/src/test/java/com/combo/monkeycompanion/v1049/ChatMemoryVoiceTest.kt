@@ -82,8 +82,8 @@ class ChatMemoryVoiceTest {
         val v = view(); frame(v, 3)
         v.openBubbleChat(); frame(v, 2)
         val h = v.debugBubbleHistory
-        assertEquals(4, h.size)
-        assertEquals(true to "older one?", h[0]); assertEquals(false to "Old answer", h[3])
+        assertEquals("v10.51: the whole saved chat", 8, h.size)
+        assertEquals(true to "what's your favourite food?", h[0]); assertEquals(false to "Old answer", h[7])
         // it starts at the bottom (now), with the faded chats above to drag down to
         val (sy, max) = v.debugBubbleScroll
         assertTrue(max > 0f); assertEquals(max, sy, 0.5f)
@@ -101,8 +101,9 @@ class ChatMemoryVoiceTest {
         assertEquals(long, v.debugBubbleText)                      // the whole reply, one bubble (no pages)
         assertEquals("tell me about the mischief from earlier", v.debugBubbleQuote)
         val h = v.debugBubbleHistory
-        assertEquals(4, h.size)
-        assertEquals(listOf(false to "Coconut water, boss.", true to "older one?", false to "should not show", true to "really old"), h)
+        assertEquals(7, h.size)
+        assertEquals(listOf(true to "what's your favourite food?", false to "Bananas, obviously!", true to "and drink?",
+            false to "Coconut water, boss.", true to "older one?", false to "should not show", true to "really old"), h)
         assertFalse("never the current message in the faded part", h.any { it.second == "tell me about the mischief from earlier" })
         // starts at the top of your message + reply; drag up reads on, drag down shows the faded chats
         val (sy, max) = v.debugBubbleScroll
@@ -204,4 +205,8 @@ class ChatMemoryVoiceTest {
         frame(v, 30)
         assertTrue("Bolt takes off", v.debugFalling || v.debugLandStyle.toString() == "ROCKET_ARC")
     }
+}
+
+class BubbleHistoryCapTest {
+    @Test fun capIsAHundred() { assertEquals(100, MonkeyView.PAST_MAX) }
 }

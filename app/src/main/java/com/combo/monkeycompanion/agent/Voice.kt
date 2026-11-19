@@ -183,13 +183,13 @@ object Voice {
             }
         }.getOrNull() ?: runCatching { SpeechRecognizer.createSpeechRecognizer(ctx) }.getOrNull()
             ?: run { onMiss(Miss.UNAVAILABLE); return onText(null) }
-        rec = r; listening = true; onDevice = useOnDevice; phase = ""
+        rec = r; listening = true; onDevice = useOnDevice; phase = ""; peak = -2f; lastError = 0
         engineName = when { useOnDevice -> "on-device"; google != null -> "Google"; else -> "phone default" }
         var heard = false
         r.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(p: Bundle?) { phase = "ready" }
             override fun onBeginningOfSpeech() { phase = "hearing" }
-            override fun onRmsChanged(v: Float) { level = v }
+            override fun onRmsChanged(v: Float) { level = v; if (v > peak) peak = v }
             override fun onBufferReceived(b: ByteArray?) {}
             override fun onEndOfSpeech() {}
             override fun onEvent(t: Int, b: Bundle?) {}
@@ -200,6 +200,7 @@ object Voice {
                 }
             }
             override fun onError(e: Int) {
+                lastError = e
                 done()
                 // On-device model missing for this language: try the regular recogniser once.
                 if (useOnDevice && !heard && (e == 12 || e == 13 || e == SpeechRecognizer.ERROR_CLIENT || e == SpeechRecognizer.ERROR_SERVER)) {
@@ -216,6 +217,7 @@ object Voice {
                 onMiss(when (e) {
                     SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT, SpeechRecognizer.ERROR_SERVER -> Miss.NETWORK
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> Miss.NO_PERMISSION
+                    SpeechRecognizer.ERROR_AUDIO -> Miss.BUSY
                     SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> Miss.BUSY
                     // v10.31: ERROR_CLIENT is NOT a user cancel (our own cancel destroys the recogniser first and
                     // gets no callback). Treating it as "cancelled" silently closed the Listening bubble: a no-op mic.
@@ -274,9 +276,35 @@ object Voice {
         cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
     }.getOrDefault(true)
 
+    /** v10.50.1: the loudest the mic got during the last listen (-2..10) and the last recogniser error code (0 = none). */
+    @Volatile var peak = -2f; private set
+    @Volatile var lastError = 0; private set
+    private fun errName(e: Int): String = when (e) {
+        SpeechRecognizer.ERROR_NETWORK_TIMEOUT, SpeechRecognizer.ERROR_NETWORK -> "no internet"
+        SpeechRecognizer.ERROR_AUDIO -> "mic busy"
+        SpeechRecognizer.ERROR_SERVER, 11 -> "speech service error"
+        SpeechRecognizer.ERROR_CLIENT -> "stopped early"
+        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "no speech heard"
+        SpeechRecognizer.ERROR_NO_MATCH -> "words not recognised"
+        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "engine busy"
+        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "no mic permission"
+        10 -> "too many requests"
+        12, 13 -> "English (India) not available"
+        else -> "error $e"
+    }
+    /** Small print for a miss: which engine, what went wrong, how loud the mic got (so a blocked mic shows as 0/8). */
+    fun missDetail(): String {
+        val n = (((peak + 2f) / 12f) * 8f).toInt().coerceIn(0, 8)
+        val why = if (lastError != 0) errName(lastError) else "nothing heard"
+        return "($engineName · $why · mic $n/8)"
+    }
+    /** v10.50.1: a plain hint from the loudness: 0-1/8 = the mic is getting nothing. */
+    fun quietHint(): String? = if (peak < 0f && lastError in listOf(SpeechRecognizer.ERROR_SPEECH_TIMEOUT, SpeechRecognizer.ERROR_NO_MATCH, 0))
+        "The mic got almost no sound. Is another app using it (a call, a recorder)? Try again a bit closer." else null
+
     /** In-character line for a [Miss]. */
     fun missLine(m: Miss): String = when (m) {
-        Miss.NO_MATCH -> "Didn't catch that 🙉 Long-press me → 🎤 to try again!"
+        Miss.NO_MATCH -> "Didn't catch that 🙉 Tap 🎤 to try again!"
         Miss.NETWORK -> "My ears need internet on this phone 📶 (no offline speech pack). Type to me instead, or download the offline English (India) pack in Google's speech settings."
         Miss.NO_PERMISSION -> "I need the microphone permission to hear you 🎤"
         Miss.BUSY -> "My ears are busy, try again in a sec! 👂"

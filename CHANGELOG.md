@@ -475,3 +475,11 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Google's speech engine first** (when it's on the phone): best at live words and quiet voices. If it can't start, the phone's default one is used. Tamil/English switching is only asked of the on-device engine now (it could stop live words on the online one).
 - **What you said stays on screen while it thinks** (above the thinking word), so after a voice message you can see what it heard.
 - Tests: v1050/LiveListeningTest; V1031 listening checks updated.
+
+## v10.50.1 (code 124): whole chat in the bubble, steadier listening, why it missed
+
+- The bubble's faded chats now go back through the whole saved chat (up to the last 100 messages), not just the last two. It still opens showing now with a peek of the last chat; drag down to go further back. Long messages show up to 14 lines.
+- Smooth with a long chat: the faded lines are laid out once (not on every refresh) and only the visible ones are drawn.
+- **Fix: bubbles flashing one after another while listening.** The listening bubble now pops up once and only its words / meter change in place (4 times a second).
+- **When it misses, it says why**: small print like "(Google · no speech heard · mic 1/8)". mic 0–1/8 means the mic got almost no sound (another app using it, or the phone blocking it).
+- **🎙️ Google voice** button on a miss: opens Google's own voice popup (a normal screen, always allowed to listen) and sends what it hears to your character.

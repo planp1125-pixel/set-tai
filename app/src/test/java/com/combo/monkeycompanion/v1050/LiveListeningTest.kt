@@ -72,6 +72,26 @@ class LiveListeningTest {
         assertTrue(v.debugBubbleText!!, v.debugBubbleText!!.contains("hello my friend"))
     }
 
+    @Test fun listeningUpdatesInPlaceNotBubbleAfterBubble() {
+        val eng = FakeEngine(); Voice.testEngine = eng
+        val v = view(); frame(v, 3)
+        v.debugStartListen(); frame(v)
+        val shows = v.debugShowCount
+        repeat(10) { i -> eng.s!!.partial("one two three ${"word ".repeat(i)}"); frame(v, 8) }
+        assertEquals("one bubble that updates, not a new pop each time", shows, v.debugShowCount)
+        assertTrue(v.debugBubbleText!!, v.debugBubbleText!!.contains("word word word"))
+    }
+
+    @Test fun aMissSaysWhyAndOffersGoogleVoice() {
+        val eng = FakeEngine(); Voice.testEngine = eng
+        val v = view(); frame(v, 3)
+        v.debugStartListen(); frame(v)
+        eng.s!!.error(Voice.Miss.NO_MATCH); frame(v, 2)
+        val t = v.debugBubbleText ?: ""
+        assertTrue(t, t.contains("Didn't catch that") && t.contains("(test ·") && t.contains("mic "))
+        assertTrue(v.debugBubbleChips.any { it.id == "voice_google" })
+    }
+
     @Test fun whatYouSaidStaysAboveWhileItThinks() {
         val eng = FakeEngine(); Voice.testEngine = eng
         ChatHub.testBrain = Slow()

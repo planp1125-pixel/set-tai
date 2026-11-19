@@ -1,8 +1,10 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.50 (versionCode 123)**, 19 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.50.1 (versionCode 124)**, 19 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.50 Live listening
+
+- v10.50.1: `MonkeyView.PAST_MAX` = 100 faded messages; CloudBubble caches the past layouts (`pastKey`) and draws only visible ones. `showListening()` updates the bubble in place (`listenShown`). `Voice.peak` / `lastError` / `missDetail()` / `quietHint()`; `ui/GoogleVoiceActivity` (RecognizerIntent popup) behind the `voice_google` chip.
 
 - `Voice.googleService()` (RecognitionService query, needs the existing `<queries>` entry) preferred online, `startDefault` fallback; `Voice.phase` ("ready"/"hearing") and `engineName`. Language switch extras only for on-device.
 - MonkeyView `showListening()` refreshed every 0.15 s while listening (words + meter + phase); `LISTEN_PROMPT`. The thinking bubble carries the user's message as its quote.

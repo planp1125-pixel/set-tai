@@ -85,7 +85,9 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
 
     // v10.49: the last two chats, faded, above the current one. The text area scrolls inside the bubble:
     // drag down to read the faded chats, drag up to read the rest of a long reply.
-    private class Past(val layout: StaticLayout, val fromUser: Boolean)
+    private class Past(val layout: StaticLayout, val fromUser: Boolean, val top: Float, val lineW: Float)
+    /** v10.51: the faded chats are only laid out again when they change (the listening bubble refreshes ~7 times a second). */
+    private var pastKey: Any? = null
     private val past = ArrayList<Past>()
     private var pastH = 0f
     private val pastGap = 5f * density
@@ -244,7 +246,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         else (buttons.size * (78 * density) + (buttons.size - 1) * btnGap).toInt()
         if (reply) minW = max(minW, (200 * density).toInt())
         val q = quote?.trim()?.takeIf { it.isNotEmpty() }?.let { if (it.length > 90) it.take(88).trimEnd() + "…" else it }
-        val hist = history.mapNotNull { (u, s) -> s.trim().takeIf { it.isNotEmpty() }?.let { u to (if (it.length > 170) it.take(168).trimEnd() + "…" else it) } }
+        val hist = history.mapNotNull { (u, s) -> s.trim().takeIf { it.isNotEmpty() }?.let { u to (if (it.length > 600) it.take(598).trimEnd() + "…" else it) } }
         if (hist.isNotEmpty()) minW = max(minW, (200 * density).toInt().coerceAtMost(maxTextWidth))
         if (q != null) minW = max(minW, minOf(maxTextWidth, ceil(StaticLayout.getDesiredWidth("“$q”", quotePaint)).toInt()))
         val w = natural.coerceIn(minW, maxOf(minW, maxTextWidth))
@@ -259,14 +261,19 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
                 .setIncludePad(false).setMaxLines(2).setEllipsize(android.text.TextUtils.TruncateAt.END).build()
             quoteLayout = ql; quoteH = ql.height + quoteGap * 2
         } else { quoteLayout = null; quoteH = 0f }
-        past.clear(); pastH = 0f
-        for ((u, s) in hist) {
-            val pl = StaticLayout.Builder.obtain(s, 0, s.length, pastPaint, (w * 0.86f).toInt().coerceAtLeast(1))
-                .setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(false).setMaxLines(4)
-                .setEllipsize(android.text.TextUtils.TruncateAt.END).build()
-            past.add(Past(pl, u)); pastH += pl.height + pastGap * 2.2f
+        val key = hist to w
+        if (key != pastKey) {
+            pastKey = key
+            past.clear(); pastH = 0f
+            for ((u, s) in hist) {
+                val pl = StaticLayout.Builder.obtain(s, 0, s.length, pastPaint, (w * 0.86f).toInt().coerceAtLeast(1))
+                    .setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(false).setMaxLines(14)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END).build()
+                val lw = (0 until pl.lineCount).maxOfOrNull { pl.getLineWidth(it) } ?: 0f
+                past.add(Past(pl, u, pastH + pastGap, lw)); pastH += pl.height + pastGap * 2.2f
+            }
+            if (past.isNotEmpty()) pastH += pastGap * 2   // room for the "earlier" line
         }
-        if (past.isNotEmpty()) pastH += pastGap * 2   // room for the "earlier" line
         val currentH = l.height.toFloat() + quoteH
         contentH = pastH + currentH
         // The window: the current chat plus a peek of the faded ones, never taller than maxViewH.
@@ -423,24 +430,23 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
     /** v10.49: the earlier chats, faded: yours in a pale green pill on the right, the character's on the left. */
     private fun drawPast(c: Canvas, a: Int, w: Float) {
         val fa = a * 120 / 255
-        c.save()
+        // only the ones in (or next to) the visible window are drawn: the whole chat can be long
+        val from = scrollY - 40 * density; val to = scrollY + viewH + 40 * density
         for (p in past) {
             val pl = p.layout
-            val lw = (0 until pl.lineCount).maxOf { pl.getLineWidth(it) }
-            val x = if (p.fromUser) w - lw - 4 * density else 4 * density
-            c.translate(0f, pastGap)
+            if (p.top + pl.height < from || p.top > to) continue
+            val x = if (p.fromUser) w - p.lineW - 4 * density else 4 * density
             quoteFill.color = if (p.fromUser) com.combo.monkeycompanion.theme.Th.rgb(0xDC, 0xF8, 0xC6) else com.combo.monkeycompanion.theme.Th.rgb(0xF1, 0xEE, 0xE8)
             quoteFill.alpha = fa
-            c.drawRoundRect(x - 6 * density, -pastGap * 0.6f, x + lw + 6 * density, pl.height + pastGap * 0.6f, 8 * density, 8 * density, quoteFill)
+            c.drawRoundRect(x - 6 * density, p.top - pastGap * 0.6f, x + p.lineW + 6 * density, p.top + pl.height + pastGap * 0.6f, 8 * density, 8 * density, quoteFill)
             pastPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0x5A, 0x4A, 0x3A); pastPaint.alpha = fa
-            c.save(); c.translate(x, 0f); pl.draw(c); c.restore()
-            c.translate(0f, pl.height + pastGap * 1.2f)
+            c.save(); c.translate(x, p.top); pl.draw(c); c.restore()
         }
         // a thin line between the faded chats and now
         edge.alpha = a * 50 / 255
-        c.drawRect(w * 0.2f, pastGap * 0.5f, w * 0.8f, pastGap * 0.5f + density, edge)
+        val ly = pastH - pastGap * 1.5f
+        c.drawRect(w * 0.2f, ly, w * 0.8f, ly + density, edge)
         edge.alpha = a
-        c.restore()
         c.translate(0f, pastH)
     }
 

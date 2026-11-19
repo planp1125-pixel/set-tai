@@ -982,7 +982,7 @@ class MonkeyView(
                            chips: List<com.combo.monkeycompanion.agent.QuickChip> = emptyList(), quote: String? = null,
                            history: List<Pair<Boolean, String>> = emptyList()) {
         val withReply = (reply ?: convoActive) && replyField != null && buttons.isEmpty() && chips.isEmpty()
-        bubbleChips = chips; arcOn = false; lastShown = text
+        bubbleChips = chips; arcOn = false; lastShown = text; debugShowCount++
         bubbleQuoted = quote != null && buttons.isEmpty()
         shownQuote = if (bubbleQuoted) quote else null
         shownHistory = if (buttons.isEmpty()) history else emptyList()
@@ -1015,11 +1015,11 @@ class MonkeyView(
     val debugBubbleHistory: List<Pair<Boolean, String>> get() = if (bubbleOn) shownHistory else emptyList()
     val debugBubbleScroll: Pair<Float, Float> get() = bubble.scrollY to bubble.maxScroll
     fun debugBubbleScrollBy(dy: Float) = bubble.scrollBy(dy)
-    /** v10.49: the last two chats (four messages) for the faded lines; [beforeCurrent] = the ones before your latest message. */
+    /** v10.51: the whole saved chat (up to [PAST_MAX] messages) for the faded lines; [beforeCurrent] = the ones before your latest message. */
     private fun pastChats(beforeCurrent: Boolean): List<Pair<Boolean, String>> = runCatching {
         val all = ChatHub.memory.all().filter { !it.note && it.text.isNotBlank() }
         val end = if (beforeCurrent) all.indexOfLast { it.fromUser }.let { if (it < 0) all.size else it } else all.size
-        all.subList(maxOf(0, end - 4), end).map { it.fromUser to it.text }
+        all.subList(maxOf(0, end - PAST_MAX), end).map { it.fromUser to it.text }
     }.getOrDefault(emptyList())
     val debugBubbleQuote: String? get() = if (bubbleQuoted && bubbleOn) shownQuote else null
     val debugBubbleQuoted: Boolean get() = bubbleQuoted && bubbleOn
@@ -1320,6 +1320,10 @@ class MonkeyView(
                 context.startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 sayInfo("Switch on 'Set-Tai' in Notification Access, then tap me again! 📬", 4800L)
             }
+            "voice_google" -> runCatching {   // v10.50.1: Google's own voice popup (always allowed to listen)
+                bubbleLife = bubbleAge
+                context.startActivity(Intent(context, com.combo.monkeycompanion.ui.GoogleVoiceActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION))
+            }
             "perm_mic" -> runCatching {
                 context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + context.packageName)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
                 sayInfo("Tap Permissions → Microphone → Allow, then long-press me → 🎤 Talk!", 5000L)
@@ -1563,7 +1567,7 @@ class MonkeyView(
         if (ChatHub.busy) { listenTap = false; sayInfo("Wait wait, I'm still thinking! 🤔", 2500L); return }
         perkTarget = 1f; listenTap = true
         // v10.50: one listening bubble, refreshed live: your words as they come + a sound meter
-        listenPartial = null; listenMeterT = 0f
+        listenPartial = null; listenMeterT = 0f; listenShown = false
         if (lastReply != null) { listenBase = "$lastReply\n\n🎤 Your turn… I'm listening"; listenQuote = lastUserMessage(); listenHist = pastChats(beforeCurrent = true) }
         else { listenBase = LISTEN_PROMPT; listenQuote = null; listenHist = pastChats(beforeCurrent = false) }
         showListening()
@@ -1591,7 +1595,8 @@ class MonkeyView(
                 }
                 else if (m == com.combo.monkeycompanion.agent.Voice.Miss.NO_PERMISSION) showBubble(V.missLine(m), 8f, chips = listOf(com.combo.monkeycompanion.agent.QuickChip("perm_mic", "Allow mic")), reply = false)
                 else if (m == com.combo.monkeycompanion.agent.Voice.Miss.CANCELLED) { if (bubbleOn) bubbleLife = bubbleAge }
-                else showBubble(V.missLine(m), 4.5f, reply = false)
+                else showBubble(V.missLine(m) + (V.quietHint()?.let { "\n$it" } ?: "") + "\n" + V.missDetail(), 10f, reply = false,   // v10.50.1: say why
+                    chips = listOf(com.combo.monkeycompanion.agent.QuickChip("voice_google", "🎙️ Google voice"), com.combo.monkeycompanion.agent.QuickChip.LATER))
             }
         }
         if (!running && live && !paused) start()
@@ -1613,8 +1618,23 @@ class MonkeyView(
         val n = (((V.level + 2f) / 12f) * 8f).toInt().coerceIn(0, 8)
         val meter = "▁▂▃▄▅▆▇█".take(maxOf(1, n)) + "·".repeat(8 - maxOf(1, n))
         val state = when (V.phase) { "hearing" -> "hearing you"; "ready" -> "speak now"; else -> "getting ready…" }
-        showBubble("$top\n$meter  $state", 30f, talk = false, reply = false, quote = listenQuote, history = listenHist)
+        val text = "$top\n$meter  $state"
+        // v10.50.1: the first time it pops up; after that only the words change in place (no new bubble each refresh)
+        if (bubbleOn && listenShown && lastShown != null && bubbleAge < bubbleLife) {
+            if (text == lastShown) return
+            lastShown = text
+            val viewMax = min((host?.screenHeight() ?: height).toFloat() * 0.34f, 320 * d)
+            bubble.setText(text, (250 * d).toInt(), emptyList(), false, quote = listenQuote, history = listenHist, maxViewH = viewMax)
+            bubbleLife = max(bubbleLife, bubbleAge + 30f)
+            return
+        }
+        listenShown = true
+        showBubble(text, 30f, talk = false, reply = false, quote = listenQuote, history = listenHist)
     }
+    private var listenShown = false
+    /** Tests: how many times a bubble was (re)shown. */
+    var debugShowCount = 0; private set
+    val debugBubbleChips: List<com.combo.monkeycompanion.agent.QuickChip> get() = if (bubbleOn) bubbleChips else emptyList()
     val debugListenMeterLine: String? get() = if (listenTap) lastShown?.substringAfterLast('\n') else null
 
     private fun cancelListen(line: String?) {
@@ -2943,7 +2963,7 @@ class MonkeyView(
         // v10.50: the listening bubble's meter moves with your voice
         if (listenTap && perkTarget > 0f && com.combo.monkeycompanion.agent.Voice.listening) {
             listenMeterT += dt
-            if (listenMeterT >= 0.15f) { listenMeterT = 0f; showListening() }
+            if (listenMeterT >= 0.25f) { listenMeterT = 0f; showListening() }
         }
         if (micK > 0.02f && !dragging && !falling && !powerOn)
             com.combo.monkeycompanion.engine.action.ActionLibrary.apply(com.combo.monkeycompanion.engine.action.ActionLibrary.ListenEar.id, drawPose, listenActT, micK)
@@ -8836,6 +8856,8 @@ class MonkeyView(
         /** v10.47: no built-in lines for this long after the last chat message. */
         /** v10.49: the one view whose voice chat is running (other companion windows never take a turn). */
         @Volatile private var voiceOwner: java.lang.ref.WeakReference<MonkeyView>? = null
+        /** How many earlier messages the bubble can scroll back through (the chat log keeps 200). */
+        const val PAST_MAX = 100
         const val LISTEN_PROMPT = "🎤 Listening… just talk, I send when you stop"
         const val CHAT_QUIET_MS = 120_000L
         /** v10.47: a reply page in the bubble (was 130 characters). */

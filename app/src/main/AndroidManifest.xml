@@ -82,6 +82,8 @@
 
         <activity android:name=".ui.CareToolsActivity" android:exported="false" android:label="Care tools" />
         <activity android:name=".ui.BrainActivity" android:exported="false" android:label="Give a brain" android:launchMode="singleTop" />
+        <activity android:name=".ui.GoogleVoiceActivity" android:exported="false" android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <activity android:name=".ui.AttachActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="false"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
