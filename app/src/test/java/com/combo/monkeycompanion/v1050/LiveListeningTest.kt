@@ -61,7 +61,7 @@ class LiveListeningTest {
     @Test fun listeningBubbleHasAMeterAndShowsWordsLive() {
         val eng = FakeEngine(); Voice.testEngine = eng
         val v = view(); frame(v, 3)
-        v.debugStartListen(); frame(v, 12)
+        v.debugStartListen(); frame(v, 24)   // the meter refreshes every 0.25 s
         val t0 = v.debugBubbleText ?: ""
         assertTrue(t0, t0.startsWith(MonkeyView.LISTEN_PROMPT))
         assertTrue(t0, (v.debugListenMeterLine ?: "").contains("speak now"))
