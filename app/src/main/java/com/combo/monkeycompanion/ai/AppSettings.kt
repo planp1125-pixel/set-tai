@@ -321,6 +321,10 @@ class AppSettings(ctx: Context) {
     var speakVoiceReplies: Boolean
         get() = p.getBoolean("speak_voice_replies", true)
         set(v) = p.edit().putBoolean("speak_voice_replies", v).apply()
+    /** v10.50.2: 🎤 opens Google's voice popup instead of listening quietly (off by default: the popup covers the character). */
+    var voicePopup: Boolean
+        get() = p.getBoolean("voice_popup", false)
+        set(v) = p.edit().putBoolean("voice_popup", v).apply()
     /** Proactive buddy level: OFF / CHILL / BUDDY / CHATTERBOX (see ProLevel). */
     var proactiveLevel: String
         get() = p.getString("proactive_level", "BUDDY")!!

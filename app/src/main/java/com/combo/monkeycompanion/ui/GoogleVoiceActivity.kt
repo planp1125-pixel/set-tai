@@ -14,8 +14,10 @@ import com.combo.monkeycompanion.ai.ChatHub
  */
 class GoogleVoiceActivity : ComponentActivity() {
     private val ask = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
-        val text = r.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.trim()
-        if (r.resultCode == Activity.RESULT_OK && !text.isNullOrEmpty()) ChatHub.send(text, voice = true)
+        val text = r.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.trim()?.takeIf { r.resultCode == Activity.RESULT_OK && it.isNotEmpty() }
+        // v10.50.2: the overlay that opened us handles the words (voice chat turns); else straight to the chat
+        val cb = onResult; onResult = null
+        if (cb != null) cb(text) else if (text != null) ChatHub.send(text, voice = true)
         finish()
         @Suppress("DEPRECATION") overridePendingTransition(0, 0)
     }
@@ -28,8 +30,19 @@ class GoogleVoiceActivity : ComponentActivity() {
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-IN")
             .putExtra(RecognizerIntent.EXTRA_PROMPT, "Talk to ${com.combo.monkeycompanion.character.CharacterRegistry.current.name}")
         runCatching { ask.launch(i) }.onFailure {
-            ChatHub.announce("This phone has no Google voice popup. Type to me instead! ⌨️")
+            val cb = onResult; onResult = null
+            if (cb != null) cb(null) else ChatHub.announce("This phone has no Google voice popup. Type to me instead! ⌨️")
             finish()
         }
+    }
+
+    companion object {
+        /** v10.50.2: who gets the words (null = cancelled / nothing said). Set just before starting this screen. */
+        @Volatile var onResult: ((String?) -> Unit)? = null
+
+        /** True when Google's (or any) voice popup is on the phone. */
+        fun available(ctx: android.content.Context): Boolean = runCatching {
+            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).resolveActivity(ctx.packageManager) != null
+        }.getOrDefault(false)
     }
 }

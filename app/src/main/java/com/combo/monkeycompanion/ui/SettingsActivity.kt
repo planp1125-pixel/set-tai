@@ -669,6 +669,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             SChoice("Close the bubble chat", listOf("After 30 s idle", "After 1 min idle", "After 2 min idle (default)", "After 5 min idle", "Never by itself"),
                 tos.indexOf(s.chatTimeoutSecs).let { if (it < 0) 2 else it }) { s.chatTimeoutSecs = tos[it]; bump() }
             SSwitch("Speak the answer when I asked by voice", s.speakVoiceReplies) { s.speakVoiceReplies = it; bump() }
+            SSwitch("Use Google's voice popup for 🎤 (opens over the screen)", s.voicePopup) { s.voicePopup = it; bump() }
             SSwitch("Speak all replies out loud", s.speakReplies) { s.speakReplies = it; bump() }
         }
     }

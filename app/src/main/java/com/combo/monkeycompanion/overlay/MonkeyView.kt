@@ -1565,6 +1565,7 @@ class MonkeyView(
             return
         }
         if (ChatHub.busy) { listenTap = false; sayInfo("Wait wait, I'm still thinking! 🤔", 2500L); return }
+        if (usePopup()) { listenWithPopup(again, lastReply); return }
         perkTarget = 1f; listenTap = true
         // v10.50: one listening bubble, refreshed live: your words as they come + a sound meter
         listenPartial = null; listenMeterT = 0f; listenShown = false
@@ -1603,6 +1604,44 @@ class MonkeyView(
     }
 
     private fun listenPartialLine(p: String) = "🎤 “${p.takeLast(160)}”\n…I send when you stop"
+
+    /** v10.50.2: 🎤 uses Google's voice popup (setting on, popup on the phone, a real overlay). */
+    private fun usePopup(): Boolean = host != null && !wp && com.combo.monkeycompanion.agent.Voice.testEngine == null &&
+        runCatching { ChatHub.settings.voicePopup }.getOrDefault(false) && com.combo.monkeycompanion.ui.GoogleVoiceActivity.available(context)
+    var debugPopupStarts = 0; private set
+
+    /** Opens Google's voice popup; the words come back here and go to the chat (and the voice chat carries on). */
+    private fun listenWithPopup(again: Boolean, lastReply: String?) {
+        perkTarget = 0f; listenTap = false
+        if (bubbleOn) bubbleLife = bubbleAge   // the popup sits at the bottom: don't cover it
+        heardFromPopup = { heard -> onPopupHeard(heard, again, lastReply) }
+        com.combo.monkeycompanion.ui.GoogleVoiceActivity.onResult = { heard -> ui.post { heardFromPopup?.invoke(heard); heardFromPopup = null } }
+        debugPopupStarts++
+        runCatching {
+            context.startActivity(Intent(context, com.combo.monkeycompanion.ui.GoogleVoiceActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION))
+        }.onFailure { com.combo.monkeycompanion.ui.GoogleVoiceActivity.onResult = null; heardFromPopup = null; stopVoiceChat(); sayInfo("I couldn't open the voice popup. Type to me instead! ⌨️", 3500L) }
+    }
+    private var heardFromPopup: ((String?) -> Unit)? = null
+    /** Tests: what the popup "heard". */
+    fun debugPopupHeard(text: String?) = heardFromPopup?.invoke(text).also { heardFromPopup = null }
+
+    private fun onPopupHeard(heard: String?, again: Boolean, lastReply: String?) {
+        if (heard != null) {
+            debugLastHeard = heard
+            voiceTurns++
+            aiReply = null
+            showBubble("🗣️ “${heard.take(160)}”", 2f, talk = false, reply = false)
+            touchConvo()
+            ChatHub.send(heard, lastLine, voice = true)
+        } else {
+            // closed the popup or said nothing: the voice chat pauses (the answer stays on screen)
+            val wasVoiceChat = again && voiceChat
+            stopVoiceChat()
+            if (wasVoiceChat && lastReply != null) showBubble("$lastReply\n\n🎤 Voice chat paused. Tap 🎤 to talk again.", max(5f, Speech.defaultDuration(lastReply) / 1000f),
+                talk = false, reply = false, quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
+        }
+    }
 
     // v10.50 live listening bubble
     private var listenPartial: String? = null

@@ -483,3 +483,10 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Fix: bubbles flashing one after another while listening.** The listening bubble now pops up once and only its words / meter change in place (4 times a second).
 - **When it misses, it says why**: small print like "(Google · no speech heard · mic 1/8)". mic 0–1/8 means the mic got almost no sound (another app using it, or the phone blocking it).
 - **🎙️ Google voice** button on a miss: opens Google's own voice popup (a normal screen, always allowed to listen) and sends what it hears to your character.
+
+## v10.50.2 (code 125): quiet Google listening, optional voice popup
+
+- 🎤 keeps listening quietly in the bubble with Google's speech engine (no popup over the character).
+- **Optional:** Settings › "Use Google's voice popup for 🎤" (off by default) opens Google's own voice popup instead; voice chat then reopens the popup for each turn. The 🎙️ Google voice button on a "Didn't catch that" bubble opens it once.
+- The popup is Google's app turning speech into text (mention in the privacy policy / Data safety if used).
+- Tests: LiveListeningTest popup (when switched on) + voice chat.

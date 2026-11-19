@@ -1,8 +1,10 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.50.1 (versionCode 124)**, 19 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.50.2 (versionCode 125)**, 19 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.50 Live listening
+
+- v10.50.2: `AppSettings.voicePopup` (default off) → MonkeyView `listenWithPopup()` opens `GoogleVoiceActivity` (result via `GoogleVoiceActivity.onResult`), voice chat continues with the popup. `<queries>` has RECOGNIZE_SPEECH.
 
 - v10.50.1: `MonkeyView.PAST_MAX` = 100 faded messages; CloudBubble caches the past layouts (`pastKey`) and draws only visible ones. `showListening()` updates the bubble in place (`listenShown`). `Voice.peak` / `lastError` / `missDetail()` / `quietHint()`; `ui/GoogleVoiceActivity` (RecognizerIntent popup) behind the `voice_google` chip.
 

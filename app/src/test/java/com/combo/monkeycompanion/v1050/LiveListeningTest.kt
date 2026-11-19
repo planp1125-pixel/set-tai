@@ -92,6 +92,35 @@ class LiveListeningTest {
         assertTrue(v.debugBubbleChips.any { it.id == "voice_google" })
     }
 
+    @Test fun micOpensGoogleVoicePopupByDefaultAndVoiceChatCarriesOn() {
+        // a phone with Google's voice popup
+        val ri = android.content.pm.ResolveInfo().apply { activityInfo = android.content.pm.ActivityInfo().apply { packageName = "com.google.android.googlequicksearchbox"; name = "VoicePopup" } }
+        shadowOf(ctx.packageManager).addResolveInfoForIntent(android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH), ri)
+        Voice.testEngine = null
+        ChatHub.testBrain = object : Brain {
+            override val label = "b"; override val supportsTools = false
+            override fun chat(system: String, history: List<ChatMsg>, user: String, tools: ToolHost?, onText: (String) -> Unit) = "Sure, here you go!"
+        }
+        assertFalse("off by default: no popup over the character", ChatHub.settings.voicePopup)
+        ChatHub.settings.voicePopup = true
+        val v = view(); frame(v, 3)
+        v.debugStartListen(); frame(v)
+        assertEquals(1, v.debugPopupStarts)
+        assertEquals(com.combo.monkeycompanion.ui.GoogleVoiceActivity::class.java.name, shadowOf(ctx).nextStartedActivity.component?.className)
+        v.debugPopupHeard("tell me about the mischief from earlier")
+        assertEquals("tell me about the mischief from earlier", v.debugLastHeard)
+        val end = System.currentTimeMillis() + 10_000
+        while (ChatHub.busy && System.currentTimeMillis() < end) { Thread.sleep(10); ShadowLooper.idleMainLooper(); frame(v) }
+        ShadowLooper.idleMainLooper(1500, java.util.concurrent.TimeUnit.MILLISECONDS); frame(v, 2)
+        assertEquals("voice chat: the popup opens again for your turn", 2, v.debugPopupStarts)
+        v.debugPopupHeard(null); frame(v)
+        assertFalse(v.debugVoiceChat)
+        assertTrue(v.debugBubbleText ?: "", (v.debugBubbleText ?: "").contains("Voice chat paused"))
+        ChatHub.settings.voicePopup = false
+        v.debugStartListen(); frame(v)
+        assertEquals("setting off: the floating mic", 3 - 1, v.debugPopupStarts)
+    }
+
     @Test fun whatYouSaidStaysAboveWhileItThinks() {
         val eng = FakeEngine(); Voice.testEngine = eng
         ChatHub.testBrain = Slow()
