@@ -123,7 +123,12 @@ object ActionParser {
         if (t.contains("chase") && t.contains("fly")) return BodyAction.CHASE_FLY
         if (t.contains("fake sleep") || t.contains("pretend to sleep")) return BodyAction.FAKE_SLEEP
         if (t.contains("rubber chicken") || Regex("\\bsqueak").containsMatchIn(t)) return BodyAction.CHICKEN
-        if (BodyAction.POWER_NAMED.containsMatchIn(t) || BodyAction.POWER_ASK.containsMatchIn(t)) {
+        // v10.49: just "power" / "powers" / "your power" (with or without the character's name)
+        val bare = t.replace(Regex("[^a-z ]"), " ").replace(Regex("\\s+"), " ").trim()
+        val names = runCatching { com.combo.monkeycompanion.character.CharacterRegistry.all.map { it.name.lowercase() } }.getOrDefault(emptyList())
+        val core = bare.split(' ').filter { it.isNotEmpty() && it !in names && it !in setOf("please", "pls", "da", "now", "bro", "machan", "hey", "come", "on") }
+        val plainPower = core.isNotEmpty() && Regex("^(?:(?:your|ur|do|use|show) )?(?:super ?)?powers?$").matches(core.joinToString(" "))
+        if (plainPower || BodyAction.POWER_NAMED.containsMatchIn(t) || BodyAction.POWER_ASK.containsMatchIn(t)) {
             com.combo.monkeycompanion.brain.Superpowers.requested = com.combo.monkeycompanion.brain.Superpowers.named(t)
             return BodyAction.FLY
         }

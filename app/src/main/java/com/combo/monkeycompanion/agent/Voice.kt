@@ -107,13 +107,31 @@ object Voice {
         testEngine?.let { eng ->
             listening = true; lastPartial = null
             eng.onStart(object : TestSession {
-                override fun partial(text: String) { lastPartial = text; onPartial(text) }
+                override fun partial(text: String) { lastPartial = text; onPartial(text); main.removeCallbacks(autoSend); main.postDelayed(autoSend, AUTO_SEND_MS) }
                 override fun result(text: String?) { done(); lastPartial = null; if (text == null) onMiss(Miss.NO_MATCH); once(text) }
                 override fun error(miss: Miss) { done(); onMiss(miss); once(null) }
             })
             return
         }
-        start(ctx, preferOnDevice = true, onPartial, onMiss, once)
+        // v10.49: online, the regular recogniser (live words while you talk, and it ends by itself when you stop);
+        // offline, the on-device one.
+        start(ctx, preferOnDevice = !online(ctx), onPartial, onMiss, once)
+    }
+
+    /** v10.49: when you stop talking for this long after some words, it sends by itself (some recognisers wait much longer). */
+    const val AUTO_SEND_MS = 1800L
+    private val autoSend = Runnable { if (listening && !lastPartial.isNullOrBlank()) stopListening() }
+
+    /** v10.49 voice chat: run [action] once the character has finished speaking (at most [maxMs] later). */
+    fun whenQuiet(maxMs: Long = 45_000L, action: () -> Unit) {
+        val until = android.os.SystemClock.elapsedRealtime() + maxMs
+        val check = object : Runnable {
+            override fun run() {
+                if ((speaking || queued != null) && android.os.SystemClock.elapsedRealtime() < until) main.postDelayed(this, 200L)
+                else main.postDelayed(action, 450L)   // a breath after the voice ends, so the mic doesn't hear it
+            }
+        }
+        main.postDelayed(check, 300L)
     }
 
     /** Tests only: replaces the platform SpeechRecognizer so a listen can be driven from JVM tests. */
@@ -148,7 +166,12 @@ object Voice {
             override fun onBufferReceived(b: ByteArray?) {}
             override fun onEndOfSpeech() {}
             override fun onEvent(t: Int, b: Bundle?) {}
-            override fun onPartialResults(b: Bundle?) { b?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.takeIf { it.isNotBlank() }?.let { heard = true; lastPartial = it; onPartial(it) } }
+            override fun onPartialResults(b: Bundle?) {
+                b?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.takeIf { it.isNotBlank() }?.let {
+                    heard = true; lastPartial = it; onPartial(it)
+                    main.removeCallbacks(autoSend); main.postDelayed(autoSend, AUTO_SEND_MS)
+                }
+            }
             override fun onError(e: Int) {
                 done()
                 // On-device model missing for this language: try the regular recogniser once.
@@ -221,7 +244,7 @@ object Voice {
         Miss.CANCELLED -> "Okay, cancelled. 🤐"
     }
 
-    private fun done() { listening = false; level = 0f; rec?.let { runCatching { it.destroy() } }; rec = null }
+    private fun done() { listening = false; level = 0f; main.removeCallbacks(autoSend); rec?.let { runCatching { it.destroy() } }; rec = null }
     fun cancelListen() {
         val was = listening || rec != null
         session++; main.removeCallbacks(sendTimeout); pendingText = null; pendingMiss = null

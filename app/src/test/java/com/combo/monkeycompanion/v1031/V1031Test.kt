@@ -101,12 +101,12 @@ class V1031Test {
         assertNotNull("mic tap must start a real listen", eng.s)
         assertTrue(Voice.listening)
         assertTrue(v.debugListenTap)
-        assertEquals("🎤 Listening… tap me to send", v.debugBubbleText)
+        assertEquals("🎤 Listening… just talk, I send when you stop", v.debugBubbleText)
         eng.s!!.partial("hello satan")
         frame(v)
         val shown = v.debugBubbleText ?: ""
         assertTrue(shown, shown.contains("hello satan"))
-        assertTrue(shown, shown.contains("tap me to send"))
+        assertTrue(shown, shown.contains("I send when you stop"))
     }
 
     @Test fun tapToSendDeliversTheWords() {
@@ -141,7 +141,7 @@ class V1031Test {
         v.say("Wheee— slidiiing!", 1800L)
         v.sayInfo("some info", 1500L)
         frame(v, 2)
-        assertEquals("🎤 Listening… tap me to send", v.debugBubbleText)
+        assertEquals("🎤 Listening… just talk, I send when you stop", v.debugBubbleText)
         v.debugQuiet = true
     }
 

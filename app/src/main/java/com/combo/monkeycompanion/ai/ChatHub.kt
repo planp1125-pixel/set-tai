@@ -95,6 +95,8 @@ object ChatHub {
                 .put("description", "What to do"))).put("required", org.json.JSONArray().put("action"))
     )
     @Volatile private var toolActed = false
+    /** v10.49: the brain asked to fly / use a power through the tool: done once the reply is in (so a plain "fly" just flies). */
+    @Volatile private var toolFly = false
 
     /** Phone powers + the do_action body tool. */
     private val tools = object : ToolHost {
@@ -105,6 +107,7 @@ object ChatHub {
                 .let { BodyAction.fromWord(it) ?: BodyAction.entries.firstOrNull { e -> e.tag == it.lowercase() } }
                 ?: return "unknown action; use one of " + BodyAction.entries.joinToString { it.tag }
             toolActed = true
+            if (a == BodyAction.FLY) { toolFly = true; return "done: you are doing '${a.tag}' now" }
             fire { it.onAction(a) }
             return "done: you are doing '${a.tag}' now"
         }
@@ -144,7 +147,12 @@ object ChatHub {
         val who = com.combo.monkeycompanion.character.CharacterRegistry.current
         val allowed = runCatching { BodySense.allowList(who, com.combo.monkeycompanion.character.CharacterRegistry.wear(who)) }.getOrDefault(BodySense.SAFE)
         val acts = BodySense.gate(p.actions, allowed).filter { BodySense.limiter.allow() }.toMutableList()
-        if (acts.isEmpty() && !toolActed && userText != null) ActionParser.requestedByUser(userText)?.let { acts.add(it) }
+        // v10.49: when you ask to fly or for a power, it always happens (once), whatever the AI chose to do
+        val want = userText?.let { ActionParser.requestedByUser(it) }
+        if (want == BodyAction.FLY) { acts.clear(); acts.add(BodyAction.FLY) }
+        else if (acts.isEmpty() && !toolActed && want != null) acts.add(want)
+        else if (acts.isEmpty() && toolFly) acts.add(BodyAction.FLY)
+        toolFly = false
         if (BodyAction.FLY in acts && userText != null && com.combo.monkeycompanion.brain.Superpowers.requested == null)
             com.combo.monkeycompanion.brain.Superpowers.requested = com.combo.monkeycompanion.brain.Superpowers.named(userText)
         // v10.47: "fly" with no power word = just fly
@@ -372,7 +380,7 @@ object ChatHub {
             try {
                 val b = brain()
                 val th = if (b.supportsTools) tools else null
-                toolActed = false
+                toolActed = false; toolFly = false
                 val usePowers = powers.specs.isNotEmpty() && (!offline || settings.offlineTools)
                 val sys = Persona.systemPrompt(th != null && usePowers, bodyNow(facts = !usePowers), compact = offline || b is GatewayBrain, actionTool = th != null,
                     longReplies = b !is GatewayBrain,   // v10.47: friend-style length, except the cloud (it cuts at 200 characters)

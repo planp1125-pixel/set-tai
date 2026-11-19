@@ -82,6 +82,37 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         typeface = Typeface.create("sans-serif", Typeface.ITALIC)
     }
     private val quoteFill = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    // v10.49: the last two chats, faded, above the current one. The text area scrolls inside the bubble:
+    // drag down to read the faded chats, drag up to read the rest of a long reply.
+    private class Past(val layout: StaticLayout, val fromUser: Boolean)
+    private val past = ArrayList<Past>()
+    private var pastH = 0f
+    private val pastGap = 5f * density
+    private val pastPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = textSizePx * 0.8f
+        typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+    }
+    /** Height of the visible text window, the whole text block, and how far it is scrolled. */
+    private var viewH = 0f
+    private var contentH = 0f
+    var scrollY = 0f; private set
+    val maxScroll: Float get() = max(0f, contentH - viewH)
+    /** True when the text can scroll (faded chats above, or a reply longer than the bubble). */
+    val scrollable: Boolean get() = !arcMode && maxScroll > 0.5f
+    val hasHistory: Boolean get() = past.isNotEmpty()
+    /** Where the text window sits in the box (for touch). */
+    private var textTopBox = 0f
+    /** Scrolls the text by [dy] px (positive = show what is further down). True when it moved. */
+    fun scrollBy(dy: Float): Boolean {
+        val n = (scrollY + dy).coerceIn(0f, maxScroll)
+        if (n == scrollY) return false
+        scrollY = n; return true
+    }
+    /** True when (x, y) relative to the box is on the text window. */
+    fun inText(x: Float, y: Float): Boolean = !arcMode && x >= core.left && x <= core.right && y >= textTopBox - 4 * density && y <= textTopBox + viewH + 4 * density
+    /** 0..1: how much of the faded chats is showing (1 = scrolled right up to them). */
+    val historyShown: Float get() = if (pastH <= 0f) 0f else ((pastH - scrollY) / pastH).coerceIn(0f, 1f)
     private val puffs = ArrayList<FloatArray>() // x, y, r relative to bubble box
     private val core = RectF()
 
@@ -196,8 +227,13 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         }
     }
 
-    /** [quote]: v10.47 the user's last message, shown small above [text] (null = none). */
-    fun setText(text: String, maxTextWidth: Int, buttons: List<String> = emptyList(), reply: Boolean = false, chips: Boolean = false, quote: String? = null) {
+    /**
+     * [quote]: v10.47 the user's last message, shown small above [text] (null = none).
+     * [history]: v10.49 earlier chats (true = the user said it), shown faded above the quote; the text then
+     * scrolls inside a window at most [maxViewH] px tall (0 = no limit, no scrolling).
+     */
+    fun setText(text: String, maxTextWidth: Int, buttons: List<String> = emptyList(), reply: Boolean = false, chips: Boolean = false, quote: String? = null,
+                history: List<Pair<Boolean, String>> = emptyList(), maxViewH: Float = 0f) {
         arcMode = false
         this.buttons = buttons
         this.reply = reply
@@ -208,10 +244,12 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
         else (buttons.size * (78 * density) + (buttons.size - 1) * btnGap).toInt()
         if (reply) minW = max(minW, (200 * density).toInt())
         val q = quote?.trim()?.takeIf { it.isNotEmpty() }?.let { if (it.length > 90) it.take(88).trimEnd() + "…" else it }
+        val hist = history.mapNotNull { (u, s) -> s.trim().takeIf { it.isNotEmpty() }?.let { u to (if (it.length > 170) it.take(168).trimEnd() + "…" else it) } }
+        if (hist.isNotEmpty()) minW = max(minW, (200 * density).toInt().coerceAtMost(maxTextWidth))
         if (q != null) minW = max(minW, minOf(maxTextWidth, ceil(StaticLayout.getDesiredWidth("“$q”", quotePaint)).toInt()))
         val w = natural.coerceIn(minW, maxOf(minW, maxTextWidth))
         val l = StaticLayout.Builder.obtain(text, 0, text.length, textPaint, w)
-            .setAlignment(if (q != null) Layout.Alignment.ALIGN_NORMAL else Layout.Alignment.ALIGN_CENTER)
+            .setAlignment(if (q != null || hist.isNotEmpty()) Layout.Alignment.ALIGN_NORMAL else Layout.Alignment.ALIGN_CENTER)
             .setIncludePad(false)
             .build()
         layout = l
@@ -221,7 +259,20 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
                 .setIncludePad(false).setMaxLines(2).setEllipsize(android.text.TextUtils.TruncateAt.END).build()
             quoteLayout = ql; quoteH = ql.height + quoteGap * 2
         } else { quoteLayout = null; quoteH = 0f }
-        textH = l.height.toFloat() + quoteH
+        past.clear(); pastH = 0f
+        for ((u, s) in hist) {
+            val pl = StaticLayout.Builder.obtain(s, 0, s.length, pastPaint, (w * 0.86f).toInt().coerceAtLeast(1))
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(false).setMaxLines(4)
+                .setEllipsize(android.text.TextUtils.TruncateAt.END).build()
+            past.add(Past(pl, u)); pastH += pl.height + pastGap * 2.2f
+        }
+        if (past.isNotEmpty()) pastH += pastGap * 2   // room for the "earlier" line
+        val currentH = l.height.toFloat() + quoteH
+        contentH = pastH + currentH
+        // The window: the current chat plus a peek of the faded ones, never taller than maxViewH.
+        viewH = if (maxViewH <= 0f) contentH else minOf(contentH, maxViewH, currentH + minOf(pastH, 64f * density))
+        scrollY = minOf(pastH, maxScroll)
+        textH = viewH
         // Chips: flow onto rows of pills inside the text width.
         val chipRects = ArrayList<RectF>()
         if (this.chips) {
@@ -269,6 +320,7 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
                 btnRects.add(RectF(l0, top, l0 + bw, top + btnH))
             }
         }
+        textTopBox = if (buttons.isEmpty() && !reply) core.top + (core.height() - textH) / 2f else core.top + pad
         if (reply) {
             val top = core.top + pad + textH + btnBlock + rowGap
             val right = core.left + pad + tw
@@ -346,6 +398,9 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
             c.drawText(buttons[i], r.centerX(), r.centerY() - (btnPaint.descent() + btnPaint.ascent()) / 2, btnPaint)
         }
         c.translate(core.left + pad, textTop)
+        val clip = contentH > viewH + 0.5f
+        if (clip) { c.save(); c.clipRect(-pad * 0.6f, -2 * density, l.width + pad * 0.6f, viewH + 2 * density); c.translate(0f, -scrollY) }
+        if (past.isNotEmpty()) drawPast(c, a, l.width.toFloat())
         quoteLayout?.let { ql ->
             // the user's message: a soft grey pill on the right, then a thin line, then the reply
             quoteFill.color = com.combo.monkeycompanion.theme.Th.rgb(0xF1, 0xEE, 0xE8); quoteFill.alpha = a
@@ -356,7 +411,53 @@ class CloudBubble(private val density: Float, textSizePx: Float) {
             c.translate(0f, quoteH)
         }
         l.draw(c)
+        if (clip) {
+            c.restore()
+            // soft edges show there is more above / below
+            if (scrollY > 1f) fadeEdge(c, a, 0f, l.width.toFloat(), true)
+            if (scrollY < maxScroll - 1f) fadeEdge(c, a, viewH, l.width.toFloat(), false)
+        }
         c.restore()
+    }
+
+    /** v10.49: the earlier chats, faded: yours in a pale green pill on the right, the character's on the left. */
+    private fun drawPast(c: Canvas, a: Int, w: Float) {
+        val fa = a * 120 / 255
+        c.save()
+        for (p in past) {
+            val pl = p.layout
+            val lw = (0 until pl.lineCount).maxOf { pl.getLineWidth(it) }
+            val x = if (p.fromUser) w - lw - 4 * density else 4 * density
+            c.translate(0f, pastGap)
+            quoteFill.color = if (p.fromUser) com.combo.monkeycompanion.theme.Th.rgb(0xDC, 0xF8, 0xC6) else com.combo.monkeycompanion.theme.Th.rgb(0xF1, 0xEE, 0xE8)
+            quoteFill.alpha = fa
+            c.drawRoundRect(x - 6 * density, -pastGap * 0.6f, x + lw + 6 * density, pl.height + pastGap * 0.6f, 8 * density, 8 * density, quoteFill)
+            pastPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0x5A, 0x4A, 0x3A); pastPaint.alpha = fa
+            c.save(); c.translate(x, 0f); pl.draw(c); c.restore()
+            c.translate(0f, pl.height + pastGap * 1.2f)
+        }
+        // a thin line between the faded chats and now
+        edge.alpha = a * 50 / 255
+        c.drawRect(w * 0.2f, pastGap * 0.5f, w * 0.8f, pastGap * 0.5f + density, edge)
+        edge.alpha = a
+        c.restore()
+        c.translate(0f, pastH)
+    }
+
+    private fun fadeEdge(c: Canvas, a: Int, y: Float, w: Float, top: Boolean) {
+        val steps = 6; val h = 14f * density
+        for (i in 0 until steps) {
+            val f = 1f - i / steps.toFloat()
+            white.alpha = (a * 0.85f * f).toInt()
+            val y0 = if (top) y + h * i / steps else y - h * (i + 1) / steps
+            c.drawRect(-pad * 0.6f, y0, w + pad * 0.6f, y0 + h / steps, white)
+        }
+        white.alpha = a
+        // a small chevron: ^ at the top edge, v at the bottom edge
+        iconPaint.style = Paint.Style.STROKE; iconPaint.color = com.combo.monkeycompanion.theme.Th.rgb(0xA8, 0x84, 0x60); iconPaint.alpha = a * 160 / 255
+        val cx = w / 2f; val o = 5f * density; val cy = if (top) y + 3 * density else y - 3 * density
+        if (top) { c.drawLine(cx - o, cy + o * 0.5f, cx, cy - o * 0.2f, iconPaint); c.drawLine(cx, cy - o * 0.2f, cx + o, cy + o * 0.5f, iconPaint) }
+        else { c.drawLine(cx - o, cy - o * 0.5f, cx, cy + o * 0.2f, iconPaint); c.drawLine(cx, cy + o * 0.2f, cx + o, cy - o * 0.5f, iconPaint) }
     }
 
     private fun drawReplyRow(c: Canvas, a: Int) {

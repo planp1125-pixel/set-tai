@@ -979,13 +979,18 @@ class MonkeyView(
      * long-press 💬, or within ~60 s of the last message); plain lines (quips, warnings, reactions) are text only.
      */
     private fun showBubble(text: String, life: Float, buttons: List<String> = emptyList(), talk: Boolean = true, reply: Boolean? = null,
-                           chips: List<com.combo.monkeycompanion.agent.QuickChip> = emptyList(), quote: String? = null) {
+                           chips: List<com.combo.monkeycompanion.agent.QuickChip> = emptyList(), quote: String? = null,
+                           history: List<Pair<Boolean, String>> = emptyList()) {
         val withReply = (reply ?: convoActive) && replyField != null && buttons.isEmpty() && chips.isEmpty()
         bubbleChips = chips; arcOn = false; lastShown = text
         bubbleQuoted = quote != null && buttons.isEmpty()
         shownQuote = if (bubbleQuoted) quote else null
-        if (chips.isNotEmpty()) bubble.setText(text, ((if (bubbleQuoted) 250 else 230) * d).toInt(), chips.map { it.label }, false, chips = true, quote = shownQuote)
-        else bubble.setText(text, ((if (bubbleQuoted) 250 else 210) * d).toInt(), buttons, withReply, quote = if (bubbleQuoted) quote else null)
+        shownHistory = if (buttons.isEmpty()) history else emptyList()
+        val wide = bubbleQuoted || shownHistory.isNotEmpty()
+        // v10.49: a chat bubble's text scrolls inside a window (about a third of the screen)
+        val viewMax = if (wide) min((host?.screenHeight() ?: height).toFloat() * 0.34f, 320 * d) else 0f
+        if (chips.isNotEmpty()) bubble.setText(text, ((if (wide) 250 else 230) * d).toInt(), chips.map { it.label }, false, chips = true, quote = shownQuote, history = shownHistory, maxViewH = viewMax)
+        else bubble.setText(text, ((if (wide) 250 else 210) * d).toInt(), buttons, withReply, quote = shownQuote, history = shownHistory, maxViewH = viewMax)
         bubble.reportable = aiReply != null && buttons.isEmpty()
         val alreadyUp = bubbleOn && bubbleAge in POP..bubbleLife
         bubbleOn = true
@@ -1006,6 +1011,16 @@ class MonkeyView(
     /** v10.47: the bubble shows a chat reply with the user's message above it (a tap opens the full chat). */
     private var bubbleQuoted = false
     private var shownQuote: String? = null
+    private var shownHistory: List<Pair<Boolean, String>> = emptyList()
+    val debugBubbleHistory: List<Pair<Boolean, String>> get() = if (bubbleOn) shownHistory else emptyList()
+    val debugBubbleScroll: Pair<Float, Float> get() = bubble.scrollY to bubble.maxScroll
+    fun debugBubbleScrollBy(dy: Float) = bubble.scrollBy(dy)
+    /** v10.49: the last two chats (four messages) for the faded lines; [beforeCurrent] = the ones before your latest message. */
+    private fun pastChats(beforeCurrent: Boolean): List<Pair<Boolean, String>> = runCatching {
+        val all = ChatHub.memory.all().filter { !it.note && it.text.isNotBlank() }
+        val end = if (beforeCurrent) all.indexOfLast { it.fromUser }.let { if (it < 0) all.size else it } else all.size
+        all.subList(maxOf(0, end - 4), end).map { it.fromUser to it.text }
+    }.getOrDefault(emptyList())
     val debugBubbleQuote: String? get() = if (bubbleQuoted && bubbleOn) shownQuote else null
     val debugBubbleQuoted: Boolean get() = bubbleQuoted && bubbleOn
     /** The user's last chat message, for the quote above a reply. */
@@ -1015,6 +1030,11 @@ class MonkeyView(
     private var chatOpen = false
     private var chatActiveAt = 0L
     private var bubbleSwipe = false
+    private var bubbleScrollArmed = false
+    private var bubbleScrolled = false
+    private var bubbleScrollOnly = false
+    private var bubbleScrollLast = 0f
+    private var bubbleScrollDownY = 0f
     private var swipeDownX = 0f
     /** Bubble offset while it's swiped (follows the finger) and its fly-away speed once let go. */
     private var bubbleDragX = 0f
@@ -1034,6 +1054,7 @@ class MonkeyView(
     /** Close the bubble chat (✕, swipe, tap outside, back, timeout). Keeps a typed draft in the field. */
     private fun closeChat(flyDir: Int = 0) {
         chatOpen = false; ui.removeCallbacks(chatCheck)
+        if (voiceChat) { stopVoiceChat(); if (listenTap) { listenTap = false; perkTarget = 0f; com.combo.monkeycompanion.agent.Voice.cancelListen() } }
         endTyping()
         convoUntil = -1f
         bubbleChips = emptyList()
@@ -1107,14 +1128,12 @@ class MonkeyView(
         if (done) { noteInteraction(); Lines.note(Lines.Event.CHATTED) }
         if (!done) {
             controller.startTalking()
-            // v10.47.1: while it streams, show the first page filling up (not the last page racing by)
-            if (!pendingShown) showBubble(paginate(text).first(), 600f, reply = false, quote = lastUserMessage())
+            // v10.49: the whole reply in one bubble that scrolls (it fills from the top), the last chats faded above
+            if (!pendingShown) showBubble(text, 600f, reply = false, quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
             return
         }
         if (convoActive) touchConvo()
         aiReply = text.takeIf { it.isNotBlank() }
-        val all = paginate(text)
-        val quick = true  // v10.47.1: a long reply always pages from the start, so nothing is missed
         controller.endChat(3f)
         if (pendingShown) return
         if (com.combo.monkeycompanion.mind.MindHub.neighbourMode != "SOLO") {
@@ -1125,16 +1144,10 @@ class MonkeyView(
             }
         }
         pages.clear()
-        val quote = lastUserMessage()
-        if (all.size > 1 && quick) {
-            pages.addAll(all)
-            pageQuote = quote
-            nextPage()
-        } else {
-            val last = all.last()
-            showBubble(last, Speech.defaultDuration(last) / 1000f + 1.5f, quote = quote)
-        }
+        // v10.49: one bubble for the whole reply (drag inside it to read on, or to see the faded chats above)
+        showBubble(text, max(6f, Speech.defaultDuration(text) / 1000f + 2f), quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
         ChatHub.pending?.let { onPending(it) }
+        if (voiceChat && voiceTurns > 0) { if (ChatHub.pending != null) stopVoiceChat() else listenAgainLater() }   // v10.49 voice chat: your turn again
     }
 
     override fun onError(message: String) {
@@ -1260,7 +1273,7 @@ class MonkeyView(
         val text = lastShown ?: return
         if (chips.isEmpty() || !bubbleOn || pendingShown || thinkingBubble || typing || pages.isNotEmpty() || hiddenTab) return
         val keep = aiReply
-        showBubble(text, max(6f, bubbleLife - bubbleAge) + 4f, chips = chips, reply = false, quote = shownQuote)
+        showBubble(text, max(6f, bubbleLife - bubbleAge) + 4f, chips = chips, reply = false, quote = shownQuote, history = shownHistory)
         aiReply = keep; bubble.reportable = false
     }
 
@@ -1519,9 +1532,27 @@ class MonkeyView(
     private var perk = 0f
     private var perkTarget = 0f
 
-    /** Listen once; it ends on its own after a pause, or when you tap Settai or the bubble. */
-    private fun startListen(@Suppress("UNUSED_PARAMETER") hold: Boolean) {
+    /**
+     * v10.49 voice chat: after you talk, the character answers (out loud when spoken replies are on) and then
+     * listens again by itself, like a voice call. It stops when you say nothing, type, tap ✕ or close the chat.
+     */
+    private var voiceChat = false
+    private var voiceTurns = 0
+    val debugVoiceChat get() = voiceChat
+    private fun stopVoiceChat() { voiceChat = false; voiceTurns = 0 }
+    private fun listenAgainLater() {
+        if (!voiceChat) return
+        // waits for the spoken answer to finish (or a moment to read it when replies aren't spoken)
+        com.combo.monkeycompanion.agent.Voice.whenQuiet(maxMs = 45_000L) {
+            if (voiceChat && !typing && !ChatHub.busy && !listenTap && !pendingShown && !exiting && host != null) startListen(hold = false, again = true)
+        }
+    }
+
+    /** Listen once; it ends on its own after a pause, or when you tap Settai or the bubble. [again]: the voice chat's next turn. */
+    private fun startListen(@Suppress("UNUSED_PARAMETER") hold: Boolean, again: Boolean = false) {
         val V = com.combo.monkeycompanion.agent.Voice
+        if (!again) { voiceChat = true; voiceTurns = 0 }
+        val lastReply = if (again) aiReply else null   // the voice chat keeps the answer on screen while it listens
         endTyping(); pages.clear(); beats.clear(); aiReply = null
         if (!com.combo.monkeycompanion.powers.Perm.MIC.granted(context)) {
             listenTap = false
@@ -1530,20 +1561,32 @@ class MonkeyView(
         }
         if (ChatHub.busy) { listenTap = false; sayInfo("Wait wait, I'm still thinking! 🤔", 2500L); return }
         perkTarget = 1f; listenTap = true
-        showBubble("🎤 Listening… tap me to send", 30f, talk = false, reply = false)
+        val past = pastChats(beforeCurrent = false)
+        if (lastReply != null) showBubble("$lastReply\n\n🎤 Your turn… I'm listening", 60f, talk = false, reply = false, quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
+        else showBubble("🎤 Listening… just talk, I send when you stop", 30f, talk = false, reply = false, history = past)
         var miss: com.combo.monkeycompanion.agent.Voice.Miss? = null
-        V.listen(context, onPartial = { p -> if (perkTarget > 0f) showBubble(listenPartialLine(p), 30f, talk = false, reply = false) },
+        V.listen(context, onPartial = { p -> if (perkTarget > 0f) showBubble(listenPartialLine(p), 30f, talk = false, reply = false, history = past) },
             onMiss = { miss = it }) { heard ->
             perkTarget = 0f; listenTap = false
             if (heard != null) {
                 debugLastHeard = heard
+                voiceTurns++
                 aiReply = null
                 showBubble("🗣️ “${heard.take(120)}”", 2f, talk = false, reply = false)
                 touchConvo()
                 ChatHub.send(heard, lastLine, voice = true)
             } else {
                 val m = miss ?: com.combo.monkeycompanion.agent.Voice.Miss.NO_MATCH
-                if (m == com.combo.monkeycompanion.agent.Voice.Miss.NO_PERMISSION) showBubble(V.missLine(m), 8f, chips = listOf(com.combo.monkeycompanion.agent.QuickChip("perm_mic", "Allow mic")), reply = false)
+                val wasVoiceChat = again && voiceChat
+                stopVoiceChat()
+                if (wasVoiceChat && m != com.combo.monkeycompanion.agent.Voice.Miss.NO_PERMISSION) {
+                    // nothing said on a voice-chat turn: end the call quietly
+                    if (m == com.combo.monkeycompanion.agent.Voice.Miss.CANCELLED) { if (bubbleOn) bubbleLife = bubbleAge }
+                    else if (lastReply != null) showBubble("$lastReply\n\n🎤 Voice chat paused. Tap 🎤 to talk again.", max(5f, Speech.defaultDuration(lastReply) / 1000f),
+                        talk = false, reply = false, quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
+                    else showBubble("🎤 Voice chat paused. Tap 🎤 to talk again.", 3.5f, talk = false, reply = false)
+                }
+                else if (m == com.combo.monkeycompanion.agent.Voice.Miss.NO_PERMISSION) showBubble(V.missLine(m), 8f, chips = listOf(com.combo.monkeycompanion.agent.QuickChip("perm_mic", "Allow mic")), reply = false)
                 else if (m == com.combo.monkeycompanion.agent.Voice.Miss.CANCELLED) { if (bubbleOn) bubbleLife = bubbleAge }
                 else showBubble(V.missLine(m), 4.5f, reply = false)
             }
@@ -1551,10 +1594,10 @@ class MonkeyView(
         if (!running && live && !paused) start()
     }
 
-    private fun listenPartialLine(p: String) = "🎤 “${p.takeLast(120)}”\nListening… tap me to send"
+    private fun listenPartialLine(p: String) = "🎤 “${p.takeLast(160)}”\n…I send when you stop"
 
     private fun cancelListen(line: String?) {
-        listenTap = false; perkTarget = 0f
+        listenTap = false; perkTarget = 0f; stopVoiceChat()
         com.combo.monkeycompanion.agent.Voice.cancelListen()
         if (line != null) showBubble(line, 2f, talk = false, reply = false) else if (bubbleOn) bubbleLife = bubbleAge
     }
@@ -1597,12 +1640,14 @@ class MonkeyView(
         val coach = !prefs.getBoolean("chatCoach44", false)
         if (coach) prefs.edit().putBoolean("chatCoach44", true).apply()
         showBubble(if (coach) "Chat's open! Close it with ✕, a swipe, or a tap outside 👋"
-            else listOf("What's up? \uD83D\uDC12", "Talk to me!", "Yes, boss? \uD83C\uDF4C", "${com.combo.monkeycompanion.character.CharacterRegistry.current.name} is listening…").random(), 12f, talk = true)
+            else listOf("What's up? \uD83D\uDC12", "Talk to me!", "Yes, boss? \uD83C\uDF4C", "${com.combo.monkeycompanion.character.CharacterRegistry.current.name} is listening…").random(), 12f, talk = true,
+            history = pastChats(beforeCurrent = false))   // v10.49: your last chats, faded, so you carry on where you left off
         startTyping()
     }
 
     private fun startTyping() {
         noteInteraction()
+        stopVoiceChat()   // typing ends a voice chat
         val e = replyField ?: return
         if (typing) { e.requestFocus(); return }
         typing = true
@@ -4245,7 +4290,8 @@ class MonkeyView(
 
     /** v10.47: asked to fly (no power): take off and fly to another spot on the screen (no random numbers of the frame loop). */
     private fun flyAround() {
-        if (dragging || typing || hideAnim >= 0f || exiting) return
+        if (dragging || hideAnim >= 0f || exiting) return
+        if (typing) endTyping()   // v10.49: you asked it to fly: it goes, even with the chat box open
         val w = sw()
         val goRight = mx + boxW / 2f < w / 2f
         val tx = if (goRight) w * 0.72f else w * 0.28f
@@ -7389,6 +7435,11 @@ class MonkeyView(
                         return true
                     }
                     if (bubble.closeAt(lx, ly) && !thinkingBubble) { closeChat(); return true }
+                    // v10.49: a drag on the text scrolls it (faded chats above, the rest of a long reply below)
+                    bubbleScrollArmed = bubble.scrollable && bubble.inText(lx, ly)
+                    bubbleScrolled = false; bubbleScrollLast = e.rawY; bubbleScrollDownY = e.rawY
+                    if (typing && bubbleScrollArmed) { bubbleSwipe = true; bubbleScrollOnly = true; swipeDownX = e.rawX; bubbleDragX = 0f; return true }
+                    bubbleScrollOnly = false
                     when (if (bubble.hasReply && !thinkingBubble) bubble.replyAt(lx, ly) else -1) {
                         0 -> { startTyping(); return true }
                         1 -> { if (typing) sendReply() else startTyping(); return true }
@@ -7504,7 +7555,18 @@ class MonkeyView(
                 }
                 if (bubbleSwipe) {
                     val dx = e.rawX - swipeDownX
-                    if (abs(dx) > slop) bubbleDragX = dx
+                    val dyAll = e.rawY - bubbleScrollDownY
+                    if (bubbleScrollArmed && (bubbleScrolled || (abs(dyAll) > slop * 0.6f && abs(dyAll) > abs(dx)))) {
+                        bubbleScrolled = true; bubbleDragX = 0f
+                        if (bubble.scrollBy(bubbleScrollLast - e.rawY)) {
+                            invalidate()
+                            if (bubbleOn && !chatOpen) bubbleLife = max(bubbleLife, bubbleAge + 6f)
+                            chatActiveAt = SystemClock.elapsedRealtime(); lastChatAt = SystemClock.elapsedRealtime()
+                        }
+                        bubbleScrollLast = e.rawY
+                        return true
+                    }
+                    if (!bubbleScrollOnly && abs(dx) > slop) bubbleDragX = dx
                     return true
                 }
                 if (!tracking) return true
@@ -7553,6 +7615,7 @@ class MonkeyView(
                 }
                 if (bubbleSwipe) {
                     bubbleSwipe = false
+                    if (bubbleScrolled || bubbleScrollOnly) { bubbleScrolled = false; bubbleScrollOnly = false; bubbleDragX = 0f; return true }
                     val dx = e.rawX - swipeDownX
                     if (abs(dx) > 56 * d) {   // swiped away
                         if (host != null && !wp) com.combo.monkeycompanion.mind.MindHub.event(com.combo.monkeycompanion.mind.MindEvent.SWIPE_AWAY)

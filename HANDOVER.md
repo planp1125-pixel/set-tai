@@ -1,6 +1,13 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.48 (versionCode 121)**, 19 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.49 (versionCode 122)**, 19 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.49 Bubble memory, voice chat, fly always
+
+- `CloudBubble.setText(history=, maxViewH=)`: faded past chats + a clipped, scrollable text window (`scrollBy`, `scrollable`, `inText`). Without history it behaves exactly as before.
+- MonkeyView `pastChats()`, `showBubble(history=)`; chat replies are one bubble (no `pages`); drag on the bubble text scrolls (`bubbleScroll*`).
+- Voice chat: `voiceChat` / `listenAgainLater()` (Voice.`whenQuiet` waits for TTS), `Voice.AUTO_SEND_MS` auto-stop after a pause, regular recogniser when online.
+- ChatHub `act()`: a user FLY request (incl. bare "power", `ActionParser.requestedByUser`) replaces the AI's move; the do_action FLY tool call is deferred (`toolFly`) so `plainFly` is known.
 
 ## v10.48 Websites and 📎
 
