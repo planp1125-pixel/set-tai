@@ -440,7 +440,15 @@ object Capabilities {
         Capability("open_app", CapGroup.APPS, "Open an app", "Open an installed app by name, e.g. 'YouTube'.",
             listOf(Param("name", "string", "App name as shown on the home screen")), change = true,
             tag = "open", tagHelp = "[open APP NAME]", fromTag = { a -> a.takeIf { it.length in 2..40 }?.let { mapOf("name" to it) } }) { c, _, a ->
-            val (pkg, label) = findApp(c, a.str("name")) ?: return@Capability Plan.Fail("I couldn't find an app called “${a.str("name")}” on this phone.")
+            val (pkg, label) = findApp(c, a.str("name")) ?: run {
+                // v10.48: no such app, but a well-known website (amazon, wikipedia...): open the site instead
+                val url = WebLinks.known(a.str("name")) ?: (if (a.str("name").contains('.')) WebLinks.normalize(a.str("name")) else null)
+                    ?: return@Capability Plan.Fail("I couldn't find an app called “${a.str("name")}” on this phone.")
+                val host = WebLinks.host(url)
+                return@Capability Plan.Act("No ${a.str("name")} app here. Open $host in the browser? 🌐", BodyAction.FLY) {
+                    open(c, Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE), host, "Opening $host! 🌐")
+                }
+            }
             Plan.Act("Open $label? 🚀", BodyAction.WAVE) {
                 val li = c.packageManager.getLaunchIntentForPackage(pkg) ?: return@Act "I couldn't find how to open $label."
                 open(c, li, label, "Opening $label! 🚀")
@@ -467,6 +475,16 @@ object Capabilities {
             tag = "search", tagHelp = "[search QUERY]", fromTag = { a -> a.takeIf { it.isNotBlank() }?.let { mapOf("query" to it) } }) { c, _, a ->
             val q = a.str("query").ifBlank { return@Capability Plan.Fail("Search for what?") }
             Plan.Act("Search the web for “$q”? 🔎", BodyAction.THINK) { open(c, Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + Uri.encode(q))), "your browser", "Searching for “$q” 🔎") }
+        },
+        // v10.48: open a website in the browser (http/https only; asks first like every change)
+        Capability("open_website", CapGroup.COMMS, "Open a website", "Open a website in the browser, e.g. 'youtube.com' or a full https link. Use this when the user says open / go to / show a site or link.",
+            listOf(Param("url", "string", "The website: a domain like 'wikipedia.org' or a full https:// link")), change = true,
+            tag = "web", tagHelp = "[web SITE]", fromTag = { a -> a.takeIf { it.isNotBlank() }?.let { mapOf("url" to it) } }) { c, _, a ->
+            val url = WebLinks.normalize(a.str("url")) ?: return@Capability Plan.Fail("I can only open web links (like youtube.com), not “${a.str("url").take(60)}”.")
+            val host = WebLinks.host(url)
+            Plan.Act("Open $host? 🌐", BodyAction.FLY) {
+                open(c, Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE), host, "Opening $host! 🌐")
+            }
         },
         Capability("dial", CapGroup.COMMS, "Dialer", "Open the phone dialer with a number filled in (the user presses call).",
             listOf(Param("number", "string", "Phone number", false)), change = true, tag = "dial", tagHelp = "[dial NUMBER]", fromTag = { a -> mapOf("number" to a) }) { c, _, a ->

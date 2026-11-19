@@ -32,15 +32,19 @@ class ChatGptBrain(
 
     override val label: String get() = "ChatGPT (${tokens.accountLabel})"
     override val supportsTools = true
+    override val supportsAttachments = true
     @Volatile private var call: Call? = null
     @Volatile private var model: String? = preferredModel.takeIf { it.isNotBlank() }
 
     override fun cancel() { call?.cancel() }
 
-    override fun chat(system: String, history: List<ChatMsg>, user: String, tools: ToolHost?, onText: (String) -> Unit): String {
+    override fun chat(system: String, history: List<ChatMsg>, user: String, tools: ToolHost?, onText: (String) -> Unit): String =
+        chat(system, history, user, tools, emptyList(), onText)
+
+    override fun chat(system: String, history: List<ChatMsg>, user: String, tools: ToolHost?, attachments: List<Attachment>, onText: (String) -> Unit): String {
         val input = JSONArray()
         for (m in history) input.put(JSONObject().put("role", if (m.fromUser) "user" else "assistant").put("content", m.text))
-        input.put(JSONObject().put("role", "user").put("content", user))
+        input.put(JSONObject().put("role", "user").put("content", userContent(user, attachments)))
         val toolArr = tools?.specs?.takeIf { it.isNotEmpty() }?.let { specs ->
             JSONArray().apply { for (s in specs) put(JSONObject().put("type", "function").put("name", s.name).put("description", s.description).put("parameters", s.parameters)) }
         }
@@ -62,6 +66,22 @@ class ChatGptBrain(
             if (round == rounds - 1) return cleanReply(shown)
         }
         return cleanReply(shown)
+    }
+
+    /** v10.48: plain text, or (with 📎) a list of input_text / input_image / input_file parts. */
+    private fun userContent(user: String, attachments: List<Attachment>): Any {
+        if (attachments.isEmpty()) return user
+        val parts = JSONArray()
+        var text = user
+        for (a in attachments) if (a.kind == Attachment.Kind.TEXT && a.text != null)
+            text += "\n\n[File: ${a.name}]\n" + a.text.take(Attachment.MAX_TEXT_CHARS)
+        parts.put(JSONObject().put("type", "input_text").put("text", text))
+        for (a in attachments) when (a.kind) {
+            Attachment.Kind.IMAGE -> a.dataUrl?.let { parts.put(JSONObject().put("type", "input_image").put("image_url", it).put("detail", "auto")) }
+            Attachment.Kind.PDF -> a.dataUrl?.let { parts.put(JSONObject().put("type", "input_file").put("filename", a.name).put("file_data", it)) }
+            Attachment.Kind.TEXT -> {}
+        }
+        return parts
     }
 
     /** The account's models; a small fast one is best for a chatty character. */

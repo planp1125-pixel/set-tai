@@ -454,3 +454,9 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Paste in the bubble:** long-press the bubble's text box to paste what you copied (the copy/paste menu often can't open over other apps). In the big chat, long-press the empty box to paste.
 - **Big chat stays above the keyboard:** the panel shrinks to the space left above the keyboard, so you can always see what you type.
 - Tests: ChatFeelTest now runs a real streamed chat through ChatHub (fake brain via `ChatHub.testBrain`) and checks the quote for 8 seconds, plus paste and the single thinking word.
+
+## v10.48 (code 121): open websites, and 📎 photos & documents
+
+- **"Open this website" power.** Say "open youtube.com", "go to https://…", "open the wikipedia website" or "visit amazon site": the character asks "Open youtube.com? 🌐", flies, and opens it in your browser. Brains can do it too (tool `open_website`, tag `[web SITE]`). Only web links (http/https): never javascript:, file:, intent: or content: links. "open YouTube" still opens the app; if an app isn't installed but it's a well-known site (Amazon, Wikipedia, Flipkart…), it offers the website instead.
+- **📎 Send a photo or document to your character** (ChatGPT brain only). In the big chat, tap 📎 › 🖼️ Photo or 📄 Document. Android's own picker opens (no storage permission: only the one file you pick is shared). The file shows as a green chip above the text box; send it with or without words. Photos are shrunk (long side 1600 px, JPEG) before sending; PDFs up to 10 MB; text files (txt, csv, json, code…) up to 40,000 characters. The file goes only with that one message and is never saved in the chat log (only its name). Other brains say it needs the ChatGPT brain.
+- Tests: v1048/WebAndAttachTest.

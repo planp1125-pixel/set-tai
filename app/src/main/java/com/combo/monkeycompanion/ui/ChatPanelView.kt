@@ -49,6 +49,12 @@ class ChatPanelView(
     private val send = Button(context)
     private val pendingRow = LinearLayout(context)
     private val pendingText = TextView(context)
+    /** v10.48 📎: "🖼️ Photo  📄 Document" choices, or the file waiting to be sent. */
+    private val attachRow = LinearLayout(context).apply { orientation = HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; visibility = GONE }
+    private val clip = Button(context)
+    val debugAttachRow: String get() = if (attachRow.visibility != VISIBLE) "" else
+        (0 until attachRow.childCount).mapNotNull { (attachRow.getChildAt(it) as? TextView)?.text?.toString() }.joinToString(" | ")
+    val debugClipShown: Boolean get() = clip.visibility == VISIBLE
     /** v10.46: the floating panel grows taller when a reply is long (and shrinks back for short ones). */
     private val smallH = (resources.displayMetrics.heightPixels * if (floating) 0.42f else 1f).toInt()
     private val tallH = (resources.displayMetrics.heightPixels * if (floating) 0.64f else 1f).toInt()
@@ -107,7 +113,14 @@ class ChatPanelView(
             addView(chipRow)
         }, LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { setMargins(dp(8), dp(2), dp(8), 0) })
         fillChips(emptyList())
+        addView(attachRow, LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { setMargins(dp(10), dp(4), dp(10), 0) })
         val row = LinearLayout(context).apply { orientation = HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(10), dp(4), dp(10), dp(10)) }
+        // v10.48 📎 (only with the ChatGPT brain: it can look at photos and documents)
+        clip.text = "📎"; clip.textSize = 18f; clip.isAllCaps = false
+        clip.background = GradientDrawable().apply { setColor(com.combo.monkeycompanion.theme.Th.rgb(0xEA, 0xE8, 0xFF)); cornerRadius = dp(22).toFloat() }
+        clip.contentDescription = "Send a photo or document"
+        clip.setOnClickListener { if (attachRow.visibility == VISIBLE && ChatHub.attachment == null) showAttach(null) else showChoices() }
+        row.addView(clip, LayoutParams(dp(44), dp(44)).apply { rightMargin = dp(6) })
         input.hint = "Talk to ${com.combo.monkeycompanion.character.CharacterRegistry.current.name}…"
         input.textSize = 16f
         input.setTextColor(brown)
@@ -192,7 +205,7 @@ class ChatPanelView(
 
     private fun submit(voice: Boolean = false) {
         val t = input.text.toString().trim()
-        if (t.isEmpty() || ChatHub.busy) return
+        if ((t.isEmpty() && ChatHub.attachment == null) || ChatHub.busy) return
         input.setText("")
         ChatHub.send(t, voice = voice)
     }
@@ -204,9 +217,58 @@ class ChatPanelView(
         return super.dispatchKeyEvent(event)
     }
 
+    /** v10.48: pick a photo / document with Android's own picker (no permissions). */
+    private fun showChoices() {
+        attachRow.removeAllViews()
+        attachRow.addView(attachChip("🖼️ Photo") { pick(com.combo.monkeycompanion.ui.AttachActivity.KIND_PHOTO) })
+        attachRow.addView(attachChip("📄 Document") { pick(com.combo.monkeycompanion.ui.AttachActivity.KIND_DOC) })
+        attachRow.addView(attachChip("✕") { showAttach(null) })
+        attachRow.visibility = VISIBLE
+    }
+
+    private fun pick(kind: String) {
+        val i = android.content.Intent(context, com.combo.monkeycompanion.ui.AttachActivity::class.java)
+            .putExtra(com.combo.monkeycompanion.ui.AttachActivity.EXTRA_KIND, kind)
+            .putExtra(com.combo.monkeycompanion.ui.AttachActivity.EXTRA_REOPEN, floating)
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION)
+        attachRow.visibility = GONE
+        runCatching { context.startActivity(i) }
+        // the floating chat sits above every app: close it so the picker isn't hidden (it comes back after)
+        if (floating) onClose?.invoke()
+    }
+
+    private fun showAttach(a: com.combo.monkeycompanion.ai.Attachment?) {
+        attachRow.removeAllViews()
+        if (a == null) { attachRow.visibility = GONE; return }
+        attachRow.addView(TextView(context).apply {
+            text = "📎 ${a.label}"; textSize = 14f; setTextColor(brown); maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.MIDDLE
+            setPadding(dp(12), dp(6), dp(12), dp(6))
+            background = GradientDrawable().apply { setColor(com.combo.monkeycompanion.theme.Th.rgb(0xDC, 0xF8, 0xC6)); cornerRadius = dp(16).toFloat() }
+        }, LayoutParams(0, WRAP_CONTENT, 1f))
+        attachRow.addView(attachChip("✕") { ChatHub.attach(null) })
+        attachRow.visibility = VISIBLE
+        input.hint = "Say something about it (or just Send)…"
+    }
+
+    private fun attachChip(label: String, click: () -> Unit) = TextView(context).apply {
+        text = label; textSize = 14f; setTextColor(brown)
+        setPadding(dp(12), dp(6), dp(12), dp(6))
+        background = GradientDrawable().apply { setColor(com.combo.monkeycompanion.theme.Th.rgb(0xFF, 0xE9, 0xC9)); cornerRadius = dp(16).toFloat(); setStroke(dp(1), com.combo.monkeycompanion.theme.Th.rgb(0xDD, 0xE0, 0xF0)) }
+        setOnClickListener { click() }
+        layoutParams = LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { rightMargin = dp(6) }
+    }
+
+    override fun onAttachment(a: com.combo.monkeycompanion.ai.Attachment?) {
+        showAttach(a)
+        if (a == null) input.hint = "Talk to ${com.combo.monkeycompanion.character.CharacterRegistry.current.name}…"
+    }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         ChatHub.addListener(this)
+        clip.visibility = if (ChatHub.canAttach()) VISIBLE else GONE
+        showAttach(ChatHub.attachment)
         fillChips(emptyList())
         rebuild()
         onPending(ChatHub.pending)

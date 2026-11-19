@@ -1,6 +1,12 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.47.1 (versionCode 120)**, 18 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.48 (versionCode 121)**, 19 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## v10.48 Websites and 📎
+
+- `powers/WebLinks` (normalize/known/host) + capability `open_website` (COMMS) + `PhoneCommands.website()` (runs before the 140-char cut). `open_app` falls back to `WebLinks.known` when no app is installed.
+- `ai/Attachment` (IMAGE / PDF / TEXT) and `Brain.chat(..., attachments, onText)` + `supportsAttachments` (only ChatGptBrain: input_image / input_file / text appended). `ChatHub.attach()` / `attachment` / `canAttach()` / `Listener.onAttachment`; a message with an attachment skips phone commands and canned replies.
+- `ui/AttachActivity`: invisible; PickVisualMedia (photo) or OpenDocument (doc), reads the one file right away, then reopens the floating chat (`EXTRA_REOPEN`). The floating chat closes while the picker is open (it sits above every app).
 
 ## v10.47 Chat feel
 

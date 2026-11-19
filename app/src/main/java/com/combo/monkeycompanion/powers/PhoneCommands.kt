@@ -16,6 +16,7 @@ object PhoneCommands {
         val raw = input.trim()
         if (raw.isEmpty() || raw.length > 200) return null
         AgentCommands.parse(raw)?.let { return it }
+        website(raw)?.let { return it }   // v10.48 (links can be long)
         if (raw.length > 140) return null
         ClockCommands.parse(raw, now)?.let { return clock(it) }
         val t = " " + ClockCommands.normalise(raw).replace(Regex("(?<!\\d)[.]|[.](?!\\d)"), " ").replace(Regex("\\s+"), " ").trim() + " "
@@ -165,6 +166,19 @@ object PhoneCommands {
         val sms = Regex("^(?:send an? |send |write an? )?(?:sms|text|message) (?:to )?(\\+?\\d[\\d \\-]{4,16}\\d)(?: (?:saying|that) (.+))?$", RegexOption.IGNORE_CASE).find(raw.trim())
         if (sms != null) return Invocation("compose_sms", mapOf("number" to sms.groupValues[1].filter { it.isDigit() || it == '+' }, "text" to sms.groupValues[2]))
         return null
+    }
+
+    /** v10.48: "open youtube.com", "go to https://...", "open the wikipedia website", "visit amazon site". */
+    fun website(raw: String): Invocation? {
+        val s = raw.trim().removeSuffix("?").removeSuffix("!").removeSuffix(".").trim()
+        val m = Regex("^(?:please |pls |can you |could you |hey )?(?:open|go to|goto|visit|show me|take me to|load|launch)(?: up)?(?: the)? (.{2,300}?)(?: for me| please| pls)?$", RegexOption.IGNORE_CASE).find(s) ?: return null
+        val what = m.groupValues[1].trim()
+        val siteWord = Regex("\\b(website|web site|site|webpage|web page|link|url)$", RegexOption.IGNORE_CASE).containsMatchIn(what)
+        val looksLikeLink = Regex("^(https?://|www\\.)", RegexOption.IGNORE_CASE).containsMatchIn(what) ||
+            (!what.contains(' ') && Regex("\\.[a-z]{2,24}(/|$)", RegexOption.IGNORE_CASE).containsMatchIn(what))
+        if (!siteWord && !looksLikeLink) return null   // "open youtube" stays the app
+        val url = (if (looksLikeLink) WebLinks.normalize(what) else WebLinks.known(what)) ?: return null
+        return Invocation("open_website", mapOf("url" to url))
     }
 
     private fun search(raw: String, t: String): Invocation? {

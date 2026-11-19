@@ -36,7 +36,18 @@ object ChatHub {
         fun onPipe(pipe: com.combo.monkeycompanion.agent.Pipe) {}
         /** v4.2: a chip only the overlay can do (do something funny, talk, quit, open the bubble chat). */
         fun onLocalChip(chip: com.combo.monkeycompanion.agent.QuickChip) {}
+        /** v10.48: the 📎 photo / document waiting to go with the next message changed (null = none). */
+        fun onAttachment(a: Attachment?) {}
     }
+
+    /** v10.48: the 📎 photo / document that goes with the next message (ChatGPT brain only). */
+    @Volatile var attachment: Attachment? = null
+        private set
+
+    fun attach(a: Attachment?) { attachment = a; main.post { fire { it.onAttachment(a) } } }
+
+    /** True when the current brain can look at photos and documents. */
+    fun canAttach(): Boolean = testBrain?.supportsAttachments ?: onChatGpt()
 
     /** v5: set by the overlay; true = it handled the message (games, clips). */
     @Volatile var localIntent: ((String) -> Boolean)? = null
@@ -303,8 +314,11 @@ object ChatHub {
      * as context so a bubble reply makes sense.
      */
     fun send(text: String, replyingTo: String? = null, voice: Boolean = false) {
-        val typed = text.trim()
+        val att = attachment
+        // v10.48: a 📎 photo / document can go with no words
+        val typed = text.trim().ifEmpty { if (att != null) (if (att.kind == Attachment.Kind.IMAGE) "What do you think of this photo?" else "What do you think of this?") else "" }
         if (typed.isEmpty() || busy) return
+        if (att != null) { sendWithAttachment(typed, att, voice); return }
         speakThis = voice
         runCatching { com.combo.monkeycompanion.fun5.Fun5Store.addXp(app, com.combo.monkeycompanion.v5.Friendship.Source.CHAT) }
         runCatching {
@@ -324,6 +338,24 @@ object ChatHub {
             fire { it.onReply(line, true) }; spoke(line)
             return
         }
+        askBrain(typed, replyingTo, emptyList())
+    }
+
+    /** v10.48: straight to the brain (no phone commands / canned replies), with the photo or document attached. */
+    private fun sendWithAttachment(typed: String, att: Attachment, voice: Boolean) {
+        speakThis = voice
+        attach(null)
+        if (!canAttach()) {
+            val line = "I can only look at photos and documents with the ChatGPT brain (Give a brain › Your ChatGPT plan). 📎"
+            quickLocal("${att.label}\n$typed", line)
+            fire { it.onReply(line, true) }
+            return
+        }
+        runCatching { com.combo.monkeycompanion.fun5.Fun5Store.addXp(app, com.combo.monkeycompanion.v5.Friendship.Source.CHAT) }
+        askBrain(typed, null, listOf(att), shown = "${att.label}\n$typed")
+    }
+
+    private fun askBrain(typed: String, replyingTo: String?, attachments: List<Attachment>, shown: String = typed) {
         busy = true; yieldToHuman()
         val offline = settings.brainType == BrainType.OFFLINE
         // Small on-device models have a short context: keep only the last few turns so nothing gets truncated.
@@ -331,7 +363,7 @@ object ChatHub {
         val said = replyingTo?.trim()?.takeIf { it.isNotEmpty() && memory.all().lastOrNull { m -> !m.fromUser }?.text?.trim() != it }
         if (said != null) memory.add(ChatMsg(false, said, note = true))
         val msg = if (said != null) "(You had just said to me: \"$said\")\n$typed" else typed
-        memory.add(ChatMsg(true, typed))
+        memory.add(ChatMsg(true, shown))
         memory.add(ChatMsg(false, ""))
         fire { it.onHistoryChanged() }
         fire { it.onThinking() }
@@ -347,7 +379,7 @@ object ChatHub {
                     powerTags = if (usePowers && (th == null || offline)) powers.tagHelp() else "",
                     phoneState = if (usePowers) powers.state() else "",
                     extra = if (usePowers) AgentPrompt.build(settings, th != null && !offline, typed) else "")
-                val reply = b.chat(sys, history, msg, th) { raw ->
+                val reply = b.chat(sys, history, msg, th, attachments) { raw ->
                     val t = com.combo.monkeycompanion.powers.PowerTags.visible(ActionParser.visible(raw))
                     last = t
                     memory.updateLast(t)
