@@ -44,6 +44,7 @@ class DesktopChat(private val cfg: Config) {
     private var brain: Brain? = null
     private var sig = ""
     @Volatile private var toolActed = false
+    @Volatile private var toolFly = false
 
     init {
         runCatching {
@@ -114,7 +115,10 @@ class DesktopChat(private val cfg: Config) {
                 "do_action" -> {
                     val act = a.optString("action").let { BodyAction.fromWord(it) ?: BodyAction.entries.firstOrNull { e -> e.tag == it.lowercase() } }
                         ?: return "unknown action; use one of " + BodyAction.entries.joinToString { it.tag }
-                    toolActed = true; ui { fire { it.onAction(act) } }; "done: you are doing '${act.tag}' now"
+                    toolActed = true
+                    // D4: fly / power waits for the reply, so a plain "fly" just flies and your request wins
+                    if (act == BodyAction.FLY) { toolFly = true; return "done: you are doing '${act.tag}' now" }
+                    ui { fire { it.onAction(act) } }; "done: you are doing '${act.tag}' now"
                 }
                 "get_time" -> SimpleDateFormat("EEEE d MMMM yyyy, h:mm a z", Locale.getDefault()).format(Date())
                 "get_system_status" -> describe(sys())
@@ -148,7 +152,14 @@ class DesktopChat(private val cfg: Config) {
     private fun act(raw: String, userText: String?): String {
         val p = ActionParser.parse(raw)
         val acts = p.actions.take(2).toMutableList()
-        if (acts.isEmpty() && !toolActed && userText != null) ActionParser.requestedByUser(userText)?.let { acts.add(it) }
+        // D4 (same as the phone): asking to fly or for a power always happens, once, whatever the AI chose
+        val want = userText?.let { ActionParser.requestedByUser(it) }
+        if (want == BodyAction.FLY) { acts.clear(); acts.add(BodyAction.FLY) }
+        else if (acts.isEmpty() && !toolActed && want != null) acts.add(want)
+        else if (acts.isEmpty() && toolFly) acts.add(BodyAction.FLY)
+        toolFly = false
+        if (BodyAction.FLY in acts) com.combo.monkeycompanion.brain.Superpowers.plainFly =
+            userText != null && com.combo.monkeycompanion.brain.Superpowers.isPlainFly(userText)
         if (acts.isNotEmpty()) ui { acts.forEach { a -> fire { it.onAction(a) } } }
         return p.text
     }
@@ -172,7 +183,7 @@ class DesktopChat(private val cfg: Config) {
             try {
                 val b = brain()
                 val th = if (b.supportsTools && !local) tools else null
-                toolActed = false
+                toolActed = false; toolFly = false
                 val sysPrompt = Persona.systemPrompt(th != null, bodyNow(), compact = local, actionTool = th != null, longReplies = true)   // D2: friend-length replies
                 val reply = b.chat(sysPrompt, history, msg, th) { raw ->
                     val t = ActionParser.visible(raw); last = t

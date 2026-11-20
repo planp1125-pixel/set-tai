@@ -197,6 +197,11 @@ class App(private val cfg: Config, private val args: Array<String>) : OverlayHos
         item("Chat in bubble") { stage.openBubbleChat() }
         item("Chat window…") { openChat() }
         addSeparator()
+        // D4: powers (double-click the character does the same)
+        item("⚡ Use a power") { stage.usePower() }
+        add(javax.swing.JMenu("Powers").apply {
+            for (p in stage.powers) add(JMenuItem(p.title).apply { toolTipText = p.blurb; addActionListener { stage.usePower(p) } })
+        })
         // D2: pick any of the 13 characters
         add(javax.swing.JMenu("Character").apply {
             val group = javax.swing.ButtonGroup()

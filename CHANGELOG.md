@@ -521,3 +521,13 @@ Every character now feels like a little body in your hand (the phone's vibration
 
 - The desktop app didn't compile since v10.32 (the show engine uses a yellow colour the desktop's drawing layer didn't have). Added the missing colours. D1-D3 desktop packages build again.
 - Phone app unchanged apart from the version number.
+
+## v10.50.7 (code 130): D4, superpowers on the desktop
+
+- **Double-click the character = a power** (same rule as the phone: its main power first, then a random one of its powers). Every character's powers, flight plans, flames, sparkles, lightning, smoke and screen effects are the same code as the phone. No cooldown.
+- **Right-click › ⚡ Use a power**, or **Powers ›** pick one by name.
+- **In chat:** "power", "use your power", "Bolt use your laser"… fires a power; "fly" just flies across the screen. Your request always happens, even if the AI picks another move.
+- During a power the character's window covers the whole screen for those few seconds (clicks still go through everywhere except the character and its bubble), then shrinks back.
+- **Chat:** a single click shows the 💬 button; right-click › Chat in bubble; or the Set-Tai window's Chat button. (Double-click is the power now.)
+- Test: desktop d4/DesktopPowersTest runs every power of all 13 characters to the landing; the release gets a few `desktop-preview-power-*.png` frames.
+- Phone app unchanged apart from the version number.

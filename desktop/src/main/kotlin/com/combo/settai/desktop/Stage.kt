@@ -320,7 +320,156 @@ class Stage(
         }
         com.combo.monkeycompanion.character.CharacterRegistry.select(character.id)
         character.fill(current, MonkeyState.IDLE, 0f, 0f, controller.anim, wear)
-        controller.doubleTapAction = { onDoubleTapChat() }
+        controller.doubleTapAction = { onDoubleTapPower() }
+    }
+
+    // ---------------- D4: superpowers (same powers, flight plans, particles and screen effects as the phone) ----------------
+
+    private val flight = com.combo.monkeycompanion.brain.PowerFlight()
+    private val particles = com.combo.monkeycompanion.rig.Particles()
+    private val emitter = com.combo.monkeycompanion.rig.PowerEmitter(particles)
+    private val screenFx = com.combo.monkeycompanion.rig.ScreenFx()
+    private var powerOn = false
+    private var powerVx = 0f; private var powerVy = 0f
+    private var powerLineAt = -1; private var crashSaid = false; private var landSaid = false
+    /** Double-click: the main (signature) power first, then a random enabled one. */
+    private var signatureUsed = false
+    private val tmpA = FloatArray(2); private val tmpB = FloatArray(2); private val tmpPt = FloatArray(2)
+    val debugPowerOn get() = powerOn
+    /** The current character's powers (for the menu). */
+    val powers: List<com.combo.monkeycompanion.brain.Superpower> get() = com.combo.monkeycompanion.brain.PowerPrefs.available(character)
+    val debugFlight get() = flight
+    /** Tests: draw everything (particles, screen effects, body, bubble) into [c] in window pixels. */
+    fun debugDraw(c: Canvas) = drawAll(c)
+    val debugWindow get() = intArrayOf(winX, winY, winW, winH)
+    val debugBox get() = floatArrayOf(mx, my)
+
+    private fun fracX(px: Float) = (px / max(1f, sw() - boxW)).coerceIn(0f, 1f)
+    private fun fracY(py: Float) = ((ground() - py) / max(1f, ground() - topY())).coerceIn(0f, 1f)
+    private fun pxX(f: Float) = f * max(0f, sw() - boxW)
+    private fun pxY(f: Float) = ground() - f * max(0f, ground() - topY())
+
+    /** This character's power: the one named in chat if it has it, else (double-click) its main one first, then random. */
+    private fun pickPower(): com.combo.monkeycompanion.brain.Superpower? {
+        val asked = com.combo.monkeycompanion.brain.Superpowers.requested; com.combo.monkeycompanion.brain.Superpowers.requested = null
+        val mine = com.combo.monkeycompanion.brain.PowerPrefs.enabled(character)
+        asked?.let { a -> mine.firstOrNull { it.id == a.id }?.let { return it } }
+        if (!signatureUsed) { signatureUsed = true; character.signaturePower?.let { return it } }
+        val pool = mine.filter { it.randomPick }.ifEmpty { mine }
+        return pool.randomOrNull() ?: character.powers.firstOrNull()
+    }
+
+    /** Use a power now (double-click, the menu, or asked in chat). No cooldown. */
+    fun usePower(force: com.combo.monkeycompanion.brain.Superpower? = null): Boolean {
+        if (host == null || wp || powerOn) return false
+        if (hiddenTab) { unhide(); ui.postDelayed({ usePower(force) }, 1700L); return true }
+        if (controller.isAsleep) { controller.wakeUp(Lines.pick(Lines.POKED_AWAKE)); ui.postDelayed({ usePower(force) }, 6200L); return true }
+        if (controller.state == MonkeyState.ENTRANCE || dragging) return false
+        if (typing) endTyping()
+        val pw = force ?: pickPower() ?: run { say(Lines.pick(Lines.POWER_OFF), 4000L); return false }
+        beginPower(pw)
+        return true
+    }
+
+    private fun beginPower(pw: com.combo.monkeycompanion.brain.Superpower) {
+        val crash = Random.nextFloat() < pw.crashChance
+        climber.deactivate(); tweenT = -1f; falling = false; afterLand = null
+        if (surf.kind != SK.FLOOR) { surf = freeSurf(my.coerceIn(topY(), ground())); clampToSurf() }
+        com.combo.monkeycompanion.ai.BodySense.record("I used my power " + pw.title, com.combo.monkeycompanion.ai.BodySense.Feeling.PUFFED)
+        val x0 = fracX(mx); val y0 = fracY(my)
+        flight.begin(pw, pw.plan(x0, y0, crash, Random), crash, x0, y0)
+        powerOn = true; powerLineAt = -1; crashSaid = false; landSaid = false
+        powerVx = 0f; powerVy = 0f
+        emitter.reset(); particles.clear()
+        pages.clear(); thinkingBubble = false; chatBtnUntil = 0f; hintUntil = 0f
+        val a = controller.anim
+        a.power = pw; a.crashed = false; a.powerPhase = flight.phase; a.powerK = 0f; a.speed = 0f; a.heading = 0f
+        controller.play(MonkeyState.POWER)
+        say(Lines.pick(pw.startLines).replace("{pct}", "low"), 2200L)
+        if (paused) setPaused(false)
+    }
+
+    /** One flight frame: move along the plan, steer the pose, say the lines. False = not flying. */
+    private fun stepPower(dt: Float): Boolean {
+        if (!powerOn) return false
+        val pw = flight.power ?: run { endPower(); return false }
+        if (controller.state != MonkeyState.POWER) controller.play(MonkeyState.POWER)
+        if (!flight.update(dt)) { endPower(); return false }
+        val nx = pxX(flight.x); val ny = pxY(flight.y)
+        if (dt > 0f) {
+            val f = min(1f, dt * 10f)
+            powerVx += ((nx - mx) / dt - powerVx) * f; powerVy += ((ny - my) / dt - powerVy) * f
+        }
+        mx = nx; my = ny
+        val a = controller.anim
+        val ph = flight.phase; val k = flight.k
+        a.powerPhase = ph; a.powerK = k; a.crashed = flight.crashed
+        a.carveLean = flight.glideLean; a.glideSpeed = flight.glideSpeed; a.gliding = (flight.step?.glide ?: 0f) > 0f
+        a.sinceRing = emitter.sinceRing; a.ringLeft = emitter.leftHand
+        val sp = hypot(powerVx, powerVy)
+        a.speed = (sp / (900f * d)).coerceIn(0f, 1f)
+        val moving = ph == com.combo.monkeycompanion.brain.PowerPhase.FLY || ph == com.combo.monkeycompanion.brain.PowerPhase.SPUTTER ||
+            ph == com.combo.monkeycompanion.brain.PowerPhase.TAKEOFF ||
+            (ph == com.combo.monkeycompanion.brain.PowerPhase.CRASH && k < com.combo.monkeycompanion.brain.PowerFlight.CRASH_HIT)
+        if (moving && sp > 40f * d) {
+            a.heading = Math.toDegrees(kotlin.math.atan2(abs(powerVx).toDouble(), (-powerVy).toDouble())).toFloat()
+            if (abs(powerVx) > 60f * d) controller.face(if (powerVx > 0f) 1f else -1f)
+        }
+        if (flight.index != powerLineAt) {
+            powerLineAt = flight.index
+            when (ph) {
+                com.combo.monkeycompanion.brain.PowerPhase.FIRE -> if (Random.nextFloat() < 0.7f) say(Lines.pick(pw.fireLines), 1500L)
+                com.combo.monkeycompanion.brain.PowerPhase.SPUTTER -> say(Lines.pick(Lines.POWER_FUEL_LOW), 2600L)
+                com.combo.monkeycompanion.brain.PowerPhase.POSE -> say(Lines.pick(when {
+                    flight.crashed && pw.has(com.combo.monkeycompanion.brain.PowerKit.FOOT_JETS) -> Lines.POWER_SOOTY
+                    flight.crashed -> Lines.POWER_DAZED
+                    else -> pw.landLines
+                }), 3200L)
+                else -> Unit
+            }
+        }
+        if (ph == com.combo.monkeycompanion.brain.PowerPhase.CRASH && flight.crashed && !crashSaid) {
+            crashSaid = true
+            say(Lines.pick(pw.crashLines), 2400L)
+        }
+        if (ph == com.combo.monkeycompanion.brain.PowerPhase.LAND && k >= 0.5f && !landSaid) {
+            landSaid = true
+            if (flight.lastPhase == com.combo.monkeycompanion.brain.PowerPhase.LAND) say(Lines.pick(pw.landLines), 2600L)
+        }
+        return true
+    }
+
+    private fun endPower() {
+        powerOn = false
+        flight.cancel()
+        surf = screenSurf(SK.FLOOR); my = ground(); clampToSurf()
+        controller.idleNow(2f)
+        vpW = 0; vpH = 0   // back to the small window that follows the character
+        updateGeometry()
+    }
+
+    private fun screenFxOn() = powerOn && screenFx.wants(flight.phase)
+
+    /** Screen-space effects (lightning, crack, frost, giant eye...). [c] is in screen pixels. */
+    private fun drawScreenFx(c: Canvas) {
+        val h = host ?: return
+        val feetX = winX + ox + boxW / 2f; val feetY = winY + oy + boxH - groundPad
+        rig.handPoint(false, tmpA)
+        tmpB[0] = 0f; tmpB[1] = -41f; rig.head.mapPoints(tmpB)
+        val handY = if (flight.phase == com.combo.monkeycompanion.brain.PowerPhase.LIFT) { rig.headTop(tmpPt); tmpPt[1] } else tmpA[1]
+        screenFx.draw(c, h.screenWidth().toFloat(), h.screenHeight().toFloat(), flight.phase, flight.k, t, flight.crashed,
+            feetX, feetY, tmpA[0] + winX, handY + winY, d, tmpB[0] + winX, tmpB[1] + winY, if (renderFacing() < 0f) -1 else 1, -1)
+    }
+
+    /** "fly" in chat: a quick flight across the screen (no power). */
+    private fun flyAcross() {
+        if (surf.kind != SK.FLOOR || falling) { afterLand = { flyAcross() }; controller.drop(); return }
+        val fx = mx; val fy = my
+        val toLeft = mx + boxW / 2f > sw() / 2f
+        mx = if (toLeft) sw() * 0.12f else sw() * 0.72f
+        controller.face(if (toLeft) -1f else 1f)
+        controller.play(MonkeyState.JUMP, 0f)
+        slideFrom(fx, fy, 1.1f, 220 * d) { controller.play(MonkeyState.LANDING, 0.45f) }
     }
 
     // ---------------- Speech ----------------
@@ -654,7 +803,7 @@ class Stage(
         t += dt
 
         controller.update(dt)
-        stepPhysics(dt)
+        if (!stepPower(dt)) stepPhysics(dt)   // D4: a power flight moves the character itself
         stepHide(dt)
         stepEntrance(dt)
         stepHints(dt)
@@ -691,12 +840,16 @@ class Stage(
         if (typing && !bubbleOn) endTyping()
         layoutRig()
         if (climber.active) climberStep(dt)
+        if (powerOn) flight.power?.let { pw ->
+            emitter.frame(rig, drawPose, pw, flight.phase, flight.index, flight.k, powerVx, powerVy, controller.facing, rigScale, dt,
+                winX.toFloat(), winY.toFloat())
+        } else if (particles.active) particles.update(dt)
 
         // Calm idle without a bubble only needs ~30 fps; a hidden tab even less.
         oddFrame = !oddFrame
         val st = controller.state
         val calm = (st == MonkeyState.IDLE || st == MonkeyState.HIDDEN || st == MonkeyState.SIT) && !bubbleOn &&
-            chatBtnUntil <= 0f && hintUntil <= 0f && !climber.active
+            chatBtnUntil <= 0f && hintUntil <= 0f && !climber.active && !powerOn && !particles.active
         if (!calm || oddFrame) { present(); host?.onFrame() }
     }
 
@@ -1039,6 +1192,13 @@ class Stage(
             winX = 0; winY = 0; winW = sw; winH = sh
             return
         }
+        if (powerOn || particles.active) {
+            // D4: a power uses the whole screen (flight, lightning, smoke); clicks still pass through elsewhere
+            ox += winX; oy += winY; bubbleLeft += winX; bubbleTop += winY
+            winX = 0; winY = 0; winW = sw; winH = sh; vpW = sw; vpH = sh
+            host.placeWindow(0, 0, sw, sh)
+            return
+        }
         placeViewport()
     }
 
@@ -1163,6 +1323,8 @@ class Stage(
 
     private fun drawAll(canvas: Canvas) {
         if (hiddenTab) { if (!wp) drawTab(canvas); return }
+        if (particles.active) { canvas.save(); canvas.translate(-winX.toFloat(), -winY.toFloat()); particles.draw(canvas); canvas.restore() }
+        if (screenFxOn()) { canvas.save(); canvas.translate(-winX.toFloat(), -winY.toFloat()); drawScreenFx(canvas); canvas.restore() }
         drawMonkey(canvas)
         if (chatBtnUntil > 0f || hintUntil > 0f) drawChatBtn(canvas)
         if (bubbleOn) {
@@ -1432,13 +1594,21 @@ class Stage(
         }
         if (System.getenv("SETTAI_DEBUG") != null) System.err.println("TAP zone=$downZone pending=${pending != null} dt=${now - lastTapUp}")
         val zone = downZone; val side = downSide
-        val r = Runnable { pendingTap = null; controller.onTap(zone, side) }
+        val r = Runnable { pendingTap = null; controller.onTap(zone, side); if (host != null && !wp) chatBtnUntil = max(chatBtnUntil, 3.5f) }   // D4: a click shows 💬
         pendingTap = r
         lastTapUp = now; lastTapX = e.rawX; lastTapY = e.rawY
         ui.postDelayed(r, doubleTapTimeout)
     }
 
     // ---------------- Double-tap to chat + discoverability ----------------
+
+    /** D4 (same as the phone): double-click = a power (the main one first). Chat: the 💬 button, right-click › Chat. */
+    private fun onDoubleTapPower() {
+        if (controller.state == MonkeyState.ENTRANCE || controller.state == MonkeyState.HIDDEN) return
+        if (wp) { onDoubleTapChat(); return }
+        hintUntil = 0f
+        if (!usePower()) onDoubleTapChat()
+    }
 
     private fun onDoubleTapChat() {
         if (controller.state == MonkeyState.ENTRANCE || controller.state == MonkeyState.HIDDEN) return
@@ -1493,6 +1663,7 @@ class Stage(
             }
             return
         }
+        if (powerOn) return   // D4: mid-power, finish the show first
         if (controller.isAsleep && action != BodyAction.SLEEP) { controller.wakeUp(Lines.pick(Lines.POKED_AWAKE)); return }
         if (hiddenTab) { if (action != BodyAction.HIDE && action != BodyAction.SLEEP) unhide(); return }
         if (controller.state == MonkeyState.ENTRANCE || dragging) return
@@ -1515,6 +1686,9 @@ class Stage(
                 ui.postDelayed({ if (controller.isAsleep && !paused) controller.wakeUp(Lines.pick(Lines.POKED_AWAKE)) }, 12_000)
             }
             BodyAction.CLIMB -> climbSomething()
+            BodyAction.FLY -> if (com.combo.monkeycompanion.brain.Superpowers.plainFly) {
+                com.combo.monkeycompanion.brain.Superpowers.plainFly = false; flyAcross()
+            } else usePower()
             BodyAction.HIDE -> hideSomewhere()
             else -> action.gag?.let { g -> onGround { controller.gag(g) } }
         }

@@ -139,6 +139,7 @@ jobs:
         run: |
           cp desktop/build/d2/desktop-characters.png dist/desktop-preview-characters.png || true
           cp desktop/build/d2/desktop-bubble.png dist/desktop-preview-bubble.png || true
+          for f in desktop/build/d4/power-*.png; do [ -f "$f" ] && cp "$f" "dist/desktop-preview-$(basename "$f")"; done; true
       - name: Add to the test build
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
