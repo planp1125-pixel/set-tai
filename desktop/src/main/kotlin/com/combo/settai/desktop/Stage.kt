@@ -63,7 +63,30 @@ class Stage(
     private val wp = host?.wallpaper == true
 
     private val rig = MonkeyRig()
-    private val renderer = MonkeyRenderer()
+    // D2: any of the 13 characters (same drawings as the phone). Climbing walls / ceilings stays the monkey's thing.
+    private var character: com.combo.monkeycompanion.character.Character =
+        com.combo.monkeycompanion.character.CharacterRegistry.byId(cfg.get("character", "devil")) ?: com.combo.monkeycompanion.character.CharacterRegistry.current
+    private val wear get() = com.combo.monkeycompanion.character.CharacterRegistry.wear(character)
+    private var renderer: MonkeyRenderer = character.newRenderer().also { it.wear = com.combo.monkeycompanion.character.CharacterRegistry.wear(character) }
+    private val climbs get() = character.id == "monkey"
+    private val peekState = com.combo.monkeycompanion.rig.PeekFace.State()
+    val characterId: String get() = character.id
+
+    /** D2: switch body (chat memory and settings stay). Pops out in the new body. */
+    fun setCharacter(id: String) {
+        val c = com.combo.monkeycompanion.character.CharacterRegistry.byId(id) ?: return
+        com.combo.monkeycompanion.character.CharacterRegistry.select(c.id)
+        cfg.set("character", c.id); cfg.save()
+        if (c.id == character.id) return
+        character = c
+        renderer = c.newRenderer().also { it.wear = com.combo.monkeycompanion.character.CharacterRegistry.wear(c) }
+        if (!climbs && surf.kind != SK.FLOOR) { climber.deactivate(); surf = screenSurf(SK.FLOOR); clampToSurf() }
+        character.fill(current, MonkeyState.IDLE, 0f, 0f, controller.anim, wear)
+        if (hiddenTab) unhide()
+        pages.clear(); thinkingBubble = false
+        showBubble("Hi, I'm ${c.name}! ${c.tagline}", 4f, talk = true, reply = false)
+        controller.play(MonkeyState.WAVE, 1.8f)
+    }
     private val climber = Climber(rigScale)
     private val current = Pose()
     private val target = Pose()
@@ -295,7 +318,8 @@ class Stage(
             tabPos = prefs.getFloat("tabPos", host.screenHeight() * 0.45f)
             if (hiddenTab) { controller.play(MonkeyState.HIDDEN); clampTab() }
         }
-        Animations.fill(current, MonkeyState.IDLE, 0f, 0f, controller.anim)
+        com.combo.monkeycompanion.character.CharacterRegistry.select(character.id)
+        character.fill(current, MonkeyState.IDLE, 0f, 0f, controller.anim, wear)
         controller.doubleTapAction = { onDoubleTapChat() }
     }
 
@@ -319,13 +343,47 @@ class Stage(
         showBubble(flat, durationMs / 1000f)
     }
 
+    private var shownQuote: String? = null
+    private var shownHistory: List<Pair<Boolean, String>> = emptyList()
+    val debugBubbleQuote get() = if (bubbleOn) shownQuote else null
+    val debugBubbleHistory get() = if (bubbleOn) shownHistory else emptyList()
+    val debugBubbleText get() = if (bubbleOn) lastShownText else null
+    private var lastShownText: String? = null
+    private var thinkWord = ""
+    val debugThinkWord get() = thinkWord
+
+    /** D2: the saved chat (up to 100 messages) for the faded lines; [beforeCurrent] = the ones before your latest message. */
+    private fun pastChats(beforeCurrent: Boolean): List<Pair<Boolean, String>> = runCatching {
+        val all = chat.history().filter { it.text.isNotBlank() }
+        val end = if (beforeCurrent) all.indexOfLast { it.fromUser }.let { if (it < 0) all.size else it } else all.size
+        all.subList(max(0, end - 100), end).map { it.fromUser to it.text }
+    }.getOrDefault(emptyList())
+    private fun lastUserMessage(): String? = runCatching { chat.history().lastOrNull { it.fromUser }?.text?.trim()?.takeIf { it.isNotEmpty() } }.getOrNull()
+
+    /** D2: mouse wheel over the bubble scrolls its text. */
+    fun onWheel(x: Float, y: Float, notches: Float): Boolean {
+        if (!bubbleOn || x < bubbleLeft || x > bubbleLeft + bubble.width || y < bubbleTop || y > bubbleTop + bubble.height) return false
+        if (!bubble.scrollable) return false
+        if (bubble.scrollBy(notches * 40f * d)) { bubbleLife = max(bubbleLife, bubbleAge + 8f); present() }
+        return true
+    }
+    private var bubbleDragY = Float.NaN
+    private var bubbleDragged = false
+
     /** A line Settai said that isn't in the chat history yet (canned line / quip); context for a bubble reply. */
     private var lastLine: String? = null
 
-    private fun showBubble(text: String, life: Float, buttons: List<String> = emptyList(), talk: Boolean = true, reply: Boolean = true) {
+    private fun showBubble(text: String, life: Float, buttons: List<String> = emptyList(), talk: Boolean = true, reply: Boolean = true,
+                           quote: String? = null, history: List<Pair<Boolean, String>> = emptyList()) {
         @Suppress("NAME_SHADOWING") val text = text.replace(Regex("\\bphone\\b"), "laptop").replace(Regex("\\bPhone\\b"), "Laptop")
         val withReply = reply && replyField != null && buttons.isEmpty()
-        bubble.setText(text, (210 * d).toInt(), buttons, withReply)
+        // D2: like the phone, your message above the reply and the earlier chat faded above it (scroll / drag to read)
+        val q = if (buttons.isEmpty()) quote else null
+        val h = if (buttons.isEmpty()) history else emptyList()
+        val wide = q != null || h.isNotEmpty()
+        val viewMax = if (wide) min((host?.screenHeight() ?: 800).toFloat() * 0.34f, 320 * d) else 0f
+        bubble.setText(text, ((if (wide) 260 else 210) * d).toInt(), buttons, withReply, quote = q, history = h, maxViewH = viewMax)
+        shownQuote = q; shownHistory = h; lastShownText = text
         val alreadyUp = bubbleOn && bubbleAge in POP..bubbleLife
         bubbleOn = true
         bubbleAge = if (alreadyUp) POP else 0f
@@ -376,7 +434,8 @@ class Stage(
         thinkingBubble = true
         replyStartT = -1f
         controller.startThinking()
-        showBubble("Hmm", 600f, talk = false, reply = false)
+        thinkWord = com.combo.monkeycompanion.speech.ThinkingWords.pick(character, -1)
+        showBubble(thinkWord, 600f, talk = false, reply = false, quote = lastUserMessage())
     }
 
     override fun onReply(text: String, done: Boolean) {
@@ -387,21 +446,14 @@ class Stage(
         lastLine = null
         if (!done) {
             controller.startTalking()
-            if (!pendingShown) showBubble(paginate(text).last(), 600f, reply = false)
+            if (!pendingShown) showBubble(text, 600f, reply = false, quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
             return
         }
-        val all = paginate(text)
-        val quick = t - replyStartT < 1.5f  // arrived all at once: page from the start
         controller.endChat(3f)
         if (pendingShown) return
         pages.clear()
-        if (all.size > 1 && quick) {
-            pages.addAll(all)
-            nextPage()
-        } else {
-            val last = all.last()
-            showBubble(last, Speech.defaultDuration(last) / 1000f + 1.5f)
-        }
+        // D2: the whole reply in one bubble that scrolls, your message above, the earlier chat faded above that
+        showBubble(text, max(8f, Speech.defaultDuration(text) / 1000f + 3f), quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
         chat.pending?.let { onPending(it) }
     }
 
@@ -443,7 +495,8 @@ class Stage(
         pages.clear()
         lastLine = null
         convo = true
-        showBubble(listOf("What's up?", "Talk to me!", "Yes, boss?", "Settai is listening…").random(), 12f, talk = true)
+        showBubble(listOf("What's up?", "Talk to me!", "Yes, boss?", "${character.name} is listening…").random(), 12f, talk = true,
+            history = pastChats(beforeCurrent = false))   // D2: your last chats, faded, so you carry on where you left off
         startTyping()
     }
 
@@ -613,21 +666,14 @@ class Stage(
             if (bubbleAge > bubbleLife && pages.isNotEmpty()) nextPage()
             else if (bubbleAge > bubbleLife + FADE) { bubbleOn = false; pendingShown = false; convo = false }
         }
-        if (thinkingBubble) {
-            thinkDots += dt
-            if (thinkDots > 0.35f) {
-                thinkDots = 0f
-                val n = ((t * 2.85f).toInt() % 3) + 1
-                bubble.setText("Hmm" + ".".repeat(n), (210 * d).toInt())
-            }
-        }
+        if (thinkingBubble) thinkDots += dt   // D2: one thinking word per question (no "Hmm..." dots)
         if (chatBtnUntil > 0f) chatBtnUntil -= dt
         if (hintUntil > 0f) hintUntil -= dt
         quipCheckIn -= dt
         if (quipCheckIn <= 0f) { quipCheckIn = 30f; refreshQuipSettings() }
         facingAnim += (controller.facing - facingAnim) * min(1f, dt * 12f)
 
-        Animations.fill(target, controller.state, t, controller.stateTime, controller.anim)
+        character.fill(target, controller.state, t, controller.stateTime, controller.anim, wear)
         current.blendToward(target, 1f - exp(-dt * 14f))
         drawPose.set(current)
         drawPose.sweat = heat; drawPose.mouthCloth = if (silent) 1f else 0f
@@ -914,7 +960,7 @@ class Stage(
         climber.deactivate()
         surf = screenSurf(SK.FLOOR); clampToSurf()
         controller.sleep()
-        Animations.fill(current, MonkeyState.SLEEP, t, 0f, controller.anim)
+        character.fill(current, MonkeyState.SLEEP, t, 0f, controller.anim, wear)
         present()
     }
 
@@ -1046,8 +1092,9 @@ class Stage(
             if (side != 0) { hideToEdge(side); return false }
         }
         val n = when {
-            my <= topY() + near -> screenSurf(SK.CEIL)
             my >= g - 64 * d -> screenSurf(SK.FLOOR)
+            !climbs && (my <= topY() + near || mx <= near * 0.6f || mx >= sw() - boxW - near * 0.6f) -> { beginFall(); null }   // D2: non-climbers drop to the floor
+            my <= topY() + near -> screenSurf(SK.CEIL)
             mx <= near * 0.6f -> screenSurf(SK.WALL_L)
             mx >= sw() - boxW - near * 0.6f -> screenSurf(SK.WALL_R)
             controller.roam -> { beginFall(); null }
@@ -1196,22 +1243,12 @@ class Stage(
         tabPaint.style = Paint.Style.FILL
         tabPaint.color = Color.argb(150, 0x3A, 0x26, 0x18)
         tmpR.set(-tw, 0f, tw * 0.95f, tl); c.drawRoundRect(tmpR, tw * 0.6f, tw * 0.6f, tabPaint)
-        // peeking face: half a head with ear and two eyes
-        val cy = tl * 0.36f
-        tabPaint.color = Color.argb(235, 0x8B, 0x5A, 0x2B)
-        c.drawCircle(0f, cy, tw * 0.62f, tabPaint)
-        c.drawCircle(-tw * 0.05f, cy - tw * 0.7f, tw * 0.26f, tabPaint)          // ear
-        tabPaint.color = Color.argb(235, 0xF0, 0xC8, 0x96)
-        c.drawCircle(tw * 0.08f, cy + tw * 0.05f, tw * 0.42f, tabPaint)          // face
-        tabPaint.color = Color.argb(235, 0xE8, 0x9E, 0x8A)
-        c.drawCircle(-tw * 0.05f, cy - tw * 0.7f, tw * 0.13f, tabPaint)          // inner ear
-        val blink = (t % 4f) > 3.85f
-        tabPaint.color = Color.rgb(0x2B, 0x1A, 0x10)
-        val look = 0.04f * tw * sin(t * 1.3f)
-        for (dy in floatArrayOf(-0.17f, 0.2f)) {
-            if (blink) c.drawRect(tw * 0.2f, cy + dy * tw - 1f * d, tw * 0.34f, cy + dy * tw + 1f * d, tabPaint)
-            else c.drawCircle(tw * 0.27f + look, cy + dy * tw, tw * 0.085f, tabPaint)
-        }
+        // D2: each character draws its own peeking face (same as the phone)
+        peekState.tw = tw; peekState.cy = tl * 0.36f; peekState.t = -1f; peekState.density = d
+        peekState.blink = (t % 4f) > 3.85f
+        peekState.look = 0.04f * tw * sin(t * 1.3f)
+        peekState.bino = 0f
+        character.peek.draw(c, wear, peekState)
         // arrow chevron pointing into the screen
         tabPaint.style = Paint.Style.STROKE; tabPaint.strokeWidth = 2.6f * d; tabPaint.strokeCap = Paint.Cap.ROUND
         tabPaint.color = Color.argb(220, 255, 255, 255)
@@ -1253,6 +1290,24 @@ class Stage(
 
     fun onTouchEvent(e: MotionEvent): Boolean {
         if (hiddenTab && !wp) return onTabTouch(e)
+        if (!bubbleDragY.isNaN()) {   // D2: dragging inside the bubble text
+            when (e.actionMasked) {
+                MotionEvent.ACTION_MOVE -> {
+                    val dy = bubbleDragY - e.y
+                    if (bubbleDragged || abs(dy) > slop) {
+                        bubbleDragged = true
+                        if (bubble.scrollBy(dy)) { bubbleLife = max(bubbleLife, bubbleAge + 8f); present() }
+                        bubbleDragY = e.y
+                    }
+                    return true
+                }
+                MotionEvent.ACTION_UP -> {
+                    bubbleDragY = Float.NaN
+                    if (!bubbleDragged) { if (typing) return true; if (wp) host?.openChat() else if (shownQuote != null) host?.openChat() else hush() }
+                    return true
+                }
+            }
+        }
         when (e.actionMasked) {
             MotionEvent.ACTION_OUTSIDE -> { onOutsideOrBack(); return true }
             MotionEvent.ACTION_DOWN -> {
@@ -1261,6 +1316,8 @@ class Stage(
                 ) {
                     tracking = false
                     val lx = e.x - bubbleLeft; val ly = e.y - bubbleTop
+                    // D2: press on the text of a scrollable bubble: drag to scroll (a click without moving acts as before)
+                    if (bubble.scrollable && bubble.inText(lx, ly) && !pendingShown) { bubbleDragY = e.y; bubbleDragged = false; return true }
                     when (if (bubble.hasReply && !thinkingBubble) bubble.replyAt(lx, ly) else -1) {
                         0 -> { startTyping(); return true }
                         1 -> { if (typing) sendReply() else startTyping(); return true }
@@ -1470,6 +1527,7 @@ class Stage(
     }
 
     private fun climbSomething() {
+        if (!climbs) { hopInPlace(); return }   // D2: only the monkey climbs walls
         if (wp && spots.isNotEmpty() && Random.nextFloat() < 0.7f) { goToSpot(Random.nextInt(spots.size), 2); return }
         if (surf.climb) { controller.walkTo(Random.nextFloat() * (body.maxCenterX() - body.minCenterX()) + body.minCenterX(), 1.2f); return }
         climbScreenWall()
@@ -1508,8 +1566,8 @@ class Stage(
         if (wp && s.spot >= 0) return roamSpot(r, s)
         return when (s.kind) {
             SK.FLOOR -> when {
-                wp && spots.isNotEmpty() && r < 0.22f -> { goToSpot(Random.nextInt(spots.size), Random.nextInt(4)); true }
-                r < (if (wp) 0.3f else 0.12f) -> { climbScreenWall(); true }
+                wp && spots.isNotEmpty() && r < 0.22f -> { goToSpot(Random.nextInt(spots.size), if (climbs) Random.nextInt(4) else Random.nextInt(2)); true }
+                climbs && r < (if (wp) 0.3f else 0.12f) -> { climbScreenWall(); true }
                 else -> false
             }
             SK.WALL_L, SK.WALL_R -> {

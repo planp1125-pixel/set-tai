@@ -135,6 +135,10 @@ jobs:
         run: ./gradlew :desktop:test -Djava.awt.headless=true --stacktrace
       - name: Build .deb and .tar.gz
         run: JDK="$JAVA_HOME" OUT="$PWD/dist" bash desktop/packaging/build-deb.sh
+      - name: Preview pictures (all characters + bubble, drawn by the desktop app's code)
+        run: |
+          cp desktop/build/d2/desktop-characters.png dist/desktop-preview-characters.png || true
+          cp desktop/build/d2/desktop-bubble.png dist/desktop-preview-bubble.png || true
       - name: Add to the test build
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
@@ -143,6 +147,7 @@ jobs:
           files: |
             dist/*.deb
             dist/*.tar.gz
+            dist/desktop-preview-*.png
       - name: Add to the release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3

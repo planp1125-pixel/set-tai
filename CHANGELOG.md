@@ -499,3 +499,11 @@ Every character now feels like a little body in your hand (the phone's vibration
 - The desktop jobs wait for the phone build, so a red build publishes nothing. Desktop drawing tests run on every build.
 - Still the old desktop features (the monkey, drag/hide/sleep, chat with Ollama or a key). D2 brings all 13 characters and the new bubble.
 - The phone app is unchanged apart from the version number.
+
+## v10.50.4 (code 127): D2, all 13 characters on the desktop + the new bubble
+
+- **Desktop: pick any character** (right-click › Character, or the tray icon › Character): Tutty, Angel, Pogo, Zoom, Bolt, Masko, Billa, Chittu, Gajju, Skye, Echo, Wavy, Rollie. Same drawings and animations as the phone; each says hi when you switch; the choice is remembered. The edge tab shows the character's own peeking face. Only Pogo climbs walls and hangs from the top; the others walk and hop, and drop to the floor if you leave them by an edge.
+- **Desktop bubble like the phone:** your message above the reply, the earlier chat faded above it (up to 100 messages; mouse wheel or drag inside the bubble to scroll), one bubble for the whole reply (no pages), the character's own thinking word instead of "Hmm...".
+- **Friend-length replies** on the desktop too.
+- New desktop test draws all 13 characters in 6 poses and the bubble; the release gets `desktop-preview-characters.png` and `desktop-preview-bubble.png`.
+- Phone app unchanged apart from the version number.

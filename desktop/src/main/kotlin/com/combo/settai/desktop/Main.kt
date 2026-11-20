@@ -60,7 +60,7 @@ fun renderIcon(out: File, size: Int) {
 }
 
 class App(private val cfg: Config, private val args: Array<String>) : OverlayHost {
-    private val frame = JFrame("Settai")
+    private val frame = JFrame("Set-Tai")
     private val chat = DesktopChat(cfg)
     private lateinit var stage: Stage
     private var wa: Rectangle = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
@@ -164,6 +164,8 @@ class App(private val cfg: Config, private val args: Array<String>) : OverlayHos
             }
         }
         stage.addMouseListener(m); stage.addMouseMotionListener(m)
+        // D2: the mouse wheel scrolls the chat inside the bubble
+        stage.addMouseWheelListener { e -> if (stage.onWheel(e.x.toFloat(), e.y.toFloat(), e.preciseWheelRotation.toFloat())) e.consume() }
         stage.addKeyListener(object : KeyAdapter() {
             override fun keyPressed(e: KeyEvent) { if (stage.onKey(e)) e.consume() }
             override fun keyTyped(e: KeyEvent) { if (stage.onKey(e)) e.consume() }
@@ -179,13 +181,22 @@ class App(private val cfg: Config, private val args: Array<String>) : OverlayHos
         item("Chat in bubble") { stage.openBubbleChat() }
         item("Chat window…") { openChat() }
         addSeparator()
+        // D2: pick any of the 13 characters
+        add(javax.swing.JMenu("Character").apply {
+            val group = javax.swing.ButtonGroup()
+            for (c in com.combo.monkeycompanion.character.CharacterRegistry.all) {
+                val mi = javax.swing.JRadioButtonMenuItem("${c.name} - ${c.noun}", c.id == stage.characterId)
+                mi.addActionListener { stage.setCharacter(c.id) }
+                group.add(mi); add(mi)
+            }
+        })
         item("Dance!") { stage.act(BodyAction.DANCE) }
         item("Wave") { stage.act(BodyAction.WAVE) }
         item("Climb") { stage.act(BodyAction.CLIMB) }
         item(if (stage.isHiddenAtEdge) "Come back" else "Hide at the edge") { stage.hideNow() }
         addSeparator()
         item("Settings…") { openSettings() }
-        item("Quit Settai") { quit() }
+        item("Quit Set-Tai") { quit() }
     }
 
     private fun installTray() {
@@ -193,14 +204,18 @@ class App(private val cfg: Config, private val args: Array<String>) : OverlayHos
         runCatching {
             val pm = PopupMenu()
             fun item(label: String, f: () -> Unit) = pm.add(MenuItem(label).apply { addActionListener { SwingUtilities.invokeLater(f) } })
-            item("Show / hide Settai") { toggleShown() }
+            item("Show / hide Set-Tai") { toggleShown() }
+            val chars = Menu("Character")
+            for (c in com.combo.monkeycompanion.character.CharacterRegistry.all)
+                chars.add(MenuItem(c.name).apply { addActionListener { SwingUtilities.invokeLater { if (!frame.isVisible) toggleShown(); stage.setCharacter(c.id) } } })
+            pm.add(chars)
             item("Chat") { if (!frame.isVisible) toggleShown(); stage.openBubbleChat() }
             item("Dance!") { if (!frame.isVisible) toggleShown(); stage.act(BodyAction.DANCE) }
             item("Settings…") { openSettings() }
             pm.addSeparator()
             item("Quit") { quit() }
             val sz = SystemTray.getSystemTray().trayIconSize
-            val icon = TrayIcon(iconImage(maxOf(sz.width, sz.height, 22)), "Settai", pm).apply { isImageAutoSize = true }
+            val icon = TrayIcon(iconImage(maxOf(sz.width, sz.height, 22)), "Set-Tai", pm).apply { isImageAutoSize = true }
             icon.addActionListener { SwingUtilities.invokeLater { toggleShown() } }
             SystemTray.getSystemTray().add(icon)
             tray = icon

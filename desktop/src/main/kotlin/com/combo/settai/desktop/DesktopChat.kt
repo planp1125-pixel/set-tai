@@ -167,7 +167,7 @@ class DesktopChat(private val cfg: Config) {
                 val b = brain()
                 val th = if (b.supportsTools && !local) tools else null
                 toolActed = false
-                val sysPrompt = Persona.systemPrompt(th != null, bodyNow(), compact = local, actionTool = th != null)
+                val sysPrompt = Persona.systemPrompt(th != null, bodyNow(), compact = local, actionTool = th != null, longReplies = true)   // D2: friend-length replies
                 val reply = b.chat(sysPrompt, history, msg, th) { raw ->
                     val t = ActionParser.visible(raw); last = t
                     ui { fire { it.onReply(t, false) } }
