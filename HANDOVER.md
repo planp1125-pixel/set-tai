@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.50.9 (versionCode 132)**, 20 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.50.10 (versionCode 133)**, 20 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## Desktop (D1, v10.50.3)
 
@@ -8,6 +8,7 @@ Updated for **v10.50.9 (versionCode 132)**, 20 Nov 2026. Owner: Manikandan Gopal
 - D2 (v10.50.4): Stage has `character` (cfg key `character`, default devil), `setCharacter()`, `character.fill(..., wear)`, `character.peek` on the tab; climbing gated to the monkey (`climbs`). Bubble: `showBubble(quote=, history=)`, `pastChats()`, `onWheel()`, drag-to-scroll. Menus: Character submenu (popup + tray). Test `desktop/src/test/kotlin/d2/AllCharactersTest`.
 - D3 (v10.50.5): Compose Multiplatform 1.12.2 (`org.jetbrains.compose`, linux_x64 in the fat jar, windows_x64 in `windowsLibs`). `ui/HomeWindow` (ComposeWindow opened from Swing), `ChatGptLogin` (desktop port of ChatGptAuth; tokens in `<config>/chatgpt.json`, 0600), `cfg.brain = "chatgpt"` in DesktopChat.
 - D4 (v10.50.7): Stage `usePower()` / `beginPower` / `stepPower` / `endPower` mirror MonkeyView (PowerFlight, Particles, PowerEmitter, ScreenFx); full-screen window while `powerOn || particles.active`; double-click = power, click shows 💬; DesktopChat `act()` FLY rule + `toolFly` like ChatHub.
+- v10.50.10: desktop faint 💬 (`fabOn()` / `drawFab` / `fabHit`, cfg `chat.button`), added to `hitRegions()`.
 - Version = app `versionName` (gradle reads `app/build.gradle.kts`; scripts grep it). Visible name Set-Tai; internal ids/paths still `settai` / `Settai` so upgrades replace in place.
 
 ## v10.50 Live listening

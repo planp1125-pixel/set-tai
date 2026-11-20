@@ -539,3 +539,8 @@ Every character now feels like a little body in your hand (the phone's vibration
 ## v10.50.9 (code 132): desktop powers test fix
 
 - The desktop powers test checked the full-screen window before the first frame; it now waits one frame. Same features as v10.50.7.
+
+## v10.50.10 (code 133): desktop gets the faint 💬 button
+
+- **Like the phone:** a faint 💬 button is always beside the character on the desktop (low, left of its feet, never on the face). One click opens the bubble chat. It hides while you type, during a power, and while the character is hidden at the edge. Set-Tai window › Settings › "Show the faint 💬 chat button" turns it off.
+- Double-click = a power (since v10.50.7); a single click no longer flashes a chat button.

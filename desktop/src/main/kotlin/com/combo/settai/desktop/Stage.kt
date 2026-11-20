@@ -1325,7 +1325,8 @@ class Stage(
         if (particles.active) { canvas.save(); canvas.translate(-winX.toFloat(), -winY.toFloat()); particles.draw(canvas); canvas.restore() }
         if (screenFxOn()) { canvas.save(); canvas.translate(-winX.toFloat(), -winY.toFloat()); drawScreenFx(canvas); canvas.restore() }
         drawMonkey(canvas)
-        if (chatBtnUntil > 0f || hintUntil > 0f) drawChatBtn(canvas)
+        drawFab(canvas)
+        if ((chatBtnUntil > 0f || hintUntil > 0f) && !fabOn()) drawChatBtn(canvas)
         if (bubbleOn) {
             if (climber.active) {
                 climber.headTop(head); head[0] += sinkX - winX; head[1] += sinkY - winY
@@ -1377,7 +1378,11 @@ class Stage(
         btnPaint.style = Paint.Style.STROKE; btnPaint.strokeWidth = 2 * d; btnPaint.color = Color.WHITE; btnPaint.alpha = a
         canvas.drawCircle(bx, by, r, btnPaint)
         btnText.alpha = a; btnText.textSize = 17 * d * pop
-        // speech-balloon glyph (no colour emoji in Java2D)
+        drawChatGlyph(canvas, bx, by, r, a)
+    }
+
+    /** Speech-balloon glyph (no colour emoji in Java2D). */
+    private fun drawChatGlyph(canvas: Canvas, bx: Float, by: Float, r: Float, a: Int) {
         btnPaint.style = Paint.Style.FILL; btnPaint.color = Color.WHITE; btnPaint.alpha = a
         val u = r / 17f
         tmpR.set(bx - 9 * u, by - 7 * u, bx + 9 * u, by + 5 * u); canvas.drawRoundRect(tmpR, 5 * u, 5 * u, btnPaint)
@@ -1387,6 +1392,34 @@ class Stage(
         for (k in -1..1) canvas.drawCircle(bx + k * 4.5f * u, by - 1 * u, 1.4f * u, btnPaint)
     }
     private var lastBtnX = 0f; private var lastBtnY = 0f
+
+    // ---------------- Faint 💬 button (same rule as the phone: always there, faint, low beside the feet, never on the face) ----------------
+    private var fabX = 0f; private var fabY = 0f
+    private var fabPress = 0f
+    private val fabR get() = chatBtnR * 0.82f
+    /** Shown while the character is out and you're not typing or watching a power. Settings can turn it off. */
+    private fun fabOn(): Boolean = host != null && !wp && !hiddenTab && !powerOn && !typing && !climber.active &&
+        controller.state != MonkeyState.ENTRANCE && controller.state != MonkeyState.HIDDEN && cfg.bool("chat.button", true)
+    val debugChatFab get() = if (fabOn()) floatArrayOf(fabX, fabY) else null
+    private fun placeFab() {
+        val r = fabR
+        fabX = (ox + sinkX + r + 2 * d).coerceIn(r + 1f, max(r + 1f, winW - r - 1f))
+        fabY = (oy + boxH - groundPad - r - 2 * d).coerceIn(r + 1f, max(r + 1f, winH - r - 1f))
+    }
+    private fun drawFab(canvas: Canvas) {
+        if (!fabOn()) return
+        placeFab()
+        val a = (255 * (0.42f + 0.58f * fabPress)).toInt()
+        val r = fabR * (1f - 0.12f * fabPress)
+        btnPaint.style = Paint.Style.FILL; btnPaint.color = Color.rgb(0xE8, 0x8A, 0x2E); btnPaint.alpha = (a * 0.25f).toInt()
+        canvas.drawCircle(fabX, fabY, r * 1.3f, btnPaint)
+        btnPaint.alpha = a; canvas.drawCircle(fabX, fabY, r, btnPaint)
+        btnPaint.style = Paint.Style.STROKE; btnPaint.strokeWidth = 1.6f * d; btnPaint.color = Color.WHITE; btnPaint.alpha = a
+        canvas.drawCircle(fabX, fabY, r, btnPaint)
+        drawChatGlyph(canvas, fabX, fabY, r, a)
+        btnPaint.alpha = 255
+    }
+    private fun fabHit(x: Float, y: Float) = fabOn() && hypot(x - fabX, y - fabY) <= fabR + 8 * d
 
     /** The edge tab: a translucent handle with an arrow, and a little ear + eyes peeking over it. */
     private fun drawTab(c: Canvas) {
@@ -1491,6 +1524,12 @@ class Stage(
                     else hush()
                     return true
                 }
+                if (fabHit(e.x, e.y)) {   // the faint 💬: one click chats
+                    tracking = false; fabPress = 1f; present()
+                    ui.postDelayed({ fabPress = 0f }, 180L)
+                    openBubbleChat()
+                    return true
+                }
                 if (btnHit(e.x, e.y)) {
                     tracking = false; chatBtnUntil = 0f
                     if (hintUntil > 0f) { hintUntil = 0f; countChatOpen() }
@@ -1593,7 +1632,7 @@ class Stage(
         }
         if (System.getenv("SETTAI_DEBUG") != null) System.err.println("TAP zone=$downZone pending=${pending != null} dt=${now - lastTapUp}")
         val zone = downZone; val side = downSide
-        val r = Runnable { pendingTap = null; controller.onTap(zone, side); if (host != null && !wp) chatBtnUntil = max(chatBtnUntil, 3.5f) }   // D4: a click shows 💬
+        val r = Runnable { pendingTap = null; controller.onTap(zone, side) }
         pendingTap = r
         lastTapUp = now; lastTapX = e.rawX; lastTapY = e.rawY
         ui.postDelayed(r, doubleTapTimeout)
@@ -1937,6 +1976,7 @@ class Stage(
         }
         if (bubbleOn) out.add(java.awt.Rectangle(bubbleLeft.toInt() - pad, bubbleTop.toInt() - pad, bubble.width.toInt() + 2 * pad, (bubble.height + bubble.trailSpace).toInt() + 2 * pad))
         if (chatBtnUntil > 0f || hintUntil > 0f) { val r = (chatBtnR * 1.6f).toInt(); out.add(java.awt.Rectangle(lastBtnX.toInt() - r, lastBtnY.toInt() - r, 2 * r, 2 * r)) }
+        if (fabOn()) { val r = (fabR * 1.6f).toInt(); out.add(java.awt.Rectangle(fabX.toInt() - r, fabY.toInt() - r, 2 * r, 2 * r)) }
         return out
     }
 

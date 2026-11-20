@@ -253,6 +253,8 @@ class HomeWindow(
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 SwitchRow("Start Set-Tai when I sign in to this computer", cfg.autostart) { cfg.autostart = it; cfg.save(); brainChanged() }
                 HorizontalDivider()
+                SwitchRow("Show the faint 💬 chat button beside the character", cfg.bool("chat.button", true)) { cfg.set("chat.button", it.toString()); cfg.save() }
+                HorizontalDivider()
                 Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("More settings", fontSize = 15.sp)

@@ -37,6 +37,7 @@ class DesktopPowersTest {
         var t = 1_000_000_000L
         fun frames(n: Int) { repeat(n) { t += 16_666_667L; stage.doFrame(t) } }
         frames(400)   // settle (entrance, idle)
+        assertNotNull("the faint 💬 is always there, like the phone", stage.debugChatFab)
         val out = File("build/d4"); out.mkdirs()
         var shot = 0
         for (c in CharacterRegistry.all) {
@@ -45,6 +46,7 @@ class DesktopPowersTest {
                 assertTrue("${c.id} ${p.id} starts", stage.usePower(p))
                 assertTrue(stage.debugPowerOn)
                 frames(1)   // the window is placed on the next frame
+                assertNull("no 💬 during a power", stage.debugChatFab)
                 assertArrayEquals("a power uses the whole screen", intArrayOf(0, 0, 1600, 900), host.placed)
                 var n = 0
                 while (stage.debugPowerOn && n < 60 * 40) {
