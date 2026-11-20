@@ -44,6 +44,7 @@ class DesktopPowersTest {
             for (p in stage.powers) {
                 assertTrue("${c.id} ${p.id} starts", stage.usePower(p))
                 assertTrue(stage.debugPowerOn)
+                frames(1)   // the window is placed on the next frame
                 assertArrayEquals("a power uses the whole screen", intArrayOf(0, 0, 1600, 900), host.placed)
                 var n = 0
                 while (stage.debugPowerOn && n < 60 * 40) {

@@ -535,3 +535,7 @@ Every character now feels like a little body in your hand (the phone's vibration
 ## v10.50.8 (code 131): desktop powers build fix
 
 - v10.50.7's desktop part didn't compile (helper arrays declared twice). Same features as v10.50.7.
+
+## v10.50.9 (code 132): desktop powers test fix
+
+- The desktop powers test checked the full-screen window before the first frame; it now waits one frame. Same features as v10.50.7.
