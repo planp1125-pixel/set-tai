@@ -531,3 +531,7 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Chat:** a single click shows the 💬 button; right-click › Chat in bubble; or the Set-Tai window's Chat button. (Double-click is the power now.)
 - Test: desktop d4/DesktopPowersTest runs every power of all 13 characters to the landing; the release gets a few `desktop-preview-power-*.png` frames.
 - Phone app unchanged apart from the version number.
+
+## v10.50.8 (code 131): desktop powers build fix
+
+- v10.50.7's desktop part didn't compile (helper arrays declared twice). Same features as v10.50.7.

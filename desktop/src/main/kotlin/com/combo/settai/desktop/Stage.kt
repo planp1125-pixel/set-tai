@@ -334,7 +334,6 @@ class Stage(
     private var powerLineAt = -1; private var crashSaid = false; private var landSaid = false
     /** Double-click: the main (signature) power first, then a random enabled one. */
     private var signatureUsed = false
-    private val tmpA = FloatArray(2); private val tmpB = FloatArray(2); private val tmpPt = FloatArray(2)
     val debugPowerOn get() = powerOn
     /** The current character's powers (for the menu). */
     val powers: List<com.combo.monkeycompanion.brain.Superpower> get() = com.combo.monkeycompanion.brain.PowerPrefs.available(character)
