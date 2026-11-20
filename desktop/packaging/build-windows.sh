@@ -9,6 +9,9 @@ JDK="${JDK:-/workspace/tools/jdk-21.0.12.1+1}"
 WINJDK="${WINJDK:-/workspace/tools/win/jdk-21.0.12.1+1}"
 OUT="${OUT:-$ROOT/desktop/build/win}"
 W="$HERE/windows"
+VER="${VER:-$(grep -o 'versionName = "[^"]*"' "$ROOT/app/build.gradle.kts" | cut -d'"' -f2)}"
+# Windows wants 4 numbers: 10.50.2 -> 10,50,2,0
+VNUM=$(echo "$VER.0.0.0" | cut -d. -f1-4 | tr . ,)
 rm -rf "$OUT"; mkdir -p "$OUT/image/Settai/app"
 (cd "$ROOT" && ./gradlew -q :desktop:fatJar :desktop:windowsJar)
 cp "$ROOT/desktop/build/libs/settai-desktop-windows.jar" "$OUT/image/Settai/app/settai.jar"
@@ -20,7 +23,7 @@ from PIL import Image; im=Image.open('$OUT/icon256.png').convert('RGBA')
 im.save('$OUT/settai.ico', sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])"
 
 # Launcher exe
-cp "$W/launcher.rc" "$OUT/"
+sed -e "s/3,0,0,0/$VNUM/g" -e "s/\"3.0\"/\"$VER\"/g" -e "s/\"Settai\"/\"Set-Tai\"/" -e "s/Settai - desktop monkey companion/Set-Tai - desktop companion/" "$W/launcher.rc" > "$OUT/launcher.rc"
 (cd "$OUT" && x86_64-w64-mingw32-windres launcher.rc -O coff -o launcher.res)
 x86_64-w64-mingw32-gcc -O2 -s -municode -mwindows -o "$OUT/image/Settai/Settai.exe" "$W/launcher.c" "$OUT/launcher.res"
 
@@ -35,10 +38,10 @@ cp "$W/debug-console.cmd" "$OUT/image/Settai/Settai (debug console).cmd"
 sed -i 's/$/\r/' "$OUT/image/Settai/README.txt" "$OUT/image/Settai/Settai (debug console).cmd"
 
 # Portable zip
-python3 - "$OUT" <<'PY'
+VER="$VER" python3 - "$OUT" <<'PY'
 import os, sys, zipfile
 out = sys.argv[1]; base = os.path.join(out, "image")
-with zipfile.ZipFile(os.path.join(out, "settai-3.0-windows-portable.zip"), "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+with zipfile.ZipFile(os.path.join(out, "set-tai-desktop-" + os.environ["VER"] + "-windows-portable.zip"), "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
     for d, _, fs in os.walk(os.path.join(base, "Settai")):
         for f in fs:
             p = os.path.join(d, f); z.write(p, os.path.relpath(p, base))
@@ -46,5 +49,5 @@ PY
 
 # Installer
 cp "$W/settai.nsi" "$OUT/"
-(cd "$OUT" && makensis -V2 -DSRC="image\\Settai" -DOUTFILE="settai-3.0-windows-setup.exe" settai.nsi)
+(cd "$OUT" && makensis -V2 -DSRC="image\\Settai" -DVERSION="$VER" -DVNUM4="$(echo $VNUM | tr , .)" -DOUTFILE="set-tai-desktop-$VER-windows-setup.exe" settai.nsi)
 ls -l "$OUT"/*.exe "$OUT"/*.zip

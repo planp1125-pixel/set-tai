@@ -117,9 +117,13 @@ jobs:
             out/*.aab
           generate_release_notes: true
 
+  # D1 (v10.50.3): every green build also makes the desktop app (same version as the phone app) and adds it
+  # to the same "ci-<number>" release as the APK. It waits for the phone build, so a red build publishes nothing.
   desktop-linux:
-    if: startsWith(github.ref, 'refs/tags/v')   # desktop builds only for real releases
+    needs: android
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -127,9 +131,21 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v6
+      - name: Desktop tests (headless drawing)
+        run: ./gradlew :desktop:test -Djava.awt.headless=true --stacktrace
       - name: Build .deb and .tar.gz
         run: JDK="$JAVA_HOME" OUT="$PWD/dist" bash desktop/packaging/build-deb.sh
-      - uses: softprops/action-gh-release@v3
+      - name: Add to the test build
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ci-${{ github.run_number }}
+          files: |
+            dist/*.deb
+            dist/*.tar.gz
+      - name: Add to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/*.deb
@@ -138,8 +154,10 @@ jobs:
   # Windows package is cross-built on Linux (the project's proven script): mingw launcher + jlink'd
   # Windows runtime + NSIS installer, producing a setup .exe and a portable zip.
   desktop-windows:
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: android
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Install mingw, NSIS, Pillow
@@ -162,7 +180,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: Build Windows installer + portable zip
         run: OUT="$PWD/dist" bash desktop/packaging/build-windows.sh
-      - uses: softprops/action-gh-release@v3
+      - name: Add to the test build
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ci-${{ github.run_number }}
+          files: |
+            dist/*.exe
+            dist/*.zip
+      - name: Add to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/*.exe

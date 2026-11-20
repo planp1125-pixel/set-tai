@@ -18,15 +18,16 @@ import javax.imageio.ImageIO
 import javax.swing.*
 import kotlin.system.exitProcess
 
-const val VERSION = "3.0"
+/** The phone app's version (from the jar manifest); "dev" when run from the IDE. */
+val VERSION: String = object {}.javaClass.`package`?.implementationVersion ?: "dev"
 
 fun main(args: Array<String>) {
     System.setProperty("awt.useSystemAAFontSettings", "on")
     System.setProperty("sun.java2d.xrender", "true")
     if (args.firstOrNull() == "--render-icon") { renderIcon(File(args[1]), args.getOrNull(2)?.toInt() ?: 256); return }
-    if (args.firstOrNull() == "--version") { println("Settai $VERSION"); return }
+    if (args.firstOrNull() == "--version") { println("Set-Tai $VERSION"); return }
     if (args.firstOrNull() == "--help") {
-        println("Settai $VERSION — desktop monkey companion\n  settai               start\n  settai --screenshot FILE [--delay S] [--demo]   save a screen capture\n  settai --render-icon FILE [SIZE]"); return
+        println("Set-Tai $VERSION — desktop companion\n  settai               start\n  settai --screenshot FILE [--delay S] [--demo]   save a screen capture\n  settai --render-icon FILE [SIZE]"); return
     }
     // Nice WM_CLASS ("Settai") so GNOME matches the window to settai.desktop.
     runCatching {

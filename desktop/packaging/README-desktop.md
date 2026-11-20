@@ -1,4 +1,4 @@
-# Settai 3.0 for Ubuntu (desktop)
+# Set-Tai for Ubuntu (desktop)
 
 The same Settai as on the phone (same drawing code, same personality and the same [dance]-style action tags), living on your desktop.
 

@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=Settai
+Name=Set-Tai
 GenericName=Desktop monkey companion
 Comment=A cheeky animated monkey that lives on your desktop and chats with you
 Exec=/opt/settai/bin/Settai

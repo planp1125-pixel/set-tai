@@ -490,3 +490,12 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Optional:** Settings › "Use Google's voice popup for 🎤" (off by default) opens Google's own voice popup instead; voice chat then reopens the popup for each turn. The 🎙️ Google voice button on a "Didn't catch that" bubble opens it once.
 - The popup is Google's app turning speech into text (mention in the privacy policy / Data safety if used).
 - Tests: LiveListeningTest popup (when switched on) + voice chat.
+
+## v10.50.3 (code 126): D1, desktop builds for Ubuntu and Windows
+
+- Every green build now also makes the desktop app and adds it to the same test release as the APK:
+  `set-tai-desktop_<version>_amd64.deb` and `set-tai-desktop-<version>-linux-x64.tar.gz` (Ubuntu), `set-tai-desktop-<version>-windows-setup.exe` and `-windows-portable.zip` (Windows 10/11). No Java install needed (each bundles its own).
+- The desktop app now has the same version number as the phone app (was stuck at 3.0) and shows the name Set-Tai. Install folders and settings stay where they were, so an old desktop install upgrades in place.
+- The desktop jobs wait for the phone build, so a red build publishes nothing. Desktop drawing tests run on every build.
+- Still the old desktop features (the monkey, drag/hide/sleep, chat with Ollama or a key). D2 brings all 13 characters and the new bubble.
+- The phone app is unchanged apart from the version number.

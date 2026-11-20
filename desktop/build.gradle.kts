@@ -21,8 +21,11 @@ dependencies {
 
 val mainClassName = "com.combo.settai.desktop.MainKt"
 
+/** D1 (v10.50.3): the desktop app has the same version number as the phone app. */
+val appVersion: String = Regex("versionName = \"([^\"]+)\"").find(rootProject.file("app/build.gradle.kts").readText())?.groupValues?.get(1) ?: "0.0"
+
 tasks.jar {
-    manifest { attributes("Main-Class" to mainClassName, "Implementation-Version" to "3.0") }
+    manifest { attributes("Main-Class" to mainClassName, "Implementation-Version" to appVersion) }
 }
 
 /** Single runnable jar with all dependencies (input for jpackage). */
@@ -30,7 +33,7 @@ val fatJar by tasks.registering(Jar::class) {
     archiveBaseName.set("settai-desktop")
     archiveClassifier.set("all")
     archiveVersion.set("")
-    manifest { attributes("Main-Class" to mainClassName, "Implementation-Version" to "3.0") }
+    manifest { attributes("Main-Class" to mainClassName, "Implementation-Version" to appVersion) }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(sourceSets["main"].output)
     dependsOn(configurations.runtimeClasspath)
@@ -44,7 +47,7 @@ val windowsJar by tasks.registering(Jar::class) {
     archiveBaseName.set("settai-desktop")
     archiveClassifier.set("windows")
     archiveVersion.set("")
-    manifest { attributes("Main-Class" to mainClassName, "Implementation-Version" to "3.0") }
+    manifest { attributes("Main-Class" to mainClassName, "Implementation-Version" to appVersion) }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(sourceSets["main"].output)
     dependsOn(configurations.runtimeClasspath, windowsLibs)

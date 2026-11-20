@@ -5,7 +5,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"
 JDK="${JDK:-/workspace/tools/jdk-21.0.12.1+1}"
 OUT="${OUT:-$ROOT/desktop/build/dist}"
-VER=3.0
+VER="${VER:-$(grep -o 'versionName = "[^"]*"' "$ROOT/app/build.gradle.kts" | cut -d'"' -f2)}"
 rm -rf "$OUT"; mkdir -p "$OUT"
 (cd "$ROOT" && ./gradlew -q :desktop:fatJar)
 JAR="$ROOT/desktop/build/libs/settai-desktop-all.jar"
@@ -18,7 +18,7 @@ for s in 48 64 128 256 512; do "$JDK/bin/java" -jar "$JAR" --render-icon "$OUT/i
   --strip-java-debug-attributes --strip-native-debug-symbols=objcopy=/usr/bin/objcopy --no-man-pages --no-header-files --compress=zip-0 --output "$OUT/runtime"
 
 mkdir -p "$OUT/input"; cp "$JAR" "$OUT/input/settai.jar"
-"$JDK/bin/jpackage" --type app-image --name Settai --app-version $VER --vendor "COMBO MEALS" \
+"$JDK/bin/jpackage" --type app-image --name Settai --app-version "$VER" --vendor "COMBO MEALS" \
   --input "$OUT/input" --main-jar settai.jar --main-class com.combo.settai.desktop.MainKt \
   --runtime-image "$OUT/runtime" --icon "$OUT/icons/256.png" --dest "$OUT/image" \
   --java-options "-Xms32m -Xmx384m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Dsun.java2d.xrender=true -Dawt.useSystemAAFontSettings=on -Dsun.awt.noerasebackground=true --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED"
@@ -43,7 +43,7 @@ Depends: libc6, libx11-6, libxext6, libxrender1, libxtst6, libxi6, libfreetype6,
 Recommends: libglib2.0-bin
 Suggests: ollama
 Homepage: https://ollama.com
-Description: Settai - cheeky animated monkey desktop companion
+Description: Set-Tai - cheeky animated desktop companion
  Settai walks along the bottom of your screen, climbs the edges, hangs from
  the top, hides behind the screen edge and chats with you in a cloud bubble.
  His brain is a local Ollama model (private, offline) or an online AI with
@@ -59,7 +59,7 @@ PI
 cp "$PKG/DEBIAN/postinst" "$PKG/DEBIAN/postrm"
 chmod 755 "$PKG/DEBIAN/postinst" "$PKG/DEBIAN/postrm"
 find "$PKG" -type d -exec chmod 755 {} +
-dpkg-deb --root-owner-group -Zxz -z9 --build "$PKG" "$OUT/settai_${VER}_amd64.deb"
+dpkg-deb --root-owner-group -Zxz -z9 --build "$PKG" "$OUT/set-tai-desktop_${VER}_amd64.deb"
 
 # ---- .tar.gz (no root needed: extract and run settai-3.0/bin/Settai) ----
 T="$OUT/tar/settai-$VER"; mkdir -p "$T"
@@ -75,7 +75,7 @@ cp "$D/settai.png" "$HOME/.local/share/icons/hicolor/256x256/apps/settai.png"
 sed "s#/opt/settai/bin/Settai#$D/bin/Settai#" > "$HOME/.local/share/applications/settai.desktop" <<DE
 [Desktop Entry]
 Type=Application
-Name=Settai
+Name=Set-Tai
 Comment=A cheeky animated monkey that lives on your desktop and chats with you
 Exec=/opt/settai/bin/Settai
 Icon=settai
@@ -86,5 +86,5 @@ DE
 echo "Settai added to your launcher. Run: $D/bin/Settai"
 IU
 chmod +x "$T/install-user.sh"
-tar -C "$OUT/tar" -czf "$OUT/settai-${VER}-linux-x64.tar.gz" "settai-$VER"
+tar -C "$OUT/tar" -czf "$OUT/set-tai-desktop-${VER}-linux-x64.tar.gz" "settai-$VER"
 ls -la "$OUT"/*.deb "$OUT"/*.tar.gz

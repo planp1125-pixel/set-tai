@@ -1,6 +1,11 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.50.2 (versionCode 125)**, 19 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.50.3 (versionCode 126)**, 20 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+
+## Desktop (D1, v10.50.3)
+
+- `desktop/` (Swing/Java2D, `android.*` shims) reuses `shared/`. CI jobs `desktop-linux` (runs `:desktop:test`, then `packaging/build-deb.sh`) and `desktop-windows` (cross-built on Linux: mingw launcher + jlink'd Windows Temurin + NSIS) now run on main after `android` and upload to `ci-<run>`.
+- Version = app `versionName` (gradle reads `app/build.gradle.kts`; scripts grep it). Visible name Set-Tai; internal ids/paths still `settai` / `Settai` so upgrades replace in place.
 
 ## v10.50 Live listening
 
