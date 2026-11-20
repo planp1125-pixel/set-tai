@@ -70,6 +70,18 @@ class App(private val cfg: Config, private val args: Array<String>) : OverlayHos
     private var settings: SettingsWindow? = null
     private var chatWin: ChatWindow? = null
     private var tray: TrayIcon? = null
+    /** D3: the app window (Compose): character, brain (Sign in with ChatGPT), settings. */
+    private var home: com.combo.settai.desktop.ui.HomeWindow? = null
+
+    fun openHome() {
+        (home ?: com.combo.settai.desktop.ui.HomeWindow(cfg,
+            currentCharacter = { stage.characterId },
+            pickCharacter = { id -> stage.setCharacter(id) },
+            openChat = { openChat() },
+            openAdvanced = { openSettings() },
+            brainChanged = { syncAutostart() },
+        ).also { home = it }).open()
+    }
 
     fun start() {
         stage = Stage(this, chat, cfg)
@@ -98,6 +110,8 @@ class App(private val cfg: Config, private val args: Array<String>) : OverlayHos
         runCatching { platform.prepareWindow(frame) }.onFailure { System.err.println("Window tweaks failed: $it") }
         frame.isVisible = true
         installTray()
+        // D3: first start opens the app window (pick a character, give it a brain)
+        if (cfg.get("home.shown") != "1" && "--screenshot" !in args) { cfg.set("home.shown", "1"); cfg.save(); runCatching { openHome() }.onFailure { System.err.println("Home window: $it") } }
         startMonitors()
         syncAutostart()
         if ("--demo" in args) demo()
@@ -178,6 +192,8 @@ class App(private val cfg: Config, private val args: Array<String>) : OverlayHos
     private fun menu() = JPopupMenu().apply {
         isLightWeightPopupEnabled = false   // its own window: Settai's window is tiny and shaped
         fun item(label: String, f: () -> Unit) = add(JMenuItem(label).apply { addActionListener { f() } })
+        item("Set-Tai…  (character, brain, settings)") { openHome() }
+        addSeparator()
         item("Chat in bubble") { stage.openBubbleChat() }
         item("Chat window…") { openChat() }
         addSeparator()
@@ -186,7 +202,7 @@ class App(private val cfg: Config, private val args: Array<String>) : OverlayHos
             val group = javax.swing.ButtonGroup()
             for (c in com.combo.monkeycompanion.character.CharacterRegistry.all) {
                 val mi = javax.swing.JRadioButtonMenuItem("${c.name} - ${c.noun}", c.id == stage.characterId)
-                mi.addActionListener { stage.setCharacter(c.id) }
+                mi.addActionListener { stage.setCharacter(c.id); home?.refresh() }
                 group.add(mi); add(mi)
             }
         })
@@ -204,10 +220,11 @@ class App(private val cfg: Config, private val args: Array<String>) : OverlayHos
         runCatching {
             val pm = PopupMenu()
             fun item(label: String, f: () -> Unit) = pm.add(MenuItem(label).apply { addActionListener { SwingUtilities.invokeLater(f) } })
-            item("Show / hide Set-Tai") { toggleShown() }
+            item("Open Set-Tai…") { openHome() }
+            item("Show / hide the character") { toggleShown() }
             val chars = Menu("Character")
             for (c in com.combo.monkeycompanion.character.CharacterRegistry.all)
-                chars.add(MenuItem(c.name).apply { addActionListener { SwingUtilities.invokeLater { if (!frame.isVisible) toggleShown(); stage.setCharacter(c.id) } } })
+                chars.add(MenuItem(c.name).apply { addActionListener { SwingUtilities.invokeLater { if (!frame.isVisible) toggleShown(); stage.setCharacter(c.id); home?.refresh() } } })
             pm.add(chars)
             item("Chat") { if (!frame.isVisible) toggleShown(); stage.openBubbleChat() }
             item("Dance!") { if (!frame.isVisible) toggleShown(); stage.act(BodyAction.DANCE) }

@@ -1,11 +1,12 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.50.4 (versionCode 127)**, 20 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.50.5 (versionCode 128)**, 20 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## Desktop (D1, v10.50.3)
 
 - `desktop/` (Swing/Java2D, `android.*` shims) reuses `shared/`. CI jobs `desktop-linux` (runs `:desktop:test`, then `packaging/build-deb.sh`) and `desktop-windows` (cross-built on Linux: mingw launcher + jlink'd Windows Temurin + NSIS) now run on main after `android` and upload to `ci-<run>`.
 - D2 (v10.50.4): Stage has `character` (cfg key `character`, default devil), `setCharacter()`, `character.fill(..., wear)`, `character.peek` on the tab; climbing gated to the monkey (`climbs`). Bubble: `showBubble(quote=, history=)`, `pastChats()`, `onWheel()`, drag-to-scroll. Menus: Character submenu (popup + tray). Test `desktop/src/test/kotlin/d2/AllCharactersTest`.
+- D3 (v10.50.5): Compose Multiplatform 1.12.2 (`org.jetbrains.compose`, linux_x64 in the fat jar, windows_x64 in `windowsLibs`). `ui/HomeWindow` (ComposeWindow opened from Swing), `ChatGptLogin` (desktop port of ChatGptAuth; tokens in `<config>/chatgpt.json`, 0600), `cfg.brain = "chatgpt"` in DesktopChat.
 - Version = app `versionName` (gradle reads `app/build.gradle.kts`; scripts grep it). Visible name Set-Tai; internal ids/paths still `settai` / `Settai` so upgrades replace in place.
 
 ## v10.50 Live listening

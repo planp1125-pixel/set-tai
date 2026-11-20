@@ -36,7 +36,7 @@ class Config {
     }
 
     // ---- typed accessors ----
-    var brain: String get() = get("brain", "ollama"); set(v) = set("brain", v)          // ollama | online | none
+    var brain: String get() = get("brain", "ollama"); set(v) = set("brain", v)          // chatgpt | ollama | online | none
     var ollamaUrl: String get() = get("ollama.url", "http://localhost:11434"); set(v) = set("ollama.url", v)
     var ollamaModel: String get() = get("ollama.model", ""); set(v) = set("ollama.model", v)
     var provider: String get() = get("online.provider", "OPENAI"); set(v) = set("online.provider", v)

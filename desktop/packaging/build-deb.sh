@@ -14,14 +14,14 @@ JAR="$ROOT/desktop/build/libs/settai-desktop-all.jar"
 for s in 48 64 128 256 512; do "$JDK/bin/java" -jar "$JAR" --render-icon "$OUT/icons/${s}.png" $s; done
 
 # Trimmed runtime
-"$JDK/bin/jlink" --add-modules java.base,java.desktop,java.logging,jdk.crypto.ec,jdk.unsupported \
+"$JDK/bin/jlink" --add-modules java.base,java.desktop,java.logging,java.management,java.naming,java.prefs,jdk.crypto.ec,jdk.unsupported \
   --strip-java-debug-attributes --strip-native-debug-symbols=objcopy=/usr/bin/objcopy --no-man-pages --no-header-files --compress=zip-0 --output "$OUT/runtime"
 
 mkdir -p "$OUT/input"; cp "$JAR" "$OUT/input/settai.jar"
 "$JDK/bin/jpackage" --type app-image --name Settai --app-version "$VER" --vendor "COMBO MEALS" \
   --input "$OUT/input" --main-jar settai.jar --main-class com.combo.settai.desktop.MainKt \
   --runtime-image "$OUT/runtime" --icon "$OUT/icons/256.png" --dest "$OUT/image" \
-  --java-options "-Xms32m -Xmx384m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Dsun.java2d.xrender=true -Dawt.useSystemAAFontSettings=on -Dsun.awt.noerasebackground=true --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED"
+  --java-options "-Xms32m -Xmx512m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Dsun.java2d.xrender=true -Dawt.useSystemAAFontSettings=on -Dsun.awt.noerasebackground=true --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED"
 
 # ---- .deb ----
 PKG="$OUT/deb"; mkdir -p "$PKG/DEBIAN" "$PKG/opt/settai" "$PKG/usr/bin" "$PKG/usr/share/applications"

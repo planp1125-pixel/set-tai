@@ -29,7 +29,7 @@ x86_64-w64-mingw32-gcc -O2 -s -municode -mwindows -o "$OUT/image/Settai/Settai.e
 
 # Windows runtime via jlink on Linux with the Windows jmods
 "$JDK/bin/jlink" --module-path "$WINJDK/jmods" \
-  --add-modules java.base,java.desktop,java.logging,java.management,jdk.crypto.ec,jdk.unsupported,jdk.crypto.mscapi \
+  --add-modules java.base,java.desktop,java.logging,java.management,java.naming,java.prefs,jdk.crypto.ec,jdk.unsupported,jdk.crypto.mscapi \
   --strip-debug --no-man-pages --no-header-files --compress=zip-0 --output "$OUT/image/Settai/runtime"
 rm -f "$OUT/image/Settai/runtime/lib/jvm.lib"; rm -f "$OUT/image/Settai/runtime/bin/"{jrunscript,keytool,kinit,klist,ktab,rmiregistry,jfr}.exe 2>/dev/null || true
 

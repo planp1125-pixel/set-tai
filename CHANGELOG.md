@@ -507,3 +507,12 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Friend-length replies** on the desktop too.
 - New desktop test draws all 13 characters in 6 poses and the bubble; the release gets `desktop-preview-characters.png` and `desktop-preview-bubble.png`.
 - Phone app unchanged apart from the version number.
+
+## v10.50.5 (code 128): D3, a real desktop app window + Sign in with ChatGPT
+
+- **Set-Tai app window** (Compose for Desktop, the desktop version of the toolkit behind the phone's screens): opens on first start, and from right-click › "Set-Tai…" or the tray › "Open Set-Tai…". Left: your character, big, with "Chat with …". Right: **Give it a brain**, **Your character** (all 13 as pictures; click to switch) and **Settings** (start at sign-in; "More settings…" opens the detailed settings). Lavender look like the phone; follows the system's light / dark mode.
+- **Sign in with ChatGPT on the desktop**: your normal browser opens OpenAI's page; when you allow it, the character thinks with your ChatGPT Plus / Pro plan (same OpenAI flow as the phone; chats aren't saved in ChatGPT). Tokens stay only on this computer in a file only you can read. Sign out any time.
+- Brains to choose from: your ChatGPT plan, Ollama on this computer, or your own API key. (Set-Tai Cloud comes later.)
+- Desktop runtime gets a little more memory (512 MB) and the Java parts Compose needs.
+- Tests: desktop d3/DesktopBrainTest (sign-in address rules, host id, JWT, portraits).
+- Phone app unchanged apart from the version number.

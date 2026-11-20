@@ -60,13 +60,19 @@ class DesktopChat(private val cfg: Config) {
     }
     fun clearMemory() { synchronized(memory) { memory.clear() }; saveMemory() }
 
+    init { ChatGptLogin.init(cfg) }
+
     val isLocal get() = cfg.brain == "ollama"
 
     @Synchronized fun brain(): Brain {
-        val s = listOf(cfg.brain, cfg.ollamaUrl, cfg.ollamaModel, cfg.provider, cfg.key(cfg.provider), cfg.model(cfg.provider), cfg.customUrl).joinToString("|")
+        val s = listOf(cfg.brain, cfg.ollamaUrl, cfg.ollamaModel, cfg.provider, cfg.key(cfg.provider), cfg.model(cfg.provider), cfg.customUrl,
+            ChatGptLogin.signature, cfg.get("chatgpt.model")).joinToString("|")
         brain?.let { if (s == sig) return it }
         brain?.close()
         val b = when (cfg.brain) {
+            // D3: the user's own ChatGPT Plus / Pro plan
+            "chatgpt" -> if (ChatGptLogin.signedIn) ChatGptBrain(ChatGptLogin, cfg.get("chatgpt.model"))
+                else CannedBrain("Sign in to ChatGPT first: right-click me › Set-Tai… › Sign in with ChatGPT.")
             "ollama" -> if (cfg.ollamaModel.isBlank()) CannedBrain("My local brain needs a model. Right-click me → Settings → Pull recommended model (${Config.RECOMMENDED_MODEL}).")
                 else OpenAiCompatBrain("Ollama (${cfg.ollamaModel})", cfg.ollamaUrl.trimEnd('/') + "/v1", "ollama", cfg.ollamaModel)
             "online" -> {

@@ -19,7 +19,7 @@ int WINAPI wWinMain(HINSTANCE h, HINSTANCE p, LPWSTR args, int show) {
         return 1;
     }
     swprintf(cmd, 8192,
-        L"\"%ls\" -Xms32m -Xmx384m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Dsun.java2d.noddraw=true "
+        L"\"%ls\" -Xms32m -Xmx512m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Dsun.java2d.noddraw=true "
         L"-Dfile.encoding=UTF-8 -Dsettai.exe=\"%ls\" -jar \"%ls\" %ls",
         java, exe, jar, args ? args : L"");
     STARTUPINFOW si; PROCESS_INFORMATION pi;
