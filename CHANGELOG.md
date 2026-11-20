@@ -516,3 +516,8 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Desktop runtime gets a little more memory (512 MB) and the Java parts Compose needs.
 - Tests: desktop d3/DesktopBrainTest (sign-in address rules, host id, JWT, portraits).
 - Phone app unchanged apart from the version number.
+
+## v10.50.6 (code 129): desktop build fix
+
+- The desktop app didn't compile since v10.32 (the show engine uses a yellow colour the desktop's drawing layer didn't have). Added the missing colours. D1-D3 desktop packages build again.
+- Phone app unchanged apart from the version number.

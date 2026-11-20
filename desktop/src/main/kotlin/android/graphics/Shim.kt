@@ -32,6 +32,14 @@ object Color {
     const val WHITE = -0x1
     const val TRANSPARENT = 0
     const val RED = -0x10000
+    // v10.50.6: colours the shared show engine uses
+    const val YELLOW = -0x100
+    const val GREEN = -0xff0100
+    const val BLUE = -0xffff01
+    const val CYAN = -0xff0001
+    const val MAGENTA = -0xff01
+    const val DKGRAY = -0xbbbbbc
+    const val LTGRAY = -0x333334
     const val GRAY = -0x777778
     fun rgb(r: Int, g: Int, b: Int): Int = (0xFF shl 24) or ((r and 0xFF) shl 16) or ((g and 0xFF) shl 8) or (b and 0xFF)
     fun argb(a: Int, r: Int, g: Int, b: Int): Int = ((a and 0xFF) shl 24) or ((r and 0xFF) shl 16) or ((g and 0xFF) shl 8) or (b and 0xFF)
