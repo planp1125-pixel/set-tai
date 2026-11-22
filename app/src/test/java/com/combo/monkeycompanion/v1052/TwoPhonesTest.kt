@@ -25,6 +25,8 @@ class TwoPhonesTest {
             assertEquals(c.id, ok, PairProtocol.decode(PairProtocol.encode(ok)))
         }
         assertNotNull(PairProtocol.decode("SETTAI1 HELLO Moto devil abc"))
+        // the protocol's own list must cover every built-in character
+        assertEquals(CharacterRegistry.all.size, CharacterRegistry.all.count { PairProtocol.decode("SETTAI1 ACCEPT x ${it.id}") != null })
         assertNull("still no made-up characters", PairProtocol.decode("SETTAI1 HELLO a hacker x"))
     }
 

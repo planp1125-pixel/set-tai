@@ -41,7 +41,10 @@ object PairProtocol {
     private val SAFE = Regex("[^A-Za-z0-9_\\-]")
     fun clean(s: String) = SAFE.replace(s, "_").take(24).ifEmpty { "_" }
     /** v10.52.1: any built-in character (it used to accept only the first four, so Tutty, Bolt… could never pair). */
-    private fun knownCharacter(id: String) = id.length <= 24 && com.combo.monkeycompanion.character.CharacterRegistry.byId(id) != null
+    private val CHARACTERS = setOf("devil", "angel", "monkey", "superboy", "armour", "mask", "billa", "chittu", "gajju",
+        "rocketgirl", "hollowman", "surfer", "skater")
+    /** Plain list (no CharacterRegistry: that one draws with android Color and can't load in plain unit tests). */
+    private fun knownCharacter(id: String) = id in CHARACTERS
 
     fun encode(m: Msg): String = when (m) {
         is Msg.Hello -> "$MAGIC HELLO ${clean(m.name)} ${clean(m.characterId)} ${clean(m.codeHash)}"
