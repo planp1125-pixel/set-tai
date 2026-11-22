@@ -572,3 +572,11 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Settings tab:** new entries **Personality & Memory** (random quips, conversation memory, clear chat history, diary) and **Habits & Extras** (shake & tilt, friendship heart, daily hello, streak sulking, goodnight, daily challenge, eats notifications, festivals, sleep nag, weather). These were unreachable since the redesign.
 - Tests: v1052/TiltAndPlayTest; V1036's rolling-tick test now opts into "Bumps + rolling".
 
+## v10.52.1 (code 138): two phones can actually pair
+
+- **Every character can pair.** The pairing message only accepted the first four characters (Pogo, Zoom, Bolt, Masko), so a phone with Tutty, Chittu, Skye, the angel or anyone newer was silently dropped and the other phone never saw "Pair with…?". Now every built-in character works; a custom companion travels as Pogo.
+- **A search never lists this phone itself**, and each phone's Wi-Fi name is its model plus a fixed 3-digit tag (e.g. "motorola edge 70-427"), so two phones of the same model no longer look identical. The screen says which name is this phone.
+- Each "Find" tap starts a fresh search; a failed search says to try again or toggle Wi-Fi.
+- Help text: if the Wi-Fi blocks phones from seeing each other (office, hostel, guest, mesh), use one phone's hotspot.
+- Test: v1052/TwoPhonesTest.
+

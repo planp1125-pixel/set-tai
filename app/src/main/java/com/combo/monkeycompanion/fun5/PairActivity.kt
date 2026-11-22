@@ -34,8 +34,14 @@ class PairActivity : androidx.activity.ComponentActivity(), PairHub.Listener {
     private var paired by androidx.compose.runtime.mutableStateOf(false)
     private var askingCodeFor by androidx.compose.runtime.mutableStateOf<String?>(null)
     private var askPeer by androidx.compose.runtime.mutableStateOf<Pair<String, String>?>(null)
-    private val myName get() = (Build.MODEL ?: "phone").take(24)
-    private val myChar get() = CharacterRegistry.current.id
+    /** v10.52.1: model + a fixed 3-digit tag, so two phones of the same model don't look the same. */
+    private val myName: String get() {
+        val p = getSharedPreferences("settai_v3", 0)
+        var tag = p.getInt("pair_tag", 0)
+        if (tag == 0) { tag = 100 + kotlin.random.Random.nextInt(900); p.edit().putInt("pair_tag", tag).apply() }
+        return ((Build.MODEL ?: "phone").take(19) + "-" + tag)
+    }
+    private val myChar get() = CharacterRegistry.current.id.let { id -> if (CharacterRegistry.all.any { it.id == id }) id else "monkey" }   // a custom companion travels as Pogo
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
@@ -49,7 +55,8 @@ class PairActivity : androidx.activity.ComponentActivity(), PairHub.Listener {
     @androidx.compose.runtime.Composable
     private fun Screen() {
         com.combo.monkeycompanion.ui.SettaiScreen("Two phones", onBack = { finish() }) {
-            com.combo.monkeycompanion.ui.SNote("Both phones on the same Wi-Fi, both with Set-Tai open here. One taps \"Show a code\", the other taps \"Find\" and types that code; then the first phone taps Accept. Only animation events are exchanged (wave, jump, fight, dance). No messages, no files, nothing else.")
+            com.combo.monkeycompanion.ui.SNote("Both phones on the same Wi-Fi, both with this screen open. Phone 1 taps \"Show a code\" and keeps this screen open. Phone 2 taps \"Find the other phone\", picks phone 1 (this phone is \"$myName\") and types the code; phone 1 taps Accept. Only animation events are exchanged (wave, jump, fight, dance). No messages, no files, nothing else.")
+            com.combo.monkeycompanion.ui.SNote("Not found? Some Wi-Fi (office, hostel, guest, mesh) blocks phones from seeing each other. Turn on the hotspot on one phone and join it from the other: that always works.")
             com.combo.monkeycompanion.ui.SCard(status) {
                 com.combo.monkeycompanion.ui.SPrimary("Show a code (this phone waits)") {
                     val code = PairProtocol.newCode()

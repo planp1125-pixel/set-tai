@@ -49,6 +49,11 @@ object PairHub {
     private var regListener: NsdManager.RegistrationListener? = null
     private var discListener: NsdManager.DiscoveryListener? = null
     private val found = LinkedHashMap<String, NsdServiceInfo>()
+    /** v10.52.1: the name this phone shows on Wi-Fi, so a search never lists this phone itself. */
+    @Volatile private var myService: String? = null
+    private fun isMine(n: String): Boolean { val m = myService ?: return false; return n == m || n.startsWith("$m (") }
+    /** Tests: the search result filter. */
+    fun debugIsMine(myName: String, found: String): Boolean { myService = "Settai-" + PairProtocol.clean(myName); return isMine(found) }
 
     /** Phone A: become discoverable and show [code]. */
     fun host(ctx: Context, myName: String, myCharacter: String, code: String) {
@@ -57,7 +62,8 @@ object PairHub {
         io.execute {
             runCatching {
                 val ss = ServerSocket(0); server = ss
-                val info = NsdServiceInfo().apply { serviceName = "Settai-" + PairProtocol.clean(myName); serviceType = PairProtocol.SERVICE_TYPE; port = ss.localPort }
+                myService = "Settai-" + PairProtocol.clean(myName)
+                val info = NsdServiceInfo().apply { serviceName = myService; serviceType = PairProtocol.SERVICE_TYPE; port = ss.localPort }
                 val nm = ctx.getSystemService(NsdManager::class.java); nsd = nm
                 val rl = object : NsdManager.RegistrationListener {
                     override fun onServiceRegistered(i: NsdServiceInfo) { fire { it.onStatus("Waiting for the other phone… code $code") } }
@@ -76,16 +82,18 @@ object PairHub {
     /** Phone B: look for Settais on this Wi-Fi. */
     fun discover(ctx: Context) {
         val nm = ctx.getSystemService(NsdManager::class.java); nsd = nm
+        discListener?.let { l -> runCatching { nm.stopServiceDiscovery(l) } }; discListener = null   // a fresh search each tap
         found.clear()
+        fire { it.onFound(emptyList()) }
         val dl = object : NsdManager.DiscoveryListener {
             override fun onDiscoveryStarted(t: String) { fire { it.onStatus("Looking for Set-Tai phones on this Wi-Fi…") } }
             override fun onServiceFound(i: NsdServiceInfo) {
-                if (!i.serviceType.contains("_settai")) return
+                if (!i.serviceType.contains("_settai") || isMine(i.serviceName)) return
                 found[i.serviceName] = i; val names = found.keys.toList(); fire { it.onFound(names) }
             }
             override fun onServiceLost(i: NsdServiceInfo) { found.remove(i.serviceName); val names = found.keys.toList(); fire { it.onFound(names) } }
             override fun onDiscoveryStopped(t: String) {}
-            override fun onStartDiscoveryFailed(t: String, e: Int) { fire { it.onStatus("Search failed ($e)") } }
+            override fun onStartDiscoveryFailed(t: String, e: Int) { fire { it.onStatus("Search failed ($e). Try again, or turn Wi-Fi off and on.") } }
             override fun onStopDiscoveryFailed(t: String, e: Int) {}
         }
         discListener = dl
@@ -158,7 +166,7 @@ object PairHub {
 
     fun stop() {
         val o = out; val sk = sock; val sv = server; val had = session != null
-        sock = null; out = null; server = null; session?.close(); session = null
+        sock = null; out = null; server = null; session?.close(); session = null; myService = null
         unregisterNsd()
         io.execute { if (had) runCatching { o?.println(PairProtocol.encode(Msg.Bye)) }; runCatching { sk?.close() }; runCatching { sv?.close() } }
     }

@@ -40,7 +40,8 @@ object PairProtocol {
 
     private val SAFE = Regex("[^A-Za-z0-9_\\-]")
     fun clean(s: String) = SAFE.replace(s, "_").take(24).ifEmpty { "_" }
-    private val CHARACTERS = setOf("monkey", "superboy", "armour", "mask")
+    /** v10.52.1: any built-in character (it used to accept only the first four, so Tutty, Bolt… could never pair). */
+    private fun knownCharacter(id: String) = id.length <= 24 && com.combo.monkeycompanion.character.CharacterRegistry.byId(id) != null
 
     fun encode(m: Msg): String = when (m) {
         is Msg.Hello -> "$MAGIC HELLO ${clean(m.name)} ${clean(m.characterId)} ${clean(m.codeHash)}"
@@ -56,8 +57,8 @@ object PairProtocol {
         val p = line.trim().split(' ')
         if (p.size < 2 || p[0] != MAGIC) return null
         return when (p[1]) {
-            "HELLO" -> if (p.size == 5 && p[3] in CHARACTERS) Msg.Hello(clean(p[2]), p[3], clean(p[4])) else null
-            "ACCEPT" -> if (p.size == 4 && p[3] in CHARACTERS) Msg.Accept(clean(p[2]), p[3]) else null
+            "HELLO" -> if (p.size == 5 && knownCharacter(p[3])) Msg.Hello(clean(p[2]), p[3], clean(p[4])) else null
+            "ACCEPT" -> if (p.size == 4 && knownCharacter(p[3])) Msg.Accept(clean(p[2]), p[3]) else null
             "REJECT" -> Msg.Reject
             "BYE" -> Msg.Bye
             "EV" -> Event.entries.firstOrNull { it.id == p.getOrNull(2) }?.let { e ->

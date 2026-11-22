@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.52.0 (versionCode 137)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.52.1 (versionCode 138)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.51 Human pace
 
@@ -16,6 +16,7 @@ Updated for **v10.52.0 (versionCode 137)**, 22 Nov 2026. Owner: Manikandan Gopal
 - `MonkeyView.tiltTick()`: smoothed gravity `tgx/tgy`, ownership lasts until upright + on the floor, `bounce()` per wall (`tiltWall/tiltWallN`, rest 0.45 → 0.18 → 0), buzz per `AppSettings.tiltBuzz` (0/1/2). `MotionSensor` registers without batching.
 - `Distribution.screenCapture` (false in Play, set in `ChatHub.init`) + `CAPTURE_ITEMS` hide Smash / selfie snap; `app/src/play/AndroidManifest.xml` removes SmashActivity, SmashCaptureService, SelfieShotActivity and FOREGROUND_SERVICE_MEDIA_PROJECTION.
 - `ChatHub.spoke()` no longer requires the VOICE group.
+- v10.52.1 pairing: `PairProtocol.knownCharacter()` uses `CharacterRegistry.byId` (was 4 ids); `PairHub.myService` filters self from NSD results; `PairActivity.myName` = model + persisted `pair_tag`.
 - Settings tab: "Personality & Memory" → section `personality`, "Habits & Extras" → `habits`.
 
 ## Desktop (D1, v10.50.3)
