@@ -375,7 +375,7 @@ object ChatHub {
         busy = true; yieldToHuman()
         val pace = runCatching { settings.humanPace }.getOrDefault(false)
         val paceVoice = pace && runCatching {
-            settings.speakReplies || (speakThis && settings.speakVoiceReplies)
+            settings.speakReplies || (speakThis && settings.speakVoiceReplies && voicePower())
         }.getOrDefault(false)
         voicePaced = paceVoice
         var saidTo = 0
@@ -504,10 +504,12 @@ object ChatHub {
         return a
     }
 
+    private fun voicePower() = settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE)
+
     fun spoke(text: String) {
         val voiceTurn = speakThis; speakThis = false
         // v10.52: reading replies aloud needs no mic, so it works without the Voice power (that one is for the 🎤)
-        if (settings.speakReplies || (voiceTurn && settings.speakVoiceReplies)) com.combo.monkeycompanion.agent.Voice.speak(app, text)
+        if (settings.speakReplies || (voiceTurn && settings.speakVoiceReplies && voicePower())) com.combo.monkeycompanion.agent.Voice.speak(app, text)
     }
 
     // ---------------- v4.2 smart screen talk + quick chips ----------------
