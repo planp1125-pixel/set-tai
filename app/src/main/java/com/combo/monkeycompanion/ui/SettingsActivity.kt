@@ -668,6 +668,10 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             val tos = listOf(30, 60, 120, 300, 0)
             SChoice("Close the bubble chat", listOf("After 30 s idle", "After 1 min idle", "After 2 min idle (default)", "After 5 min idle", "Never by itself"),
                 tos.indexOf(s.chatTimeoutSecs).let { if (it < 0) 2 else it }) { s.chatTimeoutSecs = tos[it]; bump() }
+            SSwitch("Human pace: say replies word by word", s.humanPace, "The mouth and hands follow each word, with small pauses at commas and full stops. Tap the bubble to show the rest at once.") { s.humanPace = it; bump() }
+            val speeds = listOf(3f, 5f, 7f)
+            SChoice("Talking speed", listOf("Calm (3 words a second)", "Normal (5, default)", "Fast (7)"),
+                speeds.indexOf(s.talkSpeed).let { if (it < 0) 1 else it }) { s.talkSpeed = speeds[it]; bump() }
             SSwitch("Speak the answer when I asked by voice", s.speakVoiceReplies) { s.speakVoiceReplies = it; bump() }
             SSwitch("Use Google's voice popup for 🎤 (opens over the screen)", s.voicePopup) { s.voicePopup = it; bump() }
             SSwitch("Speak all replies out loud", s.speakReplies) { s.speakReplies = it; bump() }

@@ -325,6 +325,14 @@ class AppSettings(ctx: Context) {
     var voicePopup: Boolean
         get() = p.getBoolean("voice_popup", false)
         set(v) = p.edit().putBoolean("voice_popup", v).apply()
+    /** v10.51 human pace: chat replies come out word by word at a speaking pace (mouth and hands follow each word). */
+    var humanPace: Boolean
+        get() = p.getBoolean("human_pace", true)
+        set(v) = p.edit().putBoolean("human_pace", v).apply()
+    /** v10.51: words a second for human pace when the reply is not read aloud (3 calm, 5 normal, 7 fast). */
+    var talkSpeed: Float
+        get() = p.getFloat("talk_speed", 5f)
+        set(v) = p.edit().putFloat("talk_speed", v).apply()
     /** Proactive buddy level: OFF / CHILL / BUDDY / CHATTERBOX (see ProLevel). */
     var proactiveLevel: String
         get() = p.getString("proactive_level", "BUDDY")!!

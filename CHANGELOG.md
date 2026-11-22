@@ -544,3 +544,13 @@ Every character now feels like a little body in your hand (the phone's vibration
 
 - **Like the phone:** a faint 💬 button is always beside the character on the desktop (low, left of its feet, never on the face). One click opens the bubble chat. It hides while you type, during a power, and while the character is hidden at the edge. Set-Tai window › Settings › "Show the faint 💬 chat button" turns it off.
 - Double-click = a power (since v10.50.7); a single click no longer flashes a chat button.
+
+## v10.51 (code 134): it talks like a person
+
+- **Human pace.** A ChatGPT reply no longer appears in network bursts. It comes out word by word at a speaking pace (about 5 words a second; Calm 3 / Normal 5 / Fast 7 in Settings), with a short pause at a comma and a longer one at a full stop or a new line. Long replies speed up a little so they don't drag. Tap the bubble to show the rest at once. Settings › Bubble chat & voice › "Human pace" turns it off.
+- **The mouth follows the words** for the whole reply (it used to flap for at most 2.5 seconds): open on vowels, shut on m, b and p, closed in pauses; Tamil and Hindi letters get a syllable rhythm.
+- **The hands follow the sentence:** question = head tilt and open palms, "!" = arms up, "I / me / naan" = hand on chest, "haha" = laughing shake on that word, sad words = drooping, "hmm / umm / actually" = hand on chin. It looks at you while talking, blinks at full stops, takes a small step to the side between sentences and nods at the end. If the network is slow mid-reply it holds a thinking pose instead of freezing.
+- **Read aloud follows the voice:** with "Speak replies" on (or a voice question), each finished sentence is spoken as soon as it arrives and the bubble shows each word as the voice says it. If the voice stalls for 5 s, the text carries on by itself.
+- **Sounds like speech:** the ChatGPT instructions now ask for short spoken sentences and, about one reply in three, a natural filler ("hmm", "actually…", "seri seri"). Markdown that slips through (bold, bullets, headings) is turned into plain speech.
+- New `speech/SpeechPacer.kt` (shared, no Random, no clock). GoldenTraceTest unchanged. New test v1051/HumanPaceTest; older whole-reply tests switch human pace off.
+

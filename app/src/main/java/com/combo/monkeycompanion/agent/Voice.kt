@@ -9,6 +9,7 @@ import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.combo.monkeycompanion.ai.AppSettings
+import kotlin.math.max
 import com.combo.monkeycompanion.powers.CapGroup
 import com.combo.monkeycompanion.powers.Perm
 import java.util.Locale
@@ -23,7 +24,7 @@ object Voice {
     @Volatile var listening = false; private set
     private var tts: TextToSpeech? = null
     private var ready = false
-    private var queued: String? = null
+    private val queued = ArrayList<Triple<String, String, Boolean>>()
     private val main by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
     private val idleShutdown by lazy { Runnable { tts?.shutdown(); tts = null; ready = false } }
 
@@ -36,32 +37,70 @@ object Voice {
     fun speak(ctx: Context, text: String) {
         val t = clean(text).take(400)
         if (t.isEmpty()) return
+        main.post { heardTo = -1; utter(ctx, t, "settai", true) }
+    }
+
+    /**
+     * v10.51 human pace: where the voice is in the reply being read sentence by sentence while it streams
+     * (characters of the reply's plain text said so far; -1 = not started). The bubble never runs ahead of it.
+     */
+    @Volatile var heardTo = -1; private set
+    /** Utterances queued in the engine and not finished yet (sentences of one reply). */
+    @Volatile private var pending = 0
+    private val parts = java.util.concurrent.ConcurrentHashMap<String, IntArray>()
+    private var partN = 0
+
+    /** v10.51: read one finished sentence [raw] of a streaming reply (it starts at [rawStart] of the reply); [first] cuts off anything older. */
+    fun speakPart(ctx: Context, raw: String, rawStart: Int, first: Boolean) {
+        val t = clean(raw)
         main.post {
-            main.removeCallbacks(idleShutdown)
-            val e = tts
-            if (e != null && ready) say(e, t)
-            else {
-                queued = t
-                if (e == null) tts = TextToSpeech(ctx.applicationContext) { st ->
-                    val eng = tts ?: return@TextToSpeech
-                    if (st != TextToSpeech.SUCCESS) { tts = null; return@TextToSpeech }
-                    val inLoc = Locale("en", "IN")
-                    if (eng.isLanguageAvailable(inLoc) >= TextToSpeech.LANG_AVAILABLE) eng.language = inLoc
-                    tune(eng, ctx)
-                    eng.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                        override fun onStart(id: String?) { speaking = true }
-                        override fun onDone(id: String?) { speaking = false; main.postDelayed(idleShutdown, 60_000) }
-                        @Deprecated("old api") override fun onError(id: String?) { speaking = false }
-                    })
-                    ready = true
-                    queued?.let { q -> queued = null; say(eng, q) }
+            if (first) { heardTo = -1; parts.clear() }
+            if (t.isEmpty()) { heardTo = max(heardTo, rawStart + raw.length); return@post }
+            val id = "part${++partN}"
+            parts[id] = intArrayOf(rawStart, raw.length, t.length)
+            utter(ctx, t, id, first)
+        }
+    }
+
+    private fun progress(id: String?, end: Int) {
+        val p = parts[id ?: return] ?: return
+        val k = if (p[2] <= 0) 1f else (end.toFloat() / p[2]).coerceIn(0f, 1f)
+        heardTo = max(heardTo, p[0] + (k * p[1]).toInt())
+    }
+
+    private fun utter(ctx: Context, t: String, id: String, flush: Boolean) {
+        main.removeCallbacks(idleShutdown)
+        val e = tts
+        if (e != null && ready) { say(e, t, id, flush); return }
+        if (flush) queued.clear()
+        queued.add(Triple(t, id, flush))
+        if (e == null) tts = TextToSpeech(ctx.applicationContext) { st ->
+            val eng = tts ?: return@TextToSpeech
+            if (st != TextToSpeech.SUCCESS) { tts = null; queued.clear(); return@TextToSpeech }
+            val inLoc = Locale("en", "IN")
+            if (eng.isLanguageAvailable(inLoc) >= TextToSpeech.LANG_AVAILABLE) eng.language = inLoc
+            tune(eng, ctx)
+            eng.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(id: String?) { speaking = true; progress(id, 0) }
+                override fun onRangeStart(id: String?, start: Int, end: Int, frame: Int) { progress(id, end) }
+                override fun onDone(id: String?) {
+                    progress(id, Int.MAX_VALUE / 2); pending = max(0, pending - 1)
+                    speaking = false; main.postDelayed(idleShutdown, 60_000)
                 }
-            }
+                @Deprecated("old api") override fun onError(id: String?) { progress(id, Int.MAX_VALUE / 2); pending = max(0, pending - 1); speaking = false }
+            })
+            ready = true
+            val q = queued.toList(); queued.clear()
+            q.forEach { (qt, qid, qf) -> say(eng, qt, qid, qf) }
         }
     }
 
     private var appCtx: Context? = null
-    private fun say(e: TextToSpeech, t: String) { appCtx?.let { tune(e, it) }; speaking = true; e.speak(t, TextToSpeech.QUEUE_FLUSH, null, "settai") }
+    private fun say(e: TextToSpeech, t: String, id: String, flush: Boolean) {
+        appCtx?.let { tune(e, it) }; speaking = true
+        pending = if (flush) 1 else pending + 1
+        e.speak(t, if (flush) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD, null, id)
+    }
 
     /** v4.2: each character has its own voice: (pitch, rate). Settai squeaky, Bolt deep, ... */
     fun style(characterId: String): Pair<Float, Float> = when (characterId) {
@@ -78,7 +117,7 @@ object Voice {
         e.setPitch(pitch); e.setSpeechRate(rate)
     }
 
-    fun stopSpeaking() { main.post { tts?.stop(); speaking = false } }
+    fun stopSpeaking() { main.post { tts?.stop(); speaking = false; pending = 0; queued.clear() } }
 
     // ---------------- push-to-talk ----------------
     private var rec: SpeechRecognizer? = null
@@ -130,7 +169,7 @@ object Voice {
         val until = android.os.SystemClock.elapsedRealtime() + maxMs
         val check = object : Runnable {
             override fun run() {
-                if ((speaking || queued != null) && android.os.SystemClock.elapsedRealtime() < until) main.postDelayed(this, 200L)
+                if ((speaking || pending > 0 || queued.isNotEmpty()) && android.os.SystemClock.elapsedRealtime() < until) main.postDelayed(this, 200L)
                 else main.postDelayed(action, 450L)   // a breath after the voice ends, so the mic doesn't hear it
             }
         }

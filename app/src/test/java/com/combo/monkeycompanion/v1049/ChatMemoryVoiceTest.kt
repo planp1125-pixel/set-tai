@@ -45,6 +45,7 @@ class ChatMemoryVoiceTest {
 
     private fun view(id: String = "devil"): MonkeyView {
         ctx.getSharedPreferences("settai_v3", 0).edit().clear().commit()
+        ChatHub.settings.humanPace = false   // v10.51: these check the whole reply at once (HumanPaceTest covers word by word)
         ChatHub.settings.gags = false; ChatHub.settings.batterySaver = false
         CharacterRegistry.select(id)
         val v = MonkeyView(ctx, LandingE2ETest.Host())

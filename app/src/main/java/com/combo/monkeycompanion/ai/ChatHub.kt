@@ -363,8 +363,18 @@ object ChatHub {
         askBrain(typed, null, listOf(att), shown = "${att.label}\n$typed")
     }
 
+    /** v10.51: this reply is read aloud sentence by sentence while it streams (the bubble follows the voice). */
+    @Volatile var voicePaced = false
+        private set
+
     private fun askBrain(typed: String, replyingTo: String?, attachments: List<Attachment>, shown: String = typed) {
         busy = true; yieldToHuman()
+        val pace = runCatching { settings.humanPace }.getOrDefault(false)
+        val paceVoice = pace && runCatching {
+            settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE) && (settings.speakReplies || (speakThis && settings.speakVoiceReplies))
+        }.getOrDefault(false)
+        voicePaced = paceVoice
+        var saidTo = 0
         val offline = settings.brainType == BrainType.OFFLINE
         // Small on-device models have a short context: keep only the last few turns so nothing gets truncated.
         val history = memory.recent(if (offline) minOf(settings.memoryTurns, 4) else settings.memoryTurns)
@@ -384,21 +394,26 @@ object ChatHub {
                 val usePowers = powers.specs.isNotEmpty() && (!offline || settings.offlineTools)
                 val sys = Persona.systemPrompt(th != null && usePowers, bodyNow(facts = !usePowers), compact = offline || b is GatewayBrain, actionTool = th != null,
                     longReplies = b !is GatewayBrain,   // v10.47: friend-style length, except the cloud (it cuts at 200 characters)
+                    spoken = pace,   // v10.51: sounds like speech, with the odd "hmm" or "actually..."
                     powerTags = if (usePowers && (th == null || offline)) powers.tagHelp() else "",
                     phoneState = if (usePowers) powers.state() else "",
                     extra = if (usePowers) AgentPrompt.build(settings, th != null && !offline, typed) else "")
                 val reply = b.chat(sys, history, msg, th, attachments) { raw ->
-                    val t = com.combo.monkeycompanion.powers.PowerTags.visible(ActionParser.visible(raw))
+                    val v = com.combo.monkeycompanion.powers.PowerTags.visible(ActionParser.visible(raw))
+                    val t = if (pace) com.combo.monkeycompanion.speech.Spoken.plain(v) else v
                     last = t
+                    if (paceVoice) saidTo = speakSentences(t, saidTo, done = false)
                     memory.updateLast(t)
                     main.post { fire { l -> l.onReply(t, false) } }
                 }
                 val shownReply = act(reply.ifBlank { last }, typed)
-                val final = shownReply.ifBlank { if (reply.isNotBlank()) "Ta-da!" else "" }
+                val final0 = shownReply.ifBlank { if (reply.isNotBlank()) "Ta-da!" else "" }
                     .ifBlank { "I lost my train of thought. Try again?" }
+                val final = if (pace) com.combo.monkeycompanion.speech.Spoken.plain(final0) else final0
                 memory.updateLast(final); memory.commit()
                 com.combo.monkeycompanion.agent.ScreenAgent.end()
-                spoke(final)
+                if (paceVoice) { speakThis = false; speakSentences(final, if (final.startsWith(last.take(saidTo))) saidTo else 0, done = true) }
+                else spoke(final)
                 // v10.29: one "Explain more" chip after a normal Set-Tai Cloud reply (not on the long follow-up, resting fallback, offline/own-key).
                 val explainChip = b is GatewayBrain
                     && "Please explain that more fully" !in typed
@@ -462,6 +477,29 @@ object ChatHub {
     @Volatile private var speakThis = false
 
     /** v4: say a reply out loud when the Voice power + "speak replies" are on (or the user just spoke to us). */
+    /**
+     * v10.51: read the finished sentences of a streaming reply [t] from [from] (the rest too when [done]).
+     * Returns how far has been sent to the voice.
+     */
+    private fun speakSentences(t: String, from: Int, done: Boolean): Int {
+        var a = from.coerceIn(0, t.length)
+        var first = a == 0
+        while (a < t.length) {
+            var b = a
+            var end = -1
+            while (b < t.length) {
+                val c = t[b]
+                if ((c == '.' || c == '!' || c == '?' || c == '…' || c == '\n') && (b + 1 >= t.length && done || b + 1 < t.length && t[b + 1].isWhitespace())) { end = b + 1; break }
+                b++
+            }
+            if (end < 0) { if (!done) return a; end = t.length }
+            val part = t.substring(a, end)
+            if (part.isNotBlank()) { com.combo.monkeycompanion.agent.Voice.speakPart(app, part, a, first); first = false }
+            a = end
+        }
+        return a
+    }
+
     fun spoke(text: String) {
         val voiceTurn = speakThis; speakThis = false
         if (!settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE)) return

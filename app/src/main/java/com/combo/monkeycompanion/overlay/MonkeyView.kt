@@ -785,7 +785,7 @@ class MonkeyView(
 
     /** v10.47: when the last chat message went or came (elapsedRealtime, 0 = never). */
     private var lastChatAt = 0L
-    private fun chatting(): Boolean = chatOpen || thinkingBubble || ChatHub.busy ||
+    private fun chatting(): Boolean = chatOpen || thinkingBubble || ChatHub.busy || pacing ||
         (lastChatAt > 0L && SystemClock.elapsedRealtime() - lastChatAt < CHAT_QUIET_MS)
     val debugChatting: Boolean get() = chatting()
     fun debugSpeak(text: String) = say(text, 3000L)
@@ -1098,6 +1098,115 @@ class MonkeyView(
         return if (out.isEmpty()) listOf(text) else out
     }
 
+    // ---------------- v10.51 human pace ----------------
+
+    private val pacer = com.combo.monkeycompanion.speech.SpeechPacer()
+    /** A streamed reply is being said word by word. */
+    private var pacing = false
+    /** The final reply arrived; it is shown in full (the normal path) once the pacer has said it all. */
+    private var pacedFinal: String? = null
+    private var paceSentences = 0
+    /** Seconds the voice-led pace has not moved (the voice failed: carry on without it). */
+    private var paceIdle = 0f
+    private var paceVoiceOff = false
+    private var paceHeard = -2
+    /** The reply just finished being said word by word: the full-reply bubble must not flap the mouth again. */
+    private var paceJustEnded = false
+    /** Talking body: gesture blend, mouth, side steps between sentences, the nod at the end. */
+    private var talkK = 0f
+    private var talkMouth = 0f
+    private var talkGesture = com.combo.monkeycompanion.speech.TalkGesture.EXPLAIN
+    private var stepFrom = 0f; private var stepTo = 0f; private var stepT = -1f; private var stepX = 0f
+    private var nodT = -1f
+    val debugPacing: Boolean get() = pacing
+    val debugPacer: com.combo.monkeycompanion.speech.SpeechPacer get() = pacer
+    val debugTalkGesture: com.combo.monkeycompanion.speech.TalkGesture get() = talkGesture
+    val debugTalkMouth: Float get() = talkMouth
+    val debugStepX: Float get() = stepX
+
+    private fun humanPace(): Boolean = runCatching { ChatHub.settings.humanPace }.getOrDefault(false)
+
+    private fun endPacing() {
+        pacing = false; pacedFinal = null; pacer.reset(); paceVoiceOff = false; paceHeard = -2
+    }
+
+    /** Let the next word out when it is time, show it, and finish the reply when everything has been said. */
+    private fun stepPacer(dt: Float) {
+        if (!pacing) return
+        if (hiddenTab || controller.state == MonkeyState.HIDDEN) pacer.skip()
+        if (movingNow || pendingShown) return
+        // read aloud: the bubble never runs ahead of the voice (if the voice stalls for 4 s, go on without it)
+        val voiceLed = ChatHub.voicePaced && !paceVoiceOff
+        if (voiceLed) {
+            val heard = com.combo.monkeycompanion.agent.Voice.heardTo
+            pacer.gate = max(0, heard + 1)
+            pacer.wordsPerSec = 3.4f
+            if (heard != paceHeard) { paceHeard = heard; paceIdle = 0f }
+            else if (pacer.target.length > pacer.shown && (pacer.done || pacer.target.any { com.combo.monkeycompanion.speech.SpeechPacer.isStop(it) })) {
+                paceIdle += dt
+                if (paceIdle > 5f) { paceVoiceOff = true; pacer.gate = -1 }
+            }
+        } else pacer.gate = -1
+        if (pacer.step(dt)) {
+            paceIdle = 0f
+            if (thinkingBubble) { thinkingBubble = false; lastLine = null; beats.clear() }
+            controller.startTalking()
+            showBubble(pacer.visible, 600f, talk = false, reply = false, quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
+            bubble.scrollBy(1e6f)   // follow the words as they come, like subtitles
+            if (pacer.sentences != paceSentences) {
+                paceSentences = pacer.sentences
+                if (blinkT < 0f) blinkT = 0f                                       // blink at a full stop
+                if (!pacer.done || pacer.shown < pacer.target.length) {           // a small step to the other side
+                    stepFrom = stepX; stepTo = if (paceSentences % 2 == 1) 7f else -7f; stepT = 0f
+                }
+            }
+        }
+        if (pacer.finished) {
+            val f = pacedFinal ?: return
+            endPacing()
+            nodT = 0f
+            paceJustEnded = true
+            onReply(f, true)
+            paceJustEnded = false
+        }
+    }
+
+    /** Mouth on the words, hands on the sentence, a step between sentences, a nod at the end. After the pose is blended. */
+    private fun applyTalkingBody(dt: Float) {
+        val talking = pacing && controller.state == MonkeyState.TALKING && !dragging && !falling && !powerOn && controller.anim.edge == com.combo.monkeycompanion.rig.AnimContext.GROUND
+        talkK += ((if (talking && !pacer.starved) 1f else 0f) - talkK) * min(1f, dt * 6f)
+        if (talking) {
+            val m = pacer.mouth()
+            talkMouth += (m - talkMouth) * min(1f, dt * 22f)
+            drawPose.mouthOpen = talkMouth * (if (talkGesture == com.combo.monkeycompanion.speech.TalkGesture.LAUGH) 1.1f else 0.95f)
+            if (pacer.speakingWord) talkGesture = com.combo.monkeycompanion.speech.Spoken.gesture(pacer.sentence, pacer.word)
+            else if (pacer.starved) talkGesture = com.combo.monkeycompanion.speech.TalkGesture.THINK
+            drawPose.lookX *= 0.35f   // looks at you while it talks
+        } else talkMouth = 0f
+        if (talkK > 0.01f) com.combo.monkeycompanion.speech.Spoken.body(drawPose, talkGesture, talkK * 0.85f, t)
+        if (pacing && pacer.starved && talking) com.combo.monkeycompanion.speech.Spoken.body(drawPose, com.combo.monkeycompanion.speech.TalkGesture.THINK, 0.6f, t)
+        // side steps between sentences (the body shifts, the feet step; the character itself stays where it is)
+        if (stepT >= 0f) {
+            stepT += dt
+            val k = (stepT / 0.55f).coerceIn(0f, 1f)
+            val e = k * k * (3f - 2f * k)
+            stepX = stepFrom + (stepTo - stepFrom) * e
+            val lift = 6f * sin(k * PI.toFloat() * 2f)
+            if (talking) { drawPose.legLLift += max(0f, lift); drawPose.legRLift += max(0f, -lift) }
+            if (k >= 1f) stepT = -1f
+        } else if (!pacing && abs(stepX) > 0.05f) stepX += (0f - stepX) * min(1f, dt * 4f)
+        else if (!pacing) stepX = 0f
+        if (abs(stepX) > 0.01f && !dragging && !falling) drawPose.bodyX += stepX
+        // a nod when it has finished
+        if (nodT >= 0f) {
+            nodT += dt
+            val k = (nodT / 0.5f).coerceIn(0f, 1f)
+            val n = sin(k * PI.toFloat())
+            drawPose.headY += 3f * n; drawPose.lookY += 1.5f * n
+            if (k >= 1f) nodT = -1f
+        }
+    }
+
     // ---------------- Chat events ----------------
 
     override fun onThinking() {
@@ -1106,6 +1215,7 @@ class MonkeyView(
         pages.clear(); beats.clear()
         thinkingBubble = true
         replyStartT = -1f
+        endPacing()
         controller.startThinking()
         lastChatAt = SystemClock.elapsedRealtime()
         thinkWord = com.combo.monkeycompanion.speech.ThinkingWords.pick(character, -1)
@@ -1123,6 +1233,16 @@ class MonkeyView(
         if (movingNow && text.isNotBlank()) { heldReply = text; heldReplyDone = done; settledFor = 0f; return }   // v10.14: show it once settled
         if (text.isBlank() && !done) return
         if (replyStartT < 0f) replyStartT = t
+        // v10.51 human pace: a streamed reply comes out word by word (stepPacer); the rest of this runs when it's all said
+        if (pacing || (!done && humanPace())) {
+            if (!pacing) {
+                pacing = true; pacer.reset(); pacedFinal = null; paceSentences = 0; paceIdle = 0f
+                pacer.wordsPerSec = runCatching { ChatHub.settings.talkSpeed }.getOrDefault(5f).coerceIn(2f, 9f)
+            }
+            pacer.feed(text, done)
+            if (done) pacedFinal = text
+            return
+        }
         thinkingBubble = false
         lastLine = null
         beats.clear()
@@ -1146,7 +1266,8 @@ class MonkeyView(
         }
         pages.clear()
         // v10.49: one bubble for the whole reply (drag inside it to read on, or to see the faded chats above)
-        showBubble(text, max(6f, Speech.defaultDuration(text) / 1000f + 2f), quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
+        showBubble(text, max(6f, Speech.defaultDuration(text) / 1000f + 2f), talk = !paceJustEnded, quote = lastUserMessage(), history = pastChats(beforeCurrent = true))
+        if (paceJustEnded) bubble.scrollBy(1e6f)   // v10.51: stay on the last words it said
         ChatHub.pending?.let { onPending(it) }
         if (voiceChat && voiceTurns > 0) { if (ChatHub.pending != null) stopVoiceChat() else listenAgainLater() }   // v10.49 voice chat: your turn again
     }
@@ -2124,7 +2245,7 @@ class MonkeyView(
         return true
     }
 
-    override val isSpeaking: Boolean get() = (bubbleOn && bubbleAge < talkFor) || com.combo.monkeycompanion.agent.Voice.speaking
+    override val isSpeaking: Boolean get() = (bubbleOn && bubbleAge < talkFor) || com.combo.monkeycompanion.agent.Voice.speaking || (pacing && pacer.shown > 0)
 
     // ---------------- Frame loop ----------------
 
@@ -2943,6 +3064,7 @@ class MonkeyView(
             else if (bubbleAge > bubbleLife + FADE) { bubbleOn = false; pendingShown = false; quitAsk = false }
         }
         stepBeats()
+        stepPacer(dt)
         stepHeldSpeech(dt)
         if (thinkingBubble) {
             // v10.47.1: one thinking word per question (it no longer changes every second)
@@ -3020,6 +3142,7 @@ class MonkeyView(
             val k = blinkT / 0.16f
             if (k >= 1f) blinkT = -1f else drawPose.eyeOpen *= abs(1f - 2f * k).coerceAtLeast(0.05f)
         }
+        applyTalkingBody(dt)
 
         stepMoment(dt)
         stepTrunkSpray(dt)
@@ -7709,6 +7832,7 @@ class MonkeyView(
                     } else {
                         bubbleDragX = 0f
                         if (abs(dx) <= slop) {
+                            if (pacing && !pacer.finished) { pacer.skip(); return true }   // v10.51: tap = show the rest at once
                             if (wp) host?.openChat()   // wallpaper: tap the bubble to chat
                             else if (bubbleQuoted && pages.isEmpty()) {   // v10.47: a chat reply: open the whole chat
                                 if (chatOpen) closeChat() else if (bubbleOn) bubbleLife = bubbleAge

@@ -49,6 +49,7 @@ class LiveListeningTest {
 
     private fun view(): MonkeyView {
         ctx.getSharedPreferences("settai_v3", 0).edit().clear().commit()
+        ChatHub.settings.humanPace = false   // v10.51: these check the whole reply at once (HumanPaceTest covers word by word)
         ChatHub.settings.gags = false; ChatHub.settings.batterySaver = false
         CharacterRegistry.select("devil")
         val v = MonkeyView(ctx, LandingE2ETest.Host()); views.add(v)
