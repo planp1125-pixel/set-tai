@@ -208,6 +208,10 @@ class AppSettings(ctx: Context) {
         get() = p.getBoolean("flick_throw", false)
         set(v) = p.edit().putBoolean("flick_throw", v).apply()
     /** v10.27 Touch Feel: vibrations when you hold, shake, pet, poke, sling or land a character. */
+    /** v10.52: when the phone is tilted: 0 = no vibration, 1 = only the first two bumps on an edge, 2 = bumps and rolling ticks. */
+    var tiltBuzz: Int
+        get() = p.getInt("tilt_buzz", 1)
+        set(v) = p.edit().putInt("tilt_buzz", v).apply()
     var touchFeel: Boolean
         get() = p.getBoolean("touch_feel", true)
         set(v) = p.edit().putBoolean("touch_feel", v).apply()

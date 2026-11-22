@@ -100,7 +100,8 @@ object LongPressMenu {
         val order = c.order + pins.map { pin(it) }.filter { it !in c.order }   // new pins start at the end
         val on = order.filter { id ->
             if (isPower(id)) powerId(id) in pins && powerId(id) in powerIds
-            else id !in c.off && (id != Item.CONTEXT.id || context) && (Distribution.screenAgent || id !in Distribution.SCREEN_ITEMS)
+            else id !in c.off && (id != Item.CONTEXT.id || context) && (Distribution.screenAgent || id !in Distribution.SCREEN_ITEMS) &&
+                (Distribution.screenCapture || id !in Distribution.CAPTURE_ITEMS)
         }
         val forced = if (Item.QUIT.id in on) emptyList() else listOf(Item.QUIT.id)
         return when {
@@ -164,7 +165,7 @@ object LongPressMenu {
     fun groupedMain(): List<String> = GROUPS.map { it.id } + listOf("hide", "quit")
     fun isGroup(id: String) = id.startsWith("g_")
     fun groupItems(id: String): List<String> = when (id) {
-        "g_games" -> listOf("sling_game", "smash", "banana_game", "eater")
+        "g_games" -> listOf("sling_game", "smash", "banana_game", "eater").filter { Distribution.screenCapture || it !in Distribution.CAPTURE_ITEMS }
         "g_show" -> listOf("show", "story", "clip", "selfie")
         "g_modes" -> listOf("sleep", "focus", "breathe", "comfort_hug", "comfort_sign", "comfort_coffee")
         "g_tools" -> CareTools.Tool.entries.map { it.id }

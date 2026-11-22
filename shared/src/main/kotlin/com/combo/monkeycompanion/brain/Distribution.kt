@@ -7,6 +7,10 @@ package com.combo.monkeycompanion.brain
  */
 object Distribution {
     @Volatile var screenAgent: Boolean = true
+    /** v10.52: screen pictures (Screen Smash, the selfie snap) need screen recording, which the Play build leaves out. */
+    @Volatile var screenCapture: Boolean = true
+    /** Items that need a screen picture (long-press menu ids and chips). */
+    val CAPTURE_ITEMS = setOf("smash", "selfie_snap")
     /** Items that need the screen agent (long-press menu ids and chat chip ids). */
     val SCREEN_ITEMS = setOf("screen", "summarise", "reply_for_me", "roast", "worth", "cheaper", "how_long")
     const val NO_AGENT_LINE = "I can't look inside other apps in this version of Set-Tai. I can still chat, open apps, set timers and play! 🙈"

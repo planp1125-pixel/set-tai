@@ -5,10 +5,15 @@
     <!-- Play Store flavor: removes restricted permissions & AccessibilityService that Google Play's automated policy scanner rejects on non-exempt apps. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:node="remove" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" tools:node="remove" />
+    <!-- v10.52: no screen recording in the Play build (Screen Smash and the selfie snap are full-build only), so no media-projection declaration -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" tools:node="remove" />
 
     <application>
         <service
             android:name=".agent.SettaiAccessibilityService"
             tools:node="remove" />
+        <activity android:name=".smash.SmashActivity" tools:node="remove" />
+        <service android:name=".smash.SmashCaptureService" tools:node="remove" />
+        <activity android:name=".ui.SelfieShotActivity" tools:node="remove" />
     </application>
 </manifest>

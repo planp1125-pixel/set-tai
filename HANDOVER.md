@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.51.2 (versionCode 136)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.52.0 (versionCode 137)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.51 Human pace
 
@@ -10,6 +10,13 @@ Updated for **v10.51.2 (versionCode 136)**, 22 Nov 2026. Owner: Manikandan Gopal
 - v10.51.1: `Friendship.describe(xp)` → its own line in ChatHub `bondNote()` (level, heart %, next unlocks).
 - v10.51.2: `ChatVoiceCard` (section "chat") holds the chat & voice switches; the Settings tab lists "Chat & Voice" and "Buddy & Moments".
 - Tests that check the whole reply at once set `ChatHub.settings.humanPace = false` in `view()`.
+
+## v10.52 Tilt, Play-safe
+
+- `MonkeyView.tiltTick()`: smoothed gravity `tgx/tgy`, ownership lasts until upright + on the floor, `bounce()` per wall (`tiltWall/tiltWallN`, rest 0.45 → 0.18 → 0), buzz per `AppSettings.tiltBuzz` (0/1/2). `MotionSensor` registers without batching.
+- `Distribution.screenCapture` (false in Play, set in `ChatHub.init`) + `CAPTURE_ITEMS` hide Smash / selfie snap; `app/src/play/AndroidManifest.xml` removes SmashActivity, SmashCaptureService, SelfieShotActivity and FOREGROUND_SERVICE_MEDIA_PROJECTION.
+- `ChatHub.spoke()` no longer requires the VOICE group.
+- Settings tab: "Personality & Memory" → section `personality`, "Habits & Extras" → `habits`.
 
 ## Desktop (D1, v10.50.3)
 

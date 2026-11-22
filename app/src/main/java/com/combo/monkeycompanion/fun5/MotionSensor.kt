@@ -21,7 +21,7 @@ class MotionSensor(private val ctx: Context, private val onEvent: (MotionDetecto
         val sm = ctx.getSystemService(SensorManager::class.java) ?: return
         if (want) {
             val acc = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: return
-            on = runCatching { sm.registerListener(this, acc, SensorManager.SENSOR_DELAY_UI, 200_000) }.getOrDefault(false)
+            on = runCatching { sm.registerListener(this, acc, SensorManager.SENSOR_DELAY_UI)   // v10.52: no batching (200 ms batches made tilt motion jump) }.getOrDefault(false)
         } else { runCatching { sm.unregisterListener(this) }; on = false }
     }
     val active get() = on

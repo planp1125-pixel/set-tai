@@ -538,6 +538,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             SSwitch("Smooth animation (beta)", s.smoothAnimation, "Squishy landings, tails, ears, hair and capes that swing and settle.") { s.smoothAnimation = it; bump() }
             SSwitch("Living reactions (beta)", s.livingReactions, "Every touch gets a fresh reaction, never the same one twice in a row.") { s.livingReactions = it; bump() }
             SSwitch("Sound effects", s.soundEffects, "Smash game, fireworks. Always quiet when your phone is on silent or vibrate.") { s.soundEffects = it; bump() }
+            SChoice("Tilt vibration", listOf("Off", "Bumps only (default)", "Bumps + rolling"), s.tiltBuzz.coerceIn(0, 2)) { s.tiltBuzz = it; bump() }
             SSwitch("Touch feel", s.touchFeel, "Feel them in your hand: a bump when picked up, a rattle when shaken, a purr when petted, a heartbeat when you keep holding, slingshot clicks, landing thumps.") { s.touchFeel = it; bump() }
             SSwitch("Slingshot starts the game", s.slingGame, "Hold your character a moment, pull back and keep holding through 3, 2, 1: the Slingshot game starts with that pull. Let go before GO for a plain fling. Off = always a plain fling (the game stays in the long-press menu › Games).") { s.slingGame = it; bump() }
             SSwitch("Throw on fast flick", s.flickThrow, "A very fast flick throws the character (SPLAT, THWACK, PANCAKE). Off: any swipe makes it travel with its own power.") { s.flickThrow = it; bump() }
@@ -683,7 +684,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             SSwitch("Use Google's voice popup for 🎤 (opens over the screen)", s.voicePopup) { s.voicePopup = it; bump() }
             SSwitch("Speak all replies out loud", s.speakReplies) { s.speakReplies = it; bump() }
             if (!s.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE)) {
-                SNote("Spoken replies and the 🎤 need the Voice power, which is off.")
+                SNote("The 🎤 needs the Voice power, which is off. (Speaking replies works without it.)")
                 SSecondary("Turn on the Voice power") { s.setGroupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE, true); bump() }
             }
         }

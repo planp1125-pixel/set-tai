@@ -1618,7 +1618,8 @@ class MonkeyView(
                 "comfort_sign" -> com.combo.monkeycompanion.mind.MindHub.triggerComfort(forceKind = com.combo.monkeycompanion.heart.ComfortKind.SIGN_CARD)
                 "comfort_coffee" -> com.combo.monkeycompanion.mind.MindHub.triggerComfort(forceKind = com.combo.monkeycompanion.heart.ComfortKind.OFFER_COFFEE)
                 "games" -> stage.showGames()
-                "smash" -> com.combo.monkeycompanion.smash.SmashActivity.launch(context)
+                "smash" -> if (com.combo.monkeycompanion.brain.Distribution.screenCapture) com.combo.monkeycompanion.smash.SmashActivity.launch(context)
+                    else sayInfo("Screen Smash isn't in this version 🙈 Try the Slingshot game!", 2600L)
                 "sling_game" -> SlingGameHub.start(context, character.id)?.let { say(it, 2600L) }   // v10.40
                 "clip" -> makeClip("")
                 "context" -> ChatHub.contextChips().firstOrNull()?.let { tapChip(it) } ?: doSomethingFunny()
@@ -2564,13 +2565,16 @@ class MonkeyView(
         controller.play(MonkeyState.PEEK, 1.4f)
         ui.postDelayed({
             controller.play(listOf(MonkeyState.WAVE, MonkeyState.DANCE, MonkeyState.PLAYFUL).random(kotlin.random.Random(System.nanoTime())), 4f)
-            showBubble(if (manual) "🤳 Photobomb pose! Snap the screen with me?" else "🤳 Camera-ah? Naanum photo-la varen! 😎", 9f, reply = false,
+            if (!com.combo.monkeycompanion.brain.Distribution.screenCapture)   // v10.52 Play: no screen recording; you take the screenshot
+                showBubble(if (manual) "🤳 Photobomb pose! Take a screenshot now (Power + Volume down) 📸" else "🤳 Camera-ah? Naanum photo-la varen! 😎", 9f, reply = false)
+            else showBubble(if (manual) "🤳 Photobomb pose! Snap the screen with me?" else "🤳 Camera-ah? Naanum photo-la varen! 😎", 9f, reply = false,
                 chips = listOf(com.combo.monkeycompanion.agent.QuickChip("menu", "📸 Snap with me", "selfie_snap"), com.combo.monkeycompanion.agent.QuickChip.LATER))
         }, 1400L)
         if (!running && live && !paused) start()
     }
 
     private fun snapSelfie() {
+        if (!com.combo.monkeycompanion.brain.Distribution.screenCapture) { sayInfo("Take a screenshot now (Power + Volume down), I'm posing! 📸", 3000L); return }
         bubbleOn = false; updateGeometry(); invalidate()
         controller.play(MonkeyState.HAPPY_PAT, 3f)
         runCatching { context.startActivity(Intent(context, com.combo.monkeycompanion.ui.SelfieShotActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
@@ -6959,87 +6963,115 @@ class MonkeyView(
             hideAnim < 0f && !(v5On && stage.playing) && !typing && !exiting &&
             (restingOnScreenEdge() || tiltOwnsRoll) // only continue OUR ball motion after it leaves its starting edge
 
-    /** Continuous slide / fall from live accelerometer (Stage calls this every frame). */
+    // v10.52 smoother tilt: per-frame smoothed gravity, bounces that settle, quieter vibration
+    private var tgx = 0f; private var tgy = 9.8f; private var tgInit = false
+    private var tiltClock = 0f
+    private var tiltWall = 0; private var tiltWallN = 0; private var tiltWallAt = -9f
+    val debugTiltOwns get() = tiltOwnsRoll
+    val debugTiltBounces get() = tiltWallN
+    var debugTiltBuzzes = 0; private set
+
+    private fun tiltBuzzLevel(): Int = runCatching { ChatHub.settings.tiltBuzz }.getOrDefault(1)
+
+    /**
+     * Continuous slide / fall from live accelerometer (Stage calls this every frame).
+     * v10.52: once it starts rolling, real gravity keeps acting at every angle until it rests on the floor with the
+     * phone upright (no frozen mid-air band); an edge bounces it at most twice (the second one small), then it rests
+     * against it; only those two bumps vibrate (Settings › Touch › Tilt vibration).
+     */
     fun tiltTick(det: com.combo.monkeycompanion.v5.MotionDetector, dt: Float) {
         if (!canTiltPhysics()) {
             if (tiltSlideSide != 0 || tiltLean != 0f) { tiltSlideSide = 0; tiltLean = 0f }
-            tiltVx = 0f; tiltVy = 0f; tiltOwnsRoll = false
+            tiltVx = 0f; tiltVy = 0f; tiltOwnsRoll = false; tiltWall = 0; tiltWallN = 0
             return
         }
         // Flat on a table = sleep mask path, never a mid-air fall
         if (det.isTableFaceDown()) {
             tiltSlideSide = 0; tiltLean = 0f; tiltVx = 0f; tiltVy = 0f; tiltOwnsRoll = false; return
         }
-        val deg = det.tiltDeg()
+        tiltClock += dt
+        // a second, per-frame smoothing so the sensor's ~16 samples a second become a smooth glide
+        if (!tgInit) { tgx = det.gravX(); tgy = det.gravY(); tgInit = true }
+        val sk = if (dt <= 0f) 1f else min(1f, dt * 10f)
+        tgx += (det.gravX() - tgx) * sk; tgy += (det.gravY() - tgy) * sk
+        val deg = Math.toDegrees(kotlin.math.atan2(tgx.toDouble(), tgy.toDouble())).toFloat()
         val a = abs(deg)
         val w = feelW
         val slideAt = com.combo.monkeycompanion.v5.MotionDetector.SLIDE_DEG - 6f * w   // heavy starts sooner
         val fallAt = com.combo.monkeycompanion.v5.MotionDetector.FALL_DEG - 10f * w    // Gajju ~80°, Chittu ~89°
-        // v10.36: the glass is a surface a marble rolls on. Screen-space gravity from the
-        // accelerometer: +mx right (gx<0 = right side low), +my down (gy>0 = upright).
         val upside = det.isUpsideDownInHand()
-        if (a >= slideAt || upside) {
-            tiltOwnsRoll = true
-            if (a >= fallAt || upside) {
-                if (!tiltFallSaid) {
-                    tiltFallSaid = true
-                    say(pickLine(listOf("Aiyyo I'm falling!! 😵", "Whoa— too tippy!! 🫣", "Hold the phoneee!! 😱")), 1800L)
-                }
-            } else tiltFallSaid = false
-            // No cancellation of flight/fall here: acquire only a settled edge (including a still, fully planted wall grip).
-            if (climber.active) climber.deactivate()
-            val gx = det.gravX(); val gy = det.gravY()
-            val acc = 95f * d * (1.2f - 0.45f * w)            // px/s² per m/s²; light ones skitter faster
-            val cap = 620f * d * (1.2f - 0.45f * w)
-            tiltVx += -gx * acc * dt
-            tiltVy += gy * acc * dt
-            val maxX = max(0f, sw() - boxW)
-            val top = topY(); val bot = ground()
-            val onFloorNow = my >= bot - 0.5f
-            if (onFloorNow && tiltVy > 0f) tiltVy = 0f
-            if (onFloorNow) tiltVx *= (1f - 0.8f * dt)        // a little rolling friction on the floor
-            val sp = hypot(tiltVx, tiltVy)
-            if (sp > cap) { tiltVx *= cap / sp; tiltVy *= cap / sp }
-            val ox0 = mx; val oy0 = my
-            mx += tiltVx * dt; my += tiltVy * dt
-            val rest = TouchFeel.marbleRestitution(w)
-            val hitV = 160f * d
-            var hit = 0f
-            if (mx < 0f) { mx = 0f; if (tiltVx < -hitV) { hit = -tiltVx; tiltVx = -tiltVx * rest } else tiltVx = 0f }
-            else if (mx > maxX) { mx = maxX; if (tiltVx > hitV) { hit = tiltVx; tiltVx = -tiltVx * rest } else tiltVx = 0f }
-            if (my > bot) { my = bot; if (tiltVy > hitV) { hit = max(hit, tiltVy); tiltVy = -tiltVy * rest } else tiltVy = 0f }
-            else if (my < top) { my = top; if (tiltVy < -hitV) { hit = max(hit, -tiltVy); tiltVy = -tiltVy * rest } else tiltVy = 0f }
-            surf = if (my >= bot - 0.5f) screenSurf(SK.FLOOR) else freeSurf(my)
-            if (hit > 0f) feelSharpHit((hit / (600f * d)).coerceIn(0.2f, 1f))
-            val moved = hypot(mx - ox0, my - oy0) > 0.5f
-            val side = if (abs(gx) > 0.8f) (if (gx > 0f) -1 else 1) else tiltSlideSide.takeIf { it != 0 } ?: 1
-            tiltSlideSide = side
-            val k = ((a - slideAt) / (fallAt - slideAt).coerceAtLeast(1f)).coerceIn(0f, 1f)
-            tiltLean = side * (0.35f + 0.55f * k)
-            if (moved) {
-                if (controller.state != MonkeyState.WALK && controller.state != MonkeyState.STARTLED)
-                    controller.play(MonkeyState.WALK, 0.35f)
-                controller.face(side.toFloat())
-                // v10.36 battery: tick only while actually moving (first move, then every ~480 ms of motion);
-                // silent once settled at an edge. Frame-time based, so it never depends on the wall clock.
-                tiltTickAcc += dt
-                if (tiltTickAcc >= 0.48f) {
-                    tiltTickAcc = 0f
-                    if (feelOn()) buzz(TouchFeel.dragTick(w))
-                }
-            } else tiltTickAcc = 0.48f   // next real movement ticks immediately
-            return
+        if (!tiltOwnsRoll) {
+            if (a >= slideAt || upside) { tiltOwnsRoll = true; tiltWall = 0; tiltWallN = 0 }
+            else {
+                tiltFallSaid = false
+                tiltSlideSide = 0
+                tiltLean *= 0.7f
+                if (abs(tiltLean) < 0.05f) tiltLean = 0f
+                return
+            }
         }
-        tiltFallSaid = false
-        if (a < 18f) {
-            tiltVx = 0f; tiltVy = 0f
-            val wasTilting = tiltOwnsRoll
-            tiltOwnsRoll = false
-            tiltSlideSide = 0
-            tiltLean *= 0.7f
-            if (abs(tiltLean) < 0.05f) tiltLean = 0f
-            // upright again: visual bottom is down — drop back to the floor if left mid-air
-            if (wasTilting && !falling && arc == null && my < ground() - 4f * d) { surf = freeSurf(my); beginFall() }
+        if (a >= fallAt || upside) {
+            if (!tiltFallSaid) {
+                tiltFallSaid = true
+                say(pickLine(listOf("Aiyyo I'm falling!! 😵", "Whoa— too tippy!! 🫣", "Hold the phoneee!! 😱")), 1800L)
+            }
+        } else if (a < fallAt - 15f) tiltFallSaid = false
+        if (climber.active) climber.deactivate()
+        val acc = 95f * d * (1.2f - 0.45f * w)            // px/s² per m/s²; light ones skitter faster
+        val cap = 620f * d * (1.2f - 0.45f * w)
+        tiltVx += -tgx * acc * dt
+        tiltVy += tgy * acc * dt
+        val maxX = max(0f, sw() - boxW)
+        val top = topY(); val bot = ground()
+        val onFloorNow = my >= bot - 0.5f
+        if (onFloorNow && tiltVy > 0f) tiltVy = 0f
+        if (onFloorNow) tiltVx *= (1f - 2.2f * dt)        // rolling friction on the floor
+        val sp = hypot(tiltVx, tiltVy)
+        if (sp > cap) { tiltVx *= cap / sp; tiltVy *= cap / sp }
+        val ox0 = mx; val oy0 = my
+        mx += tiltVx * dt; my += tiltVy * dt
+        val hitV = 220f * d
+        var hit = 0f; var hitN = 0
+        // one edge: bounce 1 keeps ~45%, bounce 2 ~18%, then it rests against that edge
+        fun bounce(wall: Int, v: Float): Float {
+            if (wall == tiltWall && tiltClock - tiltWallAt < 1.5f) tiltWallN++ else { tiltWall = wall; tiltWallN = 1 }
+            tiltWallAt = tiltClock
+            val rest = when (tiltWallN) { 1 -> min(0.45f, TouchFeel.marbleRestitution(w)); 2 -> 0.18f; else -> 0f }
+            if (tiltWallN <= 2) { hit = max(hit, abs(v)); hitN = tiltWallN }
+            return -v * rest
+        }
+        if (mx < 0f) { mx = 0f; tiltVx = if (tiltVx < -hitV) bounce(1, tiltVx) else 0f }
+        else if (mx > maxX) { mx = maxX; tiltVx = if (tiltVx > hitV) bounce(2, tiltVx) else 0f }
+        if (my > bot) { my = bot; tiltVy = if (tiltVy > hitV) bounce(3, tiltVy) else 0f }
+        else if (my < top) { my = top; tiltVy = if (tiltVy < -hitV) bounce(4, tiltVy) else 0f }
+        surf = if (my >= bot - 0.5f) screenSurf(SK.FLOOR) else freeSurf(my)
+        val buzzLevel = tiltBuzzLevel()
+        if (hit > 0f && buzzLevel >= 1) {
+            feelSharpHit(((hit / (600f * d)) * (if (hitN == 2) 0.5f else 1f)).coerceIn(0.15f, 1f))
+            debugTiltBuzzes++
+        }
+        val moved = hypot(mx - ox0, my - oy0) > 0.5f
+        // which way it faces: only changes on a clear tilt (no flip-flopping near level)
+        if (abs(tgx) > 1.5f) { tiltSlideSide = if (tgx > 0f) -1 else 1 }
+        else if (tiltSlideSide == 0) { tiltSlideSide = 1 }
+        val side = tiltSlideSide
+        val k = ((a - slideAt) / (fallAt - slideAt).coerceAtLeast(1f)).coerceIn(0f, 1f)
+        tiltLean = if (a >= slideAt) side * (0.35f + 0.55f * k) else tiltLean * 0.85f
+        if (moved) {
+            if (controller.state != MonkeyState.WALK && controller.state != MonkeyState.STARTLED)
+                controller.play(MonkeyState.WALK, 0.35f)
+            controller.face(side.toFloat())
+            tiltTickAcc += dt
+            if (tiltTickAcc >= 0.48f) {
+                tiltTickAcc = 0f
+                if (buzzLevel >= 2 && feelOn()) { buzz(TouchFeel.dragTick(w)); debugTiltBuzzes++ }
+            }
+        } else tiltTickAcc = 0.48f
+        // back upright and resting on the floor: the roll is over, normal life again
+        if (a < 18f && onFloorNow && hypot(tiltVx, tiltVy) < 40f * d) {
+            tiltVx = 0f; tiltVy = 0f; tiltOwnsRoll = false; tiltSlideSide = 0; tiltWall = 0; tiltWallN = 0
+            tiltFallSaid = false
+            my = bot; surf = screenSurf(SK.FLOOR)
         }
     }
 

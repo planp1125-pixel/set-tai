@@ -204,6 +204,7 @@ object ChatHub {
         settings = AppSettings(app)
         // v10.39.3: the Play build has no screen agent; hide it everywhere
         com.combo.monkeycompanion.brain.Distribution.screenAgent = com.combo.monkeycompanion.BuildConfig.FLAVOR != "play"
+        com.combo.monkeycompanion.brain.Distribution.screenCapture = com.combo.monkeycompanion.BuildConfig.FLAVOR != "play"
         com.combo.monkeycompanion.mind.MindHub.init(app)
         AgentPromptMore.init(app)
         settings.cloudUserId() // persist once on first app initialisation, without enabling AI
@@ -374,7 +375,7 @@ object ChatHub {
         busy = true; yieldToHuman()
         val pace = runCatching { settings.humanPace }.getOrDefault(false)
         val paceVoice = pace && runCatching {
-            settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE) && (settings.speakReplies || (speakThis && settings.speakVoiceReplies))
+            settings.speakReplies || (speakThis && settings.speakVoiceReplies)
         }.getOrDefault(false)
         voicePaced = paceVoice
         var saidTo = 0
@@ -505,7 +506,7 @@ object ChatHub {
 
     fun spoke(text: String) {
         val voiceTurn = speakThis; speakThis = false
-        if (!settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE)) return
+        // v10.52: reading replies aloud needs no mic, so it works without the Voice power (that one is for the 🎤)
         if (settings.speakReplies || (voiceTurn && settings.speakVoiceReplies)) com.combo.monkeycompanion.agent.Voice.speak(app, text)
     }
 

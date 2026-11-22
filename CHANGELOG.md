@@ -562,3 +562,13 @@ Every character now feels like a little body in your hand (the phone's vibration
 
 - The new Settings tab never opened the Buddy section, so "Speak all replies out loud", "Human pace", "Talking speed" and "Close the bubble chat" could not be found. They now have their own card, **Settings › Chat & Voice**, with a "Turn on the Voice power" button when that power is off. **Settings › Buddy & Moments** is reachable again too.
 
+## v10.52 (code 137): smoother tilt, Play-safe build, every setting reachable
+
+- **Tilt feels like a ball, not a pinball.** Once it starts rolling, gravity keeps acting at every angle until it is back on the floor with the phone upright: no more freezing in mid-air between about 18° and 32°, and no sudden drop. The sensor no longer arrives in 200 ms batches and gravity is smoothed every frame, so it glides instead of jumping from place to place. It turns only on a clear tilt (no flip-flopping).
+- **Bounces settle.** An edge bounces it at most twice (about 45%, then about 18% of the speed), then it rests against that edge.
+- **Less vibration.** Only those two bumps vibrate (the second one softer); nothing while it rests or rolls. New **Settings › Touch & Physics › Tilt vibration: Off / Bumps only (default) / Bumps + rolling**.
+- **Play build: no screen recording.** Screen Smash and the photobomb "Snap with me" are left out of the Play build (menu, Explore, chat), and the Play manifest drops the screen-recording service and its foreground-service permission, so no media-projection declaration is needed. The photobomb pose stays and says "take a screenshot now (Power + Volume down)". The full build keeps both.
+- **Speaking replies no longer needs the Voice power** (that one is for the 🎤 mic).
+- **Settings tab:** new entries **Personality & Memory** (random quips, conversation memory, clear chat history, diary) and **Habits & Extras** (shake & tilt, friendship heart, daily hello, streak sulking, goodnight, daily challenge, eats notifications, festivals, sleep nag, weather). These were unreachable since the redesign.
+- Tests: v1052/TiltAndPlayTest; V1036's rolling-tick test now opts into "Bumps + rolling".
+

@@ -149,6 +149,7 @@ class V1036Test {
 
     @Test fun slidingTicksButSettledAtEdgeIsSilent() {
         val v = view("monkey")
+        ChatHub.settings.tiltBuzz = 2   // v10.52: rolling ticks are opt-in ("Bumps + rolling")
         v.debugPlace(600f, onFloor = true)
         synchronized(Feel.log) { Feel.log.clear() }
         feed(v, 6.9f, 6.9f, 30)

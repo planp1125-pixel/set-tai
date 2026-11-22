@@ -184,6 +184,7 @@ class SettaiDesignActivity : ComponentActivity() {
         com.combo.monkeycompanion.overlay.SlingGameHub.start(applicationContext)?.let { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
     }
     private fun screenSmash() {
+        if (!com.combo.monkeycompanion.brain.Distribution.screenCapture) return
         moveTaskToBack(true)
         Handler(Looper.getMainLooper()).postDelayed({ SmashActivity.launch(applicationContext) }, 450L)
     }
@@ -599,7 +600,7 @@ class SettaiDesignActivity : ComponentActivity() {
                                 Triple("Shows", "Play & Shows", "Create and watch companion stories"),
                                 Triple("Start a Skit", "Play & Shows", "Watch an improvised skit"),
                                 Triple("Use Superpower", "Skills & Powers", "Trigger your chosen power")
-                            )
+                            ).filter { com.combo.monkeycompanion.brain.Distribution.screenCapture || it.first != "Screen Smash" }   // v10.52: not in the Play build
                             val matching = activities.filter { (title, category, description) ->
                                 (exploreCategory == "All" || exploreCategory == category) &&
                                     (search.isBlank() || listOf(title, category, description).any { it.contains(search.trim(), ignoreCase = true) })
@@ -672,6 +673,8 @@ class SettaiDesignActivity : ComponentActivity() {
                                 item { Feature("AI Engine & Providers", "Shared AI model, cloud connections and offline brain", "✧", surface, ink, muted) { settings("brain") } }
                                 item { Feature("Chat & Voice", "Speak replies out loud, word-by-word talking, talking speed", "♪", surface, ink, muted) { settings("chat") } }
                                 item { Feature("Buddy & Moments", "When your character pipes up, and phone moments", "☺", surface, ink, muted) { settings("buddy") } }
+                                item { Feature("Personality & Memory", "Random quips, how much chat it remembers, clear history", "✎", surface, ink, muted) { settings("personality") } }
+                                item { Feature("Habits & Extras", "Shake & tilt, friendship heart, daily hello, goodnight, festivals, weather", "★", surface, ink, muted) { settings("habits") } }
                                 item { Feature("Display & Overlay", "App theme, live wallpaper and climbing spots", "◐", surface, ink, muted) { settingsPanel = "display" } }
                                 item { Feature("Touch & Physics", "App-wide touch, motion and reaction defaults", "♡", surface, ink, muted) { settings("touch") } }
                                 item { Feature("Performance & Battery", "Rest behaviour and battery saver", "◉", surface, ink, muted) { settings("touch") } }
