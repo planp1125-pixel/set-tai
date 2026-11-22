@@ -554,3 +554,7 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Sounds like speech:** the ChatGPT instructions now ask for short spoken sentences and, about one reply in three, a natural filler ("hmm", "actually…", "seri seri"). Markdown that slips through (bold, bullets, headings) is turned into plain speech.
 - New `speech/SpeechPacer.kt` (shared, no Random, no clock). GoldenTraceTest unchanged. New test v1051/HumanPaceTest; older whole-reply tests switch human pace off.
 
+## v10.51.1 (code 135): it knows what the friendship heart gives
+
+- Asked "what will I get at 100%?", the character said it didn't know: the brain was only told the title ("Thick friends"). Now it is told the level, the heart's percent to the next level, what the next levels unlock (level 8 = flower garland, level 10 = Best friends forever with best-friend lines) and what is already unlocked, and to answer from that, never guess.
+

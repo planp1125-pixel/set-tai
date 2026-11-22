@@ -127,7 +127,10 @@ object ChatHub {
         val b = com.combo.monkeycompanion.fun5.Fun5Store.bond(app)
         val known = if (facts && settings.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.MEMORY))
             com.combo.monkeycompanion.powers.ExtraCaps.memory(app).relevant("", 4).map { it.text } else emptyList()
-        com.combo.monkeycompanion.v5.Bond.promptLine(f.xp, b.warmth, f.streak, b.sulking, known)
+        com.combo.monkeycompanion.v5.Bond.promptLine(f.xp, b.warmth, f.streak, b.sulking, known) +
+            // v10.51.1: the heart's real numbers and rewards, so "what do I get at 100%?" gets a true answer
+            "\nFRIENDSHIP HEART (the % on the friendship heart is progress to the next level; answer from this if asked, never guess): " +
+            com.combo.monkeycompanion.v5.Friendship.describe(f.xp) + "."
     }.getOrDefault("")
 
     /** Strip tags, fire actions, fallback to the user's request. Returns the text to show. */

@@ -30,6 +30,25 @@ object Friendship {
         Unlock(10, "lines_bestie", "Best-friend lines", "lines"),
     )
     fun unlocked(xp: Int) = unlocks.filter { it.level <= level(xp) }
+
+    /**
+     * v10.51.1: the whole picture for the brain, so it can answer "what do I get at 100%?" truthfully:
+     * the title, the level, the heart's percent to the next level and what the next levels unlock.
+     */
+    fun describe(xp: Int): String {
+        val l = level(xp)
+        val pct = (progress(xp) * 100).toInt()
+        return buildString {
+            append(title(l)).append(", level ").append(l)
+            if (l < 10) append(", the heart is ").append(pct).append("% of the way to level ").append(l + 1)
+            val next = unlocks.filter { it.level > l }.groupBy { it.level }.entries.take(2)
+            if (next.isEmpty()) append("; everything is unlocked (Best friends forever)")
+            for ((lv, us) in next) append("; level ").append(lv).append(" unlocks ").append(us.joinToString(" and ") { it.title.lowercase() })
+            if (l < 10) append("; level 10 is the top title, Best friends forever")
+            val got = unlocked(xp)
+            if (got.isNotEmpty()) append("; already unlocked: ").append(got.joinToString(", ") { it.title.lowercase() })
+        }
+    }
     fun has(xp: Int, id: String) = unlocked(xp).any { it.id == id }
     fun newAt(level: Int) = unlocks.filter { it.level == level }
 
