@@ -125,7 +125,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     override fun onPause() { super.onPause(); ui.removeCallbacksAndMessages(null); saveOnline() }
 
     private val titles = mapOf("brain" to "Brain & AI", "touch" to "Touch & motion", "personality" to "Personality & memory",
-        "buddy" to "Buddy & moments", "habits" to "Daily habits", "superpowers" to "Superpowers", "phone" to "Phone powers",
+        "buddy" to "Buddy & moments", "chat" to "Chat & voice", "habits" to "Daily habits", "superpowers" to "Superpowers", "phone" to "Phone powers",
         "appearance" to "Appearance", "character" to "Character")
 
     private fun visible(target: String?, id: String) = when (target) {
@@ -147,6 +147,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             if (visible(target, "offline") && s.brainType == BrainType.OFFLINE) OfflineCard(r)
             if (visible(target, "feel")) PersonalityCard(r)
             if (visible(target, "background")) BackgroundAiCard(r)
+            if (visible(target, "chat")) ChatVoiceCard(r)
             if (visible(target, "buddy")) BuddyCard(r)
             if (visible(target, "appearance")) AppearanceCard()
             if (visible(target, "rest")) RestCard(r)
@@ -664,7 +665,13 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             for (m in com.combo.monkeycompanion.brain.PhoneMoments.Moment.entries) {
                 SSwitch(m.label, s.phoneMoment(m.id)) { s.setPhoneMoment(m.id, it); bump() }
             }
-            SSubhead("Bubble chat & voice")
+        }
+    }
+
+    /** v10.51.2: chat & voice in its own card (it was hidden at the bottom of Buddy mode, which the new Settings tab doesn't open). */
+    @Composable
+    private fun ChatVoiceCard(@Suppress("UNUSED_PARAMETER") r: Int) {
+        SCard("Chat & voice", "How replies are said: out loud, word by word, and how long the bubble chat stays open.") {
             val tos = listOf(30, 60, 120, 300, 0)
             SChoice("Close the bubble chat", listOf("After 30 s idle", "After 1 min idle", "After 2 min idle (default)", "After 5 min idle", "Never by itself"),
                 tos.indexOf(s.chatTimeoutSecs).let { if (it < 0) 2 else it }) { s.chatTimeoutSecs = tos[it]; bump() }
@@ -675,6 +682,10 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             SSwitch("Speak the answer when I asked by voice", s.speakVoiceReplies) { s.speakVoiceReplies = it; bump() }
             SSwitch("Use Google's voice popup for 🎤 (opens over the screen)", s.voicePopup) { s.voicePopup = it; bump() }
             SSwitch("Speak all replies out loud", s.speakReplies) { s.speakReplies = it; bump() }
+            if (!s.groupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE)) {
+                SNote("Spoken replies and the 🎤 need the Voice power, which is off.")
+                SSecondary("Turn on the Voice power") { s.setGroupEnabled(com.combo.monkeycompanion.powers.CapGroup.VOICE, true); bump() }
+            }
         }
     }
 

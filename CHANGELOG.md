@@ -558,3 +558,7 @@ Every character now feels like a little body in your hand (the phone's vibration
 
 - Asked "what will I get at 100%?", the character said it didn't know: the brain was only told the title ("Thick friends"). Now it is told the level, the heart's percent to the next level, what the next levels unlock (level 8 = flower garland, level 10 = Best friends forever with best-friend lines) and what is already unlocked, and to answer from that, never guess.
 
+## v10.51.2 (code 136): Chat & Voice is in Settings again
+
+- The new Settings tab never opened the Buddy section, so "Speak all replies out loud", "Human pace", "Talking speed" and "Close the bubble chat" could not be found. They now have their own card, **Settings › Chat & Voice**, with a "Turn on the Voice power" button when that power is off. **Settings › Buddy & Moments** is reachable again too.
+

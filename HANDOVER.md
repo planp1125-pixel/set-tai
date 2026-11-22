@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.51.1 (versionCode 135)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.51.2 (versionCode 136)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.51 Human pace
 
@@ -8,6 +8,7 @@ Updated for **v10.51.1 (versionCode 135)**, 22 Nov 2026. Owner: Manikandan Gopal
 - MonkeyView: `onReply(partial)` with `AppSettings.humanPace` (default on) feeds the pacer; `stepPacer()` (frame loop, after `stepBeats`) shows words and, when finished, runs the normal done path (`paceJustEnded` stops a second mouth flap). `applyTalkingBody()` after blinking: mouth, gesture, side step (`drawPose.bodyX`, the box never moves), nod. Bubble tap while pacing = `pacer.skip()`.
 - ChatHub: `Persona.systemPrompt(spoken = humanPace)`; streamed text through `Spoken.plain`; `voicePaced` + `speakSentences()` → `Voice.speakPart()` (QUEUE_ADD per sentence, `heardTo` from `onRangeStart`); MonkeyView gates the pacer on `heardTo`, gives up after 5 s idle.
 - v10.51.1: `Friendship.describe(xp)` → its own line in ChatHub `bondNote()` (level, heart %, next unlocks).
+- v10.51.2: `ChatVoiceCard` (section "chat") holds the chat & voice switches; the Settings tab lists "Chat & Voice" and "Buddy & Moments".
 - Tests that check the whole reply at once set `ChatHub.settings.humanPace = false` in `view()`.
 
 ## Desktop (D1, v10.50.3)

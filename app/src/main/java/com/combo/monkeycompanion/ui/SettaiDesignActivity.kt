@@ -670,6 +670,8 @@ class SettaiDesignActivity : ComponentActivity() {
                                 item { Heading("App-wide preferences", ink) }
                                 item { Text("Character personality, memories and appearance are managed under Characters.", color = muted, fontSize = 13.sp) }
                                 item { Feature("AI Engine & Providers", "Shared AI model, cloud connections and offline brain", "✧", surface, ink, muted) { settings("brain") } }
+                                item { Feature("Chat & Voice", "Speak replies out loud, word-by-word talking, talking speed", "♪", surface, ink, muted) { settings("chat") } }
+                                item { Feature("Buddy & Moments", "When your character pipes up, and phone moments", "☺", surface, ink, muted) { settings("buddy") } }
                                 item { Feature("Display & Overlay", "App theme, live wallpaper and climbing spots", "◐", surface, ink, muted) { settingsPanel = "display" } }
                                 item { Feature("Touch & Physics", "App-wide touch, motion and reaction defaults", "♡", surface, ink, muted) { settings("touch") } }
                                 item { Feature("Performance & Battery", "Rest behaviour and battery saver", "◉", surface, ink, muted) { settings("touch") } }
