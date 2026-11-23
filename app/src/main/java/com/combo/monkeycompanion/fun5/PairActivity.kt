@@ -33,6 +33,9 @@ class PairActivity : androidx.activity.ComponentActivity(), PairHub.Listener {
     private var found by androidx.compose.runtime.mutableStateOf<List<String>>(emptyList())
     private var paired by androidx.compose.runtime.mutableStateOf(false)
     private var askingCodeFor by androidx.compose.runtime.mutableStateOf<String?>(null)
+    /** This phone's address while it shows a code (v10.54.1). */
+    private var hostAddr by androidx.compose.runtime.mutableStateOf("")
+    private companion object { const val ADDRESS = "\u0000address" }
     private var askPeer by androidx.compose.runtime.mutableStateOf<Pair<String, String>?>(null)
     /** v10.52.1: model + a fixed 3-digit tag, so two phones of the same model don't look the same. */
     private val myName: String get() {
@@ -56,15 +59,18 @@ class PairActivity : androidx.activity.ComponentActivity(), PairHub.Listener {
     private fun Screen() {
         com.combo.monkeycompanion.ui.SettaiScreen("Two phones", onBack = { finish() }) {
             com.combo.monkeycompanion.ui.SNote("Both phones on the same Wi-Fi, both with this screen open. Phone 1 taps \"Show a code\" and keeps this screen open. Phone 2 taps \"Find the other phone\", picks phone 1 (this phone is \"$myName\") and types the code; phone 1 taps Accept. Only animation events are exchanged (wave, jump, fight, dance). No messages, no files, nothing else.")
-            com.combo.monkeycompanion.ui.SNote("Not found? Some Wi-Fi (office, hostel, guest, mesh) blocks phones from seeing each other. Turn on the hotspot on one phone and join it from the other: that always works.")
+            com.combo.monkeycompanion.ui.SNote("Not found? Some Wi-Fi (office, hostel, guest, mesh) blocks phones from seeing each other. Try the hotspot of one phone, or tap \"Join by address\" and type the address that the other phone shows.")
             com.combo.monkeycompanion.ui.SCard(status) {
                 com.combo.monkeycompanion.ui.SPrimary("Show a code (this phone waits)") {
                     val code = PairProtocol.newCode()
                     PairHub.host(applicationContext, myName, myChar, code)
+                    hostAddr = PairHub.myAddresses().joinToString(" or ")
                     status = "Code: $code. Type it on the other phone."
                 }
-                com.combo.monkeycompanion.ui.SSecondary("Find the other phone") { found = emptyList(); PairHub.discover(applicationContext) }
-                for (n in found) com.combo.monkeycompanion.ui.SSecondary("Join \"$n\"") { askingCodeFor = n }
+                if (hostAddr.isNotEmpty()) com.combo.monkeycompanion.ui.SNote("If the other phone can't find this one, type this phone's address there: $hostAddr")
+                com.combo.monkeycompanion.ui.SSecondary("Find the other phone") { found = emptyList(); status = "Looking for Set-Tai phones…"; PairHub.discover(applicationContext) }
+                for (n in found) com.combo.monkeycompanion.ui.SSecondary("Join \"${n.removePrefix("Settai-")}\"") { askingCodeFor = n }
+                com.combo.monkeycompanion.ui.SSecondary("Join by address") { askingCodeFor = ADDRESS }
                 com.combo.monkeycompanion.ui.SSecondary("Stop / unpair") { PairHub.stop(); refresh() }
             }
             if (paired) com.combo.monkeycompanion.ui.SCard("Make them play", "Set-Tai must be running on both phones.") {
@@ -78,14 +84,25 @@ class PairActivity : androidx.activity.ComponentActivity(), PairHub.Listener {
         }
         askingCodeFor?.let { name ->
             var code by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+            var addr by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+            val byAddress = name == ADDRESS
             androidx.compose.material3.AlertDialog(onDismissRequest = { askingCodeFor = null },
-                title = { androidx.compose.material3.Text("Code shown on \"$name\"") },
+                title = { androidx.compose.material3.Text(if (byAddress) "Join by address" else "Code shown on \"${name.removePrefix("Settai-")}\"") },
                 text = {
-                    androidx.compose.material3.OutlinedTextField(code, { code = it.filter(Char::isDigit).take(4) }, singleLine = true,
-                        label = { androidx.compose.material3.Text("4-digit code") },
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number))
+                    androidx.compose.foundation.layout.Column {
+                        if (byAddress) androidx.compose.material3.OutlinedTextField(addr, { addr = it.filter { c -> c.isDigit() || c == '.' }.take(15) }, singleLine = true,
+                            label = { androidx.compose.material3.Text("Address on the other phone, e.g. 192.168.1.23") },
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
+                        androidx.compose.material3.OutlinedTextField(code, { code = it.filter(Char::isDigit).take(4) }, singleLine = true,
+                            label = { androidx.compose.material3.Text("4-digit code") },
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number))
+                    }
                 },
-                confirmButton = { androidx.compose.material3.TextButton(onClick = { PairHub.join(myName, myChar, name, code); status = "Asking \"$name\"…"; askingCodeFor = null }) { androidx.compose.material3.Text("Join") } },
+                confirmButton = { androidx.compose.material3.TextButton(onClick = {
+                    if (byAddress) { PairHub.joinAddress(myName, myChar, addr, code); status = "Connecting to $addr…" }
+                    else { PairHub.join(myName, myChar, name, code); status = "Asking \"${name.removePrefix("Settai-")}\"…" }
+                    askingCodeFor = null
+                }) { androidx.compose.material3.Text("Join") } },
                 dismissButton = { androidx.compose.material3.TextButton(onClick = { askingCodeFor = null }) { androidx.compose.material3.Text("Cancel") } })
         }
         askPeer?.let { (peerName, peerCharacter) ->

@@ -596,3 +596,10 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Play build: "Sign in with ChatGPT" is hidden until OpenAI approves** (OpenAI documents plan usage for open-source and locally hosted apps; a closed Play app goes through their interest form). Anyone already signed in keeps it, and the developer switch shows it for testing. Flip `ChatHub.CHATGPT_APPROVED` once approved.
 - CI: the app tests run on every build again (the R2 branch had skipped them for manual branch builds; the manual branch APK upload stays). The Rust library is never loaded inside Robolectric's sandbox (one class loader per native library), so app tests are stable. New test v1054/OfflineChatTest.
 
+## v10.54.1 (code 141): "Find the other phone" finds it
+
+- Two phones only looked for each other with Android's Wi-Fi service discovery (mDNS), which many routers and a phone's own hotspot block, so "Find the other phone" found nothing. Now the searching phone also asks "who's there?" by UDP broadcast on every network it is on (Wi-Fi and hotspot) for 25 seconds, and the inviting phone answers and announces itself every 1.5 s. Both lists are merged.
+- **Join by address**: the inviting phone shows its address (e.g. 192.168.43.1) under the code, and the other phone can type it with the code. The inviting phone listens on a fixed port (47822) for this.
+- The Wi-Fi multicast lock is held only while searching or showing a code.
+- Test: v1052/PairByAddressTest.
+

@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.54.0 (versionCode 140)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.54.1 (versionCode 141)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.51 Human pace
 
@@ -10,6 +10,10 @@ Updated for **v10.54.0 (versionCode 140)**, 22 Nov 2026. Owner: Manikandan Gopal
 - v10.51.1: `Friendship.describe(xp)` → its own line in ChatHub `bondNote()` (level, heart %, next unlocks).
 - v10.51.2: `ChatVoiceCard` (section "chat") holds the chat & voice switches; the Settings tab lists "Chat & Voice" and "Buddy & Moments".
 - Tests that check the whole reply at once set `ChatHub.settings.humanPace = false` in `view()`.
+
+## v10.54.1 Pairing discovery
+
+- `PairHub`: UDP 47821 ("SETTAI1 WHO" / "SETTAI1 HERE <name> <port>") beside NSD (`startBeacon`, `startUdpSearch`, `udpFound`), TCP 47822 for the inviter (falls back to any port), `joinAddress()`, `myAddresses()`, multicast lock while active.
 
 ## v10.54 Trained offline brain + bubble replies
 
