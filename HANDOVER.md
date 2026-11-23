@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.52.1 (versionCode 138)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.53.0 (versionCode 139)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.51 Human pace
 
@@ -10,6 +10,12 @@ Updated for **v10.52.1 (versionCode 138)**, 22 Nov 2026. Owner: Manikandan Gopal
 - v10.51.1: `Friendship.describe(xp)` → its own line in ChatHub `bondNote()` (level, heart %, next unlocks).
 - v10.51.2: `ChatVoiceCard` (section "chat") holds the chat & voice switches; the Settings tab lists "Chat & Voice" and "Buddy & Moments".
 - Tests that check the whole reply at once set `ChatHub.settings.humanPace = false` in `view()`.
+
+## v10.53 Offline Rust brain (Plan A R1)
+
+- `mind/` Cargo workspace, crate `settai-mind` (cdylib + rlib): `understand.rs` (rules → Intent/Mood/act/gesture), `reply.rs` (lines from `lines/general.tsv`, per-character files via `CHARACTER_LINES`), `jni_api.rs` (JNI for `com.combo.monkeycompanion.mind.RustMind`). `cargo test` covers languages, every intent has lines, no repeats, speed.
+- Kotlin `app/.../mind/RustMind.kt`: loads `settai_mind` (or `-Dsettai.mind.lib=<path>` in tests), `understand()`, `respond()`, `benchMicros()`; returns null when the library is missing.
+- CI builds the .so (not committed; `app/src/main/jniLibs/` is git-ignored). Settings › Chat & Voice has a tester. Next (R1b): answer in the bubble when Give Brain is off, instant reaction while ChatGPT thinks.
 
 ## v10.52 Tilt, Play-safe
 

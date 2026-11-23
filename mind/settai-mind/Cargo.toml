@@ -1,0 +1,13 @@
+[package]
+name = "settai-mind"
+version = "0.1.0"
+edition = "2021"
+description = "Set-Tai's offline brain: understands a message and answers in the character's voice in under a millisecond."
+publish = false
+
+[lib]
+name = "settai_mind"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+jni = { version = "0.21", default-features = false }

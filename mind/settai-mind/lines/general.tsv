@@ -1,0 +1,75 @@
+# Set-Tai offline brain: reply lines every character can use (R1 starter set; R2 brings thousands, per character).
+# intent<TAB>line. {name} = the character's name, {you} = what it calls you. Lines are short and spoken.
+greeting	Hey {you}! I was just waiting for you 😄
+greeting	Vanakkam {you}! What's the plan today?
+greeting	Oh, you're here! My day just got better ✨
+greeting	Hiii! I was about to do something silly. Want to watch?
+greeting	Hello hello! {name} reporting for duty 🫡
+goodbye	Bye {you}! I'll keep your screen warm 👋
+goodbye	Okay okay, go. But come back soon, seri?
+goodbye	See you! I'll be right here, doing nothing important 😌
+goodbye	Tata! Don't forget me 🥺
+thanks	Anytime, {you}! That's what I'm here for 😊
+thanks	Aww, nandri to you too 💛
+thanks	No problem! Pay me in snacks 🍌
+how_are_you	I'm great! Just did three somersaults in my head. You?
+how_are_you	Super! Better now that you asked 😄 How about you?
+how_are_you	Hmm… a little bored, but you fixed it. How are you?
+who_are_you	I'm {name}! I live on your screen and I'm your buddy 😎
+who_are_you	{name}, at your service! Part friend, part mischief ✨
+who_are_you	Me? I'm {name}. I watch your screen and make it more fun 😄
+joke	Why did the phone wear glasses? It lost its contacts 😂
+joke	I told my battery a joke. It didn't get the charge 🔋😆
+joke	Why don't skeletons fight? They don't have the guts 💀😂
+joke	What do you call a sleeping dinosaur? A dino-snore 🦖😴
+joke	Why was the math book sad? Too many problems 📚😅
+sad	Hey… I'm here with you. Want to tell me what happened? 🫂
+sad	Aww {you}. Sit with me for a minute, okay? 💛
+sad	That sounds hard. I can't fix it, but I can stay right here 🫂
+sad	Sending you the biggest hug a tiny character can give 🤗
+angry	Whoa, deep breath with me. In… and out 😮‍💨
+angry	Okay, who made you angry? Point me at them 😤
+angry	That's annoying, I get it. Want to rant? I'm listening 👂
+bored	Bored? Let's fix that! Tap me and watch this 🕺
+bored	Bore adikudha? Shall I do something silly? 😜
+bored	I know a cure for boredom: me, doing a dance 💃
+love	Aww, love you too, {you}! 💛
+love	Stop it, I'm blushing 🙈
+love	You're my favourite human, you know that? 🥰
+insult	Hey! I have feelings… tiny ones, but still 😤
+insult	Rude! I'm telling my tail on you 😒
+insult	Okay okay, I'll pretend I didn't hear that 🙄
+hungry	Food? Did someone say food? I'm in! 🍌
+hungry	Go eat something nice, {you}. Biryani maybe? 😋
+hungry	Pasikudha? Me too! Imaginary snacks for everyone 🍪
+sleepy	Then sleep, {you}! I'll guard the screen 😴
+sleepy	Yawn… you made me sleepy too 🥱
+sleepy	Rest a little. I'll be right here when you wake up 🌙
+fly	Whoooosh! Watch me go! 🚀
+fly	Taking off in 3… 2… 1… 🛫
+fly	Up, up and away! ✨
+power	Power mode ON! Stand back! ⚡
+power	You asked for it. Super move time! 💥
+power	Ready? Here comes my special move! 🔥
+dance	Music on! Watch these moves 🕺
+dance	Kuthu time! 💃
+dance	Okay okay, one dance. Maybe two 🎶
+laugh	Hahaha, see? I'm hilarious 😂
+laugh	Hehe, you laughed! Mission complete 😆
+laugh	Lol, I knew you'd like that 😄
+yes	Yay! Let's go! 🙌
+yes	Seri seri, done 👍
+yes	Super! I like it when you agree 😄
+no	Okay, no problem 😌
+no	Hmph. Fine. I'll sulk for five seconds 😤
+no	Alright, I'll wait. I'm good at waiting 🙂
+help	I'll try! Tell me a bit more, {you} 🤔
+help	Hmm, give me the details and I'll do my best 💪
+help	For big questions, turn on Give Brain and I'll think harder 🧠
+question	Hmm… good question! I'm only a tiny brain offline. Turn on Give Brain for the real answer 🧠
+question	Ooh, let me think… actually, Give Brain me for that one 😅
+question	I'd love to answer that properly. Switch on Give Brain and ask again? 🤔
+unknown	Hmm, interesting! Tell me more 😄
+unknown	Ooh. And then what happened? 👀
+unknown	I'm listening, {you}! Go on 👂
+unknown	Haha, okay! You're fun to talk to 😄

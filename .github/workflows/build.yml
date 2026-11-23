@@ -58,6 +58,18 @@ jobs:
         run: |
           echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/settai.keystore"
           echo "SETTAI_KEYSTORE_PATH=$RUNNER_TEMP/settai.keystore" >> "$GITHUB_ENV"
+      - name: Offline brain (Rust) - test, then build for the phone and for the unit tests
+        timeout-minutes: 12
+        run: |
+          rustup target add aarch64-linux-android
+          cargo install cargo-ndk --locked
+          cd mind
+          cargo test --release
+          cargo build --release
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          cargo ndk -t arm64-v8a -o ../app/src/main/jniLibs build --release -p settai-mind
+          ls -la ../app/src/main/jniLibs/arm64-v8a
+          echo "SETTAI_MIND_HOST_LIB=$PWD/target/release/libsettai_mind.so" >> "$GITHUB_ENV"
       - name: Unit tests
         timeout-minutes: 28
         run: |
@@ -66,6 +78,7 @@ jobs:
               tasks.withType<Test>().configureEach {
                   systemProperty("java.awt.headless", "true")
                   maxHeapSize = "3g"
+                  System.getenv("SETTAI_MIND_HOST_LIB")?.let { systemProperty("settai.mind.lib", it) }
                   testLogging { events("started", "passed", "skipped", "failed"); exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
               }
           }

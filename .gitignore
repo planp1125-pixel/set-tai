@@ -10,3 +10,7 @@ local.properties
 .idea/
 *.iml
 .DS_Store
+
+# v10.53: built by CI from mind/ (Rust)
+app/src/main/jniLibs/
+mind/target/

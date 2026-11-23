@@ -669,10 +669,37 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
         }
     }
 
+    /** v10.53: the offline Rust brain: status, speed, and a box to try it (it is always on as the character's personality). */
+    @Composable
+    private fun OfflineBrainTester() {
+        val mind = com.combo.monkeycompanion.mind.RustMind
+        SSubhead("Offline brain (Rust)")
+        if (!mind.available) {
+            SNote("Not available on this build: " + (mind.problem ?: "library missing") + ". ChatGPT and the normal replies still work.")
+            return
+        }
+        val speed = remember { mind.benchMicros() }
+        SNote("Ready: ${mind.version}. Always on, fully offline, nothing leaves your phone. " +
+            (speed?.let { "About ${if (it < 1000f) "%.0f µs".format(it) else "%.1f ms".format(it / 1000f)} per message." } ?: ""))
+        var text by remember { mutableStateOf("") }
+        var result by remember { mutableStateOf("") }
+        androidx.compose.material3.OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true,
+            label = { Text("Try it: type anything (Tamil, Tanglish, English…)") }, modifier = Modifier.fillMaxWidth())
+        SSecondary("Ask the offline brain") {
+            val c = com.combo.monkeycompanion.character.CharacterRegistry.current
+            val a = mind.respond(c.id, c.name, "", text.ifBlank { "hi" })
+            result = if (a == null) "No answer (the brain hit a problem)." else
+                "${c.name}: ${a.line}\n\nRead as: ${a.reading.intent} · mood ${a.reading.mood} · act ${a.reading.act} · hands ${a.reading.gesture} · ${a.micros} µs"
+        }
+        if (result.isNotEmpty()) SNote(result)
+        SNote("Next: it will answer in the bubble by itself when Give Brain is off, and react instantly while ChatGPT thinks.")
+    }
+
     /** v10.51.2: chat & voice in its own card (it was hidden at the bottom of Buddy mode, which the new Settings tab doesn't open). */
     @Composable
     private fun ChatVoiceCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         SCard("Chat & voice", "How replies are said: out loud, word by word, and how long the bubble chat stays open.") {
+            OfflineBrainTester()
             val tos = listOf(30, 60, 120, 300, 0)
             SChoice("Close the bubble chat", listOf("After 30 s idle", "After 1 min idle", "After 2 min idle (default)", "After 5 min idle", "Never by itself"),
                 tos.indexOf(s.chatTimeoutSecs).let { if (it < 0) 2 else it }) { s.chatTimeoutSecs = tos[it]; bump() }

@@ -580,3 +580,9 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Help text: if the Wi-Fi blocks phones from seeing each other (office, hostel, guest, mesh), use one phone's hotspot.
 - Test: v1052/TwoPhonesTest.
 
+## v10.53 (code 139): the offline Rust brain is in the app (Plan A, R1)
+
+- New Rust library `mind/settai-mind` (libsettai_mind.so, about 0.4 MB): reads a message (intent, mood, act, hands, power) with rules in English, Tanglish, Tamil and Hindi, and answers with a line in the character's voice, filled with its name, never repeating its last 8 lines. Every character, including future ones, gets the general lines; per-character line files come in R2.
+- Always on as the character's personality, fully offline; nothing leaves the phone. For now you can try it in **Settings › Chat & Voice › Offline brain (Rust)**: it shows the version, the speed per message and a box to type anything. It does not answer in the bubble yet (next release).
+- CI: a Rust step runs `cargo test`, builds the library for the phone (arm64) with cargo-ndk into `app/src/main/jniLibs`, and builds a computer copy so the Kotlin tests go through the real JNI bridge (v1053/RustMindTest).
+
