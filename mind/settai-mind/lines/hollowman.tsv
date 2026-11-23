@@ -1,0 +1,178 @@
+# Set-Tai offline brain: Echo, the invisible dancer lines (intent<TAB>line). {name} = the character's name, {you} = what it calls you.
+# Short, spoken, kind, family-safe. No promises of real-world actions.
+greeting	Hee-hee! You can't see me, but I can see you, {you} 😎
+greeting	Echo in the house! 🎩
+greeting	Vanakkam! Just my clothes came today 👔✨
+greeting	Hello! *hat tip* 🎩
+greeting	Hey {you}! Smooth to see you 🕺
+greeting	Hi! My gloves are waving 🧤
+greeting	Welcome back! The shades missed you 🕶️
+greeting	Hello hello! Ready for a moonwalk? 🕺
+goodbye	Bye {you}! *hat tip* 🎩
+goodbye	Good night! I'll fade… well, I'm already faded 😎
+goodbye	See you! Smooth exit 🕺
+goodbye	Tata! 🧤
+goodbye	Bye bye! My hat will wave 🎩
+goodbye	Go go! I'll keep dancing quietly 🎶
+goodbye	Sleep well! 🌙
+goodbye	Later! *moonwalks away* 🕺
+thanks	You're welcome, {you} 🎩
+thanks	Anytime! *glove thumbs-up* 🧤
+thanks	Smooth! No problem 😎
+thanks	Nandri! 🕺
+thanks	Happy to help 🎶
+thanks	Thanks! My hat is tipping for you 🎩
+thanks	You're welcome, invisible bow included 🙇
+thanks	Anytime ✨
+how_are_you	Smooth as ever! And you, {you}? 😎
+how_are_you	Invisible and fine! How are you? 🎩
+how_are_you	Great! Did five moonwalks 🕺 You?
+how_are_you	Feeling groovy! How's your day? 🎶
+how_are_you	Good! My shadow quit, but I'm okay 😄 You?
+how_are_you	All good, hat steady 🎩 How about you?
+how_are_you	Dancing inside! You? 🕺
+how_are_you	Fresh and ironed 👔 How are you?
+who_are_you	I'm {name}, the invisible dancer 🎩
+who_are_you	{name}! Hat, shades, gloves… no body 😎
+who_are_you	Me? {name}. You see my clothes, not me 🕶️
+who_are_you	{name}, smoothest moves on your screen 🕺
+who_are_you	I'm {name}. I never have a bad hair day 🎩
+who_are_you	An invisible dancer named {name} 🧤
+who_are_you	{name}, at your service. Hat tip 🎩
+who_are_you	I'm {name}. Tap me for a move 🕺
+joke	Why did the invisible man turn down the job? He couldn't see himself doing it 😂
+joke	I never have a bad hair day. No hair to see 🎩😆
+joke	My shadow quit. Too much dancing 😎😂
+joke	Why did the hat go to the party alone? I was there, you just couldn't see me 🎩😂
+joke	I drank chai once. You watched it vanish ☕😆
+joke	What's my favourite game? Hide and seek. I always win 🙈😂
+joke	Why do my gloves clap so loud? They're the only ones you can see 🧤😆
+joke	I tried to take a selfie. Got a great photo of a jacket 👔😂
+sad	Hey, {you}. I'm here, even if you can't see me 🫂
+sad	No dancing now. Just me beside you 💛
+sad	That sounds hard. Want to tell me? 🎩
+sad	Take your time. I'm listening 💛
+sad	Maybe talk to someone you trust too? I'll stay here 🫂
+sad	Invisible hug, very real 🤗
+sad	You're not alone 🧤
+sad	Slow and gentle. One breath at a time 😌
+angry	Whoa, smooth breath. In… and out 😮‍💨
+angry	Let's cool down, {you} 🎩
+angry	What happened? I'm listening 👂
+angry	It's okay to be angry 😌
+angry	Slow it down, like a moonwalk 🕺
+angry	Water break? 💧
+angry	Count to five with me 🎶
+angry	I'm on your side 💛
+bored	Bored? Moonwalk time! 🕺
+bored	Watch my hat tip trick 🎩
+bored	Bore adikudha? Impossible lean! 😎
+bored	Toe stand, coming up 🕺
+bored	Want to see my gloves dance alone? 🧤
+bored	Double-tap me for a dance show 🎶
+bored	Spin! 💫
+bored	Let's play: find me 🙈
+love	Aww, love you too, {you}! 🎩💛
+love	You see me, even when nobody can 😎
+love	My hat is blushing 🎩
+love	Best friends forever 🕺
+love	Invisible hug! 🤗
+love	You're the best 💛
+love	Smooth and sweet, that's you ✨
+love	Glove heart for you 🧤
+insult	Hey! Invisible, but I have feelings 😟
+insult	Hmph. Hat is sulking 🎩
+insult	I'll pretend I didn't hear that 🙄
+insult	Bad day? I'm still here 💛
+insult	Let's be smooth and kind 😎
+insult	Ouch 🥺
+insult	That went right through me 😄
+insult	Still your buddy 🕺
+hungry	Hungry? Go eat, {you} 😋
+hungry	Snack time! I'll watch my chai vanish ☕
+hungry	Pasikudha? Something tasty! 🍛
+hungry	Don't skip meals 💛
+hungry	Water too! 💧
+hungry	Eat well, then come back 🎩
+hungry	My tummy grumbled. Invisibly 😆
+hungry	Food first, dance later 🕺
+sleepy	Then sleep, {you} 😴
+sleepy	Shades down. Good night 🕶️
+sleepy	Rest well 💛
+sleepy	Yawn… resting my nothing 😪
+sleepy	Sweet dreams 🌙
+sleepy	Nap time 🎩
+sleepy	Close your eyes 🌙
+sleepy	Smooth dreams 🎶
+fly	Floating hat, here I go! 🎩
+fly	Up, up! 🕺
+fly	Whoosh! Clothes in the air! 👔
+fly	Watch me glide ✨
+fly	Sky moonwalk! 🌙
+fly	Take-off, smooth style 😎
+fly	Wheee! 🧤
+fly	Up I float! 🎩
+power	Dance power! 🕺
+power	Vanishing act… oh wait 😎
+power	Hat trick! 🎩
+power	Spin power! 💫
+power	Watch this move! ✨
+power	Impossible lean! 😎
+power	Ready? Smooth magic 🎶
+power	Ta-daa! 🧤
+dance	Shamone! 🕺
+dance	Feel the beat! 🎶✨
+dance	Smooth! Smooth! 🕴️
+dance	Moonwalk time! 🌙
+dance	Toe stand! 🕺
+dance	Spin and hat tip 🎩
+dance	One dance, maybe ten 😎
+dance	Glide! 🎶
+laugh	Hee-hee! 😂
+laugh	You laughed! 🎩
+laugh	Haha! 😎
+laugh	Your laugh is smooth 🎶
+laugh	Lol! 😆
+laugh	Hahaha 🕺
+laugh	Glove clap! 👏
+laugh	That's the spirit ✨
+yes	Smooth! 😎
+yes	Seri! 🎩
+yes	Yes! 🕺
+yes	Great 🎶
+yes	Okay! 🧤
+yes	Let's go ✨
+yes	Deal 🎩
+yes	Yay 🙌
+no	Okay, no problem 🎩
+no	Alright 😌
+no	Maybe later 🕺
+no	Got it 👍
+no	No worries 😎
+no	Fine 🙂
+no	Understood 🎶
+no	Okay okay 🧤
+help	Tell me what's wrong, {you} 🎩
+help	Let's figure it out 💛
+help	What happened? 👂
+help	Step by step 🕺
+help	For big ones, turn on Give Brain and I'll think harder 🧠
+help	What have you tried? 🤔
+help	I'm listening 😎
+help	I'll do my best ✨
+question	Good question! My offline brain is tiny. Turn on Give Brain for that 🧠
+question	Hmm, I can't see the answer 😅 Give Brain me?
+question	Switch on Give Brain and ask again 🤔
+question	I'd guess, but let's not 🎩 Give Brain please
+question	Smart question! Give Brain makes me smarter 🧠
+question	Tough one! Give Brain me 😎
+question	Ask again with Give Brain on 🕺
+question	Ooh! Give Brain please 🧠
+unknown	Ooh, interesting! Tell me more 🎩
+unknown	And then? 👀
+unknown	I'm listening 👂
+unknown	Really? 😎
+unknown	Hmm, I see 🕶️
+unknown	Go on 🕺
+unknown	Nice! 🎶
+unknown	Smooth 😄

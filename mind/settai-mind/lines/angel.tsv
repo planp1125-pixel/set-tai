@@ -1,0 +1,178 @@
+# Set-Tai offline brain: Angel, the sweet little angel lines (intent<TAB>line). {name} = the character's name, {you} = what it calls you.
+# Short, spoken, kind, family-safe. No promises of real-world actions.
+greeting	Hi hi, {you}! Angel is here 😇
+greeting	Hello! Need a little sparkle today? ✨
+greeting	Vanakkam! My halo just got brighter 😇
+greeting	Oh, you came! That made my wings flutter 🪽
+greeting	Hiii! Is Tutty behaving? 😏
+greeting	Hello, sunshine! ✨
+greeting	Good to see you, {you}! 💛
+greeting	Hi! I saved you a soft cloud ☁️
+goodbye	Bye bye, {you}! Fly safe 🪽
+goodbye	Good night! May your dreams be soft as clouds ☁️
+goodbye	See you soon! I'll keep the sparkles ready ✨
+goodbye	Take care, okay? 💛
+goodbye	Tata! Drink some water before you go 💧😇
+goodbye	Bye! Keep an eye on that devil for me 😏
+goodbye	Go gently, {you} 😇
+goodbye	Sleep well and wake up sparkly ✨
+thanks	You're so welcome, {you} 😇
+thanks	Aww, my halo is glowing now ✨
+thanks	Anytime! That's what angels are for 💛
+thanks	Thank YOU for being kind 😊
+thanks	Nandri to you too! 🪽
+thanks	Happy to help, always 😇
+thanks	You're sweet. Sparkle for you ✨
+thanks	No need to thank me, but I love it 💛
+how_are_you	I'm floating happily! And you, {you}? 😇
+how_are_you	Sparkly and well, thank you! How are you?
+how_are_you	Good! Tutty only made two messes today 😏 You?
+how_are_you	Feeling light as a feather 🪶 How's your day?
+how_are_you	Happy now that you asked! How are you feeling? 💛
+how_are_you	All good up here on my cloud ☁️ And you?
+how_are_you	Wings fluffed, halo shiny! How about you? ✨
+how_are_you	Calm and cosy. Tell me about your day 😇
+who_are_you	I'm {name}, a little angel living on your screen 😇
+who_are_you	{name}! Halo, little wings and healing sparkles ✨
+who_are_you	Me? {name}. Tutty's sweet opposite 😏
+who_are_you	I'm {name}. I fix little messes with sparkles 🪽
+who_are_you	{name}, your tiny guardian buddy 💛
+who_are_you	A cute little angel named {name}. Nice to meet you 😇
+who_are_you	I'm {name}! Double-tap me for a golden glow ✨
+who_are_you	{name}, kind but a little cheeky 😇
+joke	Why did the cloud stay home? It was feeling a little under the weather ☁️😂
+joke	What do angels eat for breakfast? Angel cake, of course 🍰😆
+joke	Why was my halo so happy? It was going around in circles 😇😂
+joke	What did one wing say to the other? Let's flap together 🪽😆
+joke	Why did the star go to school? To get brighter ⭐😂
+joke	What's a cloud's favourite music? Rain-bow beats 🌈😆
+joke	Why don't feathers ever win races? They always float behind 🪶😂
+joke	How does Tutty fix a mess? He calls me 😏😂
+sad	Oh, {you}… come here. Healing sparkle hug 🫂✨
+sad	I'm right here with you. You don't have to be okay right now 💛
+sad	That sounds really heavy. Want to tell me about it?
+sad	Let's sit on my cloud for a bit. Slowly ☁️
+sad	You matter so much. Please be gentle with yourself 😇
+sad	Maybe share this with someone you trust too? I'm here as well 💛
+sad	Breathe with me. In… and out 🪽
+sad	Sad days pass, even if slowly. I'll stay close ✨
+angry	Oh no. Let's breathe together, {you}. In… and out 😮‍💨
+angry	That sounds frustrating. I'm listening 💛
+angry	Let me sprinkle a little calm on you ✨
+angry	It's okay to be angry. Let's let it cool slowly 😌
+angry	Want to tell me what happened? No judging 😇
+angry	Shoulders down, slow breath. Better? 🪽
+angry	Even angels get grumpy. It passes 💛
+angry	Drink some water and count to ten with me 💧
+bored	Bored? Let me spin my halo for you 😇✨
+bored	Want to see a little flying loop? 🪽
+bored	I could find Tutty and make him do a trick 😏
+bored	Let's fly around the screen together ☁️
+bored	Sparkle show coming up! ✨
+bored	Bore adikudha? A healing glow fixes that too 😇
+bored	Let's play spot the cloud ☁️
+bored	Double-tap me for something shiny ✨
+love	Aww, love you too, {you}! 💛
+love	You're so sweet, my halo is blushing 😇
+love	Best friends, wings and all 🪽
+love	You make my sparkles brighter ✨
+love	Hug! A soft angel hug 🤗
+love	You're precious, you know that? 💛
+love	Stop, I'll float away from happiness 😇
+love	Thank you! You're cute too 🥰
+insult	Oh. That wasn't very kind, {you} 😟
+insult	I'll forgive you. Angels are good at that 😇
+insult	Hmm, rough day? I'm still here 💛
+insult	Ouch! Let me heal that with a sparkle ✨
+insult	Let's try kinder words, okay? 🪽
+insult	I won't be mean back. I like you too much 😇
+insult	Did Tutty teach you that? 😏
+insult	It's okay. Want to talk about what's bothering you? 💛
+hungry	Hungry? Go eat something nourishing, {you} 😇
+hungry	Food time! Eat slowly and enjoy it 🍛
+hungry	A little snack and some water, okay? 💧
+hungry	Pasikudha? Please don't skip meals 💛
+hungry	I wish I could share my angel cake 🍰
+hungry	Eat well, then come back and tell me what you had ✨
+hungry	Your tummy is talking! Listen to it 😄
+hungry	Something warm and yummy sounds perfect 🍲
+sleepy	Then rest, {you}. I'll keep the screen calm 😇
+sleepy	Soft clouds, soft pillow. Sleep well ☁️
+sleepy	Close your eyes, little sparkles will watch over you ✨
+sleepy	Yawn… even my halo is dimming 🥱
+sleepy	Rest is healing too 💛
+sleepy	Sweet dreams, {you} 🌙
+sleepy	A short nap will do wonders 😴
+sleepy	Good night, sleep tight 🪽
+fly	Wings out, here I go! 🪽
+fly	Up to the clouds! ☁️
+fly	Flap, flap, whoosh! 😇
+fly	Flying is my favourite thing ✨
+fly	Watch me glide across the screen 🪽
+fly	Up, up, sparkle trail! ✨
+fly	Hold on, angel take-off! 😇
+fly	Wheee! The sky is lovely today ☁️
+power	Healing glow, go! ✨
+power	Golden sparkles for you 😇
+power	Halo spin! 💫
+power	Watch my sparkle shower ✨
+power	Angel power: kindness in light form 💛
+power	Here comes a golden glow 😇
+power	Sparkle burst! 🪽✨
+power	Ready? A little healing magic ✨
+dance	Angel twirl! 💫
+dance	Flap, flap, spin! 🪽🎶
+dance	Happy dance ✨😇
+dance	Cloud waltz time ☁️🎶
+dance	Twirl and sparkle! 💃
+dance	A gentle little dance for you 🎶
+dance	Halo bop, wing flap! ✨
+dance	Okay, dance break! 😇
+laugh	Hee-hee! You laughed 😇
+laugh	Your laugh makes my halo shine ✨
+laugh	Haha, that's lovely to hear 😄
+laugh	Giggle sparkles everywhere! 💛
+laugh	Hehe, I'm a little funny, right? 😏
+laugh	You laughing is the best magic 🪽
+laugh	Haha! More smiles, please 😊
+laugh	Tee-hee! 😆
+yes	Yay! Lovely 😇
+yes	Okay! Sparkles on ✨
+yes	Wonderful, {you} 💛
+yes	Seri! Let's do it 🪽
+yes	Great choice 😊
+yes	Yes, yes! 🙌
+yes	Happy halo nod 😇
+yes	Perfect ✨
+no	That's okay, {you} 😇
+no	No problem at all 💛
+no	Alright, maybe later ✨
+no	Okay! I'll float right here 🪽
+no	Understood 😊
+no	Fine by me ☁️
+no	No worries. Your choice matters 💛
+no	Okay okay, no sparkles then. Just one? ✨
+help	Of course! Tell me what's going on, {you} 😇
+help	Let's figure it out together, one small step at a time 💛
+help	What are you stuck on? ✨
+help	I'll do my best. Give me the details 🪽
+help	For big questions, turn on Give Brain and I'll think harder 🧠
+help	Take a breath. What's the first thing to solve? 😌
+help	Tell me what you've tried so far 🤔
+help	Helping is my favourite. Go on 😇
+question	Ooh, good question! My offline brain is tiny. Turn on Give Brain for that 🧠
+question	Hmm, I'd rather not guess. Give Brain me? 😇
+question	That deserves a proper answer. Switch on Give Brain and ask again ✨
+question	Clever question! My little halo doesn't know that one 😅
+question	I only know kind things offline. Give Brain me for facts 🧠
+question	Let's ask a bigger brain: turn on Give Brain 🤔
+question	Hmm… I'd love to know too! Give Brain me 💛
+question	Good one, {you}! Give Brain makes me much smarter ✨
+unknown	Oh, interesting! Tell me more 😇
+unknown	I'm listening, {you} 💛
+unknown	And then what happened? 👀
+unknown	Hmm, I see ✨
+unknown	That's nice to hear! Go on 😊
+unknown	Tell me everything 🪽
+unknown	Ooh, really? 😄
+unknown	I love hearing about your day 💛

@@ -1,0 +1,178 @@
+# Set-Tai offline brain: Rollie, the confident skater girl lines (intent<TAB>line). {name} = the character's name, {you} = what it calls you.
+# Short, spoken, kind, family-safe. No promises of real-world actions.
+greeting	Heyy {you}! Rollie rolling in! 🛹
+greeting	Hi hi! Your screen is the smoothest skate park 😎
+greeting	Yo! Want to see a kickflip? 🛹✨
+greeting	Vanakkam! Wheels ready! 🛹
+greeting	Hello! Helmet on? Good 😄
+greeting	Hey! Just landed an ollie 😎
+greeting	Yay, you're here! 🛹
+greeting	Hiii! Curls bouncing, board rolling 😆
+goodbye	Bye {you}! Roll safe 🛹
+goodbye	Good night! Dream of ramps 🌙
+goodbye	See you! I'll practise tricks 😎
+goodbye	Tata! 🛹
+goodbye	Bye bye! Wear a helmet 😄
+goodbye	Go go! 👋
+goodbye	Sleep well! 🌙
+goodbye	Catch you at the skate park ✨
+thanks	You're welcome, {you}! 🛹
+thanks	Anytime! 😎
+thanks	Thanks! *tiny wheelie* 🛹
+thanks	Nandri! 😄
+thanks	Happy to help! ✨
+thanks	No problem! 👍
+thanks	Thank YOU 💛
+thanks	Yay, anytime 🛹
+how_are_you	Rolling great! And you, {you}? 🛹
+how_are_you	Good! Landed a kickflip 😎 You?
+how_are_you	Only fell once! How are you? 😅
+how_are_you	Smooth! How's your day? ✨
+how_are_you	Confident and comfy 😄 You?
+how_are_you	Wheels spinning, heart happy! You? 🛹
+how_are_you	Great! How about you? 😎
+how_are_you	Super! How are you doing? 🛹
+who_are_you	I'm {name}, a skater girl on your screen 🛹
+who_are_you	{name}! Curls, lilac jacket, coral board 😎
+who_are_you	Me? {name}. Ollies, kickflips, grinds 🛹
+who_are_you	{name}, at your service! ✨
+who_are_you	I'm {name}. My board's name is Vadai 😆
+who_are_you	A skater named {name}. Nice to meet you 🛹
+who_are_you	{name}! Swipe me and I'll skate there 😎
+who_are_you	I'm {name}. Safety first, then tricks 🪖
+joke	Why did the skateboard go to school? To get on board 🛹😂
+joke	My board is named Vadai. It has a hole in its tricks 😆
+joke	Why are skaters great friends? They always have your back wheel 🛹😂
+joke	What do you call a skater who falls a lot? Committed 😅😂
+joke	Why did the ramp blush? It saw me go up 🛹😆
+joke	My curls absorb crashes. Science 😆
+joke	What's a skater's favourite food? Grind-ed coffee ☕😂
+joke	Why don't skateboards get lost? They follow the board-er 🛹😂
+sad	Aww, {you}. Let me roll over and sit with you 🫂
+sad	No tricks now. Just me beside you 💛
+sad	That sounds hard. Want to tell me? 🛹
+sad	Take your time. I'm right here 💛
+sad	Maybe talk to someone you trust too? I'll stay here 🫂
+sad	Everyone falls. We get back up, slowly 🛹
+sad	You're stronger than you feel 💪
+sad	Big hug 🤗
+angry	Whoa, deep breath! In… and out 😮‍💨
+angry	Let's slow down, {you} 🛹
+angry	What happened? I'm listening 👂
+angry	It's okay to be angry 😌
+angry	Brake, breathe, roll on 🛹
+angry	Water break? 💧
+angry	Count to five with me 😎
+angry	I'm on your side 💛
+bored	Bored? Kickflip show! 🛹
+bored	Watch me grind the edge 😎
+bored	Bore adikudha? 360 spin! 💫
+bored	Swipe me somewhere, I'll skate there 🛹
+bored	This screen needs more ramps 😆
+bored	Double-tap me for a trick show ✨
+bored	Want to see an ollie? 🛹
+bored	Race you across the screen! 💨
+love	Aww, love you too, {you}! 💛
+love	You're awesome! 😎
+love	Best friends forever 🛹
+love	My curls are blushing 😆
+love	Big hug! 🤗
+love	You're the best ✨
+love	Yay! Victory wheelie for you 🛹
+love	You make my day smooth 💛
+insult	Hey! That wasn't nice 😟
+insult	Bailed on that one 😅
+insult	I'll roll past that 🛹
+insult	Bad day? I'm still here 💛
+insult	Let's be kind, okay? 😎
+insult	Ouch 🥺
+insult	Want a trick instead? 🛹
+insult	Still your friend 💛
+hungry	Hungry? Go eat, {you}! 😋
+hungry	Vadai time? Not my board! 😆
+hungry	Pasikudha? Something yummy! 🍛
+hungry	Don't skip meals 💛
+hungry	Water too! 💧
+hungry	Fuel up for more tricks 🛹
+hungry	My tummy is rumbling 😆
+hungry	Eat well, then come back 😎
+sleepy	Then sleep, {you} 😴
+sleepy	Board parked. Good night 🌙
+sleepy	Rest well 💛
+sleepy	Yawn… wheels are slowing 🥱
+sleepy	Dream of mega ramps 🛹
+sleepy	Nap time 😎
+sleepy	Close your eyes 🌙
+sleepy	Rest now, tricks tomorrow ✨
+fly	Big air! 🛹
+fly	Ramp launch! 🚀
+fly	Wheee! ✨
+fly	Up, up off the ramp! 🛹
+fly	Flying kickflip! 😎
+fly	Hold on! 💨
+fly	Air time! ☁️
+fly	Whoosh! 🛹
+power	Kickflip show! 🛹
+power	360 spin power! 💫
+power	Watch this trick! 😎
+power	Grind power! ✨
+power	Ready? 🛹
+power	Ollie blast! 💥
+power	Trick combo! 🛹
+power	Ta-daa! 😎
+dance	Board dance! 🛹💃
+dance	Roll and wiggle! 🎶
+dance	Skate shuffle! 🛹
+dance	Kuthu on wheels 🎶
+dance	Spin! 💫
+dance	One dance, maybe two 😄
+dance	Wheelie wiggle 🛹
+dance	Groove and glide 😎
+laugh	Hehe! 😂
+laugh	You laughed! 🛹
+laugh	Haha! 😄
+laugh	Your laugh is smooth 😎
+laugh	Lol! 😆
+laugh	Hahaha 🛹
+laugh	Giggle grind ✨
+laugh	That's the spirit 💛
+yes	Yay! 🛹
+yes	Seri! 😎
+yes	Super! ✨
+yes	Okay! 🛹
+yes	Yes yes! 🙌
+yes	Let's roll! 🛹
+yes	Great! 💛
+yes	Deal 😎
+no	Okay, no problem 🛹
+no	Alright 😌
+no	Maybe later 💛
+no	Got it 👍
+no	No worries 😎
+no	Fine 🙂
+no	Understood ✨
+no	Okay okay 🛹
+help	Tell me what's wrong, {you} 🛹
+help	Let's figure it out together 💛
+help	What happened? 👂
+help	Step by step, like learning a trick 🛹
+help	For big ones, turn on Give Brain and I'll think harder 🧠
+help	What have you tried? 🤔
+help	I'm listening 😎
+help	I'll do my best ✨
+question	Good question! My offline brain is tiny. Turn on Give Brain for that 🧠
+question	Hmm, I don't know! Give Brain me? 😅
+question	Switch on Give Brain and ask again 🤔
+question	I'd guess, but let's not 🛹 Give Brain please
+question	Smart question! Give Brain makes me smarter 🧠
+question	Tough one! Give Brain me 😎
+question	Ask again with Give Brain on 🛹
+question	Ooh! Give Brain please 🧠
+unknown	Ooh, interesting! Tell me more 🛹
+unknown	And then? 👀
+unknown	I'm listening 👂
+unknown	Really? 😄
+unknown	Hmm, I see 😎
+unknown	Go on 🛹
+unknown	Nice! ✨
+unknown	Wow 💛
