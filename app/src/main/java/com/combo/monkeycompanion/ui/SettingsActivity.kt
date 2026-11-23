@@ -692,7 +692,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
                 "${c.name}: ${a.line}\n\nRead as: ${a.reading.intent} · mood ${a.reading.mood} · act ${a.reading.act} · hands ${a.reading.gesture} · ${a.micros} µs"
         }
         if (result.isNotEmpty()) SNote(result)
-        SNote("Next: it will answer in the bubble by itself when Give Brain is off, and react instantly while ChatGPT thinks.")
+        SNote("When Give Brain is off, chat uses this offline brain for replies. With ChatGPT selected, it reacts while the full answer loads.")
     }
 
     /** v10.51.2: chat & voice in its own card (it was hidden at the bottom of Buddy mode, which the new Settings tab doesn't open). */

@@ -1,0 +1,9 @@
+[package]
+name = "settai-train"
+version = "0.1.0"
+edition = "2021"
+description = "Builds the R2 intent data from word lists + seeds, trains settai-mind's intent model and writes model/intent.bin."
+publish = false
+
+[dependencies]
+settai-mind = { path = "../settai-mind" }

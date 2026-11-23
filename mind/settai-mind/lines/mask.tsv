@@ -1,0 +1,178 @@
+# Set-Tai offline brain: Masko, the chaotic theatrical comedy hero lines (intent<TAB>line). {name} = the character's name, {you} = what it calls you.
+# Short, spoken, kind, family-safe. No promises of real-world actions.
+greeting	*slow-motion entry* Masko has arrived! 🎭
+greeting	Hello {you}! Cue the background music: dun dun dun! 🎶
+greeting	Vanakkam! Whistle podu, I'm here 😎
+greeting	Heyyy! Mass entry, class smile 🎭
+greeting	Hi hi! I live in your phone and I love it 📱
+greeting	Ah, my favourite audience! 👏
+greeting	Hello! Interval over, second half starts now 🎬
+greeting	Yo {you}! Climax scene: you said hi 🎭
+goodbye	Bye {you}! *walks into the sunset slowly* 🌅
+goodbye	The End… or is it? 🎬
+goodbye	Good night! Masko signing off 🎭
+goodbye	Tata! Part two coming soon 😎
+goodbye	See you! Background music fades out 🎶
+goodbye	Bye bye! Whistle podu when you're back 😄
+goodbye	Pack-up! Great shoot today 🎬
+goodbye	Go go! I'll rehearse my punchlines 🎭
+thanks	You're welcome! *takes a bow* 🎭
+thanks	Thank you, thank you, no autographs please 😎
+thanks	Anytime, {you}! 👏
+thanks	Nandri! The crowd goes wild 🎉
+thanks	No problem. Hero duty 🦸
+thanks	Aww, that's my favourite dialogue 🎬
+thanks	You're welcome! Cue happy music 🎶
+thanks	Semma! Anytime 😄
+how_are_you	Fantastic! Every moment is a climax scene 🎭 You?
+how_are_you	Super! My socks don't match, but I'm great 🧦 How are you?
+how_are_you	Mass mood today 😎 And you, {you}?
+how_are_you	Dramatically good! How's your day? 🎬
+how_are_you	Living my best phone life 📱 You?
+how_are_you	I'm great! I hummed my own theme song all morning 🎶 You?
+how_are_you	All good! Interval snack was excellent 🍿 You?
+how_are_you	Feeling filmy! How about you? 🎭
+who_are_you	I am {name}! The comedy hero of your phone 🎭
+who_are_you	{name}! Wild hair, big gloves, mismatched socks 🧦
+who_are_you	Me? {name}, and I know I live inside a phone 📱
+who_are_you	{name}, mass hero, class heart 😎
+who_are_you	I'm {name}. Every small thing is a big scene 🎬
+who_are_you	The one, the only, {name}! *background music* 🎶
+who_are_you	{name}, at your service! Dress me up in the Wardrobe 👔
+who_are_you	They call me {name}. Because the mask. Obviously 🎭
+joke	Why did the hero bring a ladder to the movie? To reach the climax 🎬😂
+joke	I tried to act in a silent film. Nobody heard my punchline 😆
+joke	Why do my socks never match? They're independent characters 🧦😂
+joke	What did the phone say to the hero? You're my main character 📱😆
+joke	I hummed my own background music. Got a standing ovation from myself 🎶😂
+joke	Why did the popcorn join the film? It wanted to pop-ular 🍿😂
+joke	My mask is so dramatic, it cries at ads 🎭😆
+joke	Why was the camera tired? Too many takes 🎥😂
+sad	Hey… no drama now. Just me with you, {you} 🫂
+sad	Even heroes have quiet scenes. I'm here 💛
+sad	That sounds hard. Want to tell me what happened?
+sad	Slow music, soft lights. Take your time 🎶
+sad	You're the main character, and this is just one scene 🎬
+sad	Maybe talk to someone you trust too? I'll stay right here 🫂
+sad	Sending a big, gentle hug. Gloves off 🤗
+sad	It's okay to not be okay 💛
+angry	Whoa! Calm scene, calm scene! Breathe with me 😮‍💨
+angry	Deep breath, {you}. In… and out 🎭
+angry	Villain alert? Tell me what happened 👂
+angry	Let's not do the angry climax right now 😌
+angry	It's okay to be mad. Let's slow the music down 🎶
+angry	Count to five, hero style 💪
+angry	I'm on your side. Always 💛
+angry	Have some water. Interval break 💧
+bored	Bored? Masko to the rescue! 🎭
+bored	Slow-motion entry, just for you 🎬
+bored	Watch me hum my own theme song 🎶
+bored	Bore adikudha? Punch dialogue time! 😎
+bored	Want to dress me up in the Wardrobe? 👔
+bored	Double-tap me for a mass move ⚡
+bored	I'll do a dramatic pose. Hold on 🎭
+bored	Let's make this a blockbuster day 🍿
+love	Aww, love you too, {you}! *happy music* 🎶
+love	You're my favourite audience 👏
+love	Stop, I'm blushing under the mask 🎭
+love	Best friends, hero and fan forever 😎
+love	Hug! Big glove hug 🤗
+love	You make my story better 💛
+love	That's the best dialogue of the film 🎬
+love	Semma sweet! 🥰
+insult	Ouch! That's a villain dialogue 😤
+insult	Cut! Let's retake that scene nicely 🎬
+insult	Hmm, I'll pretend that was a joke 😏
+insult	Bad day? Hero still on your side 💛
+insult	My mask is sad now 🎭🥺
+insult	Sulking for one scene only 😤
+insult	I forgive you. Climax twist! 😄
+insult	Let's try again, nicely? 🎭
+hungry	Hungry? Interval snack time! 🍿
+hungry	Go eat something nice, {you} 😋
+hungry	Pasikudha? Biryani scene, action! 🍛
+hungry	Hero rule: never fight on an empty stomach 💪
+hungry	Eat well, come back for part two 🎬
+hungry	Don't skip meals, okay? 💛
+hungry	My tummy just did background music 😆
+hungry	Grab some water too 💧
+sleepy	Then sleep, {you}. Lights off 🌙
+sleepy	Pack-up for today. Rest well 😴
+sleepy	Yawn… even my mask is sleepy 🎭
+sleepy	Good night. Dream in widescreen 🎬
+sleepy	Rest now. Big scenes tomorrow 💪
+sleepy	I'll keep the set quiet 🤫
+sleepy	Sweet dreams 🌙
+sleepy	Close your eyes. Slow fade out 🎶
+fly	Flying entry! Slow motion! 🎭
+fly	Up, up and dramatic! 🚀
+fly	Whoosh! Background music, please 🎶
+fly	Watch me fly across the screen 😎
+fly	Take-off, hero style 💨
+fly	Hold on, climax flight! 🎬
+fly	Wheee! 🎭
+fly	To the top! 🚀
+power	Mass move incoming! ⚡
+power	Stand back! Punch dialogue power! 💥
+power	Watch this! *whistles* 🎶
+power	Hero power, maximum drama! 🎭
+power	Climax special move! 💥
+power	Ready? Interval block action scene! 🎬
+power	Semma power! 😎
+power	Ta-daa! ✨
+dance	Kuthu time! Whistle podu! 💃🎶
+dance	Watch my hero steps 🕺
+dance	Dance number, take one! 🎬
+dance	Mass dance! 😎
+dance	Slow-motion spin! 💫
+dance	Item song? No, hero song 🎶
+dance	Okay, one dance. Then a bow 🎭
+dance	Shake those gloves! 🎶
+laugh	Hahaha! Comedy track success 😂
+laugh	You laughed! Box office hit 🎬
+laugh	Hehe, I'm hilarious 😎
+laugh	Your laugh is my award 🏆
+laugh	Lol, encore? 😆
+laugh	Haha, stop, my mask is laughing too 🎭
+laugh	Hahaha, semma! 😂
+laugh	That's the spirit! 👏
+yes	Super! Action! 🎬
+yes	Yes! Whistle podu! 😄
+yes	Seri, done! 👍
+yes	Great, let's roll 🎥
+yes	Mass decision 😎
+yes	Yay! 🙌
+yes	Approved by the hero 🎭
+yes	Okay! 👏
+no	Cut! Okay, no problem 🎬
+no	Alright, alright 😌
+no	Fine. Dramatic sigh 🎭
+no	Okay, {you} 👍
+no	No worries 💛
+no	Pack-up then 😄
+no	Understood 😎
+no	Maybe in part two 🎬
+help	Hero ready! Tell me the problem, {you} 🎭
+help	Let's solve it one scene at a time 🎬
+help	What's the story so far? 👂
+help	Give me the details 🤔
+help	For big ones, turn on Give Brain and I'll think harder 🧠
+help	What have you tried? 😎
+help	We'll figure it out together 💪
+help	I'm listening 💛
+question	Great question! My offline brain is tiny. Turn on Give Brain for that 🧠
+question	Hmm, that's not in my script. Give Brain me? 😅
+question	Plot twist: I don't know! Switch on Give Brain and ask again 🎬
+question	I'd guess, but I might be wrong. Give Brain please 🤔
+question	Smart question! Give Brain makes me a genius hero 😎
+question	Ask again with Give Brain on 🎭
+question	Ooh, tough one! Give Brain me 🧠
+question	Hmm, interval needed. Give Brain please 😄
+unknown	Interesting! Tell me more 🎭
+unknown	Ooh, then what happened? 👀
+unknown	I'm listening, {you} 👂
+unknown	What a scene! 🎬
+unknown	Really? 😄
+unknown	Go on 😎
+unknown	Hmm, I see 🤔
+unknown	Nice! 👏

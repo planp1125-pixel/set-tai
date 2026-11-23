@@ -7,8 +7,23 @@ use crate::understand::Intent;
 
 const GENERAL: &str = include_str!("../lines/general.tsv");
 
-/// Per-character line files (id, contents). R2 fills this for every character.
-const CHARACTER_LINES: &[(&str, &str)] = &[];
+/// Per-character line files (id, contents), one per character in shared/.../character/ (CharacterRegistry.all).
+/// Ids not listed here (custom companions, future characters) use the general lines.
+pub const CHARACTER_LINES: &[(&str, &str)] = &[
+    ("devil", include_str!("../lines/devil.tsv")),
+    ("angel", include_str!("../lines/angel.tsv")),
+    ("monkey", include_str!("../lines/monkey.tsv")),
+    ("superboy", include_str!("../lines/superboy.tsv")),
+    ("armour", include_str!("../lines/armour.tsv")),
+    ("mask", include_str!("../lines/mask.tsv")),
+    ("billa", include_str!("../lines/billa.tsv")),
+    ("chittu", include_str!("../lines/chittu.tsv")),
+    ("gajju", include_str!("../lines/gajju.tsv")),
+    ("rocketgirl", include_str!("../lines/rocketgirl.tsv")),
+    ("hollowman", include_str!("../lines/hollowman.tsv")),
+    ("surfer", include_str!("../lines/surfer.tsv")),
+    ("skater", include_str!("../lines/skater.tsv")),
+];
 
 fn lines_for<'a>(table: &'a str, intent: Intent) -> Vec<&'a str> {
     let name = intent.name();
@@ -21,6 +36,14 @@ fn lines_for<'a>(table: &'a str, intent: Intent) -> Vec<&'a str> {
         })
         .collect()
 }
+
+/// Only this character's own lines for [intent] (empty for ids without a file).
+pub fn own_lines(character_id: &str, intent: Intent) -> Vec<&'static str> {
+    CHARACTER_LINES.iter().find(|(id, _)| *id == character_id).map(|(_, t)| lines_for(t, intent)).unwrap_or_default()
+}
+
+/// The shared lines for [intent].
+pub fn general_lines(intent: Intent) -> Vec<&'static str> { lines_for(GENERAL, intent) }
 
 /// All lines this character could say for [intent] (its own first, else the general ones).
 pub fn candidates(character_id: &str, intent: Intent) -> Vec<&'static str> {

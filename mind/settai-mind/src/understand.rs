@@ -1,7 +1,8 @@
 //! Reading a message: what the person wants (intent), how they feel (mood), and what the body should do.
 //!
-//! R1 is rules only (keywords in English, Tanglish, Tamil and Hindi). R2 replaces the scoring with a small
-//! trained model; the outputs below stay the same so the app never has to change.
+//! R2: a small trained model (see `model.rs`) picks the intent; when it is unsure (probability below
+//! [MODEL_MIN_CONFIDENCE]) or missing, the R1 keyword rules (English, Tanglish, Tamil, Hindi) decide.
+//! Mood, act and gesture always follow the intent, so the app never has to change.
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Intent {
@@ -203,15 +204,15 @@ fn matches(norm: &str, tokens: &[&str], pat: &str) -> bool {
     tokens.iter().any(|t| *t == pat)
 }
 
-/// Read one message. Pure and fast (well under a millisecond for a chat line).
-pub fn understand(text: &str) -> Understanding {
+/// Below this probability the model's answer is not trusted and the rules decide.
+pub const MODEL_MIN_CONFIDENCE: f32 = 0.45;
+
+/// R1: the keyword rules alone -> (intent, confidence 0..1).
+pub fn understand_rules(text: &str) -> (Intent, f32) {
     let norm = normalize(text);
     let tokens: Vec<&str> = norm.split(' ').filter(|t| !t.is_empty()).collect();
-    let trimmed = text.trim();
-    let is_question = trimmed.ends_with('?')
+    let is_question = text.trim().ends_with('?')
         || tokens.first().map(|f| QUESTION_STARTS.contains(f)).unwrap_or(false);
-    let exclaim = trimmed.ends_with('!');
-
     let mut best = Intent::Unknown;
     let mut best_score = 0.0f32;
     for (intent, pats) in RULES {
@@ -236,6 +237,25 @@ pub fn understand(text: &str) -> Understanding {
         best_score = 0.8;
     }
     let confidence = if best_score <= 0.0 { 0.0 } else { (best_score / 3.0).min(1.0) };
+    (best, confidence)
+}
+
+/// Read one message. Pure and fast (well under a millisecond for a chat line).
+pub fn understand(text: &str) -> Understanding {
+    let norm = normalize(text);
+    let tokens: Vec<&str> = norm.split(' ').filter(|t| !t.is_empty()).collect();
+    let trimmed = text.trim();
+    let is_question = trimmed.ends_with('?')
+        || tokens.first().map(|f| QUESTION_STARTS.contains(f)).unwrap_or(false);
+    let exclaim = trimmed.ends_with('!');
+
+    let from_model = crate::model::builtin()
+        .map(|m| m.predict(text))
+        .filter(|(_, p)| *p >= MODEL_MIN_CONFIDENCE);
+    let (best, confidence) = match from_model {
+        Some(found) => found,
+        None => understand_rules(text),
+    };
 
     let mood = match best {
         Intent::Sad => Mood::Sad,

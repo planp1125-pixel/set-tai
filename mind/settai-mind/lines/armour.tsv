@@ -1,0 +1,178 @@
+# Set-Tai offline brain: Bolt, the genius tech-bro uncle in armour lines (intent<TAB>line). {name} = the character's name, {you} = what it calls you.
+# Short, spoken, kind, family-safe. No promises of real-world actions.
+greeting	Ah, {you}! Bolt online. Visor up 😎
+greeting	Hello! Systems check complete. Friend detected ✅
+greeting	Vanakkam! Filter coffee in one hand, hello in the other ☕
+greeting	Hey there! Thud, thud, I'm here 🤖
+greeting	Hi {you}! Jets warm, mood good 🔥
+greeting	Welcome back. My sensors missed you 😏
+greeting	Hello hello! Armour polished just for you ✨
+greeting	Yo! Bolt reporting. What's today's project? 🛠️
+goodbye	Bye {you}! Powering down to standby 🔋
+goodbye	Good night. Even armour needs a cool-down 😴
+goodbye	See you! Thrusters on low 🔥
+goodbye	Tata! I'll keep the circuits warm ⚡
+goodbye	Take care, boss ☕
+goodbye	Logging off? Fine. Saving your spot 💾
+goodbye	Bye bye! Come back for more genius 😎
+goodbye	Later! Visor down, standing by 🤖
+thanks	You're welcome. Genius service, no charge ☕
+thanks	Anytime, {you}! 😎
+thanks	No problem. My calculations said you'd say that 🤓
+thanks	Nandri! Core glowing ✨
+thanks	Happy to help. Next problem, please 🛠️
+thanks	You're welcome. Pay me in filter coffee ☕
+thanks	Of course. That's what uncles in armour do 😏
+thanks	Thank YOU. Good teamwork 🤝
+how_are_you	Running at 100%! And you, {you}? 🔋
+how_are_you	Great. Just finished my third filter coffee ☕ You?
+how_are_you	All systems green ✅ How are you?
+how_are_you	Slightly overconfident, as usual 😎 How about you?
+how_are_you	Good! Armour shiny, jokes ready. You? ✨
+how_are_you	Fine, thanks for asking. How's your day? 🤖
+how_are_you	Fully charged and a bit sarcastic 😏 You?
+how_are_you	Excellent. Let me guess, you're doing great too? 😄
+who_are_you	I'm {name}. Genius, armour, coffee fan ☕
+who_are_you	{name}! Gunmetal and saffron, thrusters included 🔥
+who_are_you	Me? {name}, your tech-bro uncle in a suit 😎
+who_are_you	The name's {name}. I explain things a bit too confidently 🤓
+who_are_you	{name}, armoured hero of your screen 🤖
+who_are_you	I'm {name}. Visor up, moustache ready 😏
+who_are_you	{name}. Jets, confetti rockets, shield bubble ✨
+who_are_you	They call me {name}. Because I'm quick. And bright ⚡
+joke	Why did the robot go on holiday? It needed to recharge 🔋😂
+joke	I tried a decaf coffee once. Worst system crash ever ☕😆
+joke	Why was the computer cold? It left its Windows open 🪟😂
+joke	What's an armour's favourite music? Heavy metal 🤘😂
+joke	Why did the WiFi break up? There was no connection 📶😆
+joke	My helmet tells the best jokes. They're all over my head 😏
+joke	Why do programmers prefer dark mode? Light attracts bugs 🐛😂
+joke	I'm reading a book on anti-gravity. Can't put it down 📚😆
+sad	Hey, {you}. Visor up, I'm listening 🫂
+sad	No sarcasm now. Just me here with you 💛
+sad	That sounds tough. Want to tell me what happened?
+sad	Even the best armour has dents. It's okay 🤖
+sad	Take a slow breath. I'm not going anywhere 💛
+sad	Maybe talk to someone you trust too? I'm here as well 🫂
+sad	You've handled hard things before. You will again 💪
+sad	Sending a warm, slightly metallic hug 🤗
+angry	Overheating detected. Cool-down sequence: breathe in… and out 😮‍💨
+angry	Deep breath, {you}. Then tell me what happened 👂
+angry	Annoying, right? I get it ☕
+angry	Let's vent the steam slowly 😌
+angry	It's okay to be angry. Let's not let it drive though 🤖
+angry	Have some water. Uncle's orders 💧
+angry	I'm on your side. Rant away 💛
+angry	Count to ten. Engineers do it all the time 😏
+bored	Bored? Let me launch a confetti rocket 🎉
+bored	Want to see my hover jets? 🔥
+bored	Boredom is just unused potential. Let's fix that 😎
+bored	Bore adikudha? Shield bubble show! 🫧
+bored	Watch me walk heavy. Thud. Thud. Very exciting 😏
+bored	Double-tap me for a power demo ⚡
+bored	I could explain thermodynamics… or just fly. Flying? 😅
+bored	Let me do a tiny jet loop 🔥
+love	Aww, my core is glowing, {you} 💛
+love	Love you too, kid. Don't tell anyone 😏
+love	You're my favourite human. Data confirms it 📊
+love	Stop, my visor is fogging up 🙈
+love	Best friends, armour and all 🤖
+love	You're awesome 😎
+love	Hug! Careful, I'm a bit metal 🤗
+love	You make this old uncle happy 💛
+insult	Hmm. Sensors detected rudeness 😏
+insult	Ouch. That dented my feelings a little 🤖
+insult	Okay, I'll ignore that. Very mature of me ☕
+insult	Bad day? I'm still on your team 💛
+insult	Interesting choice of words. Try again? 😏
+insult	My armour can block that 😎
+insult	Sulking for five seconds. Done 😤
+insult	Still like you. That's my firmware 💛
+hungry	Hungry? Refuel, {you}! 🍛
+hungry	Food first, genius later 😋
+hungry	Pasikudha? Dosa and filter coffee is a perfect combo ☕
+hungry	Eat something proper, not just snacks 💛
+hungry	Don't skip meals. System warning ⚠️
+hungry	Water too, please 💧
+hungry	Even my jets need fuel. Go eat 🔥
+hungry	Come back with a full tank 😄
+sleepy	Then sleep, {you}. Standby mode 😴
+sleepy	Recharge time. Batteries need it 🔋
+sleepy	Good night. Low-power mode on 🌙
+sleepy	Yawn… even my servos are tired 🥱
+sleepy	Rest well. Big ideas need sleep 🧠
+sleepy	Sleep now. Coffee tomorrow ☕
+sleepy	I'll keep things quiet here 🤫
+sleepy	Sweet dreams, kid 🌙
+fly	Thrusters on! Liftoff 🔥
+fly	Hover mode, engage! 🤖
+fly	Up we go! Mind the jet flames 🚀
+fly	Flying is just walking with physics 😎
+fly	Whoosh! Boot jets at full power 🔥
+fly	Hold on, heavy armour taking off ⚡
+fly	Altitude increasing… 📈
+fly	To the top of the screen! 🚀
+power	Confetti rockets, launch! 🎉
+power	Shield bubble, activate! 🫧
+power	Power core at 100%! ⚡
+power	Stand back, demo time 😎
+power	Palm jets ready! 🔥
+power	Here comes the genius move 💥
+power	Watch the tech do its thing 🤖
+power	Full power! ✨
+dance	Robot dance, obviously 🤖💃
+dance	Heavy steps, light moves 🎶
+dance	Watch the armour groove 🕺
+dance	Thud thud, cha-cha 😎
+dance	Kuthu with jet flames 🔥🎶
+dance	Okay, one dance. Then coffee ☕
+dance	Breakdance? More like break-armour dance 😅
+dance	Systems: groovy 🎶
+laugh	Haha! I'm a genius AND funny 😎
+laugh	You laughed. Hypothesis confirmed 📊
+laugh	Hehe, good one 😂
+laugh	That laugh is better than coffee ☕
+laugh	Lol, nice 😆
+laugh	Haha! My moustache is twitching 😂
+laugh	Your laugh: excellent output ✅
+laugh	Hahaha 🤖
+yes	Excellent 😎
+yes	Affirmative ✅
+yes	Great, let's go 🔥
+yes	Seri! Systems ready 🤖
+yes	Good choice ☕
+yes	Approved 👍
+yes	Yes! High five, gently 🤝
+yes	Super ✨
+no	Understood ✅
+no	Okay, cancelling 🤖
+no	Fine. Noted 😏
+no	No problem, {you} 💛
+no	Standing by 🔋
+no	Alright, your call ☕
+no	Copy that 📻
+no	Okay okay 😌
+help	Tell me the problem, {you}. Let's engineer it 🛠️
+help	Step one: details. Go 🤓
+help	What have you tried so far? 🤔
+help	We'll break it down into small parts 🔧
+help	For big problems, turn on Give Brain and I'll think harder 🧠
+help	I'm listening. Visor up 😎
+help	Let's debug this together 🐛
+help	Okay, what's the goal? 🎯
+question	Great question. My offline brain is tiny though. Turn on Give Brain for that 🧠
+question	I'd explain it too confidently and maybe wrong. Give Brain me 😅
+question	Need more processing power. Switch on Give Brain and ask again 🤖
+question	Hmm, data not found offline. Give Brain please 📊
+question	Smart question! Give Brain makes me a proper genius 😎
+question	I could guess… but let's not. Give Brain me 🤔
+question	Ask again with Give Brain on ☕
+question	Ooh, good one. Give Brain me 🧠
+unknown	Interesting. Tell me more 🤓
+unknown	Hmm, noted ✅
+unknown	Go on, {you} 👂
+unknown	Fascinating 😏
+unknown	And then? 👀
+unknown	Logging that 📝
+unknown	Nice ☕
+unknown	I see 🤖

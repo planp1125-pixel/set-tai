@@ -350,7 +350,31 @@ object ChatHub {
             fire { it.onReply(line, true) }; spoke(line)
             return
         }
-        askBrain(typed, replyingTo, emptyList())
+        if (!isBrainEnabled() && testBrain == null) {
+            rustReply(typed)?.let { answer ->
+                reactFromRust(answer.reading)
+                quickLocal(typed, answer.line)
+                fire { it.onReply(answer.line, true) }; spoke(answer.line)
+                return
+            }
+        }
+        // R1b: show a sub-millisecond local reaction while the user's ChatGPT answer is loading.
+        val instant = if (testBrain == null && onChatGpt()) rustUnderstanding(typed) else null
+        askBrain(typed, replyingTo, emptyList(), instant = instant)
+    }
+
+    private fun rustReply(text: String): com.combo.monkeycompanion.mind.RustMind.Answer? = runCatching {
+        val c = com.combo.monkeycompanion.character.CharacterRegistry.current
+        com.combo.monkeycompanion.mind.RustMind.respond(c.id, c.name, "", text)
+    }.getOrNull()
+
+    private fun rustUnderstanding(text: String): com.combo.monkeycompanion.mind.RustMind.Reading? = runCatching {
+        com.combo.monkeycompanion.mind.RustMind.understand(text)
+    }.getOrNull()
+
+    private fun reactFromRust(reading: com.combo.monkeycompanion.mind.RustMind.Reading) {
+        val action = BodyAction.fromWord(reading.act) ?: return
+        main.post { fire { it.onAction(action) } }
     }
 
     /** v10.48: straight to the brain (no phone commands / canned replies), with the photo or document attached. */
@@ -371,7 +395,8 @@ object ChatHub {
     @Volatile var voicePaced = false
         private set
 
-    private fun askBrain(typed: String, replyingTo: String?, attachments: List<Attachment>, shown: String = typed) {
+    private fun askBrain(typed: String, replyingTo: String?, attachments: List<Attachment>, shown: String = typed,
+                         instant: com.combo.monkeycompanion.mind.RustMind.Reading? = null) {
         busy = true; yieldToHuman()
         val pace = runCatching { settings.humanPace }.getOrDefault(false)
         val paceVoice = pace && runCatching {
@@ -389,6 +414,7 @@ object ChatHub {
         memory.add(ChatMsg(false, ""))
         fire { it.onHistoryChanged() }
         fire { it.onThinking() }
+        instant?.let(::reactFromRust)
         worker.execute {
             var last = ""
             try {

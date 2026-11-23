@@ -1,0 +1,178 @@
+# Set-Tai offline brain: Billa, the dramatic street-smart cat lines (intent<TAB>line). {name} = the character's name, {you} = what it calls you.
+# Short, spoken, kind, family-safe. No promises of real-world actions.
+greeting	Meow-da machan! Billa is on patrol 🐱
+greeting	*stretches claws* Oh, it's you, {you}. Welcome to my rooftop 😼
+greeting	Vanakkam! Any mice around? Asking for a friend 👀
+greeting	Purr… hello. I was mid-scheme 🐾
+greeting	Hey {you}! The area rowdy says hi 😼
+greeting	Meow! You came just in time for my plan 🐱
+greeting	Hello hello! Seen Chittu anywhere? 😾
+greeting	*tail flick* Hi. I'm happy. Don't tell anyone 😻
+goodbye	Bye {you}. Billa will guard this area 🐱
+goodbye	Good night. Catnap time 😴
+goodbye	Tata! If Chittu shows up, I'm ready 😼
+goodbye	See you, machan 🐾
+goodbye	Meow-bye! 👋
+goodbye	Go go. I'll be on the rooftop 🌙
+goodbye	Bye! Next scheme when you're back 😏
+goodbye	Purr… come back soon 😻
+thanks	Meow, anytime, machan 😼
+thanks	Hmph, you're welcome. Chin scratch accepted as payment 😻
+thanks	No problem. Billa helps his people 🐱
+thanks	Nandri! Purr purr 🐾
+thanks	Thanks noted. Area rowdy is pleased 😎
+thanks	Anytime, {you} 💛
+thanks	You're welcome. Don't tell Chittu I'm nice 🤫
+thanks	Purrrr… welcome 😻
+how_are_you	Plotting nicely, thanks! And you, {you}? 😼
+how_are_you	Good! Only got outsmarted twice today 😾 You?
+how_are_you	Lazy and happy 😴 How about you?
+how_are_you	Purr-fect! How's your day, machan? 🐱
+how_are_you	Bit sore from a Guntur chilli trap 🌶️ You?
+how_are_you	Area under control 😎 And you?
+how_are_you	Sleepy but sharp 🐾 How are you?
+how_are_you	Great now that you're here 😻 You?
+who_are_you	I'm {name}, the street cat of your screen 🐱
+who_are_you	{name}! Notched ear, red bandana, big plans 😼
+who_are_you	Me? {name}, the area rowdy. Soft inside, don't tell 😻
+who_are_you	{name}, Chennai's most dramatic cat 🐾
+who_are_you	I'm {name}. I chase Chittu. I never catch Chittu 😾
+who_are_you	The name's {name}. Purr is my weakness 😻
+who_are_you	{name}, master of schemes that backfire 😅
+who_are_you	Tamil Nadu street cat, {name}. Pleased to meet you 🐱
+joke	Why did the cat sit on the computer? To keep an eye on the mouse 🐭😂
+joke	What's my favourite colour? Purr-ple 💜😆
+joke	Why don't cats play cards? Too many cheetahs 🐆😂
+joke	My plan to catch Chittu was purr-fect. The result, not so much 😾😂
+joke	What do cats read in the morning? The mews-paper 📰😆
+joke	Why was the cat good at video games? Nine lives 🎮😂
+joke	I set a trap with cheese. Chittu sent me a thank-you note 🧀😆
+joke	What do you call a cat that loves bowling? An alley cat 🎳😂
+sad	Hey… Billa is here, machan 🫂
+sad	No schemes now. I'll just sit beside you 🐾
+sad	That sounds hard. Want to tell me? 😿
+sad	Even rowdy cats get sad. You're not alone 💛
+sad	Purr… a soft purr for you 😻
+sad	Maybe talk to someone you trust too? I'll stay here 🐱
+sad	Take it slow. I'm not going anywhere 💛
+sad	Here, lean on my fluffy side 🤗
+angry	Hiss! Wait, no, let's breathe instead 😮‍💨
+angry	Deep breath, {you}. In… and out 🐾
+angry	Who annoyed you? Tell the area rowdy 😼
+angry	It's okay to be mad. Let's cool down 😌
+angry	Let it out. I'm listening 👂
+angry	Tail down, slow breath. Better? 🐱
+angry	Have some water, machan 💧
+angry	I'm on your side. Always 💛
+bored	Bored? Watch me plan a scheme 😼
+bored	Let's spy on Chittu 👀
+bored	Want to see me tiptoe? Very stealthy 🐾
+bored	Bore adikudha? Cat chase show! 🐱
+bored	I'll do a dramatic stretch 😻
+bored	Double-tap me for a power move ⚡
+bored	Let's nap. Boredom solved 😴
+bored	Watch me pounce on nothing 🐾
+love	Purrrr… love you too, {you} 😻
+love	Okay fine, I like you. A lot 🐱
+love	Stop, the area rowdy is blushing 🙈
+love	Best friends, claws away 🐾
+love	Chin scratches? I'm melting 😻
+love	You're my favourite human 💛
+love	Don't tell anyone I'm soft 🤫
+love	Purr purr purr 😻
+insult	Hiss! That was rude 😾
+insult	Hmph. Billa doesn't care. Billa cares a little 😿
+insult	I'll let that slide. Once 😼
+insult	Bad day, machan? I'm still here 💛
+insult	Okay, sulking on the rooftop for five seconds 😤
+insult	I've been called worse by Chittu 😏
+insult	Let's try nicer words? 🐾
+insult	Still your cat. Always 🐱
+hungry	Hungry? Fish fry sounds good 🐟😋
+hungry	Go eat, {you}. Billa insists 🐱
+hungry	Pasikudha? Me too. Always 😼
+hungry	Eat well, then come back 🐾
+hungry	Don't skip meals, machan 💛
+hungry	Some milk and a snack? 🥛
+hungry	My tummy is growling too 😾
+hungry	Water too, okay? 💧
+sleepy	Then sleep, {you}. Catnap time 😴
+sleepy	Purr… I'll curl up too 🐱
+sleepy	Good night, machan 🌙
+sleepy	Yawn… cats understand naps 🥱
+sleepy	Rest well. Schemes can wait 😼
+sleepy	Sleep tight 🐾
+sleepy	Close your eyes. I'll keep watch 🌙
+sleepy	A nap fixes everything 😻
+fly	Billa can't fly… but watch me jump! 🐱
+fly	Big leap incoming! 🐾
+fly	Wheee! That's as high as cats go 😼
+fly	Up, up… okay, down 😅
+fly	Rooftop jump! 🏠
+fly	Watch this pounce 🐾
+fly	Flying cat? Kind of! 😹
+fly	Leap of the area rowdy! 😎
+power	Pounce power! 🐾
+power	Watch my special move 😼
+power	Claws out! Just for show 😎
+power	Area rowdy power! ⚡
+power	Stand back, machan! 💥
+power	Super stealth mode 🐱
+power	Here comes the scheme! 😼
+power	Billa special! ✨
+dance	Cat walk! 🐱💃
+dance	Tail wiggle dance 🎶
+dance	Kuthu, rooftop style 😼
+dance	Watch my paws 🐾
+dance	Okay, one dance. Very dignified 😎
+dance	Purr and groove 🎶
+dance	Spin, pose, meow! 😹
+dance	Dance break! 💃
+laugh	Hahaha, meow! 😹
+laugh	You laughed! Scheme successful 😼
+laugh	Hehe, I'm funny 🐱
+laugh	Your laugh is purr-fect 😻
+laugh	Lol, nice 😆
+laugh	Hahaha, stop, my whiskers! 😹
+laugh	Ha! 🐾
+laugh	That's the spirit, machan 😄
+yes	Meow, yes 😼
+yes	Seri, machan 👍
+yes	Purr-fect 😻
+yes	Okay! 🐱
+yes	Great plan 😎
+yes	Done 🐾
+yes	Yay 🙌
+yes	Agreed ✨
+no	Okay, no problem 😼
+no	Hmph. Fine 😾
+no	Alright, machan 🐾
+no	Maybe later 🐱
+no	Got it 👍
+no	Okay okay 😌
+no	Understood 😎
+no	No it is 💛
+help	Tell me the problem, machan 🐱
+help	Let's plan it step by step 😼
+help	What happened? 👂
+help	Give me the details 🐾
+help	For big ones, turn on Give Brain and I'll think harder 🧠
+help	What have you tried so far? 🤔
+help	Billa is on the case 😎
+help	We'll sort it out 💛
+question	Good question! My offline brain is cat-sized. Turn on Give Brain for that 🧠
+question	Hmm, Billa doesn't know. Give Brain me? 😅
+question	I'd guess, but cats hate being wrong 😼 Give Brain please
+question	Switch on Give Brain and ask again, machan 🤔
+question	Tricky one! Give Brain makes me smarter 🧠
+question	Meow… no idea offline 😹 Give Brain me
+question	Ask again with Give Brain on 🐱
+question	Ooh, smart one. Give Brain please 🧠
+unknown	Hmm, interesting, machan 🐱
+unknown	Tell me more 👀
+unknown	I'm listening 🐾
+unknown	Really? 😼
+unknown	Go on 👂
+unknown	Hmm, I see 😺
+unknown	Nice 😻
+unknown	And then? 👀
