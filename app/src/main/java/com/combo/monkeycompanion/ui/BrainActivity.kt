@@ -119,8 +119,8 @@ class BrainActivity : ComponentActivity() {
                     textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(20.dp))
 
-                // 1. ChatGPT
-                Option(choice == BrainChoice.CHATGPT, "Your ChatGPT plan", "For ChatGPT Plus and Pro. $name thinks with your own plan: no Set-Tai limit, the sharpest answers.") {
+                // 1. ChatGPT (v10.54: Play build shows it only after OpenAI approves, or for a developer / already signed-in tester)
+                if (ChatHub.chatGptOffered()) Option(choice == BrainChoice.CHATGPT, "Your ChatGPT plan", "For ChatGPT Plus and Pro. $name thinks with your own plan: no Set-Tai limit, the sharpest answers.") {
                     if (ChatGptAuth.signedIn) {
                         Text("Signed in as ${ChatGptAuth.email.ifBlank { "your ChatGPT account" }}", color = Color(0xFF3B3566), fontSize = 13.sp)
                         Spacer(Modifier.height(10.dp))
@@ -136,7 +136,7 @@ class BrainActivity : ComponentActivity() {
                         SignInWithChatGpt(busy) { signIn() }
                     }
                 }
-                Spacer(Modifier.height(12.dp))
+                if (ChatHub.chatGptOffered()) Spacer(Modifier.height(12.dp))
                 // 2. Set-Tai Cloud
                 Option(choice == BrainChoice.CLOUD, "Set-Tai Cloud", "Free, no sign-in. About 40 chats a day for every phone.") {
                     if (choice != BrainChoice.CLOUD) Button(onClick = { ChatHub.chooseBrain(BrainChoice.CLOUD); rev++ }) { Text("Use Set-Tai Cloud") }

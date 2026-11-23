@@ -274,6 +274,15 @@ object ChatHub {
     /** v10.39.2: the brain in use is the free Set-Tai Cloud (40 requests per phone per UTC day). */
     fun onCloud(): Boolean = runCatching { settings.aiBrainEnabled && settings.brainType == BrainType.ONLINE && !settings.useOwnApiKey && !settings.useChatGpt }.getOrDefault(false)
     /** v10.46: the brain is the user's own ChatGPT plan (it has limits too, so automatic lines stay local like on the cloud). */
+    /**
+     * v10.54: "Sign in with ChatGPT" (plan usage) is documented for open-source and locally hosted apps; a closed
+     * Play Store app needs OpenAI's approval first. So the Play build offers it only to a developer (Settings ›
+     * About, tap the version 7 times) or to someone already signed in. Flip [CHATGPT_APPROVED] once OpenAI says yes.
+     */
+    const val CHATGPT_APPROVED = false
+    fun chatGptOffered(): Boolean = CHATGPT_APPROVED || com.combo.monkeycompanion.BuildConfig.FLAVOR != "play" ||
+        runCatching { settings.devChatGpt }.getOrDefault(false) || runCatching { ChatGptAuth.signedIn }.getOrDefault(false)
+
     fun onChatGpt(): Boolean = runCatching { settings.aiBrainEnabled && settings.brainType == BrainType.ONLINE && settings.useChatGpt }.getOrDefault(false)
 
     /** v10.46: which brain is chosen, for the brain screen. */
@@ -354,6 +363,8 @@ object ChatHub {
             rustReply(typed)?.let { answer ->
                 reactFromRust(answer.reading)
                 quickLocal(typed, answer.line)
+                // v10.54: through the word-by-word pace too, so it talks like the ChatGPT replies do
+                if (runCatching { settings.humanPace }.getOrDefault(false)) fire { it.onReply(answer.line, false) }
                 fire { it.onReply(answer.line, true) }; spoke(answer.line)
                 return
             }
@@ -363,12 +374,17 @@ object ChatHub {
         askBrain(typed, replyingTo, emptyList(), instant = instant)
     }
 
+    /** Tests: stands in for the Rust library (Robolectric can't load it). */
+    @Volatile var debugRust: ((String) -> com.combo.monkeycompanion.mind.RustMind.Answer?)? = null
+
     private fun rustReply(text: String): com.combo.monkeycompanion.mind.RustMind.Answer? = runCatching {
+        debugRust?.let { return@runCatching it(text) }
         val c = com.combo.monkeycompanion.character.CharacterRegistry.current
         com.combo.monkeycompanion.mind.RustMind.respond(c.id, c.name, "", text)
     }.getOrNull()
 
     private fun rustUnderstanding(text: String): com.combo.monkeycompanion.mind.RustMind.Reading? = runCatching {
+        debugRust?.let { return@runCatching it(text)?.reading }
         com.combo.monkeycompanion.mind.RustMind.understand(text)
     }.getOrNull()
 

@@ -329,6 +329,10 @@ class AppSettings(ctx: Context) {
     var voicePopup: Boolean
         get() = p.getBoolean("voice_popup", false)
         set(v) = p.edit().putBoolean("voice_popup", v).apply()
+    /** v10.54: developer switch (About › tap the version 7 times): show "Sign in with ChatGPT" in the Play build before OpenAI approves it. */
+    var devChatGpt: Boolean
+        get() = p.getBoolean("dev_chatgpt", false)
+        set(v) = p.edit().putBoolean("dev_chatgpt", v).apply()
     /** v10.51 human pace: chat replies come out word by word at a speaking pace (mouth and hands follow each word). */
     var humanPace: Boolean
         get() = p.getBoolean("human_pace", true)

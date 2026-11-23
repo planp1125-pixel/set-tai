@@ -688,7 +688,21 @@ class SettaiDesignActivity : ComponentActivity() {
                             }
                             if (settingsPanel == "about") {
                                 item { Panel(surface) {
-                                    Heading("Set-Tai v10.38.11", ink)
+                                    // v10.54: the real version (it said v10.38.11 for months), the offline brain, and 7 taps for the developer switch
+                                    val ctx = this@SettaiDesignActivity
+                                    var taps by remember { mutableStateOf(0) }
+                                    Text("Set-Tai v${com.combo.monkeycompanion.BuildConfig.VERSION_NAME}", color = ink, fontSize = 22.sp, fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.clickable {
+                                            taps++
+                                            if (taps == 7) {
+                                                val s = com.combo.monkeycompanion.ai.ChatHub.settings
+                                                s.devChatGpt = !s.devChatGpt
+                                                android.widget.Toast.makeText(ctx, if (s.devChatGpt) "Developer: Sign in with ChatGPT shown" else "Developer: Sign in with ChatGPT hidden", android.widget.Toast.LENGTH_SHORT).show()
+                                                taps = 0
+                                            }
+                                        })
+                                    Text("Build ${com.combo.monkeycompanion.BuildConfig.VERSION_CODE} · ${com.combo.monkeycompanion.BuildConfig.FLAVOR}", color = muted, fontSize = 12.sp)
+                                    Text("Offline brain: " + (com.combo.monkeycompanion.mind.RustMind.version ?: "not available"), color = muted, fontSize = 12.sp)
                                     Text("Living companions for your screen", color = muted)
                                     Text("Character preferences are under Characters; shared app controls are here.", color = muted, fontSize = 12.sp)
                                 } }

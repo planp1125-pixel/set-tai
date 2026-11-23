@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.53.0 (versionCode 139)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.54.0 (versionCode 140)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.51 Human pace
 
@@ -10,6 +10,13 @@ Updated for **v10.53.0 (versionCode 139)**, 22 Nov 2026. Owner: Manikandan Gopal
 - v10.51.1: `Friendship.describe(xp)` → its own line in ChatHub `bondNote()` (level, heart %, next unlocks).
 - v10.51.2: `ChatVoiceCard` (section "chat") holds the chat & voice switches; the Settings tab lists "Chat & Voice" and "Buddy & Moments".
 - Tests that check the whole reply at once set `ChatHub.settings.humanPace = false` in `view()`.
+
+## v10.54 Trained offline brain + bubble replies
+
+- `mind/settai-train` (generator `gen.rs`, seeds `mind/data/seed_*.tsv`, model `mind/settai-mind/model/intent.bin`), per-character `lines/<id>.tsv` in `reply.rs` `CHARACTER_LINES`. Model below 0.45 confidence → rules.
+- `ChatHub.send()`: Give Brain off → `rustReply()` (after LocalChat), act via `reactFromRust()`; ChatGPT on → instant act while loading. `ChatHub.debugRust` stands in for the library in tests.
+- `RustMind` refuses to load inside a Robolectric sandbox unless `-Dsettai.mind.robolectric=true`.
+- `ChatHub.chatGptOffered()` / `CHATGPT_APPROVED` / `AppSettings.devChatGpt` (About › version × 7) gate the ChatGPT option in `BrainActivity` for the Play build.
 
 ## v10.53 Offline Rust brain (Plan A R1)
 

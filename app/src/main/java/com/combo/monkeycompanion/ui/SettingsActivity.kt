@@ -130,7 +130,8 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
 
     private fun visible(target: String?, id: String) = when (target) {
         null -> true
-        "brain" -> id in listOf("brainType", "picker", "brain", "offline", "background")
+        "brain" -> id in listOf("rustMind", "brainType", "picker", "brain", "offline", "background")
+        "chat" -> id in listOf("rustMind", "chat")
         "touch" -> id == "rest"
         "personality" -> id == "feel"
         "habits" -> id in listOf("engagement", "fun")
@@ -147,6 +148,7 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             if (visible(target, "offline") && s.brainType == BrainType.OFFLINE) OfflineCard(r)
             if (visible(target, "feel")) PersonalityCard(r)
             if (visible(target, "background")) BackgroundAiCard(r)
+            if (visible(target, "rustMind")) SCard("Offline brain (Rust)", "Always on: instant replies with no internet, and an instant reaction while ChatGPT thinks.") { OfflineBrainTester() }
             if (visible(target, "chat")) ChatVoiceCard(r)
             if (visible(target, "buddy")) BuddyCard(r)
             if (visible(target, "appearance")) AppearanceCard()
@@ -673,7 +675,6 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     @Composable
     private fun OfflineBrainTester() {
         val mind = com.combo.monkeycompanion.mind.RustMind
-        SSubhead("Offline brain (Rust)")
         if (!mind.available) {
             SNote("Not available on this build: " + (mind.problem ?: "library missing") + ". ChatGPT and the normal replies still work.")
             return
@@ -699,7 +700,6 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     @Composable
     private fun ChatVoiceCard(@Suppress("UNUSED_PARAMETER") r: Int) {
         SCard("Chat & voice", "How replies are said: out loud, word by word, and how long the bubble chat stays open.") {
-            OfflineBrainTester()
             val tos = listOf(30, 60, 120, 300, 0)
             SChoice("Close the bubble chat", listOf("After 30 s idle", "After 1 min idle", "After 2 min idle (default)", "After 5 min idle", "Never by itself"),
                 tos.indexOf(s.chatTimeoutSecs).let { if (it < 0) 2 else it }) { s.chatTimeoutSecs = tos[it]; bump() }

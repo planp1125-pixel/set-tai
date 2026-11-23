@@ -586,3 +586,13 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Always on as the character's personality, fully offline; nothing leaves the phone. For now you can try it in **Settings › Chat & Voice › Offline brain (Rust)**: it shows the version, the speed per message and a box to type anything. It does not answer in the bubble yet (next release).
 - CI: a Rust step runs `cargo test`, builds the library for the phone (arm64) with cargo-ndk into `app/src/main/jniLibs`, and builds a computer copy so the Kotlin tests go through the real JNI bridge (v1053/RustMindTest).
 
+## v10.54 (code 140): the trained offline brain answers in the bubble (Plan A R2 + R1b)
+
+- **Trained brain (R2).** `mind/settai-train` builds about 9,000 examples from hand-written seeds and templates (English, Tanglish, Tamil, Hindi, typos) and trains a small model in plain Rust: 98.3% on held-out messages, 0.34 MB, about 0.002 ms a message. When it is unsure (< 0.45) the R1 rules decide. Rerun: `cd mind && cargo run --release -p settai-train`.
+- **Every character has its own lines** (13 files, about 8 per intent each); future characters use the shared lines.
+- **R1b: it answers in the bubble.** With Give Brain off, the offline brain replies to anything the old canned replies don't catch, plays the matching act, and the line comes out word by word like ChatGPT replies. With ChatGPT on, the character plays an act the moment you send, while the answer loads.
+- **Settings:** "Offline brain (Rust)" is its own card at the top of **Chat & Voice** and of **AI Engine & Providers**.
+- **About shows the real version** (it said v10.38.11), the build number and the offline brain's version. Tap the version 7 times for a developer switch.
+- **Play build: "Sign in with ChatGPT" is hidden until OpenAI approves** (OpenAI documents plan usage for open-source and locally hosted apps; a closed Play app goes through their interest form). Anyone already signed in keeps it, and the developer switch shows it for testing. Flip `ChatHub.CHATGPT_APPROVED` once approved.
+- CI: the app tests run on every build again (the R2 branch had skipped them for manual branch builds; the manual branch APK upload stays). The Rust library is never loaded inside Robolectric's sandbox (one class loader per native library), so app tests are stable. New test v1054/OfflineChatTest.
+

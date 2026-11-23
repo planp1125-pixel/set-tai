@@ -25,6 +25,8 @@ object RustMind {
         runCatching {
             // tests on a computer can point at a desktop build of the same library
             val path = System.getProperty("settai.mind.lib")
+            val inSandbox = RustMind::class.java.classLoader?.javaClass?.name?.contains("Sandbox") == true
+            if (inSandbox && System.getProperty("settai.mind.robolectric") != "true") error("not loaded in Robolectric tests")
             if (!path.isNullOrBlank()) System.load(path) else System.loadLibrary("settai_mind")
             nativeVersion().isNotEmpty()
         }.getOrElse { problem = it.javaClass.simpleName + ": " + (it.message ?: ""); false }
