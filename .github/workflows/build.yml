@@ -114,7 +114,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
-          name: set-tai-play-${{ github.ref_name }}-${{ github.run_number }}
+          name: set-tai-play-branch-${{ github.run_number }}
           path: out/set-tai-play-release.apk
           if-no-files-found: error
           retention-days: 14
