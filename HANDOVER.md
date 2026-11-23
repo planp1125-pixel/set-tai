@@ -15,7 +15,8 @@ Updated for **v10.53.0 (versionCode 139)**, 22 Nov 2026. Owner: Manikandan Gopal
 
 - `mind/` Cargo workspace, crate `settai-mind` (cdylib + rlib): `understand.rs` (rules → Intent/Mood/act/gesture), `reply.rs` (lines from `lines/general.tsv`, per-character files via `CHARACTER_LINES`), `jni_api.rs` (JNI for `com.combo.monkeycompanion.mind.RustMind`). `cargo test` covers languages, every intent has lines, no repeats, speed.
 - Kotlin `app/.../mind/RustMind.kt`: loads `settai_mind` (or `-Dsettai.mind.lib=<path>` in tests), `understand()`, `respond()`, `benchMicros()`; returns null when the library is missing.
-- CI builds the .so (not committed; `app/src/main/jniLibs/` is git-ignored). Settings › Chat & Voice has a tester. Next (R1b): answer in the bubble when Give Brain is off, instant reaction while ChatGPT thinks.
+- CI builds the .so (not committed; `app/src/main/jniLibs/` is git-ignored). Settings › Chat & Voice has a tester.
+- R1b wired into `ChatHub`: when Give Brain is off, regular local chat uses the Rust reply (after existing phone/local handlers); ChatGPT chat uses the Rust reading to trigger a quick body action while its answer loads. The Settings tester note now describes this behavior.
 
 ## v10.52 Tilt, Play-safe
 
