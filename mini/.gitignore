@@ -1,0 +1,26 @@
+# Environments, local tools, build outputs and logs
+.venv/
+vendor/
+logs/
+__pycache__/
+*.pyc
+# Never commit model weights, credentials, caches, or checkpoints
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+*.litertlm
+*.tflite
+*.onnx
+*.ckpt
+.env*
+*token*
+checkpoints/
+.cache/
+data/raw/
+data/pilot*/
+.pipeline/
+.dry-run/
+.convert-venv/
+data/GO

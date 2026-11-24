@@ -1,0 +1,10 @@
+{
+  "id": "gemma3-12b-qat",
+  "repo": "google/gemma-3-12b-it-qat-q4_0-gguf",
+  "revision": "7929e34ac7c459bbfd1f38d7358e6839f204578b",
+  "license": "gemma",
+  "quantization": "QAT Q4_0",
+  "path": "/home/scouter/models/gemma-3-12b-it-qat-q4_0-gguf/gemma-3-12b-it-q4_0.gguf",
+  "bytes": 8074473920,
+  "sha256": "dd53172ff3a7b1b16c8fb3d944b87f42a6228ff2de3825b8813ae90d988434cd"
+}

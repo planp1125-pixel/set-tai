@@ -1,0 +1,80 @@
+{
+  "billa": {
+    "name": "Billa",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/CatMouse.kt",
+    "source_sha256": "5f7a7b9582809e18cc37040e8ccf6b09943b76f6c99f6f9aedd3a3e6902e8314",
+    "sheet_sha256": "5cd917a56efa86e48abde7776cb782d5d638cecc26967754899c5081cd5f501b"
+  },
+  "chittu": {
+    "name": "Chittu",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/CatMouse.kt",
+    "source_sha256": "5f7a7b9582809e18cc37040e8ccf6b09943b76f6c99f6f9aedd3a3e6902e8314",
+    "sheet_sha256": "05a2f5f7852dbf3542741147b22639f8ec2a5cd7be58b0b79aa0cd8f1dca774b"
+  },
+  "gajju": {
+    "name": "Gajju",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/Gajju.kt",
+    "source_sha256": "4ff62ed0f55becc319e9063bc4c7588a9565170cadd15406a07c4701bd35e70c",
+    "sheet_sha256": "9001f0378f8c21cefb202ea2d141534181466484c73f5c03b3a9396d4088374e"
+  },
+  "superboy": {
+    "name": "Zoom",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/Heroes.kt",
+    "source_sha256": "3297854d74fb59f480a3a297c0b9dd29141f508797dcef47c702907c535f903f",
+    "sheet_sha256": "c62f6376dcdc61e04faece963add62205dd53fefed998efbc67bf279a0c05667"
+  },
+  "armour": {
+    "name": "Bolt",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/Heroes.kt",
+    "source_sha256": "3297854d74fb59f480a3a297c0b9dd29141f508797dcef47c702907c535f903f",
+    "sheet_sha256": "32efca5e91f09d6bdacf152bc0d6725ea7c2ca815a7656a22e75f1cc44ce8a04"
+  },
+  "mask": {
+    "name": "Masko",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/Heroes.kt",
+    "source_sha256": "3297854d74fb59f480a3a297c0b9dd29141f508797dcef47c702907c535f903f",
+    "sheet_sha256": "1a8ce2d613799c7e3a068034c7a8c8b2599b6ac82ca631766ff92f7d2f5f2c13"
+  },
+  "monkey": {
+    "name": "Pogo",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/MonkeyCharacter.kt",
+    "source_sha256": "c59160c3b69aefdcbbaaaa24da22d20054a398232290364df9feea098fe22410",
+    "sheet_sha256": "79794d03c4879625297461d59d6a9aa362279fc1ee6744faaf3fcf5602ba3c70"
+  },
+  "rocketgirl": {
+    "name": "Skye",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/RocketGirl.kt",
+    "source_sha256": "1b2326e25f5fb20a39b417116e3d3612a8dfb5fbb097f723931203b4bb3554c5",
+    "sheet_sha256": "7eff787ebe89c99bc61d0d705eec678894653c8b8654180a81fde56d69c46f52"
+  },
+  "hollowman": {
+    "name": "Echo",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/V1014Characters.kt",
+    "source_sha256": "7f56c23cfcd154a1ff4da27406077cb702717f2088364940f61ebf9eea2abefe",
+    "sheet_sha256": "882dc011ae758c92763590eabe5307a9007fd8307650a67059599cd65f4a7546"
+  },
+  "surfer": {
+    "name": "Wavy",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/V1014Characters.kt",
+    "source_sha256": "7f56c23cfcd154a1ff4da27406077cb702717f2088364940f61ebf9eea2abefe",
+    "sheet_sha256": "28ad0e4f75f20cf82aad218080350588b26089f6c7437f0d304ac05b52826cd0"
+  },
+  "devil": {
+    "name": "Tutty",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/V1016Devil.kt",
+    "source_sha256": "84967d95f87b2b0fc7b87ad7bace78145f9669367b58b30c78c952cb1cc1093c",
+    "sheet_sha256": "89d501d147860cb892f47ac7afcc4b7d6152439beba86c895c75deabfe313e72"
+  },
+  "angel": {
+    "name": "Angel",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/V1023Angel.kt",
+    "source_sha256": "1f5c918afa8caaabf1717ab3f29bb3307d63141f8b42ae26c4e7ffc32b18b0a4",
+    "sheet_sha256": "1437b36a8e9cc24d24087b58d6c36e5d60fb1c79dd1d4a29ca1009bc8b7d8210"
+  },
+  "skater": {
+    "name": "Rollie",
+    "source": "shared/src/main/kotlin/com/combo/monkeycompanion/character/V1024Skater.kt",
+    "source_sha256": "9488a0e6ff0c8229b06169d7d68f93b9cd983a6acf17db5859ff603dc2430d2d",
+    "sheet_sha256": "bb4d8b1cf4cb5917bca46f2ee738de15fe1f0efa81d7433d4f63fb66cf9e848a"
+  }
+}

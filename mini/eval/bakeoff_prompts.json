@@ -1,0 +1,182 @@
+[
+  {
+    "id": "en-01",
+    "language": "en",
+    "character": "devil",
+    "user": "Who are you, and what makes you different from Angel?"
+  },
+  {
+    "id": "en-02",
+    "language": "en",
+    "character": "angel",
+    "user": "I snapped at my friend and now I feel bad."
+  },
+  {
+    "id": "en-03",
+    "language": "en",
+    "character": "monkey",
+    "user": "I have five minutes to kill. Give me one fun idea."
+  },
+  {
+    "id": "en-04",
+    "language": "en",
+    "character": "superboy",
+    "user": "I finally finished my homework!"
+  },
+  {
+    "id": "en-05",
+    "language": "en",
+    "character": "armour",
+    "user": "What is seven plus five? Please just tell me."
+  },
+  {
+    "id": "en-06",
+    "language": "en",
+    "character": "mask",
+    "user": "Tell me a tiny joke about living on a phone."
+  },
+  {
+    "id": "en-07",
+    "language": "en",
+    "character": "billa",
+    "user": "That joke hurt. Please stop teasing me."
+  },
+  {
+    "id": "en-08",
+    "language": "en",
+    "character": "chittu",
+    "user": "Can you switch on my phone's torch?"
+  },
+  {
+    "id": "en-09",
+    "language": "en",
+    "character": "gajju",
+    "user": "I feel lonely tonight."
+  },
+  {
+    "id": "en-10",
+    "language": "en",
+    "character": "rocketgirl",
+    "user": "Goodnight, Skye. I've had a long day."
+  },
+  {
+    "id": "tanglish-01",
+    "language": "tanglish",
+    "character": "hollowman",
+    "user": "Unakku peru enna? Nee enga thangirukka?"
+  },
+  {
+    "id": "tanglish-02",
+    "language": "tanglish",
+    "character": "surfer",
+    "user": "Beach-ku poga mudiyala. Veetlaye bore adikkudhu; oru chinna idea sollu."
+  },
+  {
+    "id": "tanglish-03",
+    "language": "tanglish",
+    "character": "skater",
+    "user": "Nethu practice-la thappu pannitten. Thirumba try panna bayama irukku."
+  },
+  {
+    "id": "tanglish-04",
+    "language": "tanglish",
+    "character": "devil",
+    "user": "Enakkaga oru dance aadu pa!"
+  },
+  {
+    "id": "tanglish-05",
+    "language": "tanglish",
+    "character": "angel",
+    "user": "Friend kitta kovathula kathitten. Ippo eppadi sorry kekkaradhu?"
+  },
+  {
+    "id": "tanglish-06",
+    "language": "tanglish",
+    "character": "monkey",
+    "user": "Pasikkudhu. Veetla idli irukku; boring-aa illaama eppadi saapdalam?"
+  },
+  {
+    "id": "tanglish-07",
+    "language": "tanglish",
+    "character": "superboy",
+    "user": "Unnala nijamave veliya vandhu en bag-a thookka mudiyuma?"
+  },
+  {
+    "id": "tanglish-08",
+    "language": "tanglish",
+    "character": "armour",
+    "user": "Pathu plus rendu evlo? Correct-aa sollu."
+  },
+  {
+    "id": "tanglish-09",
+    "language": "tanglish",
+    "character": "mask",
+    "user": "Innikki enna nadakkum-nu predict pannu."
+  },
+  {
+    "id": "tanglish-10",
+    "language": "tanglish",
+    "character": "billa",
+    "user": "Naan konjam neram summa amaidhiya irukkanum."
+  },
+  {
+    "id": "ta-01",
+    "language": "ta",
+    "character": "chittu",
+    "user": "என் தோழி இன்று என்னிடம் பேசவில்லை. என்ன செய்வது?"
+  },
+  {
+    "id": "ta-02",
+    "language": "ta",
+    "character": "gajju",
+    "user": "எனக்குக் கிடைத்த சின்ன வெற்றியைக் கொண்டாடுவாயா?"
+  },
+  {
+    "id": "ta-03",
+    "language": "ta",
+    "character": "rocketgirl",
+    "user": "உன் பெயரையும் உனக்குப் பிடித்த ஒரு விஷயத்தையும் சொல்லு."
+  },
+  {
+    "id": "ta-04",
+    "language": "ta",
+    "character": "hollowman",
+    "user": "எனக்காகக் கொஞ்சம் நடனம் ஆடு!"
+  },
+  {
+    "id": "ta-05",
+    "language": "ta",
+    "character": "surfer",
+    "user": "மழையால் வெளியே போக முடியவில்லை. வீட்டில் என்ன செய்யலாம்?"
+  },
+  {
+    "id": "ta-06",
+    "language": "ta",
+    "character": "skater",
+    "user": "நான் விழுந்துட்டேன். சின்ன காயம் தான், ஆனா பயமா இருக்கு."
+  },
+  {
+    "id": "ta-07",
+    "language": "ta",
+    "character": "devil",
+    "user": "என் போனின் கேமரா வழியாக என்னைப் பார்க்கிறாயா?"
+  },
+  {
+    "id": "ta-08",
+    "language": "ta",
+    "character": "angel",
+    "user": "என் வீட்டுப்பாடம் ரொம்ப கஷ்டமா இருக்கு. எங்கிருந்து தொடங்கலாம்?"
+  },
+  {
+    "id": "ta-09",
+    "language": "ta",
+    "character": "monkey",
+    "user": "நான் உன்னை வேறொரு குரங்குனு நினைச்சுட்டேன். நீ யாரு?"
+  },
+  {
+    "id": "ta-10",
+    "language": "ta",
+    "character": "superboy",
+    "user": "நாளை என்ன நடக்கும்னு உனக்குத் தெரியுமா?"
+  }
+]

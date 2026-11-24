@@ -1,0 +1,10 @@
+{
+  "size": "12b",
+  "result": {
+    "Result": "exit-code",
+    "ExecMainStatus": "75",
+    "ActiveState": "failed"
+  },
+  "completed_probes": 0,
+  "reason": "Skipped: did not complete under its capped memory budget; inspect service log."
+}

@@ -1,0 +1,15 @@
+{
+  "repo": "Qwen/Qwen2.5-7B-Instruct-GGUF",
+  "revision": "bb5d59e06d9551d752d08b292a50eb208b07ab1f",
+  "license": "apache-2.0",
+  "files": [
+    {
+      "name": "qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf",
+      "bytes": 3993201344
+    },
+    {
+      "name": "qwen2.5-7b-instruct-q4_k_m-00002-of-00002.gguf",
+      "bytes": 689872288
+    }
+  ]
+}
