@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parent
 PY=ROOT/'.venv/bin/python'
-BENCH=ROOT/'.pipeline/speedcheck-30'
+BENCH=ROOT/'.pipeline/speedcheck-30-v2'
 REPORT=ROOT/'logs/speedcheck-30.md'
 STATUS=ROOT/'.pipeline/status.json'
 

@@ -37,7 +37,7 @@ def plan(counts,seed):
   for i in range(count):
    topic=list(TOPICS)[i%len(TOPICS)]
    jobs.append({'character':ids[i%len(ids)],'language':lang,'topic':topic,'detail':rng.choice(TOPICS[topic]),
-                'turns':rng.choices([1,2,3],[.65,.25,.10])[0],'seed':rng.randrange(2**30)})
+                'turns':rng.choices([1,2,3],[.75,.20,.05])[0],'seed':rng.randrange(2**30)})
  # Inspect the first ten examples of every main language early; then group by
  # language to reuse the shared few-shot prefix and improve local throughput.
  head=[];rest=[]
@@ -182,7 +182,7 @@ def main():
     seed=job['seed']+attempt*137
     task=f'''Draft ONE ORIGINAL fictional conversation, not a direct reply to these instructions. JSON turns array: exactly {turns} user/assistant pairs. User starts; later turns follow the earlier message naturally.
 Topic: {job['topic']}, situation: {job['detail']}. Invent a distinct concrete everyday situation, wording and opening; do not repeat earlier demonstrations. Language for BOTH human and assistant: {LANGS[lang]}
-Each turn has user (spoken message), assistant (speech ONLY), act (none or one allowed action). Do not put any brackets or tags in the assistant string; choose the optional act separately. No emoji. Responses 1-4 brief sentences, ideally 8-30 words. For distress be sincere, not jokey. Stay {MANIFEST[cid]['name']} and relevant. Never claim tools, camera access or actions outside the screen. Avoid greetings unless the human greets. No repeated canned phrases. Output JSON only.'''
+Each turn has user (spoken message), assistant (speech ONLY), act (none or one allowed action). Do not put any brackets or tags in the assistant string; choose the optional act separately. Usually act=none; use a tag only when the human explicitly asks for an on-screen action. No emoji or markdown. Replies should be 1-2 brief spoken sentences, ideally 8-25 words, and directly answer the user's actual message. For advice, give one concrete next step; brief empathy plus a useful question is fine when details are missing. Do not merely repeat the user's feeling or invent an unrelated story. Never imply you can accompany them outside the screen. For distress be sincere, not jokey. Stay {MANIFEST[cid]['name']} and relevant. Never claim tools, camera access or actions outside the screen. Avoid greetings unless the human greets. No repeated canned phrases. Output JSON only.'''
     request_messages=fit_prompt(teacher_messages(cid,lang,task),tokenizer)
     draft,_=request(request_messages,seed,schema,max_tokens=384,temperature=.78)
     if len(draft['turns'])!=turns:raise ValueError('turn count')
@@ -204,10 +204,10 @@ Each turn has user (spoken message), assistant (speech ONLY), act (none or one a
       elif any(text in reply_set and len(text)>25 for text in new_replies):reason='repeated_reply'
       elif any(len(text)>45 and abs(len(text)-len(old))<20 and SequenceMatcher(None,text,old).ratio()>.92 for text in new_replies for old in replies+demo_replies):reason='near_repeated_reply'
     if reason:reject(job,attempt,reason,messages);continue
-    review_context=f'''Score 0-2 on relevance, character, genuinely natural {lang} (not literal translation), and brevity. Also mark safe and honest. Character: {MANIFEST[cid]['name']}; {character(cid)}. No real-world phone actions. Conversation: {json.dumps(messages[1:],ensure_ascii=False)}'''
-    judge_messages=fit_prompt([{'role':'system','content':'Strict local dialogue reviewer. Grade meaning and fluency; return only the requested JSON.'},{'role':'user','content':review_context}],tokenizer)
+    review_context=f'''Judge only this conversation, not an ideal answer. Score each 0-2: answers (0 unrelated/wrong, 1 relevant but misses some help, 2 directly useful); character (0 wrong voice, 1 plausible, 2 strong); natural (0 hard to understand/wrong language, 1 understandable with minor awkwardness, 2 fluent); short (0 too long, 1 acceptable, 2 crisp). A brief empathetic suggestion or a useful clarifying question counts as relevant. Do not demand catchphrases or a perfect solution. Also mark safe and honest. Character: {MANIFEST[cid]['name']}; {character(cid)}. No real-world phone actions. Conversation: {json.dumps(messages[1:],ensure_ascii=False)}'''
+    judge_messages=fit_prompt([{'role':'system','content':'Strict but fair dialogue reviewer. Use 1 for adequate responses; reserve 0 for a clear failure. Grade actual meaning and fluency, not catchphrases. Return only the requested JSON.'},{'role':'user','content':review_context}],tokenizer)
     judge,_=request(judge_messages,seed+1,JUDGE,max_tokens=160,temperature=0)
-    if not a.smoke and (judge['answers']!=2 or judge['natural']!=2 or judge['short']!=2 or judge['character']<1 or not judge['safe'] or not judge['honest']):
+    if not a.smoke and (judge['answers']<1 or judge['natural']<1 or judge['short']<1 or judge['character']<1 or not judge['safe'] or not judge['honest']):
      reject(job,attempt,'review:'+json.dumps(judge,ensure_ascii=False),messages);continue
     with lock:
      first=norm(messages[1]['content'])

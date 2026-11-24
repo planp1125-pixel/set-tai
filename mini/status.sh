@@ -14,6 +14,11 @@ if s.get('step')=='generate':
   r=json.loads(q.read_text());percent=round(100*r['accepted']/r['target'],1)
   import time
   if r['accepted']:eta=str(round((time.time()-s['started'])/r['accepted']*(r['target']-r['accepted'])/3600,1))+' h (generation estimate)'
+if s.get('step')=='speedcheck_30':
+ q=Path(s['workspace'])/'logs/gemma-generation-progress.json'
+ if q.exists():
+  r=json.loads(q.read_text());percent=round(100*r['accepted']/r['target'],1)
+  if r['accepted']:eta=str(round((time.time()-s['started'])/r['accepted']*(r['target']-r['accepted'])/60,1))+' min (30-chat check estimate)'
 if s.get('step') in ('practice_270m','train_1b'):
  q=Path('mini/.pipeline/training_progress.json')
  if q.exists():
