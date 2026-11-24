@@ -603,3 +603,11 @@ Every character now feels like a little body in your hand (the phone's vibration
 - The Wi-Fi multicast lock is held only while searching or showing a code.
 - Test: v1052/PairByAddressTest.
 
+## v10.54.2 (code 142): Gemma 3 downloads work, Gemma 3 270M added, no more canned Rust replies
+
+- **Gemma 3 1B download fixed.** The app asked Hugging Face for a file name that the Gemma 3 1B page no longer lists, so the download could not start. It now downloads `gemma3-1b-it-int4.litertlm` (529 MB, works on CPU and GPU).
+- **New: Gemma 3 270M** (`gemma3-270m-it-q8.litertlm`, 304 MB, same Hugging Face token). The tiniest and fastest; plain it is simple, and it is the model Set-Tai will train.
+- Both get their real context size (2048 and 1024 tokens), so the instructions are cut down to fit and the first word comes sooner.
+- **Download feedback:** the button names the model it will download, the status and progress sit right under it, and a toast says when it starts or why it could not.
+- **The Rust brain no longer writes replies** in the bubble (its ready-made lines felt random). It now only makes the body react the instant you send, with any real brain (ChatGPT or an on-device model). The Settings tester stays.
+

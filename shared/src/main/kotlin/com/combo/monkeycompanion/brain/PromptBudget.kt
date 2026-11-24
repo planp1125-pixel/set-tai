@@ -14,7 +14,11 @@ object PromptBudget {
 
     /** Context size the model file was built for, read from its name ("ekv1280" → 1280). */
     fun contextFromName(name: String): Int =
-        Regex("ekv(\\d{3,5})").find(name.lowercase())?.groupValues?.get(1)?.toIntOrNull()?.coerceIn(256, 32768) ?: DEFAULT_CTX
+        Regex("ekv(\\d{3,5})").find(name.lowercase())?.groupValues?.get(1)?.toIntOrNull()?.coerceIn(256, 32768)
+            ?: KNOWN_CTX.entries.firstOrNull { name.lowercase().startsWith(it.key) }?.value ?: DEFAULT_CTX
+
+    /** v10.54.2: files whose names don't say their context size (from their model cards). */
+    private val KNOWN_CTX = mapOf("gemma3-1b-it-int4" to 2048, "gemma3-270m-it" to 1024)
 
     /** Conservative token estimate (~3 chars per token for Latin text, 1 per char for Tamil/emoji etc). */
     fun estimate(s: String): Int {

@@ -31,9 +31,14 @@ object ModelStore {
             "litert-community/gemma-4-E2B-it-litert-lm", "gemma-4-E2B-it.litertlm", 2588, false
         ),
         ModelEntry(
-            "Gemma 3 1B (~0.6 GB, needs Hugging Face token)",
-            "Good and light. Gated: accept the Gemma license on its Hugging Face page, then paste a read token below.",
-            "litert-community/Gemma3-1B-IT", "Gemma3-1B-IT_multi-prefill-seq_q4_ekv4096.litertlm", 584, true
+            "Gemma 3 1B (~0.53 GB, needs Hugging Face token)",
+            "Good and light, about 4x smaller than Gemma 4. Gated: accept the Gemma license on its Hugging Face page, then paste a Read token below.",
+            "litert-community/Gemma3-1B-IT", "gemma3-1b-it-int4.litertlm", 529, true
+        ),
+        ModelEntry(
+            "Gemma 3 270M (tiniest, ~0.3 GB, needs Hugging Face token)",
+            "Very fast, made to be trained for one job. Plain, it is simple and sometimes silly: this is the one Set-Tai will train. Gated like Gemma 3 1B.",
+            "litert-community/gemma-3-270m-it", "gemma3-270m-it-q8.litertlm", 304, true
         ),
         ModelEntry(
             "Qwen3 0.6B (tiny & fast, ~0.35 GB)",

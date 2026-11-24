@@ -360,12 +360,13 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
             val tk = s.hfToken
             SField(tokenText, { tokenText = it }, "Hugging Face token (only for gated models)",
                 placeholder = if (tk.isNotEmpty()) "Saved ••••${tk.takeLast(4)} (type to replace)" else null, secret = true)
-            SPrimary("Download selected model") { startDownload() }
+            SPrimary("Download: ${ModelStore.CATALOG[catalogPick].title.substringBefore(" (")}") { startDownload() }
+            // v10.54.2: what the download is doing, right under its button (it used to sit lower and was easy to miss)
+            dlFrac?.let { LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth()) }
+            if (dlText.isNotBlank()) Text(dlText, style = MaterialTheme.typography.bodyMedium)
             SSecondary("Open model page on Hugging Face") {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ModelStore.CATALOG[catalogPick].pageUrl)))
             }
-            dlFrac?.let { LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth()) }
-            if (dlText.isNotBlank()) Text(dlText, style = MaterialTheme.typography.bodySmall)
             if (dlFrac != null && ModelStore.isDownloading(this@SettingsActivity)) SSecondary("Cancel download") {
                 ModelStore.cancelDownload(this@SettingsActivity); dlText = "Download cancelled."; dlFrac = null
             }
@@ -408,9 +409,16 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
                 if (free < need + 300_000_000L) { ui.post { dlText = "Not enough space: needs ${mb(need)}, only ${mb(free)} free." }; return@Thread }
                 val target = ModelStore.startDownload(this, probe, m.file, m.title)
                 s.offlineModelPath = target.path
-                ui.post { dlText = "Download started (${mb(need)}). You can leave this screen; it continues in the background."; pollDownload() }
+                ui.post {
+                    dlText = "Download started (${mb(need)}). You can leave this screen; it continues in the background and shows in your notifications."
+                    android.widget.Toast.makeText(this, "Downloading ${m.title.substringBefore(" (")}…", android.widget.Toast.LENGTH_SHORT).show()
+                    pollDownload()
+                }
             } catch (e: Exception) {
-                ui.post { dlText = "❌ ${e.message}" }
+                ui.post {
+                    dlText = "❌ ${e.message}"
+                    android.widget.Toast.makeText(this, "Download didn't start: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                }
             }
         }.start()
     }

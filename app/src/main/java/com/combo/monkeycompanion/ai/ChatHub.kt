@@ -359,18 +359,9 @@ object ChatHub {
             fire { it.onReply(line, true) }; spoke(line)
             return
         }
-        if (!isBrainEnabled() && testBrain == null) {
-            rustReply(typed)?.let { answer ->
-                reactFromRust(answer.reading)
-                quickLocal(typed, answer.line)
-                // v10.54: through the word-by-word pace too, so it talks like the ChatGPT replies do
-                if (runCatching { settings.humanPace }.getOrDefault(false)) fire { it.onReply(answer.line, false) }
-                fire { it.onReply(answer.line, true) }; spoke(answer.line)
-                return
-            }
-        }
-        // R1b: show a sub-millisecond local reaction while the user's ChatGPT answer is loading.
-        val instant = if (testBrain == null && onChatGpt()) rustUnderstanding(typed) else null
+        // v10.54.2: the Rust brain no longer writes replies (its ready-made lines felt random); it only makes the
+        // body react the instant you send, while a real brain (ChatGPT or an on-device model) writes the answer.
+        val instant = if (testBrain == null && isBrainEnabled()) rustUnderstanding(typed) else null
         askBrain(typed, replyingTo, emptyList(), instant = instant)
     }
 

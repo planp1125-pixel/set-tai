@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.54.1 (versionCode 141)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.54.2 (versionCode 142)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.51 Human pace
 
@@ -10,6 +10,11 @@ Updated for **v10.54.1 (versionCode 141)**, 22 Nov 2026. Owner: Manikandan Gopal
 - v10.51.1: `Friendship.describe(xp)` → its own line in ChatHub `bondNote()` (level, heart %, next unlocks).
 - v10.51.2: `ChatVoiceCard` (section "chat") holds the chat & voice switches; the Settings tab lists "Chat & Voice" and "Buddy & Moments".
 - Tests that check the whole reply at once set `ChatHub.settings.humanPace = false` in `view()`.
+
+## v10.54.2
+
+- `ModelStore.CATALOG`: Gemma 3 1B = `gemma3-1b-it-int4.litertlm`, new Gemma 3 270M = `gemma3-270m-it-q8.litertlm` (both gated). `PromptBudget.KNOWN_CTX` gives their context sizes.
+- `ChatHub.send()`: no Rust replies; `instant` reaction when any brain is on.
 
 ## v10.54.1 Pairing discovery
 

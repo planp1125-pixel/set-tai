@@ -16,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
-/** v10.54 (R1b): with Give Brain off the offline brain answers in the bubble and moves the body; Play hides ChatGPT sign-in. */
+/** v10.54 / v10.54.2: the Rust brain only makes the body react (no more ready-made replies); Play hides ChatGPT sign-in. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class OfflineChatTest {
@@ -41,19 +41,12 @@ class OfflineChatTest {
 
     private fun idle() { repeat(5) { shadowOf(Looper.getMainLooper()).idle(); Thread.sleep(20) } }
 
-    @Test fun giveBrainOffTheOfflineBrainAnswersAndTheBodyWaves() {
+    @Test fun theOfflineBrainNoLongerWritesReplies() {
+        // v10.54.2: its ready-made lines felt random, so with Give Brain off the usual replies answer, never the Rust line
         ChatHub.debugRust = { answer("Hee-hee! Tutty is here 😈", "wave") }
         ChatHub.send("qzx plimbo"); idle()
-        assertEquals("Hee-hee! Tutty is here 😈", replies.last { it.second }.first)
-        assertTrue("the act came with it: $actions", actions.any { it.name.equals("WAVE", true) || it.toString().contains("wave", true) })
-    }
-
-    @Test fun humanPaceSendsItThroughTheWordByWordPath() {
-        ChatHub.settings.humanPace = true
-        ChatHub.debugRust = { answer("Bored? Let's fix that!", "spin") }
-        ChatHub.send("qzx wombat"); idle()
-        assertTrue("a first, not-done call starts the pacer: $replies", replies.any { !it.second && it.first == "Bored? Let's fix that!" })
-        assertTrue(replies.last().second)
+        assertTrue("a reply came: $replies", replies.any { it.second })
+        assertFalse("not the Rust line: $replies", replies.any { it.first == "Hee-hee! Tutty is here 😈" })
     }
 
     @Test fun withoutTheLibraryNothingChanges() {
