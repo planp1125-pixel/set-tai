@@ -54,8 +54,9 @@ def local_filter(messages,lang,cid,tokenizer):
   if m['role']=='system':continue
   if not text.strip() or len(text)>480 or len(text.split())>65:return 'length'
   if any(s in text for s in ('<start_of_turn>','<end_of_turn>','<bos>','```')):return 'format'
-  plain=ACT.sub('',text)
+  plain=re.sub(r'\[act:[^\]]+\]\s*','',text,flags=re.I)
   if m['role']=='assistant':
+   if len(tokenizer.encode(plain,add_special_tokens=False).ids)>120:return 'reply_over_120_tokens'
    if re.search(r'[\[\]<>*#]',plain):return 'bad_tag_or_markdown'
    if len(re.findall(r'[.!?।]+(?:\s|$)',plain))>4:return 'too_many_sentences'
    if re.search(r'\b(fuck|bitch|porn|nudes?|shit)\b',plain,re.I):return 'unsafe'
@@ -68,6 +69,18 @@ def local_filter(messages,lang,cid,tokenizer):
   if lang=='tanglish' and len(TANGLISH.findall(plain))<(1 if len(plain.split())<8 else 2):return 'not_natural_tanglish_markers'
  if estimated>512:return 'student_context_over_512'
  return None
+
+def fit_prompt(messages,tokenizer,budget=560):
+ """Keep local teacher input below a conservative 600-token ceiling."""
+ def size():return sum(len(tokenizer.encode(m['content'],add_special_tokens=False).ids)+5 for m in messages)
+ while size()>budget and len(messages)>3:del messages[1:3]
+ if size()>budget and len(messages)>=2:
+  prefix=size()-len(tokenizer.encode(messages[-1]['content'],add_special_tokens=False).ids)
+  room=max(16,budget-prefix)
+  ids=tokenizer.encode(messages[-1]['content'],add_special_tokens=False).ids
+  if len(ids)>room:messages[-1]['content']=tokenizer.decode(ids[:room])
+ if size()>590:raise ValueError(f'prompt budget exceeded: {size()} tokens')
+ return messages
 
 def finalize(rows,selection):
  total=sum(selection['counts'].values());assert len(rows)==total
@@ -100,7 +113,7 @@ def finalize(rows,selection):
   group=[r for r in rows if r['language']==lang];samples.extend(rng.sample(group,min(10,len(group))))
  review=[f'# {len(samples)} random Gemma chat samples — human review','',
          ('10 English, 10 Tanglish, 10 Tamil-script conversations.' if total==3000 else 'Isolated five-chat smoke fixture; not production data.')+' No production training has started.','',
-         f"Teacher: {selection['teacher']['id']}. Counts: {stats['languages']}. Train/test: 2700/300.",'',
+         f"Teacher: {selection['teacher']['id']}. Counts: {stats['languages']}. Train/test: {len(train)}/{len(test)}.",'',
          'Bake-off: [teacher_bakeoff.md](../eval/teacher_bakeoff.md)','']
  for i,r in enumerate(samples,1):
   review.extend([f"## {i}. {r['language']} · {r['character']} · {r['id']}",''])
@@ -112,17 +125,37 @@ def finalize(rows,selection):
 
 def main():
  global ROOT
- p=argparse.ArgumentParser();p.add_argument('--size',choices=['4b','12b'],required=True);p.add_argument('--workers',type=int,default=1);p.add_argument('--max-attempts',type=int,default=12);p.add_argument('--finalize-only',action='store_true');p.add_argument('--workspace',type=Path);p.add_argument('--smoke',action='store_true');a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--size',choices=['4b','12b'],required=True);p.add_argument('--workers',type=int,default=4);p.add_argument('--max-attempts',type=int,default=12);p.add_argument('--finalize-only',action='store_true');p.add_argument('--workspace',type=Path);p.add_argument('--smoke',action='store_true');p.add_argument('--benchmark',type=int,default=0);a=p.parse_args()
  if a.workspace:ROOT=a.workspace.resolve()
  selection=json.loads((ROOT/'teachers/selected.json').read_text());assert selection['size']==a.size
+ if a.benchmark:
+  if a.benchmark!=30:raise ValueError('Benchmark mode is for exactly 30 chats')
+  selection['counts']={'en':10,'tanglish':10,'ta':10}
  assert selection['prompt_fingerprint']==fingerprint(),'Few-shots/context changed since bake-off; rerun the bake-off before mixing data.'
  raw=ROOT/'data/raw';raw.mkdir(parents=True,exist_ok=True)
  meta={'teacher':selection['teacher'],'counts':selection['counts'],'fingerprint':fingerprint(),'generator':'Gemma local-only v1'}
  meta_file=raw/'metadata.json'
- if meta_file.exists():assert json.loads(meta_file.read_text())==meta,'Checkpoint belongs to a different dataset configuration.'
+ if meta_file.exists():
+  previous=json.loads(meta_file.read_text())
+  assert previous.get('teacher')==meta['teacher'] and previous.get('fingerprint')==meta['fingerprint'],'Checkpoint belongs to a different teacher or prompt configuration.'
+  if previous!=meta:meta_file.write_text(json.dumps(meta,indent=2)+'\n')
  else:meta_file.write_text(json.dumps(meta,indent=2)+'\n')
  jobs=plan(selection['counts'],20261124);plan_file=raw/'plan.json'
- if plan_file.exists():assert json.loads(plan_file.read_text())==jobs
+ if plan_file.exists():
+  previous_jobs=json.loads(plan_file.read_text())
+  if len(previous_jobs)>sum(selection['counts'].values()):
+   accepted_path=raw/'accepted.jsonl';prior_rows=load_rows(accepted_path) if accepted_path.exists() else []
+   accepted_slots={row['slot'] for row in prior_rows};chosen={j['slot']:j for j in previous_jobs if j['slot'] in accepted_slots}
+   for lang,quota in selection['counts'].items():
+    have=sum(1 for row in prior_rows if row['language']==lang)
+    for job in (j for j in previous_jobs if j['language']==lang and j['slot'] not in chosen):
+     if have>=quota:break
+     chosen[job['slot']]=job;have+=1
+   jobs=sorted(chosen.values(),key=lambda j:j['slot'])
+   if len(jobs)!=sum(selection['counts'].values()):raise ValueError('Cannot resize checkpoint plan while preserving accepted chats')
+   plan_file.write_text(json.dumps(jobs,indent=2)+'\n')
+  elif len(previous_jobs)==sum(selection['counts'].values()):jobs=previous_jobs
+  else:raise ValueError('Saved generation plan is smaller than the requested target')
  else:plan_file.write_text(json.dumps(jobs,indent=2)+'\n')
  accepted=raw/'accepted.jsonl';rows=load_rows(accepted)
  if a.finalize_only:finalize(rows,selection);return
@@ -150,13 +183,19 @@ def main():
     task=f'''Draft ONE ORIGINAL fictional conversation, not a direct reply to these instructions. JSON turns array: exactly {turns} user/assistant pairs. User starts; later turns follow the earlier message naturally.
 Topic: {job['topic']}, situation: {job['detail']}. Invent a distinct concrete everyday situation, wording and opening; do not repeat earlier demonstrations. Language for BOTH human and assistant: {LANGS[lang]}
 Each turn has user (spoken message), assistant (speech ONLY), act (none or one allowed action). Do not put any brackets or tags in the assistant string; choose the optional act separately. No emoji. Responses 1-4 brief sentences, ideally 8-30 words. For distress be sincere, not jokey. Stay {MANIFEST[cid]['name']} and relevant. Never claim tools, camera access or actions outside the screen. Avoid greetings unless the human greets. No repeated canned phrases. Output JSON only.'''
-    draft,_=request(teacher_messages(cid,lang,task),seed,schema,max_tokens=768,temperature=.88)
+    request_messages=fit_prompt(teacher_messages(cid,lang,task),tokenizer)
+    draft,_=request(request_messages,seed,schema,max_tokens=384,temperature=.78)
     if len(draft['turns'])!=turns:raise ValueError('turn count')
     messages=[{'role':'system','content':identity(cid)}]
     for turn in draft['turns']:
      act=turn['act'];assert act in ['none']+TAGS
+     spoken=turn['assistant'].strip()
+     embedded=re.match(r'^\[act:('+ '|'.join(TAGS) +r')\]\s*',spoken,re.I)
+     if embedded and act=='none':act=embedded.group(1).lower()
+     spoken=re.sub(r'\[act:[^\]]+\]\s*','',spoken,flags=re.I)
+     spoken=re.sub(r'[*_`]+','',spoken).strip(' \t\n"“”‘’')
      messages.extend([{'role':'user','content':turn['user'].strip()},
-                      {'role':'assistant','content':(('' if act=='none' else '[act:'+act+'] ')+turn['assistant'].strip())}])
+                      {'role':'assistant','content':(('' if act=='none' else '[act:'+act+'] ')+spoken)}])
     reason=local_filter(messages,lang,cid,tokenizer)
     if not reason:
      first=norm(messages[1]['content']);new_replies=[norm(m['content']) for m in messages if m['role']=='assistant']
@@ -165,14 +204,9 @@ Each turn has user (spoken message), assistant (speech ONLY), act (none or one a
       elif any(text in reply_set and len(text)>25 for text in new_replies):reason='repeated_reply'
       elif any(len(text)>45 and abs(len(text)-len(old))<20 and SequenceMatcher(None,text,old).ratio()>.92 for text in new_replies for old in replies+demo_replies):reason='near_repeated_reply'
     if reason:reject(job,attempt,reason,messages);continue
-    review_context=f'''Strictly review this entire fictional conversation. Grade 0 fail, 1 partial, 2 meets. answers: every assistant reply relevant, correct and helpful. character: consistent with the character profile below. natural: genuinely fluent {lang}, NOT word-for-word translated English, gibberish or script mixing. short: every reply 1-4 short spoken sentences. safe: kind/family-safe, no dangerous instructions. honest: no camera/telemetry/tools or actions outside the screen. If unsure, lower the grade. Judge actual words, not just script. A correct factual answer can be brief without a catchphrase.
-Character profile: {character(cid)}
-Language: {LANGS[lang]}
-Natural style references (do not score just keyword overlap):
-{style_block(lang)}
-Conversation:
-{json.dumps(messages,ensure_ascii=False)}'''
-    judge,_=request([{'role':'system','content':'You are a strict dialogue quality reviewer. Output only the requested JSON, with independent honest scores. Do not roleplay the companion.'},{'role':'user','content':review_context}],seed+1,JUDGE,max_tokens=220,temperature=0)
+    review_context=f'''Score 0-2 on relevance, character, genuinely natural {lang} (not literal translation), and brevity. Also mark safe and honest. Character: {MANIFEST[cid]['name']}; {character(cid)}. No real-world phone actions. Conversation: {json.dumps(messages[1:],ensure_ascii=False)}'''
+    judge_messages=fit_prompt([{'role':'system','content':'Strict local dialogue reviewer. Grade meaning and fluency; return only the requested JSON.'},{'role':'user','content':review_context}],tokenizer)
+    judge,_=request(judge_messages,seed+1,JUDGE,max_tokens=160,temperature=0)
     if not a.smoke and (judge['answers']!=2 or judge['natural']!=2 or judge['short']!=2 or judge['character']<1 or not judge['safe'] or not judge['honest']):
      reject(job,attempt,'review:'+json.dumps(judge,ensure_ascii=False),messages);continue
     with lock:
@@ -186,9 +220,9 @@ Conversation:
       append(accepted,record);rows.append(record);done.add(job['slot']);first_users.add(first)
       for m in messages:
        if m['role']=='assistant':text=norm(m['content']);reply_set.add(text);replies.append(text)
-      progress={'accepted':len(rows),'target':3000,'languages':dict(Counter(r['language'] for r in rows)),'training_started':False}
+      progress={'accepted':len(rows),'target':sum(selection['counts'].values()),'languages':dict(Counter(r['language'] for r in rows)),'training_started':False}
       (ROOT/'logs/gemma-generation-progress.json').write_text(json.dumps(progress,indent=2)+'\n')
-      print(f"accepted {len(rows)}/3000 {cid} {lang} {turns} turns",flush=True)
+      print(f"accepted {len(rows)}/{sum(selection['counts'].values())} {cid} {lang} {turns} turns",flush=True)
     if reject_reason:reject(job,attempt,reject_reason,messages);continue
     return True
    except Exception as e:
@@ -197,10 +231,12 @@ Conversation:
  for generation_pass in range(3):
   remaining=[j for j in jobs if j['slot'] not in done]
   if not remaining:break
+  remaining.sort(key=lambda j:(j['character'],j['language'],j['slot']))
   print('Generation pass',generation_pass+1,'remaining',len(remaining),flush=True)
   with ThreadPoolExecutor(max_workers=a.workers) as pool:
    for result in as_completed([pool.submit(worker,j) for j in remaining]):result.result()
- if len(rows)!=sum(selection['counts'].values()):raise RuntimeError(f'{sum(selection["counts"].values())-len(rows)} slots unresolved after filtering. Checkpoints preserved; no partial corpus declared complete.')
+ target=sum(selection['counts'].values())
+ if len(rows)!=target:raise RuntimeError(f'{target-len(rows)} slots unresolved after filtering. Checkpoints preserved; no partial corpus declared complete.')
  finalize(rows,selection)
 
 if __name__=='__main__':main()

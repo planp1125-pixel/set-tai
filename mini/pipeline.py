@@ -12,13 +12,15 @@ def write_json(path,obj):
 def main():
  p=argparse.ArgumentParser();p.add_argument('--dry-run',action='store_true');p.add_argument('--chats',type=int);p.add_argument('--steps',type=int,default=20);a=p.parse_args()
  count=a.chats or (5 if a.dry_run else 3000)
- if (a.dry_run and count!=5) or (not a.dry_run and count!=3000):p.error('Use 5 chats for dry run or 3000 for production')
+ if (a.dry_run and count!=5) or (not a.dry_run and count not in (1500,3000)):p.error('Use 5 chats for dry run or 1500/3000 for production')
  conf={'smoke':a.dry_run,'chats':count,'smoke_steps':a.steps if a.dry_run else None,'prompt_fingerprint':fingerprint()}
- runid=hashlib.sha256(json.dumps(conf,sort_keys=True).encode()).hexdigest()[:16]
+ state=ROOT/'.pipeline/status.json'
+ prior=json.loads(state.read_text()) if state.exists() else {}
+ runid=(prior.get('run_id') if not a.dry_run and not prior.get('dry_run',False) and prior.get('workspace') else None) or hashlib.sha256(json.dumps(conf,sort_keys=True).encode()).hexdigest()[:16]
  w=ROOT/('.dry-run' if a.dry_run else '.pipeline/runs/'+runid)
  for name in ['logs','data','eval','teachers','done']:(w/name).mkdir(parents=True,exist_ok=True)
  weights=Path.home()/'models/settai-mini'/('smoke/'+runid if a.dry_run else 'runs/'+runid);weights.mkdir(parents=True,exist_ok=True)
- state=ROOT/'.pipeline/status.json';failed=ROOT/'logs/FAILED.txt'
+ failed=ROOT/'logs/FAILED.txt'
  if failed.exists():failed.replace(failed.with_name('FAILED.previous.txt'))
  started=time.time();current='setup'
  def status(step,percent=None,eta='unknown'):
@@ -28,12 +30,18 @@ def main():
   if limited:args=[str(PY),str(ROOT/'limits.py'),'--gib',host,'--total-gib',total,'--']+args
   subprocess.run(args,cwd=ROOT.parent,check=True)
  def teacher(action,size):
-  command([PY,ROOT/'teacher_worker.py',action,'--size',size,'--workspace',w],True,'9.5' if size=='12b' else '11.5','5.5')
+  command([PY,ROOT/'teacher_worker.py',action,'--size',size,'--workspace',w],True,'9.5' if size=='12b' else '11.5','5.5' if size=='12b' else '8.5')
  def stage(name,fn,outputs=(),extra=''):
   nonlocal current
   current=name;status(name)
-  marker=w/'done'/f'{name}.json';key=hashlib.sha256((json.dumps(conf,sort_keys=True)+extra).encode()).hexdigest()
-  if marker.exists() and json.loads(marker.read_text()).get('key')==key and all(Path(x).exists() for x in outputs):return
+  marker=w/'done'/f'{name}.json';key_conf=dict(conf)
+  if not a.dry_run and name in ('setup','bakeoff','pick_teacher'):key_conf.pop('chats',None)
+  key=hashlib.sha256((json.dumps(key_conf,sort_keys=True)+extra).encode()).hexdigest()
+  accepted_keys={key}
+  if not a.dry_run and name in ('setup','bakeoff','pick_teacher'):
+   legacy=dict(conf);legacy['chats']=3000
+   accepted_keys.add(hashlib.sha256((json.dumps(legacy,sort_keys=True)+extra).encode()).hexdigest())
+  if marker.exists() and json.loads(marker.read_text()).get('key') in accepted_keys and all(Path(x).exists() for x in outputs):return
   fn()
   if not all(Path(x).exists() for x in outputs):raise RuntimeError(name+' did not produce its required outputs')
   write_json(marker,{'key':key,'completed':time.time(),'outputs':[str(x) for x in outputs]})
@@ -65,6 +73,13 @@ def main():
   teacher('score','4b')
   import select_gemma_teacher as s
   s.ROOT=w;s.main()
+ def adapt_target():
+  if a.dry_run:return
+  path=w/'teachers/selected.json';selected=json.loads(path.read_text());old=sum(selected['counts'].values())
+  if old==count:return
+  raw={k:v*count/old for k,v in selected['counts'].items()};scaled={k:int(v) for k,v in raw.items()}
+  for key in sorted(raw,key=lambda k:raw[k]-scaled[k],reverse=True)[:count-sum(scaled.values())]:scaled[key]+=1
+  selected['counts']=scaled;selected['target_total']=count;write_json(path,selected)
  def generate():
   selection=json.loads((w/'teachers/selected.json').read_text());teacher('smoke-generate' if a.dry_run else 'generate',selection['size'])
  def split():
@@ -150,6 +165,7 @@ Run artifacts: `{w}`. Weight root: `{weights}`.
   stage('setup',setup,[w/'teachers/gemma3-4b.json'])
   stage('bakeoff',bakeoff,[w/'eval/smoke-bakeoff.json'] if a.dry_run else [w/'data/pilot-gemma-bakeoff/4b.jsonl'])
   stage('pick_teacher',select,[w/'teachers/selected.json',w/'eval/teacher_bakeoff.md'])
+  adapt_target()
   stage('generate',generate,[w/'data/raw/accepted.jsonl'])
   stage('filter_split',split,[w/'data/chats.jsonl',w/'data/test.jsonl',w/'data/stats.json'])
   stage('review',review,[w/'data/samples_for_review.md'])

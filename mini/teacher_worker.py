@@ -4,9 +4,9 @@ from pathlib import Path
 from gemma_common import ROOT,request,teacher_messages,fingerprint,append
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('action',choices=['bakeoff','score','generate','smoke-generate']);p.add_argument('--size',choices=['4b','12b'],required=True);p.add_argument('--workspace',type=Path,required=True);a=p.parse_args();w=a.workspace.resolve()
+ p=argparse.ArgumentParser();p.add_argument('action',choices=['bakeoff','score','generate','smoke-generate']);p.add_argument('--size',choices=['4b','12b'],required=True);p.add_argument('--workspace',type=Path,required=True);p.add_argument('--benchmark',type=int,default=0);a=p.parse_args();w=a.workspace.resolve()
  manifest=json.loads((ROOT/f'teachers/gemma3-{a.size}.json').read_text());ready=threading.Event()
- args=[str(ROOT/'vendor/llama.cpp/build/bin/llama-server'),'--model',manifest['path'],'--alias','local-settai-teacher','--host','127.0.0.1','--port','18081','--device','Vulkan0','--n-gpu-layers','32' if a.size=='12b' else '99','--ctx-size','1536' if a.size=='12b' else '2048','--parallel','1','--batch-size','64','--ubatch-size','32','--cache-ram','0','--fit','off','--jinja']
+ args=[str(ROOT/'vendor/llama.cpp/build/bin/llama-server'),'--model',manifest['path'],'--alias','local-settai-teacher','--host','127.0.0.1','--port','18081','--device','Vulkan0','--n-gpu-layers','32' if a.size=='12b' else '99','--ctx-size','8192' if a.size=='4b' else '1536','--parallel','4' if a.size=='4b' else '1','--batch-size','256','--ubatch-size','64','--cache-ram','1024' if a.size=='4b' else '0','--fit','off','--jinja']
  log=(w/'logs'/f'teacher-{a.size}-{a.action}.log').open('a');env=os.environ.copy();env['LD_LIBRARY_PATH']=str(ROOT/'vendor/vulkan/usr/lib/x86_64-linux-gnu')+':'+env.get('LD_LIBRARY_PATH','')
  server=subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1,env=env)
  def drain():
@@ -24,7 +24,9 @@ def main():
    b.ROOT=w;sys.argv=['bakeoff','--size',a.size];b.main()
   elif a.action=='generate':
    import gen_gemma_chats as g
-   sys.argv=['generate','--workspace',str(w),'--size',a.size];g.main()
+   sys.argv=['generate','--workspace',str(w),'--size',a.size,'--workers','4']
+   if a.benchmark:sys.argv+=['--benchmark',str(a.benchmark)]
+   g.main()
   elif a.action=='smoke-generate':
    schema={'type':'object','properties':{'conversations':{'type':'array','minItems':5,'maxItems':5,'items':{'type':'object','properties':{'user':{'type':'string','minLength':1,'maxLength':80},'assistant':{'type':'string','minLength':1,'maxLength':140}},'required':['user','assistant'],'additionalProperties':False}}},'required':['conversations'],'additionalProperties':False}
    task='For a local test, draft FIVE different original English user/assistant chats with Tutty. One pair each, short everyday topics. Each user message 4-12 words; each reply 8-18 words. No tags, emoji or headings. JSON only. Do not copy demonstrations.'
