@@ -15,8 +15,9 @@ def write_json(path,obj):
 def main():
  ROOT.joinpath('logs').mkdir(exist_ok=True)
  previous=json.loads(STATUS.read_text()) if STATUS.exists() else {}
- source=Path(previous.get('workspace',''))
+ source=Path(previous.get('production_workspace',previous.get('workspace','')))
  if not (source/'teachers/selected.json').exists():raise RuntimeError('Cannot find the saved teacher selection for the active run')
+ production_runid=previous.get('run_id') or source.name
  for folder in ('teachers','eval','logs','data'): (BENCH/folder).mkdir(parents=True,exist_ok=True)
  for src,dst in ((source/'teachers/selected.json',BENCH/'teachers/selected.json'),(ROOT/'eval/bakeoff_prompts.json',BENCH/'eval/bakeoff_prompts.json')):
   if not dst.exists():shutil.copy2(src,dst)
@@ -25,7 +26,7 @@ def main():
   meta=BENCH/'data/raw/metadata.json';started.write_text(str(meta.stat().st_ctime if meta.exists() else time.time())+'\n')
  failed=ROOT/'logs/FAILED.txt'
  if failed.exists():failed.replace(failed.with_name('FAILED.previous.txt'))
- write_json(STATUS,{'step':'speedcheck_30','percent':0,'eta':'measuring 30 chats','workspace':str(BENCH),'run_id':previous.get('run_id'),'dry_run':False,'started':time.time()})
+ write_json(STATUS,{'step':'speedcheck_30','percent':0,'eta':'measuring 30 chats','workspace':str(BENCH),'production_workspace':str(source),'run_id':production_runid,'dry_run':False,'started':time.time()})
  cmd=[str(PY),str(ROOT/'limits.py'),'--gib','8.5','--total-gib','11.5','--',str(PY),str(ROOT/'teacher_worker.py'),'generate','--size','4b','--workspace',str(BENCH),'--benchmark','30']
  with (ROOT/'logs/speedcheck-30-run.log').open('a') as log:code=subprocess.run(cmd,cwd=ROOT.parent,stdout=log,stderr=subprocess.STDOUT).returncode
  if code:raise RuntimeError(f'30-chat measurement exited {code}; resumable benchmark artifacts are in {BENCH}')
