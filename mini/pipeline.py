@@ -16,7 +16,13 @@ def main():
  conf={'smoke':a.dry_run,'chats':count,'smoke_steps':a.steps if a.dry_run else None,'prompt_fingerprint':fingerprint()}
  state=ROOT/'.pipeline/status.json'
  prior=json.loads(state.read_text()) if state.exists() else {}
- runid=(prior.get('run_id') if not a.dry_run and not prior.get('dry_run',False) and prior.get('workspace') else None) or hashlib.sha256(json.dumps(conf,sort_keys=True).encode()).hexdigest()[:16]
+ prior_runid=prior.get('run_id')
+ if not prior_runid and not a.dry_run and not prior.get('dry_run',False) and prior.get('workspace'):
+  prior_workspace=Path(prior['workspace'])
+  try:
+   if prior_workspace.resolve().is_relative_to((ROOT/'.pipeline/runs').resolve()) and (prior_workspace/'teachers/selected.json').exists():prior_runid=prior_workspace.name
+  except OSError:pass
+ runid=(prior_runid if not a.dry_run and not prior.get('dry_run',False) else None) or hashlib.sha256(json.dumps(conf,sort_keys=True).encode()).hexdigest()[:16]
  w=ROOT/('.dry-run' if a.dry_run else '.pipeline/runs/'+runid)
  for name in ['logs','data','eval','teachers','done']:(w/name).mkdir(parents=True,exist_ok=True)
  weights=Path.home()/'models/settai-mini'/('smoke/'+runid if a.dry_run else 'runs/'+runid);weights.mkdir(parents=True,exist_ok=True)
