@@ -30,8 +30,9 @@ class MermaidRenderer : V1014BodyRenderer() {
         val SKIN = Color.rgb(0xD8, 0x9C, 0x72)
         val SKIN_SHADE = Color.rgb(0xAE, 0x72, 0x4E)
         val SKIN_LIGHT = Color.rgb(0xF0, 0xC0, 0x98)
-        val HAIR = Color.rgb(0x2E, 0x1C, 0x14)
-        val HAIR_SHINE = Color.rgb(0x5A, 0x3C, 0x30)
+        val HAIR = Color.rgb(0x4A, 0x2A, 0x1C)
+        val HAIR_SHINE = Color.rgb(0x86, 0x58, 0x3E)
+        val BOW = Color.rgb(0xFF, 0x7E, 0xB0)
         val SHELL = Color.rgb(0xFF, 0xA8, 0xC0)
         val TOP = Color.rgb(0x7C, 0xC4, 0xFF)
         val TOP_DARK = Color.rgb(0x4E, 0x96, 0xDA)
@@ -92,7 +93,44 @@ class MermaidRenderer : V1014BodyRenderer() {
         tilted = abs(lean) > 0.3f
         c.save()
         if (tilted) c.rotate(lean, pivotX, pivotY)
+        drawLongHair(c, rig, t)
         pushBody(c, rig, p)
+    }
+
+    /** v10.55.5 long, soft, wavy hair down her back with curly tips; streams behind her while she swims. */
+    private fun drawLongHair(c: Canvas, rig: MonkeyRig, t: Float) {
+        val sway = (anim?.appendageAngle(Appendage.HAIR) ?: 0f) * 0.35f
+        val flow = -dirX * 20f * swimK + sway
+        c.save(); c.concat(rig.head); c.translate(0f, headDrop); c.scale(headScale, headScale)
+        fill.shader = null; fill.color = HAIR
+        tmp.reset()
+        tmp.moveTo(-30f, -40f)
+        tmp.cubicTo(-36f, -80f, 36f, -80f, 30f, -40f)
+        var y = -36f
+        while (y <= 30f) {   // right edge: soft waves, a little wider at the shoulders, tips swing with [flow]
+            val k = (y + 36f) / 66f
+            tmp.lineTo(30f + 3f * k + 2.5f * sin(y * 0.2f + t * 2.2f) + flow * k * k, y); y += 6f
+        }
+        // curly tips along the bottom (right to left)
+        val bx = flow
+        for (i in 0 until 4) {
+            val x0 = bx + 33f - i * 16.5f; val x1 = x0 - 16.5f
+            tmp.quadTo((x0 + x1) / 2f, 44f + 2f * sin(t * 2f + i), x1, 32f)
+        }
+        y = 30f
+        while (y >= -36f) {
+            val k = (y + 36f) / 66f
+            tmp.lineTo(-30f - 3f * k + 2.5f * sin(y * 0.2f + t * 2.2f + 1.3f) + flow * k * k, y); y -= 6f
+        }
+        tmp.close()
+        c.drawPath(tmp, fill)
+        outline.strokeWidth = 1.6f; c.drawPath(tmp, outline); outline.strokeWidth = OW
+        stroke.shader = null; stroke.color = HAIR_SHINE; stroke.strokeWidth = 1.8f
+        for (s in floatArrayOf(-1f, 1f)) {
+            tmp.reset(); tmp.moveTo(s * 24f, -14f)
+            tmp.quadTo(s * 30f + flow * 0.3f, 8f, s * 22f + flow * 0.6f, 28f); c.drawPath(tmp, stroke)
+        }
+        c.restore()
     }
 
     /** The tail, drawn on the rig's legs: bent by the average leg swing, curled by the lift, beating while she swims. */
@@ -178,8 +216,13 @@ class MermaidRenderer : V1014BodyRenderer() {
         for (i in -3..3) c.drawCircle(i * 7f, -14f, 4.2f, fill)
         stroke.shader = null; stroke.color = TOP_DARK; stroke.strokeWidth = 1.4f
         for (i in -3..3) { oval.set(i * 7f - 4.2f, -18.2f, i * 7f + 4.2f, -9.8f); c.drawArc(oval, 10f, 160f, false, stroke) }
-        // a little star print
-        fill.color = Color.WHITE; c.drawCircle(7f, -32f, 2.4f, fill)
+        // a little pink bow under the collar
+        fill.color = BOW
+        tmp.reset(); tmp.moveTo(0f, -47f); tmp.quadTo(-8f, -54f, -10f, -47f); tmp.quadTo(-8f, -40f, 0f, -47f); tmp.close(); c.drawPath(tmp, fill)
+        tmp.reset(); tmp.moveTo(0f, -47f); tmp.quadTo(8f, -54f, 10f, -47f); tmp.quadTo(8f, -40f, 0f, -47f); tmp.close(); c.drawPath(tmp, fill)
+        c.drawCircle(0f, -47f, 2.4f, fill)
+        // tiny white sparkle dots
+        fill.color = Color.WHITE; c.drawCircle(9f, -30f, 1.6f, fill); c.drawCircle(-10f, -24f, 1.3f, fill)
         c.restore()
         c.drawPath(suit, outline)
         // pearl collar
@@ -216,32 +259,14 @@ class MermaidRenderer : V1014BodyRenderer() {
     }
     private val faceShader = RadialGradient(-6f, -46f, 40f, intArrayOf(SKIN_LIGHT, SKIN, SKIN_SHADE), floatArrayOf(0f, 0.62f, 1f), Shader.TileMode.CLAMP)
     override val glintEye: FloatArray? = floatArrayOf(10.5f, -34.5f, 0.9f)
+    override val headDrop: Float = -5f
+    override val headScale: Float = 1.06f
 
     override fun drawHeadBase(c: Canvas, p: Pose, t: Float) {
-        val sw = (anim?.appendageAngle(Appendage.HAIR) ?: 0f) + 5f * sin(t * 3.1f)
-        fill.shader = null; fill.color = HAIR
-        oval.set(-30f, -71f, 30f, -26f); c.drawOval(oval, fill)
-        // two pigtails (like Skye's), each tied with a pink shell clip; they stream back while she swims
-        for (s in intArrayOf(-1, 1)) {
-            val stream = 30f * swimK * (if (s.toFloat() == -dirX) 1.2f else 0.6f)
-            c.save(); c.translate(s * 22f, -63f); c.rotate(-s * 50f - dirX * stream + sw * (if (s < 0) 1.1f else 0.9f))
-            fill.color = HAIR
-            tmp.reset(); tmp.moveTo(-4f, 0f)
-            tmp.cubicTo(-11f, 7f, -10f, 19f, -3f + s * 2f, 27f)
-            tmp.quadTo(s * 4f + 1f, 30f, 4f + s * 3f, 25f)
-            tmp.cubicTo(10f, 17f, 10f, 6f, 4f, 0f); tmp.close()
-            c.drawPath(tmp, fill); outline.strokeWidth = 1.5f; c.drawPath(tmp, outline)
-            stroke.shader = null; stroke.color = HAIR_SHINE; stroke.strokeWidth = 1.2f
-            c.drawLine(-2f, 6f, -3f, 18f, stroke); c.drawLine(3f, 7f, 3.5f, 17f, stroke)
-            // shell clip: a little fan with ridges
-            fill.color = SHELL
-            tmp.reset(); tmp.moveTo(0f, 4f); tmp.lineTo(-6.5f, -2f); tmp.quadTo(0f, -8.5f, 6.5f, -2f); tmp.close()
-            c.drawPath(tmp, fill); c.drawPath(tmp, outline)
-            stroke.color = Color.rgb(0xE0, 0x70, 0x90); stroke.strokeWidth = 1f
-            for (k in -1..1) c.drawLine(0f, 3f, k * 3.6f, -4.6f, stroke)
-            outline.strokeWidth = OW
-            c.restore()
-        }
+        // a neck (the head sits a little higher than Skye's)
+        fill.shader = null; fill.color = SKIN_SHADE
+        oval.set(-5.5f, -14f, 5.5f, 4f); c.drawRoundRect(oval, 4f, 4f, fill)
+        fill.color = SKIN; oval.set(-5f, -14f, 5f, 3f); c.drawRoundRect(oval, 4f, 4f, fill)
         // little ears with pearl studs
         fill.shader = null
         for (s in intArrayOf(-1, 1)) {
@@ -275,6 +300,16 @@ class MermaidRenderer : V1014BodyRenderer() {
                 fill.color = Color.WHITE; c.drawCircle(x - 0.6f, y - 0.6f, 0.7f, fill)
                 a += 12.5f
             }
+        }
+        // two pink shell clips holding the hair at the sides
+        for (s in floatArrayOf(-1f, 1f)) {
+            c.save(); c.translate(s * 24f, -52f); c.rotate(s * 25f)
+            fill.color = SHELL
+            tmp.reset(); tmp.moveTo(0f, 4f); tmp.lineTo(-5.5f, -1.5f); tmp.quadTo(0f, -7.5f, 5.5f, -1.5f); tmp.close()
+            c.drawPath(tmp, fill); outline.strokeWidth = 1.2f; c.drawPath(tmp, outline); outline.strokeWidth = OW
+            stroke.color = Color.rgb(0xE0, 0x70, 0x90); stroke.strokeWidth = 0.9f
+            for (k in -1..1) c.drawLine(0f, 3f, k * 3f, -4f, stroke)
+            c.restore()
         }
         if (on("starfish")) star(c, 17f, -66f, 6f, STAR, t)
     }

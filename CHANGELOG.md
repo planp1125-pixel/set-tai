@@ -637,3 +637,9 @@ Every character now feels like a little body in your hand (the phone's vibration
 ## v10.55.4 (code 147): Meenu's tail colour fix
 
 - Her lavender-to-pink tail was drawn half see-through (the paint kept the shadow's transparency), so it looked pale. It is solid again.
+
+## v10.55.5 (code 148): Meenu even cuter
+
+- Long hair is back, but soft: warm chocolate-brown, wavy, down to her waist with curly tips, held by two pink shell clips. It streams behind her when she swims.
+- A little neck: her head sits a bit higher and is slightly bigger (more chibi).
+- A pink bow and tiny sparkle dots on her top.
