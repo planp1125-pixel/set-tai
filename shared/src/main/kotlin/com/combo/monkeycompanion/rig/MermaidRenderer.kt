@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.Shader
 import com.combo.monkeycompanion.character.Wear
 import com.combo.monkeycompanion.engine.anim.Appendage
@@ -28,6 +29,7 @@ class MermaidRenderer : V1014BodyRenderer() {
     companion object {
         val SKIN = Color.rgb(0xD8, 0x9C, 0x72)
         val SKIN_SHADE = Color.rgb(0xAE, 0x72, 0x4E)
+        val SKIN_LIGHT = Color.rgb(0xF0, 0xC0, 0x98)
         val HAIR = Color.rgb(0x1C, 0x14, 0x1E)
         val HAIR_SHINE = Color.rgb(0x4A, 0x3A, 0x5E)
         val TOP = Color.rgb(0x7C, 0xC4, 0xFF)
@@ -42,7 +44,6 @@ class MermaidRenderer : V1014BodyRenderer() {
         val STAR = Color.rgb(0xFF, 0x7E, 0x6A)
         val BUBBLE = Color.rgb(0x6E, 0xC6, 0xFF)
         val WATER = Color.rgb(0x3F, 0xA9, 0xF5)
-        val CHEEK = Color.rgb(0xFF, 0x80, 0x8A)
         /** Tail length in hips space (rig units), from the waist. */
         const val TAIL_LEN = 52f
         const val WAIST_Y = -10f
@@ -239,41 +240,68 @@ class MermaidRenderer : V1014BodyRenderer() {
         }
     }
 
-    /** Round face, a side-swept fringe, two locks framing the face, the pearl string and the starfish clip. */
+    /** v10.55.1 Skye's cute face (smaller soft face, big sparkly eyes, lashes), a side-swept fringe, two locks framing it, pearls, starfish. */
+    private val faceOval = Path().apply {
+        moveTo(0f, -66f)
+        cubicTo(17f, -66f, 27f, -54f, 27f, -38f)
+        cubicTo(27f, -24f, 16f, -12f, 0f, -8.5f)
+        cubicTo(-16f, -12f, -27f, -24f, -27f, -38f)
+        cubicTo(-27f, -54f, -17f, -66f, 0f, -66f)
+        close()
+    }
+    private val faceShader = RadialGradient(-6f, -46f, 40f, intArrayOf(SKIN_LIGHT, SKIN, SKIN_SHADE), floatArrayOf(0f, 0.62f, 1f), Shader.TileMode.CLAMP)
+    override val glintEye: FloatArray? = floatArrayOf(10.5f, -34.5f, 0.9f)
+
     override fun drawHeadBase(c: Canvas, p: Pose, t: Float) {
-        humanHead(c, withHair = false)
-        fill.shader = null; fill.color = HAIR
-        tmp.reset()
-        tmp.moveTo(-36f, -30f)
-        tmp.cubicTo(-40f, -80f, 40f, -80f, 36f, -30f)
-        tmp.quadTo(30f, -50f, 12f, -55f)
-        tmp.quadTo(-2f, -47f, -14f, -55f)
-        tmp.quadTo(-28f, -50f, -36f, -30f)
-        tmp.close()
+        // little ears with pearl studs
+        fill.shader = null
+        for (s in intArrayOf(-1, 1)) {
+            fill.color = SKIN; oval.set(s * 26.5f - 4f, -42f, s * 26.5f + 4f, -32f); c.drawOval(oval, fill)
+            outline.strokeWidth = 1.4f; c.drawOval(oval, outline); outline.strokeWidth = OW
+            fill.color = PEARL; c.drawCircle(s * 26.5f, -29.5f, 2f, fill)
+        }
+        // the face
+        fill.shader = faceShader; c.drawPath(faceOval, fill); fill.shader = null
+        outline.strokeWidth = 2f; c.drawPath(faceOval, outline); outline.strokeWidth = OW
+        // soft side-swept fringe
+        fill.color = HAIR
+        tmp.reset(); tmp.moveTo(-28f, -40f)
+        tmp.cubicTo(-30f, -64f, -12f, -72f, 4f, -70f)
+        tmp.cubicTo(20f, -69f, 30f, -58f, 28f, -40f)
+        tmp.quadTo(25f, -49f, 18f, -51f)
+        tmp.quadTo(13f, -46f, 7f, -48f)
+        tmp.quadTo(1f, -52f, -5f, -48.5f)
+        tmp.quadTo(-12f, -45.5f, -18f, -51f)
+        tmp.quadTo(-25f, -48f, -28f, -40f); tmp.close()
         c.drawPath(tmp, fill); outline.strokeWidth = 1.6f; c.drawPath(tmp, outline)
-        // locks framing the face
+        // two wavy locks framing the face
         for (s in floatArrayOf(-1f, 1f)) {
-            tmp.reset(); tmp.moveTo(s * 34f, -44f)
-            tmp.quadTo(s * 40f, -24f, s * 33f + 2f * sin(t * 2.4f), -4f)
-            tmp.quadTo(s * 30f, -22f, s * 28f, -40f); tmp.close()
+            tmp.reset(); tmp.moveTo(s * 25f, -50f)
+            tmp.quadTo(s * 33f, -34f, s * 28f + 1.5f * sin(t * 2.4f), -14f)
+            tmp.quadTo(s * 25f, -30f, s * 22f, -44f); tmp.close()
             c.drawPath(tmp, fill); c.drawPath(tmp, outline)
         }
         outline.strokeWidth = OW
-        if (on("pearls")) {
-            fill.color = PEARL
-            var a = -150f
-            while (a <= -30f) {
+        stroke.shader = null; stroke.color = HAIR_SHINE; stroke.strokeWidth = 1.6f
+        tmp.reset(); tmp.moveTo(-14f, -64f); tmp.quadTo(-4f, -67.5f, 8f, -66f); c.drawPath(tmp, stroke)
+        if (on("pearls")) {   // a string of pearls along the hairline
+            var a = -160f
+            while (a <= -20f) {
                 val r = Math.toRadians(a.toDouble())
-                val x = (31f * cos(r)).toFloat(); val y = (-34f + 31f * sin(r)).toFloat()
-                c.drawCircle(x, y, 2.6f, fill)
-                a += 15f
+                val x = (29f * cos(r)).toFloat(); val y = (-40f + 30f * sin(r)).toFloat()
+                fill.color = PEARL; c.drawCircle(x, y, 2.4f, fill)
+                fill.color = Color.WHITE; c.drawCircle(x - 0.7f, y - 0.7f, 0.8f, fill)
+                a += 14f
             }
-            fill.color = Color.WHITE
-            a = -150f
-            while (a <= -30f) { val r = Math.toRadians(a.toDouble()); c.drawCircle((31f * cos(r)).toFloat() - 0.8f, (-34f + 31f * sin(r)).toFloat() - 0.8f, 0.8f, fill); a += 15f }
         }
-        if (on("starfish")) star(c, 24f, -58f, 7f, STAR, t)
+        if (on("starfish")) star(c, 20f, -63f, 6.5f, STAR, t)
     }
+
+    override fun drawCheeks(c: Canvas, p: Pose) = cuteGirlCheeks(c, p)
+    override fun drawEyes(c: Canvas, p: Pose) = cuteGirlEyes(c, p)
+    override fun drawBrows(c: Canvas, p: Pose) = cuteGirlBrows(c, p, HAIR)
+    override fun drawNose(c: Canvas, p: Pose) = cuteGirlNose(c, p, SKIN_SHADE)
+    override fun drawMouth(c: Canvas, p: Pose) = cuteGirlMouth(c, p)
 
     private fun star(c: Canvas, x: Float, y: Float, r: Float, col: Int, t: Float) {
         tmp.reset()
@@ -289,10 +317,6 @@ class MermaidRenderer : V1014BodyRenderer() {
         fill.color = Color.argb(160, 255, 255, 255); c.drawCircle(x - 1f, y - 1f, 1.2f, fill)
     }
 
-    override fun drawCheeks(c: Canvas, p: Pose) {
-        fill.shader = null; fill.color = CHEEK; fill.alpha = 150
-        c.drawCircle(-20f, -27f, 5f, fill); c.drawCircle(20f, -27f, 5f, fill); fill.alpha = 255
-    }
 
     override fun drawFront(c: Canvas, rig: MonkeyRig, p: Pose, t: Float) {
         popBody(c)

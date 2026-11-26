@@ -63,6 +63,101 @@ abstract class HumanRenderer : MonkeyRenderer() {
         c.restore()
     }
 
+    // ---- v10.55 the cute girl face (Skye's, shared with Meenu): big sparkly eyes with lashes, small nose and mouth. ----
+
+    protected fun cuteGirlCheeks(c: Canvas, p: Pose) {
+        val a = (90 + 120 * p.blush.coerceIn(0f, 1f)).toInt()
+        fill.shader = null; fill.color = RocketGirlRenderer.CHEEK; fill.alpha = a
+        oval.set(-22f, -26.5f, -12.5f, -21f); c.drawOval(oval, fill)
+        oval.set(12.5f, -26.5f, 22f, -21f); c.drawOval(oval, fill)
+        fill.alpha = 255
+    }
+
+    protected fun cuteGirlEyes(c: Canvas, p: Pose) {
+        for (s in intArrayOf(-1, 1)) {
+            val ex = s * 10.5f + p.lookX * 0.8f
+            val ey = -33.5f + p.lookY * 0.8f
+            val closed = (s < 0 && p.wink > 0.5f)
+            if (p.eyesHappy > 0.5f || closed) {   // happy squint: a curved lid with lashes
+                stroke.shader = null; stroke.color = RocketGirlRenderer.LASH; stroke.strokeWidth = 2.2f
+                tmp.reset(); tmp.moveTo(ex - 6f, ey + 1.5f); tmp.quadTo(ex, ey - 5.5f, ex + 6f, ey + 1.5f); c.drawPath(tmp, stroke)
+                stroke.strokeWidth = 1.3f; c.drawLine(ex + s * 5.5f, ey, ex + s * 8f, ey - 2f, stroke)
+                continue
+            }
+            val open = p.eyeOpen
+            val ry = 7.8f * open
+            if (ry < 1.4f) {   // blink: a closed lid with lashes
+                stroke.shader = null; stroke.color = RocketGirlRenderer.LASH; stroke.strokeWidth = 2f
+                tmp.reset(); tmp.moveTo(ex - 6f, ey); tmp.quadTo(ex, ey + 2.5f, ex + 6f, ey); c.drawPath(tmp, stroke)
+                stroke.strokeWidth = 1.2f
+                for (k in 0..2) { val lx = ex + s * (2f + k * 2f); c.drawLine(lx, ey + 1.6f, lx + s * 1.2f, ey + 4f, stroke) }
+                continue
+            }
+            val rx = 6.1f * (if (open > 1f) 1f + (open - 1f) * 0.5f else 1f)
+            // white
+            fill.shader = null; fill.color = Color.WHITE
+            oval.set(ex - rx, ey - ry, ex + rx, ey + ry); c.drawOval(oval, fill)
+            // big brown iris + pupil
+            fill.color = RocketGirlRenderer.EYE_IRIS
+            val ir = rx * 0.82f
+            oval.set(ex - ir, ey - ry * 0.86f, ex + ir, ey + ry * 0.92f); c.drawOval(oval, fill)
+            fill.color = Color.rgb(0x7A, 0x4A, 0x2A); fill.alpha = 150
+            oval.set(ex - ir * 0.75f, ey + ry * 0.05f, ex + ir * 0.75f, ey + ry * 0.85f); c.drawOval(oval, fill); fill.alpha = 255
+            fill.color = Color.rgb(0x10, 0x08, 0x06); c.drawCircle(ex, ey + 0.4f, ir * 0.45f, fill)
+            // sparkly highlights
+            fill.color = Color.WHITE
+            c.drawCircle(ex + s * 0.4f + 1.9f, ey - ry * 0.38f, 2.1f, fill)
+            c.drawCircle(ex - 1.8f, ey + ry * 0.42f, 1.0f, fill)
+            fill.alpha = 200; c.drawCircle(ex + 2.6f, ey + ry * 0.2f, 0.6f, fill); fill.alpha = 255
+            // upper lid line + long lashes flicking out
+            stroke.shader = null; stroke.color = RocketGirlRenderer.LASH; stroke.strokeWidth = 2.1f
+            oval.set(ex - rx - 0.4f, ey - ry - 0.4f, ex + rx + 0.4f, ey + ry + 0.4f)
+            c.drawArc(oval, 195f, 150f, false, stroke)
+            stroke.strokeWidth = 1.4f
+            val lx0 = ex + s * rx * 0.85f; val ly0 = ey - ry * 0.45f
+            c.drawLine(lx0, ly0, lx0 + s * 3.4f, ly0 - 2.6f, stroke)
+            c.drawLine(lx0 - s * 1.6f, ly0 - ry * 0.35f, lx0 + s * 1.4f, ly0 - ry * 0.35f - 3.2f, stroke)
+            c.drawLine(lx0 - s * 4f, ey - ry - 0.2f, lx0 - s * 2.6f, ey - ry - 3.4f, stroke)
+            // lower lash hint
+            stroke.strokeWidth = 0.9f; stroke.alpha = 120
+            c.drawArc(oval, 30f, 120f, false, stroke); stroke.alpha = 255
+        }
+    }
+
+    protected fun cuteGirlBrows(c: Canvas, p: Pose, hairColor: Int) {
+        stroke.shader = null; stroke.color = hairColor; stroke.strokeWidth = 1.7f
+        for (s in intArrayOf(-1, 1)) {
+            c.save(); c.translate(s * 10.5f + p.lookX * 0.6f, -44.5f + p.browY * 0.7f); c.rotate(-s * p.browAngle * 0.8f)
+            tmp.reset(); tmp.moveTo(-4.2f, 1f); tmp.quadTo(0f, -1.6f, 4.2f, 0.6f); c.drawPath(tmp, stroke)
+            c.restore()
+        }
+    }
+
+    protected fun cuteGirlNose(c: Canvas, p: Pose, shade: Int) {
+        stroke.shader = null; stroke.color = shade; stroke.strokeWidth = 1.4f
+        tmp.reset(); tmp.moveTo(p.lookX * 0.5f - 1f, -25.5f); tmp.quadTo(p.lookX * 0.5f + 1.2f, -23.8f, p.lookX * 0.5f + 2f, -24.6f)
+        c.drawPath(tmp, stroke)
+    }
+
+    protected fun cuteGirlMouth(c: Canvas, p: Pose) {
+        val mx = p.lookX * 0.5f; val my = -18f
+        val smile = p.mouthSmile.coerceIn(-1f, 1f)
+        if (p.mouthOpen > 0.15f) {
+            val hh = 1.5f + 6f * p.mouthOpen.coerceAtMost(1.2f)
+            val w = 4.2f + 1.5f * kotlin.math.max(0f, smile)
+            tmp.reset(); tmp.moveTo(mx - w, my - smile)
+            tmp.quadTo(mx, my + 0.6f, mx + w, my - smile)
+            tmp.cubicTo(mx + w * 0.8f, my + hh, mx - w * 0.8f, my + hh, mx - w, my - smile); tmp.close()
+            fill.shader = null; fill.color = Color.rgb(0x8E, 0x22, 0x30); c.drawPath(tmp, fill)
+            c.save(); c.clipPath(tmp); fill.color = Color.rgb(0xFF, 0x8A, 0x9A); oval.set(mx - 3f, my + hh * 0.45f, mx + 3f, my + hh * 1.3f); c.drawOval(oval, fill); c.restore()
+            outline.strokeWidth = 1.4f; c.drawPath(tmp, outline); outline.strokeWidth = OW
+        } else {
+            stroke.shader = null; stroke.color = RocketGirlRenderer.LIP; stroke.strokeWidth = 1.8f
+            tmp.reset(); tmp.moveTo(mx - 4.5f, my - 1.8f * smile); tmp.quadTo(mx, my + 3.6f * smile, mx + 4.5f, my - 1.8f * smile)
+            c.drawPath(tmp, stroke)
+        }
+    }
+
     protected fun lighten(col: Int) = Color.rgb(minOf(255, Color.red(col) + 40), minOf(255, Color.green(col) + 40), minOf(255, Color.blue(col) + 40))
 }
 

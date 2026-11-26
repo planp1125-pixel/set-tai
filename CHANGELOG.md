@@ -623,3 +623,7 @@ Every character now feels like a little body in your hand (the phone's vibration
 ## v10.55.1 (code 144): Meenu polish
 
 - Her rising bubbles are bigger and easier to see on any wallpaper; the magic pearl sits between her raised hands; the giant bubble starts at her mouth.
+
+## v10.55.2 (code 145): Meenu gets Skye's cute face
+
+- Meenu now has the same cute face as Skye: a smaller soft face, big sparkly brown eyes with lashes, a little nose and mouth, a side-swept fringe, two wavy locks and pearl ear studs. Skye's face code is now shared (HumanRenderer.cuteGirl*), so Skye looks exactly the same as before.
