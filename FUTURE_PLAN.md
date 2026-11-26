@@ -18,6 +18,8 @@ If someone copies the idea, Settai should be what they're compared against.
 
 ## 3. Roadmap
 
+> New characters after Meenu (Panda, Ghost, Robot, Alien, Astronaut): see [docs/FUTURE_CHARACTERS.md](docs/FUTURE_CHARACTERS.md).
+
 ### Done
 | Milestone | Build | Where |
 |---|---|---|
