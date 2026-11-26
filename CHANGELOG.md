@@ -627,3 +627,9 @@ Every character now feels like a little body in your hand (the phone's vibration
 ## v10.55.2 (code 145): Meenu gets Skye's cute face
 
 - Meenu now has the same cute face as Skye: a smaller soft face, big sparkly brown eyes with lashes, a little nose and mouth, a side-swept fringe, two wavy locks and pearl ear studs. Skye's face code is now shared (HumanRenderer.cuteGirl*), so Skye looks exactly the same as before.
+
+## v10.55.3 (code 146): Meenu looks like a little girl
+
+- No more long heavy hair behind her body. She now has Skye-style pigtails with pink shell clips (they stream back when she swims), softer dark-brown hair and a small pearl headband.
+- A cute sky-blue top that covers her tummy, with a scalloped hem and a pearl collar.
+- The giant bubble now grows beside her mouth and floats up, instead of covering her face.
