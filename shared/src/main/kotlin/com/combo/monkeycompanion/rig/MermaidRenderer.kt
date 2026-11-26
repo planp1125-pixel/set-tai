@@ -117,6 +117,7 @@ class MermaidRenderer : V1014BodyRenderer() {
         for (i in 0..10) { val w = halfWidth(i / 10f); if (i == 0) tail.moveTo(sx[i] - nx[i] * w, sy[i] - ny[i] * w) else tail.lineTo(sx[i] - nx[i] * w, sy[i] - ny[i] * w) }
         for (i in 10 downTo 0) { val w = halfWidth(i / 10f); tail.lineTo(sx[i] + nx[i] * w, sy[i] + ny[i] * w) }
         tail.close()
+        fill.color = Color.WHITE   // full alpha: the shadow drawn just before leaves the paint half see-through
         fill.shader = tailShader; c.drawPath(tail, fill); fill.shader = null
         // scales: little white arcs in rows along the tail
         stroke.shader = null; stroke.color = SCALE; stroke.strokeWidth = 1.3f

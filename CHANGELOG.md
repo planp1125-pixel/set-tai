@@ -633,3 +633,7 @@ Every character now feels like a little body in your hand (the phone's vibration
 - No more long heavy hair behind her body. She now has Skye-style pigtails with pink shell clips (they stream back when she swims), softer dark-brown hair and a small pearl headband.
 - A cute sky-blue top that covers her tummy, with a scalloped hem and a pearl collar.
 - The giant bubble now grows beside her mouth and floats up, instead of covering her face.
+
+## v10.55.4 (code 147): Meenu's tail colour fix
+
+- Her lavender-to-pink tail was drawn half see-through (the paint kept the shadow's transparency), so it looked pale. It is solid again.
