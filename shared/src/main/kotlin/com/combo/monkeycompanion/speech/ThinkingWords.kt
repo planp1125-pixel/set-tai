@@ -20,6 +20,7 @@ object ThinkingWords {
         "hollowman" to listOf("Echo… echo… thinking…", "Floating through ideas…", "Haunting the answer…", "Whispering to myself…"),
         "surfer" to listOf("Riding the wave…", "Waiting for the big one…", "Catching an idea…", "Paddling out…"),
         "skater" to listOf("Rolling it around…", "Doing a kickflip of thought…", "Grinding on it…", "Picking up speed…"),
+        "mermaid" to listOf("Blowing thought bubbles…", "Diving for an answer…", "Asking the fishes…", "Swimming through ideas…"),
         "billa" to listOf("Licking my paw… thinking…", "Purring over it…", "Stalking the answer…", "Nine lives, one idea…"),
         "chittu" to listOf("Sniffing out the answer…", "Nibbling on it…", "Running in my wheel…", "Squeak… thinking…"),
         "gajju" to listOf("Thinking with my big brain…", "Remembering everything…", "Trunk-storming…", "Stomping through ideas…"),

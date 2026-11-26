@@ -19,7 +19,8 @@ object CharacterHumor {
         "rocketgirl" to listOf("Rocket parking is easy. It's the reverse gear that's exciting.", "I asked for more space. Mission control took that literally.", "My countdown got nervous. It needed a launch break."),
         "hollowman" to listOf("I won hide-and-seek. Nobody noticed.", "My moonwalk left no footprints. Very on-brand.", "The spotlight keeps asking where I am. I call that stage presence."),
         "surfer" to listOf("I waved at the ocean. It waved back. Very polite.", "My board is bored. Time to catch a wave!", "I tried surfing the web. My board got stuck in a tab."),
-        "skater" to listOf("My board and I had a falling-out. Mostly falling.", "I nailed that trick! The pavement would like a word.", "Four wheels, two feet, one wildly optimistic landing.")
+        "skater" to listOf("My board and I had a falling-out. Mostly falling.", "I nailed that trick! The pavement would like a word.", "Four wheels, two feet, one wildly optimistic landing."),
+        "mermaid" to listOf("I tried to walk once. It went swimmingly badly.", "Why don't fish play cards? They're scared of the net!", "My bubbles are tiny, but my drama is ocean-sized.")
     )
     fun jokes(who: Character = CharacterRegistry.current): List<String> = jokesById[who.id]
         ?: (who as? com.combo.monkeycompanion.character.CustomCharacter)?.let { custom ->
@@ -40,7 +41,7 @@ object CharacterHumor {
         "monkey" -> "banana break"; "devil" -> "secret prank-planning break"; "angel" -> "halo-polishing break"
         "billa" -> "catnap"; "chittu" -> "cheese break"; "gajju" -> "sugarcane break"
         "superboy" -> "quick patrol of the city"; "armour" -> "suit maintenance break"; "mask" -> "secret mission (it's a nap)"
-        "rocketgirl" -> "rocket refuelling break"; "hollowman" -> "invisible dance rehearsal"; "surfer" -> "wave-watching break"; "skater" -> "board-check break"
+        "rocketgirl" -> "rocket refuelling break"; "hollowman" -> "invisible dance rehearsal"; "surfer" -> "wave-watching break"; "skater" -> "board-check break"; "mermaid" -> "shell-polishing break"
         else -> "little rest"
     }
 }

@@ -1,6 +1,6 @@
 # Set-Tai: handover notes (for the next developer / AI)
 
-Updated for **v10.54.2 (versionCode 142)**, 22 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
+Updated for **v10.55 (versionCode 143)**, 26 Nov 2026. Owner: Manikandan Gopalakrishnan (COMBO MEALS). He tests on a Motorola Edge 70 Fusion.
 
 ## v10.51 Human pace
 
@@ -10,6 +10,14 @@ Updated for **v10.54.2 (versionCode 142)**, 22 Nov 2026. Owner: Manikandan Gopal
 - v10.51.1: `Friendship.describe(xp)` → its own line in ChatHub `bondNote()` (level, heart %, next unlocks).
 - v10.51.2: `ChatVoiceCard` (section "chat") holds the chat & voice switches; the Settings tab lists "Chat & Voice" and "Buddy & Moments".
 - Tests that check the whole reply at once set `ChatHub.settings.humanPace = false` in `view()`.
+
+## v10.55 New character: Meenu the mermaid
+
+- `character/Mermaid.kt` (id `mermaid`, aliases meenu / kadal kanni / jalpari), `rig/MermaidRenderer.kt` (+ `MermaidPeek`), `brain/MermaidPowers.kt` (`BubbleShowPower` signature, `TailSplashPower`, `PearlGlowPower`; POSE plans, no cooldowns).
+- The tail is drawn on the rig legs: average `legL/RSwing` = bend, `legL/RLift` = curl. Pose slots: `dvSpell` = bubble-show progress, `surfSpray` = splash, `dvAura` = pearl glow.
+- Swimming is visual only, in the renderer: it reads `anim.velocityX/Y`, leans the whole body into the swim (canvas save in `drawBehind`, restore in `drawFront`), beats the tail harder, streams the hair, and draws rising bubbles in screen space (trail when fast). No frame-loop Random.
+- Registered in every per-id list: CharacterRegistry, PairProtocol, Population, TouchFeel, CharacterProfiles.MERMAID, CharacterHumor, ThinkingWords, Personality, Landings, sling game; Rust `lines/mermaid.tsv`.
+- Desktop `d5/MermaidPreviewTest` writes `power-mermaid-preview.png` (attached to the test build).
 
 ## v10.54.2
 

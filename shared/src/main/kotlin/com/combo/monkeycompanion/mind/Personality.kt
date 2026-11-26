@@ -89,6 +89,7 @@ class Personality(val characterId: String, val seed: Long, val traits: Traits, v
                 "angel" -> Traits(playfulness = 0.7f, boldness = 0.5f, laziness = 0.25f, curiosity = 0.8f, chattiness = 0.7f, drama = 0.5f)
                 "devil" -> Traits(playfulness = 0.95f, boldness = 0.8f, laziness = 0.3f, curiosity = 0.9f, chattiness = 0.75f, drama = 0.8f)
                 "surfer" -> Traits(playfulness = 0.95f, boldness = 0.9f, laziness = 0.15f, curiosity = 0.85f, chattiness = 0.75f, drama = 0.65f)
+                "mermaid" -> Traits(playfulness = 0.95f, boldness = 0.6f, laziness = 0.3f, curiosity = 0.95f, chattiness = 0.8f, drama = 0.85f)
                 "chittu" -> Traits(playfulness = 0.95f, boldness = 0.8f, laziness = 0.2f, curiosity = 0.9f, chattiness = 0.75f, drama = 0.75f)
                 else -> Traits(playfulness = 0.85f, boldness = 0.55f, laziness = 0.55f, curiosity = 0.85f, chattiness = 0.6f, drama = 0.6f)
             }
@@ -122,6 +123,7 @@ class Personality(val characterId: String, val seed: Long, val traits: Traits, v
             "angel" to listOf("payasam", "vanilla ice cream", "strawberry milk"),
             "devil" to listOf("red chilli bajji", "rose milk", "chocolate cake"),
             "surfer" to listOf("tender coconut", "mango ice cream", "banana chips"),
+            "mermaid" to listOf("tender coconut", "rose milk", "seaweed chips"),
             "custom_1" to listOf("gulab jamun", "filter coffee", "chocolate ice cream"),
         )
 

@@ -36,6 +36,8 @@ object CharacterNames {
     const val DEVIL = "Tutty"
     const val ANGEL = "Angel"
     const val SKATER = "Rollie"
+    /** v10.55 the little mermaid (from "meen", fish in Tamil). */
+    const val MERMAID = "Meenu"
 }
 
 /** One toggleable part. [options] = styles to pick from (first = default). */
@@ -156,7 +158,7 @@ abstract class Character(val id: String) {
 }
 
 object CharacterRegistry {
-    val all: List<Character> by lazy { listOf(KuttiSatan, Angel, MonkeyCharacter, Superboy, ArmourAnna, MaskMan, Billa, Chittu, Gajju, RocketGirl, HollowMan, SurferGirl, SkaterGirl) }
+    val all: List<Character> by lazy { listOf(KuttiSatan, Angel, MonkeyCharacter, Superboy, ArmourAnna, MaskMan, Billa, Chittu, Gajju, RocketGirl, HollowMan, SurferGirl, SkaterGirl, Mermaid) }
     val allWithCustom: List<Character> get() = all + CustomCompanionRegistry.allCharacters()
     @Volatile var current: Character = MonkeyCharacter; private set   // engine fallback; the app picks AppSettings.characterId (v10.16: Tutty on new installs)
     private val wears = HashMap<String, Wear>()
@@ -175,6 +177,7 @@ object CharacterRegistry {
             "angel", "little angel", "devathai", "dhevathai", "fairy" -> "angel"
             "skater", "rollie", "skater girl", "skate", "skategirl", "skateboard girl" -> "skater"
             "surfer", "wavy", "surf", "surfing girl", "surfgirl", "surfer girl" -> "surfer"
+            "mermaid", "meenu", "little mermaid", "kadal kanni", "jalakanya", "jal pari", "jalpari" -> "mermaid"
             else -> id
         }
         return all.firstOrNull { it.id.equals(norm, ignoreCase = true) } ?: CustomCompanionRegistry.byId(norm)

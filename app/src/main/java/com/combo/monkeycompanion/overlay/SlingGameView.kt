@@ -393,7 +393,7 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
         "superboy" -> Fly.CAPE                        // the cape streams behind
         "devil", "mask", "hollowman" -> Fly.SMOKE     // a wisp of smoke
         "skater" -> Fly.SPARK                         // sparks off the wheels
-        "surfer" -> Fly.WAVE                          // rides a wave
+        "surfer", "mermaid" -> Fly.WAVE                          // rides a wave
         "angel" -> Fly.GLOW                           // a soft golden glow
         "gajju" -> Fly.DUST                           // a heavy dust cloud
         else -> Fly.LINES                             // speed lines
@@ -444,7 +444,7 @@ class SlingGameView(context: Context, game0: SlingGame) : View(context), Choreog
             "armour" -> Color.rgb(0xFF, 0x7A, 0x1A) to Color.rgb(0xFF, 0xF0, 0xA0)        // fire blast from the hand
             "superboy" -> Color.rgb(0xE5, 0x1C, 0x23) to Color.rgb(0xFF, 0xC4, 0xC4)      // red beam from the eyes
             "devil" -> Color.rgb(0xE5, 0x39, 0x1E) to Color.rgb(0xFF, 0xB3, 0x3D)         // fireball
-            "gajju", "surfer" -> Color.rgb(0x3F, 0xA9, 0xF5) to Color.rgb(0xD6, 0xF0, 0xFF)   // water splash
+            "gajju", "surfer", "mermaid" -> Color.rgb(0x3F, 0xA9, 0xF5) to Color.rgb(0xD6, 0xF0, 0xFF)   // water splash
             "angel" -> Color.rgb(0xFF, 0xD8, 0x6B) to Color.WHITE                         // ring of light
             "mask" -> Color.rgb(0x9A, 0xA3, 0xB5) to Color.WHITE                          // throwing star
             "monkey", "chittu" -> Color.rgb(0xFF, 0xD9, 0x3D) to Color.rgb(0xFF, 0xF4, 0xB0)  // banana / cheese

@@ -25,7 +25,7 @@ class AllCharactersTest {
 
     @Test fun all13DrawInEveryMainPose() {
         val chars = CharacterRegistry.all
-        assertEquals(13, chars.size)
+        assertEquals(14, chars.size)   // v10.55 + Meenu the mermaid
         val cell = 240; val cols = 5; val rows = (chars.size + cols - 1) / cols
         val sheet = BufferedImage(cell * cols, cell * rows + 60, BufferedImage.TYPE_INT_ARGB)
         val sg = sheet.createGraphics()

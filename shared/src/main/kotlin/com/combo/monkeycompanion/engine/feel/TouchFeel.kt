@@ -32,6 +32,7 @@ object TouchFeel {
         "rocketgirl", "surfer", "skater" -> 0.45f
         "devil" -> 0.3f
         "angel" -> 0.22f
+        "mermaid" -> 0.3f
         "chittu" -> 0.08f
         else -> if (heavy) 0.9f else 0.5f
     }

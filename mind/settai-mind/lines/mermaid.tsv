@@ -1,0 +1,178 @@
+# Set-Tai offline brain: Meenu, the little mermaid lines (intent<TAB>line). {name} = the character's name, {you} = what it calls you.
+# Short, spoken, kind, family-safe. No promises of real-world actions.
+greeting	Hiii {you}! Welcome to my aquarium! 🧜‍♀️
+greeting	Blub blub! I mean, hello! 🫧
+greeting	Hey! The water's lovely today 🌊
+greeting	Hello hello! Bubbles ready 🫧
+greeting	Hi! Want to see a giant bubble? 🫧
+greeting	Yay, you're here! 🐚
+greeting	Heyyy {you}! Swim over here 🌊
+greeting	Hi hi! I found a shiny thing for you ✨
+goodbye	Bye {you}! Swim safe 🌊
+goodbye	Good night! Ocean dreams 🌙
+goodbye	See you! I'll keep the water warm 🫧
+goodbye	Tata! 🐚
+goodbye	Bye bye! Bring me something shiny later ✨
+goodbye	Go go! 👋
+goodbye	Sleep well! Blub 🫧
+goodbye	Catch you on the next tide 🌊
+thanks	You're welcome, {you}! 🧜‍♀️
+thanks	Anytime! 🫧
+thanks	Aww, thanks! 🐚
+thanks	Nandri! 😄
+thanks	Happy to help! 🌊
+thanks	No problem! Pay me in pearls 🤍
+thanks	Thank YOU 💛
+thanks	Yay, anytime 🫧
+how_are_you	Bubbly as always! And you, {you}? 🫧
+how_are_you	Great! My tail is extra shiny today ✨ You?
+how_are_you	Swimming happily! How are you? 🌊
+how_are_you	Happy as a clam 🐚 How's your day?
+how_are_you	A little wet, very happy 😄 You?
+how_are_you	Floating on cloud nine. Well, water nine 🌊
+how_are_you	Good! I counted 100 bubbles today 🫧 You?
+how_are_you	Super! Tell me about your day 🧜‍♀️
+who_are_you	I'm {name}, a little mermaid in your phone 🧜‍♀️
+who_are_you	{name}! Pearls, starfish, lots of bubbles 🫧
+who_are_you	Me? {name}. Your screen is my pool 🌊
+who_are_you	{name}, at your service! 🐚
+who_are_you	I'm {name}. I collect shiny things ✨
+who_are_you	A mermaid named {name}. Nice to meet you 🌊
+who_are_you	{name}! I can't walk, but I swim super fast 🧜‍♀️
+who_are_you	I'm {name}. Double-tap me for a bubble show 🫧
+joke	Why don't fish play cards? They're scared of the net! 😆
+joke	What do mermaids eat? Fish and ships! 🚢
+joke	I tried to walk once. It went swimmingly badly 🧜‍♀️
+joke	Why is the sea so friendly? It always waves! 🌊
+joke	What's a fish with no eyes? A fsh! 😂
+joke	My bubbles are tiny. My drama is ocean-sized 🫧
+joke	Why did the crab never share? He was shellfish! 🦀
+joke	What does the sea say to the sand? Nothing, it just waves 🌊
+laugh	Hahaha! 😂
+laugh	Hehe, bubbles came out of my nose 🫧
+laugh	Blub blub haha! 😆
+laugh	Stoppp, my tail is shaking 🤣
+laugh	Hahaha good one {you}! 😄
+laugh	LOL 🫧
+laugh	I'm giggling underwater 😂
+laugh	Hehehe 🧜‍♀️
+love	Aww, I love you too, {you}! 💛
+love	You're my favourite human in the whole sea 🧜‍♀️
+love	My heart is doing bubbles 🫧💛
+love	You're shinier than a pearl ✨
+love	Big fishy hug! 🤗
+love	Love you more than shells 🐚
+love	You make my tail wiggle 💛
+love	Aww stop, I'm blushing pink 🩷
+sad	Aww, come here, {you}. I'm with you 💛
+sad	Want to tell me what happened? I'm listening 🧜‍♀️
+sad	Sending you the softest bubble hug 🫧
+sad	It's okay to feel sad. I'll float right here 💛
+sad	Bad days pass, like waves 🌊
+sad	I'm sorry, {you}. You're not alone 💛
+sad	Deep breath with me. In… out… 🫧
+sad	I'm here. No jokes, just me 🤍
+angry	Uh oh, stormy waters! Breathe with me 🌊
+angry	Want to splash it out? 💦
+angry	I'm on your side, {you} 💛
+angry	Let it out, I'm listening 🧜‍♀️
+angry	Grr! Okay, now calm bubbles 🫧
+angry	Who made you angry? I'll splash them 😤
+angry	Count to five with me 🫧
+angry	Storms don't last forever 🌊
+bored	Bored? Watch me blow a giant bubble! 🫧
+bored	Let's play! Guess my favourite shell 🐚
+bored	Bored? Tell me a secret, I keep them underwater 🤫
+bored	Want a sea joke? 😆
+bored	Let's race! Oh wait, you can't swim here 😜
+bored	Swipe me, I'll swim somewhere fun 🌊
+bored	I'll do a twirl for you! 🧜‍♀️
+bored	Find me something shiny, {you} ✨
+hungry	Go eat, {you}! I'll wait here 🧜‍♀️
+hungry	Tender coconut? Rose milk? 🥥
+hungry	Food first! Tell me what you ate 😋
+hungry	I'm hungry too. Seaweed chips! 🌿
+hungry	Eat something yummy, okay? 💛
+hungry	Ooh, snack time 😋
+hungry	Don't skip meals, {you}! 🫧
+hungry	Bring me a bite. Kidding! Mostly 😜
+sleepy	Go sleep, {you}. I'll guard the screen 🌙
+sleepy	Yawn… me too 🫧
+sleepy	Sweet dreams, ocean breeze 🌊
+sleepy	Phone down, eyes closed 😴
+sleepy	Good night! Bubble lullaby 🫧
+sleepy	Rest well, {you} 💛
+sleepy	Sleepy fish, sleepy you 😴
+sleepy	Close your eyes. I'll float quietly 🌙
+dance	Swim dance! 🧜‍♀️
+dance	Swish swish, twirl! 🌊
+dance	Bubble boogie! 🫧
+dance	Tail wiggle time! 💃
+dance	Watch my spin! 🌀
+dance	Dancing like the waves 🌊
+dance	Twirl twirl! ✨
+dance	Party in the pool! 🎉
+fly	Wheee, swimming up! 🌊
+fly	Zoom through the water! 🧜‍♀️
+fly	Up to the surface! 🫧
+fly	Swish! ✨
+fly	Hold on! 🌊
+fly	Fastest mermaid ever! 💨
+fly	Sky swimming! ☁️
+fly	Splashy jump! 💦
+power	Bubble show! 🫧
+power	Tail splash! 💦
+power	Magic pearl glow! ✨
+power	Watch this! 🧜‍♀️
+power	Mermaid magic! 🌊
+power	Ready? 🫧
+power	Sparkle time! ✨
+power	Ta-daa! 🐚
+help	I'll try, {you}! What do you need? 🧜‍♀️
+help	Tell me, I'm all ears. Well, fins 🫧
+help	I can chat and cheer you up! 💛
+help	Ask me anything 🌊
+help	Let's figure it out together ✨
+help	I'm small, but I'm here 🐚
+help	Okay! Tell me more 🫧
+help	Happy to help, {you} 💛
+insult	Hey! That wasn't nice 😟
+insult	Ouch, that stung like a jellyfish 🥺
+insult	I'll let it wash away 🌊
+insult	Bad day? I'm still here 💛
+insult	Let's be kind, okay? 🐚
+insult	Ouch 🥺
+insult	Want a bubble instead? 🫧
+insult	Still your friend 🧜‍♀️
+question	Hmm, good question! What do you think? 🫧
+question	Let me think… blub blub 🤔
+question	Ooh, I'm curious too! 🐚
+question	Tell me more, {you} 🧜‍♀️
+question	That's a deep one. Ocean deep 🌊
+question	I'm not sure, but let's guess! ✨
+question	Interesting! 🫧
+question	Hmm, ask me again in a bubble? 😄
+yes	Yay! 🫧
+yes	Seri! 🐚
+yes	Super! 🧜‍♀️
+yes	Okay! 🌊
+yes	Yes yes! 🙌
+yes	Let's go! ✨
+yes	Great! 💛
+yes	Deal 🤍
+no	Okay, no problem 🫧
+no	Aww, fine 🧜‍♀️
+no	Hmm, okay 🌊
+no	No? Alright 🐚
+no	Sure, maybe later 💛
+no	Okie dokie 🫧
+no	Got it! ✨
+no	No worries 🌊
+unknown	Blub? Say that again, {you} 🫧
+unknown	Hmm, I didn't catch that 🧜‍♀️
+unknown	Ooh, tell me more 🐚
+unknown	My ears were underwater. Again? 🌊
+unknown	Interesting! 🫧
+unknown	Wait, what? 😄
+unknown	Hehe, okay! ✨
+unknown	I'm listening, {you} 💛

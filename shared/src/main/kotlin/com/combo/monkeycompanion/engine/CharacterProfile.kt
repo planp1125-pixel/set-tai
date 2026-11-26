@@ -78,6 +78,8 @@ object CharacterProfiles {
     val ANGEL = CharacterProfile("angel", airPatrolChance = 0.4f, airDanceChance = 0.15f, anim = AnimTuning.DEVIL)
     /** v10.24 Rollie: a floor character who rolls on her board. */
     val SKATER = CharacterProfile("skater", anim = AnimTuning.SURF)
+    /** v10.55 Meenu: swims all around her pool (the screen) and twirls in the water now and then. */
+    val MERMAID = CharacterProfile("mermaid", airPatrolChance = 0.55f, airDanceChance = 0.15f, anim = AnimTuning.DEVIL)
     /** Custom photo look-alikes and anything new. */
     val DEFAULT = CharacterProfile("default", anim = AnimTuning.CHIBI)
 
@@ -96,6 +98,7 @@ object CharacterProfiles {
         "devil" -> DEVIL
         "angel" -> ANGEL
         "skater" -> SKATER
+        "mermaid" -> MERMAID
         else -> DEFAULT
     }
 }

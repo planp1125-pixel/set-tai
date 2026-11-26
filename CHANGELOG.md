@@ -611,3 +611,11 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Download feedback:** the button names the model it will download, the status and progress sit right under it, and a toast says when it starts or why it could not.
 - **The Rust brain no longer writes replies** in the bubble (its ready-made lines felt random). It now only makes the body react the instant you send, with any real brain (ChatGPT or an on-device model). The Settings tester stays.
 
+
+## v10.55 (code 143): new character, Meenu the little mermaid
+
+- **Meenu** (from "meen", fish in Tamil): an original little mermaid with long wavy black hair, a pearl string, a coral starfish clip, a sky-blue top, gold bangles and a lavender-to-pink tail with golden fins. Pick her like any other character.
+- **Your screen is her pool.** She floats and swims, never walks or climbs. When she moves she leans into the swim, her tail beats harder and her hair streams behind her. Bubbles always rise from her, straight up the screen; when she swims fast she leaves a trail of them. While sleeping she curls her tail and bubbles rise from her mouth.
+- **Powers (double-tap):** Bubble show (main): she blows a giant bubble that floats up and pops into a shower of tiny bubbles. Tail splash: she curls her tail back and slaps it down in a big splash. Pearl glow: she lifts a magic pearl that glows with sparkles.
+- Her own lines, jokes, thinking words, snacks, personality, landings, peek face, sling-game style and offline-brain lines. Wardrobe: pearl string, starfish clip, bubbles (each can be switched off).
+- Tests: desktop d5/MermaidPreviewTest (writes a preview sheet to the test build); character counts updated to 14.

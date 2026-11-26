@@ -23,6 +23,7 @@ pub const CHARACTER_LINES: &[(&str, &str)] = &[
     ("hollowman", include_str!("../lines/hollowman.tsv")),
     ("surfer", include_str!("../lines/surfer.tsv")),
     ("skater", include_str!("../lines/skater.tsv")),
+    ("mermaid", include_str!("../lines/mermaid.tsv")),
 ];
 
 fn lines_for<'a>(table: &'a str, intent: Intent) -> Vec<&'a str> {

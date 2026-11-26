@@ -33,7 +33,7 @@ class V1033Test {
     }
 
     @Test fun screamAppliesToEveryBuiltInBody() {
-        assertEquals(13, CharacterRegistry.all.size)
+        assertEquals(14, CharacterRegistry.all.size)   // v10.55 + Meenu
         for (c in CharacterRegistry.all) {
             val p = Pose(); c.fill(p, MonkeyState.IDLE, 1f, 1f, AnimContext(), CharacterRegistry.wear(c))
             assertTrue(Expressions.apply("scream", p, 0f, 1f))

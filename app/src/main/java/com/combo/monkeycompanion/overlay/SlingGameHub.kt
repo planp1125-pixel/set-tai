@@ -34,7 +34,7 @@ object SlingGameHub {
     fun trickFor(c: com.combo.monkeycompanion.character.Character): SlingGame.Trick = when (c.id) {
         "devil", "angel", "hollowman", "mask" -> SlingGame.Trick.VANISH
         "superboy", "armour", "rocketgirl" -> SlingGame.Trick.FLY_UP
-        "chittu", "billa", "skater", "surfer" -> SlingGame.Trick.DASH
+        "chittu", "billa", "skater", "surfer", "mermaid" -> SlingGame.Trick.DASH
         "gajju" -> SlingGame.Trick.NONE
         else -> SlingGame.Trick.HOP
     }

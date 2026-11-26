@@ -226,7 +226,7 @@ mod tests {
     #[test]
     fn every_character_has_its_own_lines_for_every_intent() {
         let ids = ["devil", "angel", "monkey", "superboy", "armour", "mask", "billa", "chittu", "gajju", "rocketgirl",
-            "hollowman", "surfer", "skater"];
+            "hollowman", "surfer", "skater", "mermaid"];
         assert_eq!(reply::CHARACTER_LINES.len(), ids.len());
         for id in ids {
             for i in Intent::ALL {

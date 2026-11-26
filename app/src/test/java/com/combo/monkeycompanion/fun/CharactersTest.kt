@@ -43,7 +43,7 @@ class CharactersTest {
 
     @Test fun registryHasFourUniqueCharacters() {
         val ids = CharacterRegistry.all.map { it.id }
-        assertEquals(listOf("devil", "angel", "monkey", "superboy", "armour", "mask", "billa", "chittu", "gajju", "rocketgirl", "hollowman", "surfer", "skater"), ids)
+        assertEquals(listOf("devil", "angel", "monkey", "superboy", "armour", "mask", "billa", "chittu", "gajju", "rocketgirl", "hollowman", "surfer", "skater", "mermaid"), ids)
         assertEquals(ids.size, ids.toSet().size)
         assertEquals(CharacterRegistry.all.size, CharacterRegistry.all.map { it.name }.toSet().size)
         for (c in CharacterRegistry.all) {

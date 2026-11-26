@@ -257,8 +257,8 @@ class V1024SwipeTest {
 
     @Test fun skaterRegistered() {
         assertSame(SkaterGirl, CharacterRegistry.byId("skater"))
-        assertEquals("skater", CharacterRegistry.all.last().id)
-        assertEquals("skater", Population.allIds.last())
+        assertTrue("skater" in CharacterRegistry.all.map { it.id })   // v10.55: Meenu comes after her
+        assertTrue("skater" in Population.allIds)
         assertEquals("Rollie", Population.displayName("skater"))
         assertSame(KickflipShowPower, SkaterGirl.signaturePower); assertSame(KickflipShowPower, SkaterGirl.powers.first())
         for (p in SkaterGirl.powers) assertTrue(p.plan(0.5f, 0.5f, false, Random(1)).sumOf { it.secs.toDouble() } in 2.0..9.0)
