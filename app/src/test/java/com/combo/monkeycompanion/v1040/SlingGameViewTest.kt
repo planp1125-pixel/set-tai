@@ -157,7 +157,7 @@ class SlingGameViewTest {
         assertEquals("armour", g.bulletId)
         repeat(5) { g.step(0.016f) }
         assertFalse("the target is another character", g.target!!.id == "armour")
-        assertTrue(CharacterRegistry.all.any { it.id == g.target!!.id })
+        assertTrue(CharacterRegistry.allWithCustom.any { it.id == g.target!!.id })
         CharacterRegistry.select("monkey")
     }
 }
