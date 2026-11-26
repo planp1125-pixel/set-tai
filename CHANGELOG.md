@@ -619,3 +619,7 @@ Every character now feels like a little body in your hand (the phone's vibration
 - **Powers (double-tap):** Bubble show (main): she blows a giant bubble that floats up and pops into a shower of tiny bubbles. Tail splash: she curls her tail back and slaps it down in a big splash. Pearl glow: she lifts a magic pearl that glows with sparkles.
 - Her own lines, jokes, thinking words, snacks, personality, landings, peek face, sling-game style and offline-brain lines. Wardrobe: pearl string, starfish clip, bubbles (each can be switched off).
 - Tests: desktop d5/MermaidPreviewTest (writes a preview sheet to the test build); character counts updated to 14.
+
+## v10.55.1 (code 144): Meenu polish
+
+- Her rising bubbles are bigger and easier to see on any wallpaper; the magic pearl sits between her raised hands; the giant bubble starts at her mouth.

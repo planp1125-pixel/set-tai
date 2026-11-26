@@ -40,7 +40,7 @@ class MermaidRenderer : V1014BodyRenderer() {
         val GOLD = Color.rgb(0xF5, 0xC4, 0x3A)
         val PEARL = Color.rgb(0xFB, 0xF7, 0xF0)
         val STAR = Color.rgb(0xFF, 0x7E, 0x6A)
-        val BUBBLE = Color.rgb(0xBF, 0xEE, 0xFF)
+        val BUBBLE = Color.rgb(0x6E, 0xC6, 0xFF)
         val WATER = Color.rgb(0x3F, 0xA9, 0xF5)
         val CHEEK = Color.rgb(0xFF, 0x80, 0x8A)
         /** Tail length in hips space (rig units), from the waist. */
@@ -329,15 +329,15 @@ class MermaidRenderer : V1014BodyRenderer() {
             val oy = if (fromMouth) my else by
             val x = ox + 7f * sin(t * 2.3f + i * 1.7f) * ph + (i % 3 - 1) * 5f
             val y = oy - (60f + 50f * swimK) * ph - 6f
-            val r = (1.8f + (i % 3) * 1.1f) * (0.7f + 0.5f * ph)
+            val r = (2.8f + (i % 3) * 1.6f) * (0.7f + 0.5f * ph)
             bubble(c, x, y, r, ((1f - ph) * (1f - ph) * 230f).toInt())
         }
     }
 
     private fun bubble(c: Canvas, x: Float, y: Float, r: Float, alpha: Int) {
         if (alpha <= 2) return
-        fill.shader = null; fill.color = BUBBLE; fill.alpha = (alpha * 0.25f).toInt(); c.drawCircle(x, y, r, fill)
-        stroke.shader = null; stroke.color = BUBBLE; stroke.alpha = alpha; stroke.strokeWidth = 1.1f; c.drawCircle(x, y, r, stroke)
+        fill.shader = null; fill.color = BUBBLE; fill.alpha = (alpha * 0.3f).toInt(); c.drawCircle(x, y, r, fill)
+        stroke.shader = null; stroke.color = BUBBLE; stroke.alpha = alpha; stroke.strokeWidth = 1.6f; c.drawCircle(x, y, r, stroke)
         fill.color = Color.WHITE; fill.alpha = alpha; c.drawCircle(x - r * 0.35f, y - r * 0.35f, r * 0.25f + 0.3f, fill)
         fill.alpha = 255; stroke.alpha = 255
     }
@@ -345,7 +345,7 @@ class MermaidRenderer : V1014BodyRenderer() {
     /** Bubble show: a giant bubble grows at her mouth and floats up, then pops into a shower of tiny bubbles. */
     private fun drawBubbleShow(c: Canvas, rig: MonkeyRig, p: Pose, t: Float) {
         val k = p.dvSpell.coerceIn(0f, 1f)
-        val m = hipsPoint(rig, 0f, -72f)
+        val m = hipsPoint(rig, 0f, -62f)
         val mx = m[0]; val my = m[1]
         if (k < 0.55f) {
             val g = SwipeK.ss(0.05f, 0.5f, k)
@@ -400,7 +400,7 @@ class MermaidRenderer : V1014BodyRenderer() {
     /** Pearl glow: a shining pearl held over her head, a soft halo and sparkles circling it. */
     private fun drawPearl(c: Canvas, rig: MonkeyRig, p: Pose, t: Float) {
         val e = p.dvAura.coerceIn(0f, 1f)
-        val h = hipsPoint(rig, 0f, -150f)
+        val h = hipsPoint(rig, 0f, -134f)
         val x = h[0]; val y = h[1]
         fill.shader = null
         fill.color = Color.rgb(0xFF, 0xF2, 0xC8); fill.alpha = (70 * e).toInt(); c.drawCircle(x, y, 22f * e + 3f * sin(t * 4f), fill)
