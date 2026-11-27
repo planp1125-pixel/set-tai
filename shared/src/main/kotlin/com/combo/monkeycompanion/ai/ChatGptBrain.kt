@@ -54,7 +54,7 @@ class ChatGptBrain(
             val body = JSONObject().put("model", pickModel()).put("instructions", system).put("input", input)
                 .put("store", false).put("stream", true)
             if (toolArr != null) body.put("tools", toolArr)
-            val turn = streamWithAuth(body) { delta -> shown += delta; onText(cleanReply(shown)) }
+            val turn = streamTrying(body) { delta -> shown += delta; onText(cleanReply(shown)) }
             if (turn.calls.isEmpty() || tools == null) return cleanReply(shown)
             // the model wants tools: give it back its calls and their results (no stored state: everything goes in input)
             for (c in turn.calls) {
@@ -102,13 +102,37 @@ class ChatGptBrain(
         }
     }
 
+    /** Models of the account not tried yet, best first (only when the model was picked automatically). */
+    private var spare: MutableList<String> = mutableListOf()
+
     private fun pickModel(): String {
         model?.let { return it }
         val list = runCatching { models() }.getOrElse { if (it is BrainException) throw it else emptyList() }
-        val slug = chooseModel(list.map { it.first }) ?: throw BrainException("Your ChatGPT account has no models I can use.")
+        val slugs = list.map { it.first }
+        val slug = chooseModel(slugs) ?: throw BrainException("Your ChatGPT account has no models I can use.")
         model = slug
+        spare = ordered(slugs).filter { it != slug }.take(3).toMutableList()
         return slug
     }
+
+    /**
+     * v10.55.8: one streamed turn; if ChatGPT refuses the automatically picked model (a model OpenAI retired or that
+     * this account can't use), try the account's next models before giving up. Sign-in and limit errors never retry.
+     */
+    private fun streamTrying(body: JSONObject, onDelta: (String) -> Unit): Turn {
+        sentText = false
+        while (true) {
+            try { return streamWithAuth(body, onDelta) } catch (e: BrainException) {
+                val msg = e.message.orEmpty()
+                val retryable = preferredModel.isBlank() && spare.isNotEmpty() && !sentText &&
+                    msg != SIGN_IN_AGAIN && !msg.contains("needs a rest") && !msg.contains("needs ChatGPT Plus")
+                if (!retryable) throw e
+                model = spare.removeAt(0)
+                body.put("model", model)
+            }
+        }
+    }
+    @Volatile private var sentText = false
 
     private class Call1(val callId: String, val name: String, val args: String)
     private class Turn(val text: String, val calls: List<Call1>)
@@ -143,17 +167,14 @@ class ChatGptBrain(
                 if (data.isEmpty() || data == "[DONE]") continue
                 val o = runCatching { JSONObject(data) }.getOrNull() ?: continue
                 when (o.optString("type")) {
-                    "response.output_text.delta" -> { val d = o.optString("delta"); if (d.isNotEmpty()) { text.append(d); onDelta(d) } }
+                    "response.output_text.delta" -> { val d = o.optString("delta"); if (d.isNotEmpty()) { sentText = true; text.append(d); onDelta(d) } }
                     "response.output_item.done" -> o.optJSONObject("item")?.takeIf { it.optString("type") == "function_call" }?.let { it2 ->
                         calls.add(Call1(it2.optString("call_id").ifBlank { "call_${calls.size}" }, it2.optString("name"), it2.optString("arguments")))
                     }
                     "response.completed" -> completed = true
-                    "response.failed" -> {
-                        val e = o.optJSONObject("response")?.optJSONObject("error")
-                        throw BrainException(friendly(e?.optString("code").orEmpty(), e?.optString("message").orEmpty()))
-                    }
+                    "response.failed" -> throw BrainException(errorOf(o.optJSONObject("response")?.optJSONObject("error") ?: o, data))
                     "response.incomplete" -> completed = true   // cut short (length): keep what came
-                    "error" -> throw BrainException(friendly(o.optString("code"), o.optString("message")))
+                    "error" -> throw BrainException(errorOf(o, data))
                 }
             }
         }
@@ -170,13 +191,28 @@ class ChatGptBrain(
             slugs.firstOrNull { it.contains("mini") } ?: slugs.firstOrNull { it.contains("nano") }
                 ?: slugs.firstOrNull { it.contains("chat") } ?: slugs.firstOrNull()
 
+        /** v10.55.8 the code + message of an error event, wherever OpenAI put them ({code,message} or {error:{…}}); never blank. */
+        fun errorOf(o: JSONObject, raw: String): String {
+            val inner = o.optJSONObject("error")
+            fun pick(k: String) = o.optString(k).ifBlank { inner?.optString(k).orEmpty() }
+            val code = pick("code").ifBlank { pick("type").takeIf { it != "error" && it != "response.failed" }.orEmpty() }
+            val message = pick("message")
+            return if (code.isBlank() && message.isBlank()) "ChatGPT had a problem: ${raw.take(160)}" else friendly(code, message)
+        }
+
+        /** The account's models, best first for a chatty character (small fast ones, then chat ones, then the rest). */
+        fun ordered(slugs: List<String>): List<String> =
+            slugs.filter { it.contains("mini") } + slugs.filter { it.contains("nano") && !it.contains("mini") } +
+                slugs.filter { it.contains("chat") && !it.contains("mini") && !it.contains("nano") } +
+                slugs.filter { !it.contains("mini") && !it.contains("nano") && !it.contains("chat") }
+
         /** OpenAI's plan-usage error codes in plain words. */
         fun friendly(code: String, message: String): String = when (code) {
             "subscription_sharing_usage_limit_exceeded" -> "My ChatGPT brain needs a rest: Set-Tai's share of your ChatGPT limit is used up for now. You can see it in ChatGPT › Settings › Usage."
             "subscription_sharing_user_not_eligible" -> "This ChatGPT account can't be used in other apps. It needs ChatGPT Plus or Pro."
             "subscription_sharing_usage_unavailable", "subscription_sharing_user_unavailable" -> "ChatGPT is busy right now. Try again in a moment."
             "subscription_sharing_invalid_user", "invalid_grant", "refresh_token_expired", "refresh_token_invalidated" -> SIGN_IN_AGAIN
-            else -> if (message.isNotBlank()) "ChatGPT: ${message.take(160)}" else "ChatGPT had a problem ($code)."
+            else -> if (message.isNotBlank()) "ChatGPT: ${message.take(160)}" + (if (code.isNotBlank()) " ($code)" else "") else "ChatGPT had a problem ($code)."
         }
 
         private fun fail(status: Int, body: String): BrainException {
@@ -187,7 +223,7 @@ class ChatGptBrain(
                 status == 401 -> SIGN_IN_AGAIN
                 status == 403 -> friendly("subscription_sharing_user_not_eligible", "")
                 status == 429 -> friendly("subscription_sharing_usage_limit_exceeded", "")
-                else -> "ChatGPT error (HTTP $status)"
+                else -> "ChatGPT error (HTTP $status)" + (e?.optString("message")?.takeIf { it.isNotBlank() }?.let { ": " + it.take(160) } ?: "")
             })
         }
     }

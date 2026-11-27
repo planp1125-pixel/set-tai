@@ -651,3 +651,9 @@ Every character now feels like a little body in your hand (the phone's vibration
 ## v10.55.7 (code 150): ChatGPT sign-in right in About
 
 - About now says "ChatGPT sign-in: shown / hidden (developer switch on/off) / signed in", and when the developer switch is on it has a "Sign in with ChatGPT" button right there, so testers don't have to find the brain page.
+
+## v10.55.8 (code 151): ChatGPT errors say what OpenAI said
+
+- "ChatGPT had a problem ()" with empty brackets is gone: OpenAI now nests its error inside `error:{code,message}`, which the app didn't read. The bubble now shows OpenAI's own words (and code), or the raw reply if there are none.
+- If ChatGPT refuses the model the app picked automatically (retired, or not allowed for this account), it tries the account's next models before giving up.
+- HTTP errors keep OpenAI's message too.
