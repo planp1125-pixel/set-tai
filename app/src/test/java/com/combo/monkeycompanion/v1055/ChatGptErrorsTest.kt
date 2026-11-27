@@ -7,10 +7,15 @@ import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArrayList
 
 /** v10.55.8: ChatGPT errors always say what OpenAI said (never "had a problem ()"), and a refused model falls back to the next one. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class ChatGptErrorsTest {
     private var server: HttpServer? = null
     private val models = CopyOnWriteArrayList<String>()
