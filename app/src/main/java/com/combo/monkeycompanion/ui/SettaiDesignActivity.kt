@@ -703,6 +703,25 @@ class SettaiDesignActivity : ComponentActivity() {
                                         })
                                     Text("Build ${com.combo.monkeycompanion.BuildConfig.VERSION_CODE} · ${com.combo.monkeycompanion.BuildConfig.FLAVOR}", color = muted, fontSize = 12.sp)
                                     Text("Offline brain: " + (com.combo.monkeycompanion.mind.RustMind.version ?: "not available"), color = muted, fontSize = 12.sp)
+                                    // v10.55.7: say plainly whether the ChatGPT sign-in is offered, and offer it right here (no hunting for the brain page)
+                                    val hub = com.combo.monkeycompanion.ai.ChatHub
+                                    val offered = taps >= 0 && hub.chatGptOffered()
+                                    val signedIn = com.combo.monkeycompanion.ai.ChatGptAuth.signedIn
+                                    Text("ChatGPT sign-in: " + when {
+                                        signedIn -> "signed in"
+                                        offered -> "shown"
+                                        else -> "hidden (developer switch " + (if (runCatching { hub.settings.devChatGpt }.getOrDefault(false)) "on" else "off") + ")"
+                                    }, color = muted, fontSize = 12.sp)
+                                    if (offered && !signedIn) androidx.compose.material3.Button(onClick = {
+                                        android.widget.Toast.makeText(ctx, "Opening ChatGPT… sign in, tap Allow, then come back.", android.widget.Toast.LENGTH_LONG).show()
+                                        com.combo.monkeycompanion.ai.ChatGptAuth.signIn(ctx) { err ->
+                                            ctx.runOnUiThread {
+                                                if (err == null) hub.chooseBrain(com.combo.monkeycompanion.ai.ChatHub.BrainChoice.CHATGPT)
+                                                android.widget.Toast.makeText(ctx, err ?: "Connected to ChatGPT", android.widget.Toast.LENGTH_LONG).show()
+                                                taps = 0
+                                            }
+                                        }
+                                    }) { Text("Sign in with ChatGPT") }
                                     Text("Living companions for your screen", color = muted)
                                     Text("Character preferences are under Characters; shared app controls are here.", color = muted, fontSize = 12.sp)
                                 } }

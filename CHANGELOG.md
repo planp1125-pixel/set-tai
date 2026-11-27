@@ -647,3 +647,7 @@ Every character now feels like a little body in your hand (the phone's vibration
 ## v10.55.6 (code 149): ChatGPT sign-in reachable from Brain & AI
 
 - Settings › Brain & AI now shows a "Your ChatGPT plan" card with a "Sign in with ChatGPT" button (opens the Give-a-brain page) whenever ChatGPT is offered: debug builds, the developer switch (About › tap the version 7 times) or an already signed-in tester. Hidden for normal Play users until OpenAI approves.
+
+## v10.55.7 (code 150): ChatGPT sign-in right in About
+
+- About now says "ChatGPT sign-in: shown / hidden (developer switch on/off) / signed in", and when the developer switch is on it has a "Sign in with ChatGPT" button right there, so testers don't have to find the brain page.
