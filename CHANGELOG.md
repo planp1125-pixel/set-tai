@@ -643,3 +643,7 @@ Every character now feels like a little body in your hand (the phone's vibration
 - Long hair is back, but soft: warm chocolate-brown, wavy, down to her waist with curly tips, held by two pink shell clips. It streams behind her when she swims.
 - A little neck: her head sits a bit higher and is slightly bigger (more chibi).
 - A pink bow and tiny sparkle dots on her top.
+
+## v10.55.6 (code 149): ChatGPT sign-in reachable from Brain & AI
+
+- Settings › Brain & AI now shows a "Your ChatGPT plan" card with a "Sign in with ChatGPT" button (opens the Give-a-brain page) whenever ChatGPT is offered: debug builds, the developer switch (About › tap the version 7 times) or an already signed-in tester. Hidden for normal Play users until OpenAI approves.

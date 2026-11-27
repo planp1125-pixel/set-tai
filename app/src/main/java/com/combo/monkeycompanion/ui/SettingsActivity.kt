@@ -142,6 +142,14 @@ class SettingsActivity : androidx.activity.ComponentActivity() {
     private fun SettingsScreen(target: String?, @Suppress("UNUSED_PARAMETER") r: Int) {
         SettaiScreen(title = titles[target] ?: "Settings", onBack = { finish() }, rev = r,
             subtitle = "Changes apply right away") {
+            // v10.55.6: the ChatGPT sign-in lives on the "Give a brain" page; show a way there from Brain & AI too
+            // (Play build: only for a developer / signed-in tester until OpenAI approves, see ChatHub.chatGptOffered)
+            if (visible(target, "brainType") && com.combo.monkeycompanion.ai.ChatHub.chatGptOffered())
+                SCard("Your ChatGPT plan", if (com.combo.monkeycompanion.ai.ChatGptAuth.signedIn) "Signed in. Open to use it or sign out." else "Think with your own ChatGPT Plus / Pro plan.") {
+                    androidx.compose.material3.Button(onClick = { startActivity(Intent(this@SettingsActivity, BrainActivity::class.java)) }) {
+                        Text(if (com.combo.monkeycompanion.ai.ChatGptAuth.signedIn) "Open ChatGPT brain" else "Sign in with ChatGPT")
+                    }
+                }
             if (visible(target, "brainType")) BrainPickerCard(r)
             if (visible(target, "character")) CharacterCard(r)
             if (visible(target, "brain") && s.brainType == BrainType.ONLINE) OnlineCard(r)
